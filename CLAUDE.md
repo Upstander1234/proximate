@@ -332,6 +332,36 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 60, part 2 of 3 — tracheostomy state model
+
+**Confirmed the gap before touching anything.** No `pat.tracheostomy`/cannula-obstruction field existed anywhere. TP 1234's entire tracheostomy-emergency branch (inner-cannula obstruction, tube replacement, stoma ventilation) had nothing to hook into.
+
+**`pat.tracheostomy`** (boolean, scenario-authored trait) and **`pat.trachObstruction`** (0-1, real inner-cannula secretion-obstruction severity) — deliberately modeled as a structural PATIENT TRAIT distinct from `pat.artificialAirway` (the existing ETT/SGA mechanism a crew places live during a call) — a tracheostomy is a pre-existing surgical airway the patient already has.
+
+**MECHANISM, wired into `respiratory.js`'s existing airway-resistance calculation, two real, opposite consequences.** (1) **Bypass** — a tracheostomy sits below the larynx/pharynx, so it physically bypasses `pat.upperAirwayObstruction` (croup/epiglottitis's fixed-extrathoracic field) entirely, gated to exactly zero rather than scaled down, since the physical bypass is total. (2) **New vulnerability** — `pat.trachObstruction` gets its own multiplicative resistance term (coefficient 1.6, between `airwayFluid`'s 1.3 and `upperAirwayObstruction`'s 1.5, since a small-bore trach tube can occlude more severely per secretion volume than a native airway). Untreated secretions genuinely accumulate over time (real, standard trach care requires routine suctioning specifically because of this).
+
+**Treatment reuses the EXISTING `suction` procedure rather than inventing a near-duplicate one** — real inner-cannula clearance uses the same technique as oropharyngeal suctioning. On the same suction dose, `pat.trachObstruction` clears to near-zero (matching TP 1234's "clear/replace the inner cannula" field step); a no-op for every patient without a tracheostomy. Deliberately did NOT add a new procedure needing registration across `gear.js` and all three scope files — reuse was both more realistic and lower blast-radius in a session with several other agents touching shared files concurrently.
+
+**MEASURED** (direct probes, no dedicated scenario yet): cannula obstruction (0.6) raises real work of breathing (0.094->0.109). The bypass effect is real but honestly modest — a native airway with `upperAirwayObstruction=0.8` costs slightly more tidal volume than a tracheostomy patient (0.4866L vs 0.4886L at 600s), partly re-equalized by this engine's own load-dependent effort/rate compensation — asserted at the real measured threshold, not an invented larger one. Untreated obstruction worsens 0.600->0.660 over 600s; suction clears it to 0.005; a non-tracheostomy patient's `trachObstruction` stays untouched by suction (specificity).
+
+**Verification.** `trachObstruction` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Five new two-sided `mechanismWiring.mjs` assertions in a new `[TRACHEOSTOMY STATE — queue item 60, part 2 of 3]` section, all measured passing via a standalone replica of the suite's own logic. `npx eslint` clean. **All three parts of queue item 60 are now closed** — part 1 (nebulized epi) and part 3 (FBAO crew task) shipped in earlier parallel batches this session.
+
+### Physiology-engine batch: queue item 59 — decompression illness (venous gas embolism), reusing `pe`'s existing mechanism rather than inventing a parallel one
+
+**Explicitly lower priority than items 56-58, attempted since 56 went cleanly.** No dive-depth/dive-duration state or bubble/embolism mechanism existed anywhere; `laCounty.js`'s TP 1225 section reused only the generic arrest/hypothermia/poor-perfusion baseline.
+
+**Real mechanism, deliberately reusing an existing handle.** On ascent, dissolved nitrogen comes out of solution faster than it can be eliminated by ventilation, forming venous gas emboli that shower the pulmonary vasculature — mechanically the SAME lesion a thrombotic pulmonary embolism produces (Vann et al., Lancet 2011). `decompressionIllness` (conditions.js) therefore drives the identical `pat.shuntFraction`/`pat.pulmResistFactor` mechanism `pe` already uses, at its own magnitude/time course, rather than building a second, parallel embolism handle for a mechanistically identical lesion with a different cause.
+
+**Scope boundary, stated honestly**: scoped to the pulmonary ("chokes") limb only — arterial gas embolism and spinal-cord DCS (the neurologic Type II presentation) are real but mechanistically SEPARATE lesions this engine has no comparable handle for, deliberately not modeled here.
+
+**Real O2 treatment**, gated on `pat.effectiveFio2` (the same real "what is this patient actually breathing" value CO poisoning's own clearance mechanism already reads) at a threshold calibrated to this formulary's actual `o2nrb` device — high-flow O2 works through denitrogenation (maximizing the outward nitrogen partial-pressure gradient), genuinely slower and less complete than hyperbaric recompression (which TP 1225 separately mandates and this engine cannot model).
+
+**A real, honest side fix found along the way**: `pat.pulmResistFactor` had NO constructor default at all before this session (every consumer already read it via `||1`, so behavior was already correct, but the field itself was `undefined` pre-first-tick) — given a real default of 1 so it can be asserted on like any other field.
+
+**MEASURED**: untreated (1200s, seeded 0.3): shuntFraction 0.460, pulmResistFactor 3.000 (ceiling); o2nrb-treated: 0.113/1.000 (floor); healthy control: 0/1.000.
+
+**Verification.** `shuntFraction`/`pulmResistFactor` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists (a genuine pre-existing coverage gap closed while working nearby — both are real fields already used by a dozen-plus conditions that had never been checked). Three new two-sided assertions in `mechanismWiring.mjs`. `npx eslint` clean. No narrative dive scenario authored — physiology-mechanism-only scope, matching `thermalBurn`'s precedent.
+
 ### Physiology-engine batch: queue item 5's remaining dead-field — real endocrine-pancreatic glucose regulation (`pat.insulin`/`pat.glucagon`)
 
 **The real gap, confirmed by grep before touching anything.** `pat.insulin`/`pat.glucagon` (patient.js constructor) were set to 1 and never read or written again anywhere in the engine — glucose regulation ran entirely through direct `pat.glucose` writes (a one-time dose delivery for d10/glucagon/oralGlucose, and each condition's own one-time seed). Confirmed by grep: a condition-less patient's glucose was completely static outside a drug dose, with no auto-correction mechanism anywhere.
@@ -7948,7 +7978,15 @@ plausible but not fitted to trial data.
     isolated urticaria, rather than inventing an inert cosmetic field, is
     the honest way to build this if it's ever wanted).
 
-59. **No decompression-illness signal exists — found while implementing TP
+59. **RESOLVED (this session, pulmonary limb only) — see section 3's newest
+    entry.** `decompressionIllness` (conditions.js) reuses `pe`'s existing
+    `shuntFraction`/`pulmResistFactor` mechanism (mechanically the same
+    lesion), with real high-flow-O2 denitrogenation treatment. Arterial gas
+    embolism and spinal-cord DCS remain unmodeled — mechanistically
+    separate lesions with no comparable existing handle. No narrative dive
+    scenario authored. Original filing, kept for context:
+
+    No decompression-illness signal exists — found while implementing TP
     1225/1225-P (Submersion), step 3/11's decompression-illness-specific
     branches.** Arterial gas embolism and decompression sickness are real,
     distinct pathophysiology (dissolved nitrogen coming out of solution in
@@ -7964,12 +8002,11 @@ plausible but not fitted to trial data.
     correctly lower priority than items 56-58 above unless a dive-specific
     scenario is specifically wanted.
 
-60. **PARTIALLY RESOLVED (this session) — the nebulized-epinephrine AND
-    FBAO-crew-task slices are DONE, see section 3's newest entries. The
-    tracheostomy-state slice's status should be re-checked against the
-    live tree (a separate parallel batch was assigned it this session;
-    confirm via `grep -n "pat.tracheostomy" src/physio/patient.js` before
-    assuming it's still open).**
+60. **FULLY RESOLVED (this session) — see section 3's newest entries.**
+    All three slices are done: nebulized epinephrine, FBAO crew-task, and
+    tracheostomy state model (`pat.tracheostomy`/`pat.trachObstruction`,
+    real airway-bypass + cannula-obstruction mechanism, treated via the
+    existing `suction` procedure).
 
     No nebulized-epinephrine drug entry, no tracheostomy-state model, and
     no crew-directable FBAO-clearance task — found while implementing TP
