@@ -445,6 +445,22 @@ export const CONDITIONS = {
   // front-end sprint. Left for that batch rather than guessed at here.
   diabetesT2: {
     initial: { glu: 160, riskFactors: { diabetes: true } },
+    // Queue item 5's remaining dead-field (this session): real, moderate
+    // tissue insulin resistance — the defining lesion of Type 2 diabetes
+    // — is what a chronically elevated `glu:160` baseline needed to
+    // actually hold rather than being auto-corrected by renal.js's new
+    // generic glucose-disposal loop (a non-diabetic patient's glucose
+    // relaxes back toward ~100 through that loop; this comorbidity's whole
+    // point is that a T2DM patient's does not). Deliberately milder than
+    // hyperosmolarHyperglycemicState's own 0.2 (decompensated HHS is the
+    // severe, acute extreme of the same resistant phenotype this chronic
+    // comorbidity represents at baseline) — 0.5 is enough to hold this
+    // condition's own 160 mg/dL near its authored value rather than
+    // drifting back to 100 over the course of a call, without claiming
+    // HHS-grade severity for a stable, compensated comorbidity.
+    progress(pat) {
+      pat.insulinSensitivity = Math.min(pat.insulinSensitivity ?? 1, 0.5);
+    },
   },
 
   // ===== CHRONIC HYPERTENSION (comorbidity) =====
@@ -1865,7 +1881,7 @@ export const CONDITIONS = {
   // forced here.
   mitralRegurgitationAcute: {
     initial: { hr: 114, sbp: 100, rr: 28, pain: 5 },
-    progress(pat, dt) {
+    progress(pat) {
       if (!pat._mrInit) {
         pat._mrInit = true;
         // A recent (days-old) inferior infarct territory — the real,
@@ -4308,17 +4324,29 @@ export const CONDITIONS = {
         pat.riskFactors.sepsis = true;
       }
       // TEMPERATURE INSTABILITY, the real distinguishing sign: NOT
-      // septicShock's metabolicHeatMultiplier fever term. A neonate's
-      // immature thermoregulation under sepsis is modeled as a direct,
-      // slow drift of coreTemp toward a hypothermic floor (36.1 initial,
-      // matching the scenario's own presenting hypothermia, drifting
-      // toward ~35.3) — the same "write coreTemp directly" idiom
-      // acuteCholecystitis's fever-trend comment already uses, just
-      // pointed the opposite direction, and deliberately NOT touching
-      // metabolicHeatMultiplier (that term would fight this drift, and a
-      // septic neonate genuinely is not hypermetabolic-and-warm the way
-      // an adult in septic fever is).
-      pat.coreTemp = clamp((pat.coreTemp ?? 36.1) - dt * 0.004, 35.3, 36.5);
+      // septicShock's metabolicHeatMultiplier FEVER term used in the same
+      // direction — the OPPOSITE side of the identical handle. MEASURED
+      // (throwaway probe, stripped) and corrected here: an earlier version
+      // of this condition wrote pat.coreTemp directly, the same
+      // "write coreTemp directly" idiom acuteCholecystitis's fever-trend
+      // comment uses — but thermo.js's own real heat-balance recompute
+      // runs AFTER conditions.progress() every tick (metabolic.js:239-241,
+      // per bowelObstruction's neighboring comment on this same ordering)
+      // and simply overwrote that direct write from its own equilibrium,
+      // the exact defect class septicShock's own comment already
+      // documents for the SAME field in the opposite direction: measured,
+      // coreTemp actually drifted UP under the direct-write version, not
+      // down. Fixed the honest way, through the real lever, not a fight
+      // thermo.js always wins: metabolicHeatMultiplier BELOW 1 (real,
+      // failed thermogenesis — a septic neonate's immature, easily-
+      // exhausted brown-fat/non-shivering thermogenesis cannot sustain
+      // heat production under this metabolic stress, the physiological
+      // opposite of an adult's hypermetabolic septic fever), letting
+      // thermo.js's own real heat-balance loop settle coreTemp toward a
+      // genuinely lower equilibrium against this patient's own large
+      // surface-area-to-mass ratio (ageProfile.js) rather than scripting
+      // a target it cannot hold.
+      pat.metabolicHeatMultiplier = Math.min(pat.metabolicHeatMultiplier ?? 1, 0.82);
       // LETHARGY / POOR RESPONSIVENESS — the general encephalopathy
       // handle every other "confused/obtunded from a systemic metabolic
       // process" condition in this file already reuses (delirium,
@@ -4992,6 +5020,21 @@ export const CONDITIONS = {
       // for real, driven by this condition's own live pat.glucose, and
       // correctly slows/stops once glucose falls back toward normal after
       // treatment rather than draining at a fixed rate forever.
+
+      // ABSOLUTE INSULIN DEFICIENCY (queue item 5's remaining dead-field,
+      // this session). DKA's defining lesion is that beta cells CANNOT
+      // secrete insulin despite the hyperglycemic drive — real endogenous
+      // insulin here is near-zero, not just low. Without this cap, the new
+      // generic renal.js glucose-disposal loop (which reads pat.insulin
+      // and would otherwise ramp it toward its own hyperglycemia-driven
+      // target, exactly as a non-diabetic stress-hyperglycemia patient's
+      // does) would auto-correct this patient's glucose over the course of
+      // a call — clinically wrong; untreated DKA does not self-resolve.
+      // Re-asserted as a ceiling every tick (same "condition re-floors/
+      // re-ceils a field every tick" idiom preeclampsia's own kidneyInjury/
+      // liverInjury floors already use), since renal.js's relaxation term
+      // would otherwise pull pat.insulin back up on its own.
+      pat.insulin = Math.min(pat.insulin ?? 1, 0.3);
     },
   },
 
@@ -5086,6 +5129,10 @@ export const CONDITIONS = {
       // no separate scripting needed, and it is exactly this real
       // hypovolemia that makes SOME fluid resuscitation genuinely
       // necessary here, not just a hazard to avoid.
+
+      // Same real absolute insulin deficiency as adult diabeticKetoacidosis
+      // above — see that condition's own comment for the full mechanism.
+      pat.insulin = Math.min(pat.insulin ?? 1, 0.3);
     },
   },
 
@@ -5108,6 +5155,17 @@ export const CONDITIONS = {
       // drives this condition's own classically-severe dehydration.
       pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0,
         Math.min(1, ((pat.glucose ?? 100) - 400) / 400));
+      // TISSUE INSULIN RESISTANCE (queue item 5's remaining dead-field,
+      // this session) — HHS is the Type-2-diabetic mirror of DKA: residual
+      // (even elevated) insulin SECRETION is present (enough to suppress
+      // ketogenesis, this condition's own header comment), but peripheral
+      // tissue response to it is severely blunted. Modeled through
+      // pat.insulinSensitivity, NOT pat.insulin itself — the correct real
+      // lever for a resistant (as opposed to deficient) phenotype, and
+      // what stops renal.js's new generic glucose-disposal loop from
+      // auto-correcting this patient's extreme hyperglycemia the way a
+      // non-resistant patient's would.
+      pat.insulinSensitivity = Math.min(pat.insulinSensitivity ?? 1, 0.2);
     },
   },
 
@@ -5115,14 +5173,29 @@ export const CONDITIONS = {
   // "Insulin shock" is the same entity by a different, older name (severe
   // hypoglycemia specifically from an excess-insulin cause) — not a second
   // condition, the same reasoning already applied to thrombotic/embolic
-  // stroke and PEA/Asystole/VF elsewhere in this library. No progress()
-  // needed: pat.glucose has no auto-correction mechanism in this engine
-  // (only drugs move it), so a static low value persists correctly on its
-  // own, and now engages BOTH of neuro.js's real glucose-driven pathways —
-  // the pre-existing seizure-drive metabolic limb AND the new neuroglycopenic
-  // consciousness check above — rather than just one.
+  // stroke and PEA/Asystole/VF elsewhere in this library.
   severeHypoglycemia: {
     initial: { hr: 110, sbp: 108, rr: 18, glu: 28, pain: 0 },
+    // EXOGENOUS INSULIN EXCESS (queue item 5's remaining dead-field, this
+    // session). pat.glucose used to have NO auto-correction mechanism in
+    // this engine at all (only drugs moved it), so a static low value
+    // persisted correctly on its own with no progress() needed. Now that
+    // renal.js's real endocrine-pancreas loop exists, a plain low glucose
+    // would trigger genuine, appropriate counter-regulation (glucagon
+    // rising, insulin secretion suppressed) and self-correct — clinically
+    // WRONG for this condition's own real cause: "insulin shock" is
+    // EXOGENOUS insulin (or a sulfonylurea acting on the same receptor),
+    // which does not respond to the body's own falling-glucose feedback
+    // the way endogenous secretion does. Forced as a floor every tick
+    // (same re-asserted-floor idiom the DKA/HHS conditions above use in
+    // the opposite direction) — this patient's insulin stays
+    // pathologically elevated regardless of glucose, correctly opposing
+    // (not preventing) the real glucagon counter-regulatory rise, and
+    // correctly reversed by dextrose/glucagon administration, which still
+    // acts through pk.js's own existing direct-dose mechanism unchanged.
+    progress(pat) {
+      pat.insulin = Math.max(pat.insulin ?? 1, 3);
+    },
   },
 
   // ===== TYPE I DIABETES MELLITUS (comorbidity) =====
@@ -5130,12 +5203,18 @@ export const CONDITIONS = {
   // RESISTANT phenotype — real clinical distinction: T1DM's absolute
   // insulin deficiency is what makes it far more DKA-prone. Composable
   // (["diabeticKetoacidosis","typeIDiabetes"] for the etiology, or standing
-  // alone as a comorbidity), deliberately as minimal and honest as
-  // diabetesT2 — insulin dependence itself is not separately modelable
-  // without an insulin drug mechanism this engine does not have (see DKA's
-  // own note above).
+  // alone as a comorbidity).
   typeIDiabetes: {
     initial: { glu: 180, riskFactors: { diabetes: true } },
+    // Queue item 5's remaining dead-field (this session): real absolute
+    // insulin deficiency, the SAME mechanism diabeticKetoacidosis/
+    // pediatricDKA use — see diabeticKetoacidosis's own comment. Composing
+    // typeIDiabetes alongside diabeticKetoacidosis (both progress() hooks
+    // run per physiology.js's own composition rules) sets the identical
+    // ceiling twice, which is harmless (Math.min is idempotent).
+    progress(pat) {
+      pat.insulin = Math.min(pat.insulin ?? 1, 0.3);
+    },
   },
 
   // ===== ALCOHOLIC KETOACIDOSIS =====

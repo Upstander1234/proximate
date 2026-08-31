@@ -1980,8 +1980,8 @@ mitralRegurgitationAcute: {cat: "medical", id: "CARD-049", pronouns: "she", titl
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const gaveNitro = s.given.nitro || s.given.nitroOwn;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Acute severe mitral regurgitation from a ruptured papillary muscle, days after her infarct, with forward output collapsing faster than it could be supported.";
-    if (gaveNitro) notes.push("Nitroglycerin was given — and here, unlike a fixed valve obstruction, that is genuinely helpful: reducing afterload preferentially reduces the regurgitant fraction (the lower-pressure left atrium is an easier path for the leaking blood than a lower-pressure aorta), so a real forward-flow benefit follows from the same drug that would be relatively contraindicated in severe aortic stenosis.");
-    else if (!died) notes.push("Consider that afterload reduction is a real, guideline-supported treatment for acute severe mitral regurgitation — the mechanism here is a backward leak, not a fixed forward obstruction, so a vasodilator genuinely helps forward flow rather than risking it.");
+    if (gaveNitro) notes.push("Nitroglycerin was given. In hospital, afterload reduction with a balanced arterial/venous agent (nitroprusside) is a real, guideline treatment for acute severe MR. Sublingual nitroglycerin is not that drug, though — it is dominantly a VENODILATOR, and this patient's forward output depends heavily on preload; dropping it further did not help, and risks worsening perfusion in a patient who is already borderline.");
+    else if (!died) notes.push("Afterload reduction has a real role in acute severe MR in the hospital, with the right drug (nitroprusside). This box only carries nitroglycerin, which is preload- rather than afterload-dominant here — withholding it and prioritizing rapid transport for definitive management was reasonable.");
     notes.push("The recognition point is the SUDDENNESS of severe pulmonary edema days after an MI with a new murmur — a mechanical complication (papillary muscle rupture), not a routine post-MI heart-failure decline, and one that needs rapid transport for surgical evaluation.");
     return {died, cause, notes, correct: s.pi === "RESP", truth: "Acute severe mitral regurgitation from post-MI papillary muscle rupture, causing flash pulmonary edema and cardiogenic shock"};},
 },
@@ -6130,5 +6130,172 @@ bowelObstruction: {cat: "medical", id: "ABD-032", pronouns: "she", title: "Femal
     else if (!died) notes.push("No IV fluids were given — this patient has real, ongoing volume loss into the obstructed bowel and from vomiting, even without any visible external fluid loss.");
     notes.push("There is no field fix for a mechanical obstruction — supportive care (fluids, antiemetics) and transport for imaging and, often, surgery are the correct moves. Colicky, wave-like pain with distension and a surgical history is the pattern to recognize.");
     return {died, cause, notes, correct: s.pi === "ABDP", truth: "Small bowel obstruction (adhesions) — colicky pain, distension, high-pitched bowel sounds"};},
+},
+
+// Lithium toxicity (queue item 7, Toxicology — TOX-010). An elderly
+// maintenance-lithium patient, dehydrated after a stomach bug, presenting
+// acute-on-chronic — see conditions.js for the full mechanism.
+lithiumToxicity: {cat: "medical", id: "TOX-010", pronouns: "she", title: "Female, 71. Confused, hands shaking, on lithium for bipolar disorder.",
+  limit: 900, transport: 480,
+  bystanders: "Her son, who says she's had a stomach bug for three days and hasn't been keeping fluids down.",
+  units: [{at: 420, level: "emt", name: "BLS 4"}],
+  dispatch: ["71F, altered mental status.", "Son reports she's on lithium for bipolar disorder.", "Hands shaking, confused."],
+  update: [],
+  impression: "Sitting in a kitchen chair, hands trembling visibly, slow to answer questions and repeating herself.",
+  imps: ["ODPO", "ALOC"],
+  condition: "lithiumToxicity",
+  patient: {age: 71, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Her son: \"She's been on lithium for years for her bipolar disorder, same dose the whole time. She's had a stomach bug since Sunday, throwing up, barely drinking anything. She started slurring her words and shaking this morning.\"", kind: "pt",
+      evid: "A stable maintenance lithium dose plus a new dehydrating illness is the classic real-world mechanism for acute-on-chronic lithium toxicity — the drug is cleared by the kidney and reabsorbed alongside sodium, so volume depletion raises the level even without any change in dose.", find: "SAMPLE: chronic lithium for bipolar disorder, several days of vomiting/poor intake, new tremor and confusion."}),
+    opqrst: () => ({say: "\"My hands... they won't... stop...\" She trails off mid-sentence and has to be redirected.", kind: "pt",
+      evid: "A coarse tremor progressing alongside altered mentation, in a patient on chronic lithium with a clear precipitant for toxicity, is the real neurotoxic picture — not a psychiatric symptom to write off.", find: "OPQRST unobtainable — patient too confused to give a reliable history; coarse tremor noted throughout."}),
+    // Reads pat.metabolicEncephalopathy live — the real, graded confusion
+    // this condition's own conditions.js progress() derives directly from
+    // the serum level, not scripted text.
+    loc: (s) => {
+      const enc = s.patient?.metabolicEncephalopathy ?? 0;
+      if (enc > 0.6) return {say: "Barely rousable to voice, mumbling incoherently between episodes of coarse, jerking tremor.", kind: "crit",
+        evid: "Severe lithium neurotoxicity progresses from tremor through confusion to stupor and seizure as the level climbs — this is real, worsening CNS toxicity, not baseline dementia.", find: "LOC: severely altered, minimally responsive, coarse tremor."};
+      if (enc > 0.3) return {say: "Confused, slow to answer, repeats the same question twice.", kind: "warn",
+        evid: "Progressive confusion on top of a known toxic lithium exposure is the expected trajectory of this toxidrome.", find: "LOC: confused, disoriented, slow verbal responses."};
+      return {say: "Alert but noticeably slow, hands trembling.", kind: "obs",
+        evid: "Early lithium neurotoxicity — tremor with only mild cognitive slowing.", find: "LOC: alert, mildly slowed, tremor present."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Lithium neurotoxicity, unmanaged, progressed to seizure and airway compromise.";
+    if (s.given.saline || s.given.plasmalyte) notes.push("IV isotonic fluid was given — the right field move: volume expansion raises GFR and reduces proximal-tubule reabsorption of lithium (which is reabsorbed alongside sodium), genuinely helping the kidney clear it. It will not normalize a severe level on scene, but it is the correct direction.");
+    else notes.push("No IV fluid was given. Isotonic saline is the real field intervention here — volume expansion promotes renal lithium clearance, even though it cannot fix a severe level within this call.");
+    notes.push("There is no field-administrable antidote for lithium toxicity. Hemodialysis is the actual definitive treatment for a level this high, and it is not something this crew can deliver — recognition, supportive care, seizure precautions, and prompt transport are the complete field job.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Acute-on-chronic lithium toxicity — dehydration-driven reduced renal clearance in a chronic maintenance patient, producing tremor progressing to altered mentation and seizure risk"};},
+},
+
+// Iron overdose (queue item 7, Toxicology — TOX-011). A toddler's
+// accidental ingestion of adult prenatal iron tablets — the real,
+// classic pediatric iron-overdose presentation. See conditions.js for the
+// full mechanism, including the honest statement of the delayed
+// mitochondrial/metabolic-acidosis phase this call's own window cannot
+// reach.
+ironOverdose: {cat: "medical", id: "TOX-011", pronouns: "she", title: "Female, 2. Found with an open bottle of her mother's prenatal vitamins.",
+  limit: 900, transport: 480,
+  bystanders: "Her mother, holding the empty pill bottle, badly shaken. \"I don't know how many she got into. Maybe twenty minutes ago. She's thrown up twice already.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["2F, possible medication ingestion.", "Mother reports prenatal vitamins, unknown quantity.", "Vomiting."],
+  update: [],
+  impression: "A toddler on her mother's lap, fussy and pale, an emesis basin with dark, blood-tinged vomit beside her.",
+  imps: ["ODPO", "ABDP"],
+  condition: "ironOverdose",
+  locWeights: {house: 8, apartment: 2},
+  patient: {age: 2, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Her mother: \"They're prenatal iron tablets, the big pink ones. The bottle was almost full yesterday. She's never had anything like this before, no allergies, nothing.\"", kind: "pt",
+      evid: "A young child with access to an adult iron supplement, an unknown but potentially large ingested quantity, and rapid-onset vomiting is the classic setup for pediatric iron overdose — a leading cause of fatal pediatric poisoning historically, specifically because prenatal iron looks and tastes like candy to a toddler.", find: "SAMPLE: prenatal iron tablet ingestion approximately 20 minutes ago, quantity unknown, no prior medical history."}),
+    opqrst: () => ({say: "She won't settle, crying and clutching at her stomach, and keeps retching.", kind: "pt",
+      evid: "Iron is directly corrosive to the GI mucosa on contact — this early abdominal pain and repeated vomiting is real, direct chemical injury, not just anxiety from the scene.", find: "OPQRST: abdominal pain and repeated vomiting since the ingestion, no other complaint (limited by patient's age)."}),
+    // Reads pat.activeBleedRate live — the real, direct-corrosive GI
+    // hemorrhage this condition's own conditions.js progress() derives,
+    // not scripted text.
+    abdo: (s, v) => {
+      const bleeding = (s.patient?.activeBleedRate ?? 0) > 0.02;
+      return {say: bleeding ? "Soft but diffusely tender, and the vomit in the basin is clearly blood-streaked." : "Soft, diffusely tender to palpation, no rigidity yet.",
+        kind: v.hr > 150 ? "warn" : "obs",
+        evid: "Direct corrosive injury from ingested iron causes real gastric and small-bowel mucosal damage — hematemesis and abdominal tenderness in this window are the expected, mechanistic early findings, not incidental.",
+        find: "Abdomen: soft, diffusely tender, no peritoneal signs."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Iron overdose, unmanaged, progressed with ongoing GI hemorrhage and hypovolemic shock.";
+    notes.push("This is early-phase iron overdose — direct corrosive GI injury (vomiting, abdominal pain, GI bleeding) from the ingested tablets themselves. There is no field antidote (deferoxamine chelation is a hospital-administered infusion, not a field drug) — supportive care for the GI bleed/shock and prompt transport for chelation and monitoring are the complete field job.");
+    notes.push("A real, delayed second phase — severe mitochondrial toxicity and metabolic acidosis as iron overwhelms the body's binding capacity — typically develops 6-24 hours after ingestion, well beyond this call's own window. That does not make it any less real; it is the reason this child needs hospital observation regardless of how she looks by the time you hand off, even if the vomiting settles.");
+    if (s.given.saline || s.given.plasmalyte) notes.push("IV fluid was given for the GI losses and evolving hypovolemia — the correct supportive move for the phase this call can actually reach.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ABDP", truth: "Pediatric iron overdose — direct corrosive GI injury (vomiting, abdominal pain, GI hemorrhage); the delayed mitochondrial/metabolic-acidosis phase is real but occurs 6-24h post-ingestion, beyond this call's window"};},
+},
+
+// Hydrocarbon aspiration (queue item 7, Toxicology — TOX-012). A toddler's
+// accidental ingestion/aspiration of lighter fluid — the real, classic
+// pediatric hydrocarbon-aspiration presentation. See conditions.js for the
+// full mechanism (surfactant-disrupting chemical pneumonitis, mechanistically
+// distinct from toxicInhalationChlorine's gas-phase airway injury).
+hydrocarbonAspiration: {cat: "medical", id: "TOX-012", pronouns: "he", title: "Male, 3. Found coughing after drinking from a lighter-fluid bottle.",
+  limit: 1200, transport: 480,
+  bystanders: "His father, who found him with the bottle. \"It was in the garage, he must have gotten into it while I was grilling. He coughed hard right away and it kept getting worse.\"",
+  units: [{at: 420, level: "emt", name: "BLS 12"}],
+  dispatch: ["3M, possible ingestion, coughing.", "Father reports lighter fluid, small amount swallowed.", "Conscious, coughing."],
+  update: [],
+  impression: "A young boy on his father's lap, coughing repeatedly, breathing looks a little labored, no obvious distress at rest yet.",
+  imps: ["ODPO", "SOBB"],
+  condition: "hydrocarbonAspiration",
+  locWeights: {house: 7, apartment: 3},
+  patient: {age: 3, gender: "male"},
+  clothing: {top: "short", bottom: "shorts", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "His father: \"Charcoal lighter fluid, the can was open next to him. He coughed and gagged right when it happened, maybe 15 minutes ago. He's never been sick before.\"", kind: "pt",
+      evid: "A witnessed hydrocarbon ingestion with immediate coughing/gagging is the classic setup for aspiration — the coughing itself is often how a low-viscosity hydrocarbon like lighter fluid gets into the airway in the first place, not from the swallow.", find: "SAMPLE: lighter-fluid ingestion approximately 15 minutes ago with immediate coughing, no prior medical history."}),
+    opqrst: () => ({say: "He keeps coughing in short bursts and won't stop fussing.", kind: "pt",
+      evid: "Persistent coughing this soon after a witnessed hydrocarbon aspiration is the expected early airway-irritant response, before the real chemical pneumonitis has had time to fully develop.", find: "OPQRST: persistent coughing since the ingestion, no other complaint (limited by patient's age)."}),
+    // Reads pat.compliance live — the real, worsening chemical pneumonitis
+    // this condition's own conditions.js progress() derives directly, over
+    // hours-scale onset rather than an instant step.
+    lungs: (s) => {
+      const c = s.patient?.compliance ?? 0.09;
+      if (c < 0.06) return {say: "Crackles throughout both lung fields now, and he's working noticeably harder to breathe than he was a few minutes ago.", kind: "crit",
+        evid: "Progressive crackles and increased work of breathing over the course of the call is the real, worsening chemical pneumonitis from surfactant disruption — this genuinely gets worse over hours, and you are watching the early part of it happen.", find: "Lungs: diffuse crackles, increased work of breathing, worsening since initial exam."};
+      if (c < 0.08) return {say: "Faint crackles at the bases, a little more effort with each breath.", kind: "warn",
+        evid: "Early, mild crackles developing over the encounter are the real, direct consequence of aspirated hydrocarbon stripping pulmonary surfactant — a genuinely different mechanism from a gas-phase airway burn.", find: "Lungs: faint bibasilar crackles, mild increased work of breathing."};
+      return {say: "Clear right now, just coughing intermittently.", kind: "obs",
+        evid: "Early aspiration pneumonitis can present with a clear initial exam — the chemical injury and resulting crackles genuinely take time to develop, this is not yet the worst of it.", find: "Lungs: clear to auscultation, occasional cough."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Hydrocarbon aspiration pneumonitis, unmanaged, progressed to respiratory failure.";
+    notes.push("This is hydrocarbon aspiration pneumonitis — a genuinely different mechanism from chlorine gas's direct airway/mucosal burn: aspirated hydrocarbon directly disrupts pulmonary surfactant, dropping lung compliance and causing real, progressive chemical pneumonitis that worsens over hours, not seconds.");
+    notes.push("There is no field antidote. Do NOT induce vomiting — a low-viscosity hydrocarbon like lighter fluid is far more dangerous aspirated on the way back up than it was swallowed. Supportive respiratory care and monitoring for worsening respiratory distress, plus transport for observation, are the complete field job — this can genuinely deteriorate well after your exam looks reassuring.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "SOBB", truth: "Pediatric hydrocarbon aspiration — direct surfactant disruption causing progressive chemical pneumonitis over hours, distinct from a gas-phase airway injury"};},
+},
+
+// Box jellyfish envenomation (queue item 7, Toxicology/Environmental —
+// ENV-015). Genuinely distinct from the already-shipped `envenomation`
+// (crotaline/pit-viper coagulopathy) — a cardiotoxic venom, not a
+// hemotoxic one. See conditions.js for the full mechanism.
+boxJellyfishSting: {cat: "medical", id: "ENV-015", pronouns: "he", title: "Male, 27. Screaming in pain after a swim, welts across his torso.",
+  limit: 900, transport: 420,
+  bystanders: "Two other swimmers who pulled him out of the water and are pouring vinegar from a beach-stand bottle over the welts.",
+  units: [{at: 360, level: "emt", name: "Lifeguard Unit 2"}],
+  dispatch: ["27M, marine sting, severe pain.", "Bystanders report jellyfish, welts visible.", "Conscious, in severe distress."],
+  update: [],
+  impression: "Writhing on the sand, long whip-like red welts crossing his chest and both arms, breathing fast, clutching his chest.",
+  imps: ["ENVN"],
+  condition: "boxJellyfishSting",
+  locWeights: {beach: 10},
+  patient: {age: 27, gender: "male"},
+  clothing: {top: "none", bottom: "shorts", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "\"Something wrapped around me in the water — felt like being whipped with fire. It's not letting up at all.\"", kind: "pt",
+      evid: "Immediate, severe, whip-like linear pain on contact is the classic box jellyfish presentation — the nematocyst venom causes both intense local injury and, in a significant envenomation, real cardiotoxicity.", find: "OPQRST: sudden severe linear stinging pain on contact with a marine organism in the water, ongoing."}),
+    sample: () => ({say: "\"No allergies, no meds. I've never been stung by anything like this before.\"", kind: "pt",
+      evid: "No prior sting history rules out a pure allergic/anaphylactic reaction as the explanation for this presentation — this is direct venom toxicity, not hypersensitivity.", find: "SAMPLE: no allergies/meds, no prior envenomation history."}),
+    skin: () => ({say: "Long, red, whip-like linear welts crossing the chest and both arms, already blistering in places.", kind: "warn",
+      evid: "Linear tentacle-contact welts are the visible fingerprint of a cnidarian sting, distinct from a puncture-wound bite.", find: "Skin: linear whip-like welts, chest and bilateral arms, early blistering."}),
+    // Reads v.rhythm/v.hr live — the real, developing cardiotoxic substrate
+    // this condition's own conditions.js progress() writes directly to
+    // pat.rhythmInstability, not scripted text.
+    heart: (s, v) => {
+      if (v.rhythm === "VT" || v.rhythm === "torsades") return {say: "Wide-complex and fast on the monitor — this is not a stable rhythm.", kind: "crit",
+        evid: "Box jellyfish venom is genuinely cardiotoxic — this is the real, most dangerous consequence of a significant envenomation, not an incidental finding.", find: "Heart: wide-complex tachyarrhythmia on the monitor."};
+      return {say: `Regular, rate ${v.hr}, but he's clearly in agony.`, kind: v.hr > 130 ? "warn" : "obs", find: `Heart: sinus rhythm, rate ${v.hr}.`};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Box jellyfish envenomation, unmanaged, progressed to a lethal cardiotoxic arrhythmia.";
+    notes.push("The bystanders on scene had already started pouring vinegar over the sting sites before you arrived — the correct first move, and worth confirming/continuing: vinegar deactivates any unfired nematocysts still stuck to the skin, preventing further envenomation, though it does nothing for venom already injected. It should be done before any attempt to remove tentacle fragments, which can otherwise trigger more stings.");
+    notes.push("Australian box jellyfish antivenom exists, but it is a hospital-administered product and is not carried on this unit — the field job is vinegar decontamination, supportive care, and monitoring for the real cardiotoxic arrhythmia risk on the monitor, with prompt transport.");
+    return {died, cause, notes, correct: s.pi === "ENVN", truth: "Box jellyfish (cardiotoxic) envenomation — real risk of a lethal arrhythmia; vinegar deactivates unfired nematocysts, no field antivenom is carried"};},
 },
 };

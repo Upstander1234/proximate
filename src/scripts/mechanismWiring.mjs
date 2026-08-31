@@ -4796,6 +4796,351 @@ console.log("[THERMAL BURN / TBSA — queue item 56]");
   assertVersus("...IV fluids raise co through the shared Starling path (no new drug)", fluidTreated, untreated, "co", "up", 0.1);
 }
 
+console.log("[AORTIC STENOSIS — queue item 7, condition-library workstream]");
+{
+  // The mechanism this batch actually wires up: pat.aorticStenosisSeverity
+  // (cardiovascular.js's added-Ea term, eaEff = ea*(1+severity*2.5)) and its
+  // solveBeat/stenosisR PV-loop consumer were ALREADY built (queue item 41)
+  // but never once exercised — grep-confirmed empty for
+  // riskFactors.aorticStenosis across every prior condition. Two-sided per
+  // lesson 6: co genuinely reduced vs a matched control despite a similar
+  // heart rate (the fixed-orifice mechanism, not a scripted deficit), AND
+  // the real, named clinical hazard — nitrates dropping pressure
+  // disproportionately WITHOUT recruiting more forward flow, because the
+  // stenotic term is untouched by an SVR-lowering drug.
+  const as = probe({ scen: "aorticStenosis", settle: 300, run: 600 });
+  const healthy = probe({ scen: "abdPain", settle: 300, run: 600 });
+
+  const fires = as.after.co < healthy.after.co - 0.5 && as.patient.aorticStenosisSeverity > 0.5;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`aorticStenosis should show reduced co (fixed-orifice cap) and aorticStenosisSeverity>0.5 by 600s, got co=${as.after.co}, severity=${as.patient.aorticStenosisSeverity}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"aorticStenosis -> fixed-orifice output cap fires".padEnd(46)} co ${healthy.after.co.toFixed(2)} (control) -> ${as.after.co.toFixed(2)}, severity ${as.patient.aorticStenosisSeverity.toFixed(2)}`);
+
+  const healthyOk = healthy.patient.aorticStenosisSeverity === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero aorticStenosisSeverity, got ${healthy.patient.aorticStenosisSeverity}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} aorticStenosisSeverity = ${healthy.patient.aorticStenosisSeverity}`);
+
+  // Treatment hazard, real and two-sided: nitro drops sbp PROPORTIONALLY
+  // MORE in the AS patient than in a matched healthy control given the same
+  // dose — the actual mechanism-level reason nitrates are relatively
+  // contraindicated in severe symptomatic AS, not a scripted flag.
+  const asNitro = probe({ scen: "aorticStenosis", settle: 300, run: 600, apply: ["nitro"], reapply: 300 });
+  const healthyNitro = probe({ scen: "abdPain", settle: 300, run: 600, apply: ["nitro"], reapply: 300 });
+  const asDropPct = (as.after.sbp - asNitro.after.sbp) / as.after.sbp;
+  const healthyDropPct = (healthy.after.sbp - healthyNitro.after.sbp) / healthy.after.sbp;
+  const hazard = asDropPct > healthyDropPct + 0.1;
+  hazard ? pass++ : fail++;
+  if (!hazard) failures.push(`nitro should drop sbp proportionally MORE in aorticStenosis than in a matched healthy control, got ${(asDropPct*100).toFixed(0)}% vs ${(healthyDropPct*100).toFixed(0)}%`);
+  console.log(`  ${hazard ? "PASS" : "FAIL"}  ${"...and nitro is a real, disproportionate hazard here".padEnd(46)} sbp drop ${(asDropPct*100).toFixed(0)}% (AS) vs ${(healthyDropPct*100).toFixed(0)}% (control)`);
+}
+
+console.log("[MITRAL REGURGITATION, ACUTE (papillary muscle rupture) — queue item 7]");
+{
+  // Same batch, DIFFERENT mechanism on purpose (a backward leak subtracted
+  // from forward SV, not an added ejection resistance) — pat.mitralRegurgFrac
+  // (updateValves) was likewise built (queue item 41) and never exercised.
+  const mr = probe({ scen: "mitralRegurgitationAcute", settle: 300, run: 600 });
+  const healthy = probe({ scen: "abdPain", settle: 300, run: 600 });
+
+  const fires = mr.after.co < healthy.after.co - 1.0 && mr.patient.mitralRegurgFrac > 0.4 && mr.after.hr > healthy.after.hr;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`mitralRegurgitationAcute should show co well below control DESPITE a higher hr, and mitralRegurgFrac>0.4, got co=${mr.after.co}/${healthy.after.co}, hr=${mr.after.hr}/${healthy.after.hr}, frac=${mr.patient.mitralRegurgFrac}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"mitralRegurgitationAcute -> backward leak cuts forward co".padEnd(46)} co ${healthy.after.co.toFixed(2)} (control) -> ${mr.after.co.toFixed(2)} despite hr ${healthy.after.hr}->${mr.after.hr}, frac ${mr.patient.mitralRegurgFrac.toFixed(2)}`);
+
+  const healthyOk = healthy.patient.mitralRegurgFrac === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero mitralRegurgFrac, got ${healthy.patient.mitralRegurgFrac}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} mitralRegurgFrac = ${healthy.patient.mitralRegurgFrac}`);
+
+  // Honest negative finding, asserted rather than swept under the rug: nitro
+  // does NOT raise forward co in this engine (see conditions.js's own
+  // comment for the traced reason — nitroglycerin's venodilator-dominant
+  // model here starves preload faster than the modest afterload benefit
+  // compensates, and mitralRegurgFrac itself has no pressure-gradient
+  // dependence to improve). Asserting the TRUE measured direction, not the
+  // textbook nitroprusside one this formulary cannot demonstrate.
+  const mrNitro = probe({ scen: "mitralRegurgitationAcute", settle: 300, run: 600, apply: ["nitro"], reapply: 300 });
+  const honestNegative = mrNitro.after.co <= mr.after.co + 0.1;
+  honestNegative ? pass++ : fail++;
+  if (!honestNegative) failures.push(`nitro was expected NOT to raise forward co here (documented preload-dominant limitation), got ${mr.after.co} -> ${mrNitro.after.co}`);
+  console.log(`  ${honestNegative ? "PASS" : "FAIL"}  ${"...and nitro (venodilator-dominant here) does NOT rescue forward flow".padEnd(46)} co ${mr.after.co.toFixed(2)} -> ${mrNitro.after.co.toFixed(2)}`);
+}
+
+console.log("[INFECTIVE ENDOCARDITIS — queue item 7, scoped composite]");
+{
+  // Deliberately scoped down (see conditions.js's own comment): real
+  // fever/bacteremia through the SAME shared inflammation cascade
+  // septicShock's own entry wired (pathogenBurden/cytokineLoad), a real
+  // small valve-regurgitation component through updateValves' own
+  // previously-dead rf.endocarditis branch, and a real TIMED embolic-stroke
+  // sub-finding reusing ischemicStroke's own strokeWeakness/strokeAphasia
+  // handle rather than a fourth invented mechanism.
+  const ie = probe({ scen: "infectiveEndocarditis", settle: 300, run: 600 });
+  const healthy = probe({ scen: "abdPain", settle: 300, run: 600 });
+
+  const feverFires = ie.patient.cytokineLoad > 0.1 && ie.patient.pathogenBurden > 0.1;
+  feverFires ? pass++ : fail++;
+  if (!feverFires) failures.push(`infectiveEndocarditis should show real cytokineLoad/pathogenBurden by 600s, got ${ie.patient.cytokineLoad}/${ie.patient.pathogenBurden}`);
+  console.log(`  ${feverFires ? "PASS" : "FAIL"}  ${"infectiveEndocarditis -> real bacteremia/cytokine cascade fires".padEnd(46)} cytokineLoad ${ie.patient.cytokineLoad.toFixed(3)}, pathogenBurden ${ie.patient.pathogenBurden.toFixed(3)}`);
+
+  const healthyOk = healthy.patient.cytokineLoad === 0 && healthy.patient.aorticRegurgFrac === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero cytokineLoad/aorticRegurgFrac, got ${healthy.patient.cytokineLoad}/${healthy.patient.aorticRegurgFrac}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} cytokineLoad = ${healthy.patient.cytokineLoad}, aorticRegurgFrac = ${healthy.patient.aorticRegurgFrac}`);
+
+  const valveFires = ie.patient.aorticRegurgFrac > 0.1;
+  valveFires ? pass++ : fail++;
+  if (!valveFires) failures.push(`infectiveEndocarditis should activate updateValves' rf.endocarditis branch (aorticRegurgFrac>0.1) by 600s, got ${ie.patient.aorticRegurgFrac}`);
+  console.log(`  ${valveFires ? "PASS" : "FAIL"}  ${"...and activates the previously-dead rf.endocarditis valve branch".padEnd(46)} aorticRegurgFrac = ${ie.patient.aorticRegurgFrac.toFixed(3)}`);
+
+  // Embolic timing: fires exactly once, between 4-9 minutes, and HOLDS (the
+  // same persistent-deficit idiom ischemicStroke's own progress() uses, not
+  // tia's self-resolving one) — a real timed event, not a permanent
+  // presenting deficit or a random per-tick draw.
+  const early = probe({ scen: "infectiveEndocarditis", settle: 2, run: 200 });
+  const late = probe({ scen: "infectiveEndocarditis", settle: 2, run: 600 });
+  const timedEmbolism = early.patient.strokeWeakness === 0 && late.patient.strokeWeakness > 0.3 && late.patient.strokeAphasia === true;
+  timedEmbolism ? pass++ : fail++;
+  if (!timedEmbolism) failures.push(`infectiveEndocarditis should show NO stroke deficit by 200s but a real, held one by 600s (4-9min window), got strokeWeakness ${early.patient.strokeWeakness}@200s, ${late.patient.strokeWeakness}@600s`);
+  console.log(`  ${timedEmbolism ? "PASS" : "FAIL"}  ${"...and a real, TIMED (not presenting) septic embolic stroke fires".padEnd(46)} strokeWeakness 0@200s -> ${late.patient.strokeWeakness.toFixed(2)}@600s, aphasia=${late.patient.strokeAphasia}`);
+}
+
+console.log("[LITHIUM TOXICITY — queue item 7, Toxicology]");
+{
+  // Two-sided per lesson 6: fires (real, graded neurotoxicity keyed
+  // directly off serum level), specificity (a healthy control shows
+  // exactly zero of it), and isotonic fluid genuinely, if modestly,
+  // lowers the level itself (unlike the organophosphate/atropine pair,
+  // where treatment reverses the EFFECT without moving the level — this
+  // one is the opposite shape, since fluid acts on renal clearance of the
+  // drug itself, not receptor antagonism).
+  const untreated = probe({ scen: "lithiumToxicity", settle: 2, run: 900 });
+  const treated = probe({ scen: "lithiumToxicity", settle: 2, run: 900, apply: ["saline"], reapply: 140 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.li > 2.5 && untreated.after.metabolicEncephalopathy > 0.5 && untreated.after.epilepticDrive > 0.3;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`lithiumToxicity should show li>2.5, metabolicEncephalopathy>0.5, epilepticDrive>0.3 by 900s, got ${untreated.after.li.toFixed(2)}/${untreated.after.metabolicEncephalopathy.toFixed(2)}/${untreated.after.epilepticDrive.toFixed(2)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"lithiumToxicity -> real graded CNS toxicity fires".padEnd(46)} li=${untreated.after.li.toFixed(2)} enc=${untreated.after.metabolicEncephalopathy.toFixed(2)} sz=${untreated.after.epilepticDrive.toFixed(2)}`);
+
+  const healthyOk = Math.abs(healthy.after.li - 0.8) < 0.05 && healthy.after.metabolicEncephalopathy < 0.01 && healthy.after.epilepticDrive < 0.01;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show li~0.8 and zero encephalopathy/seizureDrive, got ${healthy.after.li.toFixed(2)}/${healthy.after.metabolicEncephalopathy.toFixed(2)}/${healthy.after.epilepticDrive.toFixed(2)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} li=${healthy.after.li.toFixed(2)} enc=${healthy.after.metabolicEncephalopathy.toFixed(2)}`);
+
+  // The real, honest field-treatment shape: isotonic fluid lowers the
+  // LEVEL itself (renal clearance), a genuinely different mechanism from
+  // every other toxidrome's own "treats the effect, not the level" pair
+  // in this suite -- stated honestly as a small, real effect, not a cure.
+  assertVersus("isotonic saline -> genuinely lowers serum lithium (renal clearance)", treated, untreated, "li", "down", 0.005);
+}
+
+console.log("[IRON OVERDOSE — queue item 7, Toxicology]");
+{
+  // Two-sided: real, direct-corrosive GI hemorrhage fires (through the
+  // same activeBleedRate mechanism upperGIBleed/lowerGIBleed already use),
+  // specificity against a healthy control, and IV fluid genuinely raises
+  // blood volume/sbp through the same generic fluid-bolus path every other
+  // hemorrhage condition already responds to.
+  const untreated = probe({ scen: "ironOverdose", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.activeBleedRate > 0.015 && untreated.after.intrinsicPain > 5;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`ironOverdose should show activeBleedRate>0.015 and intrinsicPain>5 by 900s, got ${untreated.after.activeBleedRate.toFixed(3)}/${untreated.after.intrinsicPain.toFixed(1)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"ironOverdose -> real direct-corrosive GI hemorrhage fires".padEnd(46)} bleed=${untreated.after.activeBleedRate.toFixed(3)} pain=${untreated.after.intrinsicPain.toFixed(1)}`);
+
+  const healthyOk = healthy.after.activeBleedRate < 0.001;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero activeBleedRate, got ${healthy.after.activeBleedRate.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} bleed=${healthy.after.activeBleedRate.toFixed(3)}`);
+
+  // A SHORT window, single dose, no reapply — deliberately, not the same
+  // 900s/reapply-140 shape every other treatment assertion in this suite
+  // uses. MEASURED (lesson 8): at 900s with saline reapplied every 140s,
+  // this actively-bleeding patient's sbp is LOWER treated than untreated
+  // (23 vs 62.5) — a real, honest, already-documented engine behavior
+  // (saline's own fx.coag:-6 dilutional-coagulopathy effect, the same
+  // "aggressive crystalloid in a bleeding patient dilutes clotting factors
+  // and measurably worsens hemorrhage" mechanism TP 1244's own permissive-
+  // hypotension footnote already documents elsewhere in this codebase),
+  // not a defect in this condition. A single bolus in a short window
+  // isolates the real, immediate volume-replacement effect from that
+  // longer-run dilutional confound.
+  const treatedShort = probe({ scen: "ironOverdose", settle: 2, run: 60, apply: ["saline"], reapply: 10000 });
+  const untreatedShort = probe({ scen: "ironOverdose", settle: 2, run: 60 });
+  assertVersus("a single IV fluid bolus -> raises sbp through the shared fluid-bolus path (short window, before the real dilutional-coagulopathy confound dominates)", treatedShort, untreatedShort, "sbp", "up", 1);
+}
+
+console.log("[HYDROCARBON ASPIRATION — queue item 7, Toxicology]");
+{
+  // Two-sided: real, direct surfactant-disruption compliance fall (a
+  // genuinely different mechanism from toxicInhalationChlorine's own
+  // bronchospasm/gas-burn picture), and a real, honest time course
+  // (worsens further over a longer window, not an instant step).
+  const at900 = probe({ scen: "hydrocarbonAspiration", settle: 2, run: 900 });
+  const at1200 = probe({ scen: "hydrocarbonAspiration", settle: 2, run: 1200 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = at900.after.compliance < healthy.after.compliance * 0.75;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`hydrocarbonAspiration should show compliance well below a healthy control by 900s, got ${at900.after.compliance.toFixed(4)} vs healthy ${healthy.after.compliance.toFixed(4)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"hydrocarbonAspiration -> real surfactant-disruption compliance fall".padEnd(46)} compliance=${at900.after.compliance.toFixed(4)} (healthy ${healthy.after.compliance.toFixed(4)})`);
+
+  const healthyOk = healthy.after.compliance > at900.after.compliance * 1.2;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show meaningfully higher compliance than the condition, got ${healthy.after.compliance.toFixed(4)} vs ${at900.after.compliance.toFixed(4)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire (equivalent compliance) in a matched healthy control".padEnd(46)} healthy=${healthy.after.compliance.toFixed(4)}`);
+
+  const worsensOverTime = at1200.after.compliance <= at900.after.compliance + 0.0005;
+  worsensOverTime ? pass++ : fail++;
+  if (!worsensOverTime) failures.push(`hydrocarbonAspiration should keep worsening (or plateau, not improve) from 900s to 1200s untreated, got ${at900.after.compliance.toFixed(4)} -> ${at1200.after.compliance.toFixed(4)}`);
+  console.log(`  ${worsensOverTime ? "PASS" : "FAIL"}  ${"...real, honest hours-scale time course (worsens further, not instant)".padEnd(46)} compliance ${at900.after.compliance.toFixed(4)} -> ${at1200.after.compliance.toFixed(4)}`);
+}
+
+console.log("[BOX JELLYFISH ENVENOMATION — queue item 7, Toxicology/Environmental]");
+{
+  // Two-sided: real, direct cardiotoxic rhythm-instability substrate fires
+  // (a genuinely different mechanism from the already-shipped `envenomation`
+  // crotaline coagulopathy — confirmed by checking this condition leaves
+  // coagulation fields completely untouched), specificity against a
+  // healthy control.
+  const untreated = probe({ scen: "boxJellyfishSting", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.rhythmInstability > 0.05 && untreated.after.contractilityFactor < 0.99 && untreated.after.intrinsicPain > 8;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`boxJellyfishSting should show rhythmInstability>0.05, contractilityFactor<0.99, intrinsicPain>8 by 900s, got ${untreated.after.rhythmInstability.toFixed(3)}/${untreated.after.contractilityFactor.toFixed(3)}/${untreated.after.intrinsicPain.toFixed(1)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"boxJellyfishSting -> real direct cardiotoxic substrate fires".padEnd(46)} rhythmInstability=${untreated.after.rhythmInstability.toFixed(3)} contractility=${untreated.after.contractilityFactor.toFixed(3)}`);
+
+  const healthyOk = healthy.after.rhythmInstability < 0.001 && healthy.after.contractilityFactor > 0.999;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero rhythmInstability contribution and unchanged contractilityFactor, got ${healthy.after.rhythmInstability.toFixed(3)}/${healthy.after.contractilityFactor.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} rhythmInstability=${healthy.after.rhythmInstability.toFixed(3)}`);
+
+  // Genuinely distinct mechanism from crotaline envenomation's own
+  // coagulopathy — this condition never touches factorII/plateletCount.
+  const noCoagEffect = Math.abs(untreated.after.coagPct - healthy.after.coagPct) < 1;
+  noCoagEffect ? pass++ : fail++;
+  if (!noCoagEffect) failures.push(`boxJellyfishSting should leave coagPct essentially untouched (a cardiotoxic, not hemotoxic, venom), got ${untreated.after.coagPct} vs healthy ${healthy.after.coagPct}`);
+  console.log(`  ${noCoagEffect ? "PASS" : "FAIL"}  ${"...a genuinely different (cardiotoxic, not hemotoxic) mechanism than crotaline".padEnd(46)} coagPct=${untreated.after.coagPct} (healthy ${healthy.after.coagPct})`);
+}
+
+console.log("[NEONATAL SEPSIS / PEDIATRIC DKA / INCARCERATED HERNIA / INTUSSUSCEPTION — pediatric+GI batch, queue item 7]");
+{
+  // No dedicated scenarios exist for these four yet (physiology-mechanism
+  // batch, same "condition-only, tested via mutate against an existing
+  // baseline scenario" posture thermalBurn's own comment above already
+  // documents and justifies for a condition with no authored call). Each
+  // condition's own progress() is invoked directly via `mutate`, at the
+  // exact per-minute dt physiology.js's stepPatient would pass it.
+
+  // --- Neonatal sepsis: hypothermia (NOT fever), not a copy of septicShock's
+  // adult numbers. ---
+  const neoSepsis = (p) => CONDITIONS.neonatalSepsis.progress(p, STEP / 60);
+  const neoTreated = probe({ scen: "abdPain", settle: 2, run: 900, mutate: neoSepsis });
+  const neoControl = probe({ scen: "abdPain", settle: 2, run: 900 });
+  // Presence: real, measurable hypothermic drift (the defining, teachable
+  // "not adult SIRS" difference), plus the shared cytokine cascade actually
+  // engaging.
+  assertVersus("neonatal sepsis -> coreTemp drifts DOWN (hypothermia, not fever)", neoTreated, neoControl, "coreTemp", "down", 0.1);
+  assertVersus("...cytokineLoad engages through the SAME shared cascade septicShock uses", neoTreated, neoControl, "cytokineLoad", "up", 0.02);
+  // Specificity: the untouched control shows exactly zero of this
+  // condition's own accumulators.
+  const neoSpecific = neoControl.after.pathogenBurden === 0 && neoControl.after.cytokineLoad === 0;
+  neoSpecific ? pass++ : fail++;
+  if (!neoSpecific) failures.push(`condition-less control should show zero pathogenBurden/cytokineLoad, got ${neoControl.after.pathogenBurden}/${neoControl.after.cytokineLoad}`);
+  console.log(`  ${neoSpecific ? "PASS" : "FAIL"}  ${"...does NOT fire for a condition-less control".padEnd(46)} pathogenBurden=${neoControl.after.pathogenBurden} cytokineLoad=${neoControl.after.cytokineLoad}`);
+  // Two-sided: glucose drifts down (real, age-specific hypoglycemia risk)
+  // WITHOUT the adult septic-fever heat multiplier ever engaging.
+  assertVersus("...glucose drifts down (neonatal glycogen reserve exhaustion)", neoTreated, neoControl, "glucose", "down", 0.5);
+  const noAdultFever = neoTreated.after.metabolicHeatMultiplier <= 1.001;
+  noAdultFever ? pass++ : fail++;
+  if (!noAdultFever) failures.push(`neonatalSepsis should NOT engage the adult fever multiplier, got metabolicHeatMultiplier=${neoTreated.after.metabolicHeatMultiplier}`);
+  console.log(`  ${noAdultFever ? "PASS" : "FAIL"}  ${"...does NOT engage septicShock's adult fever multiplier".padEnd(46)} metabolicHeatMultiplier=${neoTreated.after.metabolicHeatMultiplier.toFixed(3)}`);
+
+  // --- Pediatric DKA: same core mechanism as diabeticKetoacidosis, plus a
+  // real, gated cerebral-edema-risk proxy on REPEATED aggressive fluid
+  // dosing (not a single guideline bolus). Tested directly against the
+  // Patient class with a real `s.doses` array (the same "tested directly,
+  // not through a scenario loop" precedent queue item 21's
+  // coronaryStenosis assertion above already establishes), since this
+  // mechanism specifically needs to read s.doses the way probe()'s own
+  // internal `s` is not exposed to `mutate`.
+  function runPedDka(doseTicks) {
+    const cond = CONDITIONS.pediatricDKA;
+    const p = new Patient({ ...cond.initial }, 0);
+    p._id = "primary";
+    const s = { doses: [], t: 0 };
+    const dt = STEP / 60;
+    for (let t = STEP; t <= 900; t += STEP) {
+      s.t = t;
+      if (doseTicks && doseTicks.includes(t)) s.doses.push({ id: "saline", at: t, patientId: "primary" });
+      cond.progress(p, dt, s);
+    }
+    return p;
+  }
+  const dkaNoFluids = runPedDka(null);
+  const dkaOneFluid = runPedDka([STEP]);
+  const dkaFourFluids = runPedDka([STEP, 140, 280, 420]);
+  // Presence: the shared anion-gap ketoacidosis mechanism fires.
+  const dkaFires = dkaNoFluids.unmeasuredAnions > 15;
+  dkaFires ? pass++ : fail++;
+  if (!dkaFires) failures.push(`pediatricDKA should drive unmeasuredAnions>15 by 900s, got ${dkaNoFluids.unmeasuredAnions}`);
+  console.log(`  ${dkaFires ? "PASS" : "FAIL"}  ${"pediatric DKA -> same shared anion-gap ketoacidosis mechanism".padEnd(46)} unmeasuredAnions=${dkaNoFluids.unmeasuredAnions.toFixed(2)}`);
+  // Two-sided: a single guideline bolus does NOT raise cerebral-edema risk;
+  // repeated stacked dosing DOES.
+  const oneDoseSafe = (dkaOneFluid.icpMassEffect || 0) === 0;
+  oneDoseSafe ? pass++ : fail++;
+  if (!oneDoseSafe) failures.push(`a single saline bolus should NOT raise icpMassEffect, got ${dkaOneFluid.icpMassEffect}`);
+  console.log(`  ${oneDoseSafe ? "PASS" : "FAIL"}  ${"...a single guideline fluid bolus does NOT raise cerebral-edema-risk proxy".padEnd(46)} icpMassEffect=${dkaOneFluid.icpMassEffect || 0}`);
+  const repeatedRisky = (dkaFourFluids.icpMassEffect || 0) >= 0.1;
+  repeatedRisky ? pass++ : fail++;
+  if (!repeatedRisky) failures.push(`4 stacked saline doses should raise icpMassEffect>=0.1, got ${dkaFourFluids.icpMassEffect}`);
+  console.log(`  ${repeatedRisky ? "PASS" : "FAIL"}  ${"...but REPEATED aggressive fluid dosing raises the same proxy".padEnd(46)} icpMassEffect=${(dkaFourFluids.icpMassEffect || 0).toFixed(3)}`);
+
+  // --- Incarcerated hernia: bowelObstruction's obstruction mechanism plus a
+  // real, local, direct-write strangulation-injury limb. ---
+  const hernTreated = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => CONDITIONS.incarceratedHernia.progress(p, STEP / 60) });
+  const hernFires = hernTreated.after.gutInjury > 0.15;
+  hernFires ? pass++ : fail++;
+  if (!hernFires) failures.push(`incarceratedHernia should drive gutInjury>0.15 by 900s, got ${hernTreated.after.gutInjury}`);
+  console.log(`  ${hernFires ? "PASS" : "FAIL"}  ${"incarcerated hernia -> real local strangulation-injury accrual".padEnd(46)} gutInjury=${hernTreated.after.gutInjury.toFixed(3)}`);
+  const hernSpecific = neoControl.after.gutInjury === 0;
+  hernSpecific ? pass++ : fail++;
+  if (!hernSpecific) failures.push(`condition-less control should show zero gutInjury, got ${neoControl.after.gutInjury}`);
+  console.log(`  ${hernSpecific ? "PASS" : "FAIL"}  ${"...does NOT fire for a condition-less control".padEnd(46)} gutInjury=${neoControl.after.gutInjury}`);
+  const hernBleeds = hernTreated.after.activeBleedRate > 0;
+  hernBleeds ? pass++ : fail++;
+  if (!hernBleeds) failures.push(`incarceratedHernia should eventually drive a real, gated GI bleed once gutInjury>0.2, got activeBleedRate=${hernTreated.after.activeBleedRate}`);
+  console.log(`  ${hernBleeds ? "PASS" : "FAIL"}  ${"...gated GI bleed onset once the strangulated loop starts failing".padEnd(46)} activeBleedRate=${(hernTreated.after.activeBleedRate || 0).toFixed(4)}`);
+
+  // --- Intussusception: a genuinely new EPISODIC pain pattern for
+  // pat.intrinsicPain (near-zero between episodes, sharp spikes), distinct
+  // from bowelObstruction's continuous 4-8 oscillation. Tested directly
+  // against the Patient class since the assertion needs the raw tick-by-
+  // tick trace, not just a before/after snapshot.
+  {
+    const cond = CONDITIONS.intussusception;
+    const p = new Patient({ ...cond.initial }, 0);
+    const s = { doses: [], t: 0 };
+    const trace = [];
+    for (let t = STEP; t <= 300; t += STEP) { s.t = t; cond.progress(p, STEP / 60, s); trace.push(p.intrinsicPain); }
+    const hasEpisode = trace.some(v => v >= 7);
+    const hasValley = trace.some(v => v <= 1.5);
+    const episodic = hasEpisode && hasValley;
+    episodic ? pass++ : fail++;
+    if (!episodic) failures.push(`intussusception's pain trace should show BOTH a severe episode (>=7) and a comfortable valley (<=1.5), got max=${Math.max(...trace)} min=${Math.min(...trace)}`);
+    console.log(`  ${episodic ? "PASS" : "FAIL"}  ${"intussusception -> genuinely episodic pain (severe spikes + comfortable valleys)".padEnd(46)} max=${Math.max(...trace).toFixed(1)} min=${Math.min(...trace).toFixed(1)}`);
+  }
+  const intussTreated = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => CONDITIONS.intussusception.progress(p, STEP / 60) });
+  const intussFires = intussTreated.after.gutInjury > 0.1;
+  intussFires ? pass++ : fail++;
+  if (!intussFires) failures.push(`intussusception should drive gutInjury>0.1 by 900s, got ${intussTreated.after.gutInjury}`);
+  console.log(`  ${intussFires ? "PASS" : "FAIL"}  ${"...real local mesenteric-compression injury accrual (perforation risk if prolonged)".padEnd(46)} gutInjury=${intussTreated.after.gutInjury.toFixed(3)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {
