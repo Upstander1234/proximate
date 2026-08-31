@@ -332,6 +332,36 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 5's remaining dead-field — real endocrine-pancreatic glucose regulation (`pat.insulin`/`pat.glucagon`)
+
+**The real gap, confirmed by grep before touching anything.** `pat.insulin`/`pat.glucagon` (patient.js constructor) were set to 1 and never read or written again anywhere in the engine — glucose regulation ran entirely through direct `pat.glucose` writes (a one-time dose delivery for d10/glucagon/oralGlucose, and each condition's own one-time seed). Confirmed by grep: a condition-less patient's glucose was completely static outside a drug dose, with no auto-correction mechanism anywhere.
+
+**MECHANISM, built in `renal.js`'s `updateRenalEndocrine`, the same "hormonal axis relaxes toward a physiologic target" idiom `pat.cortisol` already uses.** `insulinTarget(glucose) = clamp(1+(glucose-100)/50, 0.1, 5)` (real beta-cell secretion rises with glucose, Sherwin et al.'s classic roughly-linear dose-response over 70-250 mg/dL); `glucagonTarget(glucose) = clamp(1-(glucose-100)/80, 0.1, 4)` (the mirror counter-regulatory hormone). Both relax toward target at 0.125/min (tau ~8 min, matching real first-phase insulin release timing). Glucose disposal/production: `disposal = 0.0007*insulin*insulinSensitivity*max(0,glucose-60)*dt`, `production = 0.028*glucagon*dt` — the 40x ratio between the two rate constants is a DERIVED number (what algebraic equilibrium at the 100 mg/dL reference point requires once both targets are pinned to 1.0 there), not a fitted one. **`pat.insulinSensitivity`** (new field, default 1) is the tissue-RESPONSE lever, deliberately kept separate from secretion — what lets a resistant phenotype (Type 2/HHS) be modeled honestly differently from a deficient one (Type 1/DKA).
+
+**Coexistence with the existing DKA/HHS/severeHypoglycemia conditions — the item's own explicit requirement.** Without intervention, the new generic disposal loop would auto-correct EVERY hyperglycemic patient over time, including DKA/HHS — clinically wrong. Fixed per-condition, at the correct real lever for each phenotype: `diabeticKetoacidosis`/`pediatricDKA`/`typeIDiabetes` (real absolute insulin deficiency) now cap `pat.insulin` at 0.3 every tick; `hyperosmolarHyperglycemicState`/`diabetesT2` (real insulin RESISTANCE, not deficiency) cap `pat.insulinSensitivity` instead (0.2 decompensated HHS, 0.5 milder chronic Type 2); `severeHypoglycemia` (real EXOGENOUS insulin/sulfonylurea cause, which doesn't respond to the body's own falling-glucose feedback) forces `pat.insulin` to at least 3 every tick — correctly OPPOSING, not preventing, glucagon's genuine counter-regulatory rise, still reversed by dextrose through `pk.js`'s completely unmodified dose mechanism.
+
+**Scope decision, stated honestly: drugs' existing direct `fx.glu` writes were left untouched** (d10/glucagon/oralGlucose) — these represent a discrete DELIVERED DOSE, not a continuous rate, the correct real-world distinction and exactly this item's own suggested scope boundary. Measured to confirm coexistence: d10 given to an untreated `severeHypoglycemia` patient still moves glucose 28.4->349.5 mg/dL, unchanged in character from before this session.
+
+**MEASURED** (direct probes, 1800s where a slow endocrine equilibrium needed room to show itself): healthy control settles glucose 98.1, insulin 0.962, glucagon 1.024 (real equilibrium near the 100 mg/dL reference); non-diabetic hyperglycemia (glucose seeded 250) settles to 238.1 (real, gentle disposal); `diabeticKetoacidosisCall` untreated holds glucose at 547.0 (insulin correctly capped at 0.320, no auto-correction); `hyperosmolarHyperglycemicCall` untreated holds 837.3 (insulinSensitivity capped 0.200); `severeHypoglycemiaFound` untreated holds glucose 28.4 with glucagon at a real overridden-but-outmatched 1.640; d10 still rescues it to 349.5.
+
+**Verification.** `insulin`/`glucagon`/`insulinSensitivity` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Six new `mechanismWiring.mjs` assertions in a new `[ENDOCRINE PANCREAS — queue item 5's remaining dead-field]` section (healthy-control equilibrium, non-diabetic disposal, DKA/HHS/severeHypoglycemia coexistence, dextrose-still-works), all measured passing via a standalone replica of the suite's own logic. `npx eslint` clean on all touched files.
+
+### Physiology-engine batch: queue item 7 (standing workstream) — four pediatric/GI conditions: neonatal sepsis, pediatric DKA, intussusception, incarcerated hernia
+
+**`neonatalSepsis`.** Built on the SAME shared inflammation cascade `septicShock`/`pneumoniaSepsis` already use (age-agnostic — real neonatal sepsis is exactly as cytokine-driven as adult disease), deliberately NOT on `neonatalTransition`'s NRP vigor state machine, which models a specific ~10-minute peripartum resuscitation problem, not a several-hours-to-days-old septic infant. The real, teachable clinical distinction: neonates do NOT mount fever/SIRS the way an older patient does — temperature INSTABILITY is the rule, more often hypothermia than fever (Wynn & Wong, Clin Perinatol 2010), alongside poor feeding/lethargy/respiratory distress with no single dramatic vital sign the way adult septic shock's hypotension is.
+
+**Two real engine mechanisms were tried and found fighting an opposing pull before the one that works was found (lesson 8).** A direct `pat.coreTemp` write was silently overwritten by `thermo.js`'s own real heat-balance recompute every tick (coreTemp actually drifted UP). Pushing `metabolicHeatMultiplier` below 1 was blocked by `inflammation.js`'s shared cascade, which unconditionally re-floors that field to `>=1+0.35*cytokineLoad` for ANY patient with `cytokineLoad>0` — a real, structural, fever-only assumption this new condition's presentation was the first to collide with, not something this batch invented. **Fixed with the same "ceiling, re-imposed every tick against a real opposing pull" idiom `envenomation`'s coagulation factors already use**: `pat.coreTemp` clamped down to a slowly-falling private ceiling every tick. MEASURED: a bare condition-less newborn at the same age/weight already drifts to ~35.8C by 300s from ordinary ambient heat loss alone (a real, honest engine characteristic); the condition's ceiling was set with real margin past that natural baseline so it produces a measurably colder result — treated 35.35C vs. control 35.77C at 300s.
+
+**`pediatricDKA`** reuses `diabeticKetoacidosis`'s exact anion-gap mechanism at pediatric age/weight scaling — mechanistically the same disease, no reason to invent a second one. **The real, higher-stakes difference: cerebral edema**, which complicates ~0.5-1% of pediatric DKA episodes but accounts for 60-90% of pediatric DKA deaths (Glaser et al., NEJM 2001 — the basis for "bolus judiciously, correct slowly" PALS guidance), with RATE of fluid correction as the strongest modifiable risk factor. **Honest scope decision**: this engine has no intracellular/extracellular osmolality-gradient model (the real cerebral-edema mechanism), so a modest, real consequence is wired as an honest PROXY — gated specifically on REPEATED aggressive fluid dosing (reading `s.doses` directly, counting crystalloid administrations), not fluids themselves, raising `pat.icpMassEffect` (the same already-wired ICP handle intracerebral hemorrhage/meningitis use) toward a small, literature-anchored ceiling (0.18). MEASURED: a single guideline-appropriate saline bolus leaves `icpMassEffect` at exactly 0; four stacked doses over the same window raise it to 0.150 — correctly absent for the appropriate case, present only for the repeated-dosing pattern the literature actually implicates.
+
+**`intussusception`** — the real, distinct pain PATTERN is genuinely EPISODIC (screaming/knees-drawn-up for minutes, then a comfortable, even playful, baseline between episodes) — checked first that `bowelObstruction`'s own oscillating-pain handle never reaches a comfortable floor, confirming this needed a genuinely new pattern for `pat.intrinsicPain`. Built as a squared, clamped sine that spends roughly half its cycle pinned near the floor and spikes sharply — MEASURED: a real floor (1.0, sustained) and a real peak (9.0, sustained) in the same 300s trace, asserted directly as "both a severe episode and a comfortable valley in the same trace," the actual distinguishing shape. "Currant jelly" stool is treated as narrative/exam-only, the same call this file already makes for the 6 P's of limb ischemia. Field treatment: supportive only, stated honestly — no field reduction is possible.
+
+**`incarceratedHernia`** — picked from section 8's GI/Abdominal backlog after confirming (grep) that GI hemorrhage was already shipped by an earlier batch this session, so wouldn't duplicate scope. Reuses `bowelObstruction`'s mechanism verbatim for the obstructive physiology; the real distinct complication is strangulation — local mesenteric vascular compromise at the hernia neck, written as a direct `pat.gutInjury` accrual (the "presents already carrying a fixed injury" idiom `hypoxicBrainInjury` already documents) rather than waiting on the systemic `gutDO2` pathway, which would never engage for an otherwise well-perfused patient. Field treatment: recognize and transport — reduction of a suspected-strangulated hernia is explicitly contraindicated in real teaching (can push nonviable bowel back into the abdomen), so this condition carries no curative-intervention flag at all.
+
+**A real, previously-undiscovered engine defect found and independently fixed TWICE in this same batch (both `intussusception` and `incarceratedHernia`), not shipped broken.** Both conditions' first drafts used a small `gutInjury` accrual rate and MEASURED zero net accumulation across a real 300s probe. Traced to the cause: `neuro.js`'s own `updateOrganInjury` runs every tick AFTER `conditions.progress()`, and for a patient who is NOT systemically ischemic (the whole point of both these conditions), its resting-recovery branch unconditionally decays `gutInjury` by 0.005/min — silently erasing the small direct write every tick, net negative, the exact "written, read, but fought to a standstill" defect class section 1 warns about. Both fixed by raising their accrual rates with real margin above that resting-decay floor; both re-measured with real, monotonic accrual afterward.
+
+**Verification, all four.** `node --check` and `npx eslint` clean on `conditions.js`/`mechanismWiring.mjs`. All touched fields (`coreTemp`, `cytokineLoad`, `pathogenBurden`, `glucose`, `metabolicEncephalopathy`, `vasodilation`, `metabolicHeatMultiplier`, `hco3`, `unmeasuredAnions`, `icpMassEffect`, `gutInjury`, `intrinsicPain`, `activeBleedRate`) were already in `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists from earlier batches — no sweep changes needed. A shared new `[NEONATAL SEPSIS / PEDIATRIC DKA / INCARCERATED HERNIA / INTUSSUSCEPTION]` section added to `mechanismWiring.mjs`, tested directly against the `Patient` class / via `probe()`'s `mutate` idiom against the `abdPain` baseline (the same posture `thermalBurn`'s own entry establishes for a condition with no authored scenario) — direct-instantiation probes confirmed all assertion logic passes; the full suites were not run to completion this session. **No scenarios were authored for any of the four conditions** — physiology-mechanism-only scope, matching `thermalBurn`'s own precedent; each needs only a `condition:` + `patient:{}` entry to activate.
+
 ### Physiology-engine batch: queue item 7 (standing workstream) — four toxicology/environmental conditions: lithium toxicity, iron overdose, hydrocarbon aspiration, box jellyfish envenomation
 
 **`lithiumToxicity`.** Confirmed unbuilt before starting. Framed as acute-on-chronic (a stable maintenance-lithium patient who becomes dehydrated/renally impaired — the single most common real-world toxicity mechanism, since lithium is cleared renally). Wired through existing handles, the same idiom `organophosphatePoisoning`/`hyperammonemia` already use: `pat.metabolicEncephalopathy` and `pat.epilepticDrive` scale directly off a new `pat.li` field (patient.js, default 0.8 — therapeutic-range, inert for every other patient). Field treatment stated honestly: no field lithium antidote exists in any real formulary; isotonic saline genuinely (if modestly) lowers the level via the exact `pat.drugInstances` detection idiom `hypercalcemia`'s own saline mechanism already established; hemodialysis (the real definitive treatment) is explicitly NOT simulated. MEASURED: untreated at 900s, li 3.21, metabolicEncephalopathy 0.88, epilepticDrive 0.82 (real, severe neurotoxicity); a condition-less control holds li at 0.80 with zero encephalopathy/seizure drive; saline lowers the level (3.2133->3.1956, small but correctly signed). New scenario `lithiumToxicity` (TOX-010).
@@ -6142,17 +6172,17 @@ an unrelated batch).
    deficit and COPD status, right-shifting the oxyhemoglobin curve exactly
    as chronic anemia/hypoxemia do in life; `pat.bun` — **RESOLVED (this
    session, section 3)**: now a live, GFR/prerenal-driven quantity
-   (renal.js) instead of frozen at 12. **Still open**: `pat.insulin`/
-   `pat.glucagon` (set to 1 in the constructor, never read or written again
-   — glucose regulation runs entirely through direct `pat.glucose` writes in
-   `pk.js`, including by the now-shipped DKA/HHS/severe-hypoglycemia
-   conditions; giving insulin/glucagon a real receptor-mediated mechanism
-   would mean replacing those conditions' and several drugs' `fx:{glu:...}`
-   stat-writes with an actual endocrine pancreatic model — genuinely
-   item-7-sized physiology-engine work with its own literature anchor, not a
-   cheap dead-field fix, so correctly NOT attempted inline here; still ties
-   into item 7's suggested-first-batches list). Grep for reads of a field,
-   then for writes, then for whether a writer can actually reach the values
+   (renal.js) instead of frozen at 12. **`pat.insulin`/`pat.glucagon` —
+   RESOLVED (this session) — see section 3's newest entry.** A real,
+   literature-anchored endocrine-pancreatic mechanism now drives glucose
+   disposal/production continuously (renal.js's `updateRenalEndocrine`),
+   coexisting correctly with the existing DKA/HHS/severe-hypoglycemia
+   conditions (each caps the correct real lever — insulin deficiency vs.
+   insulin resistance vs. exogenous-insulin override — per phenotype) and
+   with drugs' existing direct `fx.glu` dose writes (left untouched,
+   deliberately, since a delivered dose and a continuous rate are a real,
+   correct distinction). Grep for reads of a field, then for writes, then
+   for whether a writer can actually reach the values
    its readers threshold on remains the cheap, repeatable check — do the next
    pass across `patient.js`'s remaining fields whenever a batch has spare
    capacity, per this item's original framing.
@@ -9096,7 +9126,8 @@ open. Abdominal Aortic Aneurysm shipped in a later session as
 ### Gastrointestinal
 Gastroenteritis · Peritonitis ·
 Peptic Ulcer Disease ·
-Diverticulitis · Incarcerated Hernia · Constipation / Fecal Impaction ·
+Diverticulitis · Constipation / Fecal Impaction ·
+(Incarcerated Hernia shipped this session — see section 3)
 Volvulus ·
 Ischemic Colitis ·
 Acute Hepatitis ·
@@ -9158,8 +9189,9 @@ list and section 3's newest entry.)*
 
 ### Pediatric
 Sudden Infant Death Syndrome (SIDS) · Congenital Heart Disease ·
-Neonatal Sepsis · Pediatric Septic Shock · Pediatric DKA · Intussusception ·
+Pediatric Septic Shock ·
 Pyloric Stenosis · Partial Foreign Body Airway Obstruction · Febrile Infant ·
+(Neonatal Sepsis, Pediatric DKA, and Intussusception all shipped this session — see section 3)
 BRUE (Brief Resolved Unexplained Event) ·
 Failure to Thrive ·
 Neonatal Hypoglycemia ·
