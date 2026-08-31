@@ -295,6 +295,30 @@ export const TASKS=[
   // saline/atropine entries are already shared across several protocols).
   {id:"olanzapineOdt",name:"Olanzapine 10mg ODT (agitation)",lvl:4,dur:15,readback:'"Olanzapine, ODT, copy."',report:'"Olanzapine dissolving tablet is in."',dose:"olanzapine"},
   {id:"midazolamAgitation",name:"Midazolam 5mg IM/IN (severe agitation)",lvl:4,dur:15,readback:'"Versed for agitation, copy."',report:'"Five of Versed given for agitation."',dose:"midazolam"},
+  // Queue item 60, part 3 — a real crew-directable FBAO-clearance task.
+  // Before this, the fbao-clearance mechanism (App.jsx's s.cleared, keyed
+  // to the literal condition "fbao") was reachable ONLY through the
+  // player's own hands (a special-cased CPR/laryngoscopy check inside
+  // start(), plus that scenario's own scripted Magill-forceps extra) — no
+  // TASKS entry let a crew member be DIRECTED to clear it, so laCounty.js's
+  // airway-obstruction protocol rules fell back to the generic airway/CPR/
+  // BVM life-threat rules rather than a true FBAO-specific step. Both
+  // entries below route through the SAME s.cleared resolution App.jsx's
+  // crewFn already calls for the player's own action (see the fbaoClear/
+  // fbaoMagill branch there) — this file supplies the crew-facing label/
+  // scope tier only, not a second clearance mechanism.
+  // BLS tier: real 2020 AHA/NREMT guidance for an unconscious complete
+  // FBAO is chest compressions THEMSELVES (they generate the intrathoracic
+  // pressure spike that dislodges the bolus) — not back blows/abdominal
+  // thrusts, which only apply to a conscious, standing patient. dose:"cpr"
+  // so a directed compressor genuinely doses CPR the same way the
+  // existing "cpr" task does, in addition to clearing the airway.
+  {id:"fbaoClearBls",name:"Clear obstructed airway (compressions / back blows)",lvl:0,dur:25,fbaoClear:true,dose:"cpr",readback:'"On it. Compressions."',report:'"Airway is clear. It came up."'},
+  // ALS tier: direct laryngoscopy + Magill forceps under direct
+  // visualization — the definitive removal, matching the scope tier
+  // (bag:"airway", lvl 4) fbao's own scenario-local "clearFB" player extra
+  // already requires.
+  {id:"fbaoMagillClear",name:"Direct laryngoscopy + Magill forceps (visualized FBAO)",lvl:4,dur:30,fbaoMagill:true,readback:'"Laryngoscopy and forceps, copy."',report:'"Blade in, forceps out. It\'s clear."'},
 ];
 
 // Concise, cumulative capability lists for the partner-select screen (§1).

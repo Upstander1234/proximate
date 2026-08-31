@@ -2136,6 +2136,35 @@ export default function App(){
     }
     if(t.dose&&!(NOSTACK.includes(t.dose)&&doseActive(m,t.dose))) giveDose(m,{id:t.dose,at:m.t});
     if(t.sets) Object.assign(m,t.sets);
+    // Queue item 60, part 3 — FBAO-clearance was previously reachable ONLY
+    // through the player's own hands (this file's start()-level special
+    // cases for p.id==="cpr"/"laryngoscopy", plus fbao's own scenario-local
+    // "clearFB" Magill-forceps extra) — a crew member directed to clear the
+    // SAME obstructed airway had no path that ever set s.cleared at all,
+    // even the crew "Compressions" task (t.dose:"cpr"), which doses CPR for
+    // real but never ran through start()'s special-case check because that
+    // check lives on the PLAYER action path, not crewFn. Fixed by calling
+    // the exact same resolution this file's own player-facing checks
+    // already use (conditionHas(...,"fbao"), the !cleared/!pushedDeeper
+    // guards) from crewFn too, not a second, parallel clearance rule.
+    // t.fbaoClear (BLS/lvl 0) lets ANY crew member — including a directed
+    // CPR compressor — clear a complete FBAO exactly as real guidelines
+    // teach (compressions ARE the maneuver once the patient is
+    // unconscious, no forceps required); t.fbaoMagill (ALS/lvl 4) is the
+    // definitive direct-laryngoscopy-and-forceps removal, matching the
+    // scope tier fbao's own scenario-local "clearFB" extra already
+    // requires (bag:"airway", lvl 4).
+    if((t.fbaoClear||t.fbaoMagill)&&conditionHas(scenOf(m).condition,"fbao")&&!m.cleared&&!m.pushedDeeper){
+      m.cleared=1;
+      if(t.dose) giveDose(m,{id:t.dose,at:m.t});
+      return {say:`${c.name.toUpperCase()}: ${applyPron(t.report,pr)}`,kind:"good"};}
+    if((t.fbaoClear||t.fbaoMagill)&&m.pushedDeeper){
+      return {say:`${c.name.toUpperCase()}: "It's past the cords now, wedged. I can't reach it."`,kind:"warn"};}
+    if((t.fbaoClear||t.fbaoMagill)&&!conditionHas(scenOf(m).condition,"fbao")){
+      // Directed against a patient with no real foreign-body obstruction —
+      // a real, honest refusal rather than silently no-opping or clearing
+      // an airway that was never actually blocked.
+      return {say:`${c.name.toUpperCase()}: "There's nothing obstructing this airway."`,kind:"warn"};}
     // A crew-ordered task never runs through start(), which is what normally
     // stamps s.done[id] for the player's own actions — so any check reading
     // s.done.X (scope-lock "already done" guards, a scenario's own resolve())
