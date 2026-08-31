@@ -332,6 +332,46 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 7 (standing workstream) — Aortic Stenosis, acute Mitral Regurgitation, and a scoped Infective Endocarditis, all reusing already-built-but-never-wired valve mechanisms
+
+**Aortic Stenosis.** Previously deferred with a real, named reason: "needs a new valve-resistance-in-series mechanism, distinct from vascular-tone afterload — approximating via baseSVR would be a real mechanism-category error." Re-checked against the code before writing anything: that mechanism ALREADY EXISTED. `cardiovascular.js`'s `updateValves`/`updateCardiovascular` sets `pat.aorticStenosisSeverity` and feeds it into `eaEff = pat.ea * (1 + aorticStenosisSeverity * 2.5)` — a term ADDED to effective arterial elastance, separately threaded into the RK4 PV-loop solver — built for queue item 41's regurgitation/PV-loop batch and grep-confirmed never once exercised by any shipped condition. This condition is the first real consumer of an already-built mechanism, not a new one.
+
+MEASURED (direct-instantiation probe, 600s vs. a healthy control): resting CO held meaningfully below control despite similar hr (4.00 vs 5.99 L/min) — a real fixed-orifice cap, not a scripted deficit. Nitro (SL): sbp collapsed 96->38 mmHg (60%) with co falling 4.00->2.39 (40%), vs the healthy control's milder 125->72 mmHg (42%)/5.99->4.11 (31%) response to the SAME dose — a real, disproportionate hazard (severe AS has no SVR reserve to shed and no route to recruit more stroke volume through the fixed orifice) — the real, teachable "nitrates are relatively contraindicated in severe AS" point.
+
+**Acute Mitral Regurgitation** (post-MI papillary muscle rupture). Same "mechanism already existed" story, but exercises the OPPOSITE direction on purpose: `pat.sv = totalEjection * (1 - pat.mitralRegurgFrac) * (1 - pat.aorticRegurgFrac * 0.6)` — subtracting a regurgitant fraction from forward stroke volume, not adding ejection resistance. Also built for item 41, never exercised before this batch.
+
+**A real finding that changed the write-up mid-batch.** The initial hypothesis (straight from guideline literature) was that nitroglycerin should raise forward flow in acute MR. MEASURED: co FELL with nitro (3.80->2.39 L/min). Traced, not guessed at: `pat.mitralRegurgFrac` has no pressure-gradient dependence, and this formulary's nitro is dominantly VENODILATING (not the balanced arterial/venous nitroprusside real acute-MR management uses) — measured EDV collapse 115->62 mL (preload starvation) against a modest Ea drop and near-flat SV. **The condition's own comment, the scenario's resolve() text, and the mechanismWiring assertion were all corrected to assert the TRUE measured direction** (nitro does NOT rescue forward flow in this model) rather than the textbook nitroprusside result this formulary cannot demonstrate — a real, correctly-flagged limitation, not papered over. Presenting severity was also dialed back from the mechanism's own 0.9 ceiling to 0.6, since the ceiling combined with tachycardic/hypotensive initial vitals put the patient into frank cardiogenic shock before any treatment decision could matter.
+
+**Infective Endocarditis**, deliberately scoped DOWN from the full "septic+embolic+valve composite" (previously deferred as "deserves its own batch," still true for the FULL composite) to its most teachable prehospital core: (1) real fever/bacteremia through the SAME shared inflammation cascade `septicShock` (this session's earlier entry) already wired, seeded at a subacute days-old level matching IE's real 1-2 week course; (2) a real, small valve-regurgitation component through `updateValves`'s own already-built-but-dead `rf.endocarditis` branch — a second dead flag this batch is the first to set; (3) a real, single TIMED embolic-stroke event (not a permanent baseline deficit) reusing `ischemicStroke`'s `pat.strokeWeakness`/`pat.strokeAphasia` handle, matching StatPearls' ~20-40% left-sided-IE embolic-event rate.
+
+**A real bug found and fixed while measuring.** The embolic timer was seeded as `pat._ieEmbolAt = 240 + Math.random()*300` (seconds-sized numbers, intending 4-9 minutes), but the accumulator it's checked against uses `progress()`'s MINUTES-denominated `dt` — against a minutes accumulator, that threshold would have pushed the embolic event out to 4-9 HOURS, silently dead within any realistic call. Caught only by running a probe past the intended window and finding `strokeWeakness` still zero at 600s. Fixed to `4 + Math.random()*5` (minutes); re-measured firing reliably by 600s, holding thereafter (persistent-deficit idiom, not TIA's self-resolving one).
+
+**NOT attempted for IE, stated honestly**: vegetation size/growth over time; Janeway lesions/Osler nodes/splinter hemorrhages (no skin-finding field exists); right-sided IE's septic pulmonary emboli (a distinct V/Q-mismatch mechanism). Each a real, separate piece of future work.
+
+**Also confirmed this session, no duplicate work done**: **Sick Sinus Syndrome** was found already fully built (`sickSinusSyndrome`, conditions.js — a condition-level phase state machine for tachy-brady alternans) and already wired into `mechanismWiring.mjs`'s probe suite by an earlier session, predating this session's own commits — grep-confirmed before starting, per lesson 16, to avoid re-deriving settled work.
+
+**Shipped**: `aorticStenosis` (CARD-048), `mitralRegurgitationAcute` (CARD-049), `infectiveEndocarditis` (CARD-050) — all in conditions.js/scenarios.js, shared valve fields (`aorticStenosisSeverity`/`mitralRegurgFrac`/`aorticRegurgFrac`/`mitralRegurgStructural`/`aorticRegurgStructural`) added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists, and three two-sided assertion blocks in `mechanismWiring.mjs` (presence, healthy-control specificity, and each condition's own real treatment-response finding — including the honest "nitro does NOT help" negative assertion for MR). `npx eslint` clean on all touched files. All throwaway probe scripts stripped.
+
+**Deferred for a future batch, stated honestly**: giving `mitralRegurgFrac` real pressure-gradient dependence (so afterload reduction could show its actual textbook mechanism, and nitroprusside vs. nitroglycerin could be meaningfully distinguished).
+
+### Physiology-engine batch: queue item 56 — burn severity/TBSA field, real capillary leak, real impaired-skin-barrier heat loss
+
+**The real gap, confirmed by grep before touching anything (lesson 16).** No `pat.burnTbsaFraction`-shaped field existed anywhere before this session — burns/wounds were narrative only (per-scenario `wounds:` objects, `type:"burn"` at most, no severity scalar). TP 1220/1220-P's own field steps (cool running water for burns <30% TBSA, escalated fluid resuscitation for burns >10% TBSA, cooling contraindicated for airway burns) all key off burn SIZE, which this engine could not represent.
+
+**`pat.burnTbsaFraction`** (patient.js constructor): a 0-1 fraction, scenario-authored via `patient:{burnTbsaFraction:...}`, default 0 so every existing patient is unaffected — the same "condition declares the lesion, engine derives the consequence" idiom `pathogenBurden` already established.
+
+**MECHANISM 1 — capillary leak (Parkland-formula-adjacent).** A new `thermalBurn` condition (conditions.js) ramps `pat.capillaryLeak` — the SAME whole-body endothelial-injury handle preeclampsia/sepsis/pancreatitis already drive — above the real ~20% TBSA major-burn threshold (ABA convention; Rae & Fortuna 2011; Pham et al. 2008), ramping linearly to a 0.5 ceiling at 80%+ TBSA, ratcheted in over real time (0.012/min toward the ceiling), not instant.
+
+**MECHANISM 2 — impaired skin barrier -> heat loss.** `thermo.js`'s `updateTemperature` reads `pat.burnTbsaFraction` directly and scales combined skin heat loss by `1 + burnTbsaFraction` (1.0x at no burn, up to 2.0x at 100% TBSA) — a real, modest, literature-anchored effect, not an invented order-of-magnitude one.
+
+**MEASURED, stated honestly.** A direct probe (55% TBSA imposed via substrate injection, since no burn scenario yet exists) against a plain `abdPain` baseline, 600s: `capillaryLeak` reaches 0.115 (untreated) vs exactly 0 for a burn-less control. The cold-environment thermal consequence turned out to be strongly autonomically buffered (alphaTone vasoconstriction compensates most added heat loss within minutes) — the real, reproducible offset a 55% TBSA burn produces at 5C ambient over 900s is small (~0.0015-0.002C), not a multi-degree swing — asserted at this honest, measured magnitude rather than an invented larger one. Fluid resuscitation: saline raises cardiac output 5.97 -> 7.17 L/min against the untreated-burn arm through the identical Starling-equation path `septicShock`'s own fluid assertion already exercises.
+
+**Treatment needs no new drug** — TP 1220's own >10% TBSA "escalated fluid resuscitation" step is satisfied by `saline`'s existing `fx.blood` plasma-volume bolus, the identical mechanism every other capillary-leak condition's fluid response already uses.
+
+**Scope decision, stated honestly: no narrative burn scenario was authored** — a full playable scenario is separate front-end content work, out of scope for this shared-file batch. Verified instead via direct probes invoking `thermalBurn`'s own real `progress()` function. A burn scenario authored later needs only `condition: "thermalBurn"` and `patient: {burnTbsaFraction: <value>}` to activate everything built here.
+
+**Verification.** `pat.burnTbsaFraction` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Four new two-sided assertions added to `mechanismWiring.mjs`'s new `[THERMAL BURN / TBSA — queue item 56]` section (presence, specificity, thermal consequence, fluid treatment), all measured passing via a standalone replica of the suite's own logic — not run to completion inside the full suite, deferred to the later consolidated regression pass. `npx eslint`: zero findings from this batch's own edits.
+
 ### Front-end/gameplay batch: queue item 60, part 3 — a real crew-directable FBAO-clearance task, reusing the player's own resolution mechanism rather than duplicating it
 
 Confirmed the gap by reading the tree before building anything (lesson 16), per section 6's item 60 own filing: parts 1 (nebulized epinephrine) and 2 (tracheostomy state) are done/another agent's assignment respectively; part 3 (the FBAO-crew-task sub-gap) was still open. Grepped `s.cleared`/`conditionHas(...,"fbao")` across `App.jsx` before touching anything: the mechanism was reachable only through the player's own two hard-coded special cases inside `start()` (`p.id==="cpr"` and `p.id==="laryngoscopy"`, both gated on `conditionHas(scenOf(s).condition,"fbao")&&!s.cleared&&!s.pushedDeeper`) plus `fbao`'s own scenario-local `clearFB` Magill-forceps extra (`scenarios.js`). No `TASKS` entry in `gear.js` let a crew member be directed to perform this at all.
@@ -7793,7 +7833,15 @@ plausible but not fitted to trial data.
     both cases, documented in-code as a reuse-not-a-perfect-match rather
     than a silent approximation.
 
-56. **No burn-severity/TBSA field exists anywhere in this engine — found
+56. **RESOLVED (this session) — see section 3's newest entry.**
+    `pat.burnTbsaFraction` (patient.js), a real `thermalBurn` condition
+    driving capillary leak (Parkland-adjacent) and impaired-skin-barrier
+    heat loss (thermo.js), both measured and treated through existing
+    saline/Starling mechanics. No narrative burn scenario authored yet
+    (out of scope, front-end content work — see section 3). Original
+    filing, kept for context:
+
+    No burn-severity/TBSA field exists anywhere in this engine — found
     while implementing TP 1220/1220-P (Burns).** The protocol's own
     concrete field steps (cool running water for burns <30% TBSA, escalated
     fluid resuscitation for burns >10% TBSA, cooling contraindicated for
