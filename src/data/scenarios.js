@@ -1924,6 +1924,99 @@ aicdMalfunction: {cat: "medical", id: "CARD-047", pronouns: "he", title: "Male, 
     return {died, cause, notes, correct: s.pi === "DYSR", truth: "Inappropriate ICD shocks from device malfunction (oversensing), on a genuine prior structural heart disease substrate, with no true underlying malignant rhythm"};},
 },
 
+aorticStenosis: {cat: "medical", id: "CARD-048", pronouns: "he", title: "Male, 78. Chest tightness and near-fainting while gardening.",
+  limit: 1300, transport: 480,
+  bystanders: "His neighbor saw him go pale and grab the fence, and called it in.",
+  units: [{at: 380, level: "emt", name: "BLS 12"}],
+  dispatch: ["78M. Chest tightness and nearly passed out while doing yard work.", "Conscious, sitting on the ground now.", "Known 'heart murmur' per neighbor."],
+  update: ["Neighbor: \"He said his chest felt tight and everything went gray right before he grabbed the fence.\""],
+  impression: "Sitting against the fence where he caught himself, pale and diaphoretic, breathing carefully. Alert but clearly shaken.",
+  imps: ["CPMI", "SYNC", "SHOK"],
+  condition: "aorticStenosis",
+  patient: {age: 78, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"It was tight, right here in the middle of my chest, and then everything just went gray and I had to grab the fence before I went down. It\'s happened once before, walking up the stairs a few months back — I never told anyone."', kind: "pt",
+      evid: "Angina and near-syncope brought on specifically by EXERTION, in an older patient, is the classic aortic stenosis triad pattern — a fixed valve orifice that cannot increase forward output to meet the demand exercise creates.", find: "OPQRST: exertional chest tightness with near-syncope, a prior similar episode months ago, never evaluated."}),
+    sample: () => ({say: "Neighbor: \"He's mentioned a heart murmur his doctor found a couple years ago, said it wasn't urgent at the time. Otherwise pretty healthy, takes something for his cholesterol.\"", kind: "pt",
+      evid: "A previously known murmur, now producing exertional symptoms, is the real progression pattern of degenerative calcific aortic stenosis — asymptomatic for years, then a real turning point once angina, syncope or heart failure appears.", find: "SAMPLE: known heart murmur (undiagnosed further), statin only, no other cardiac history."}),
+    heart: (s, v) => ({say: `Regular rhythm, rate ${v.hr}, and a firm, harsh murmur you can feel almost as a vibration over the right side of his chest. Pulse pressure feels narrow.`, kind: "crit",
+      evid: "A harsh systolic murmur with a narrow pulse pressure and a slow-rising pulse is the direct bedside signature of a fixed, calcified aortic valve forcing the ventricle to generate very high pressure for a limited forward flow.", find: `Heart: harsh systolic murmur, narrow pulse pressure (${v.sbp}/${v.dbp}), regular rate ${v.hr}.`}),
+    skin: () => ({say: "Pale, diaphoretic, cool.", find: "Skin pale, diaphoretic, cool."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const gaveNitro = s.given.nitro || s.given.nitroOwn;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Severe aortic stenosis with a fixed forward output the heart could not increase, worsened rather than helped along the way.";
+    if (gaveNitro) notes.push("Nitroglycerin was given. In severe aortic stenosis this is relatively CONTRAINDICATED: the chest tightness here is from a fixed valve orifice, not primarily coronary vasospasm, and this patient has no reserve SVR to shed the way a normal angina patient does — dropping preload/afterload further can produce a sharp, poorly-compensated drop in pressure without relieving the actual obstruction. Worth recognizing the murmur and narrow pulse pressure BEFORE reaching for nitro on a chest-pain call.");
+    else if (!died) notes.push("Nitro was correctly withheld. A harsh systolic murmur with a narrow, slow-rising pulse should raise real suspicion for aortic stenosis before administering a preload/afterload-reducing drug that this fixed-output physiology tolerates poorly.");
+    notes.push("The core recognition here is the exertional angina/near-syncope pattern plus the exam findings (murmur, narrow pulse pressure) pointing to a fixed structural obstruction — supportive care and prompt transport, not a drug that targets vascular tone the valve itself doesn't respond to.");
+    return {died, cause, notes, correct: s.pi === "CPMI", truth: "Severe aortic stenosis — exertional angina and near-syncope from a fixed, calcified aortic valve orifice"};},
+},
+
+mitralRegurgitationAcute: {cat: "medical", id: "CARD-049", pronouns: "she", title: "Female, 68. Sudden shortness of breath, four days after a heart attack.",
+  limit: 1300, transport: 480,
+  bystanders: "Her son, who has been staying with her since her hospital discharge, called 911.",
+  units: [{at: 360, level: "paramedic", name: "Medic 6"}],
+  dispatch: ["68F. Sudden severe shortness of breath.", "Discharged from the hospital 4 days ago after a heart attack.", "Sitting upright, struggling to breathe."],
+  update: ["Son: \"She was fine ten minutes ago, then all of a sudden she couldn't catch her breath at all!\""],
+  impression: "Sitting bolt upright on the edge of the bed, working hard to breathe, pink frothy secretions visible at her lips. Frightened, tiring.",
+  imps: ["RESP", "SHOK", "CPMI"],
+  condition: "mitralRegurgitationAcute",
+  patient: {age: 68, gender: "female"},
+  clothing: {top: "long", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"I was fine, just sitting here, and then all of a sudden I couldn\'t get a breath in at all — like someone turned a switch. I had a heart attack four days ago, they said I was doing okay."', kind: "pt",
+      evid: "SUDDEN, severe pulmonary edema days after a myocardial infarction — not a gradual worsening — is the classic presentation of a mechanical complication like papillary muscle rupture, not ordinary post-MI heart failure.", find: "OPQRST: abrupt-onset severe dyspnea, four days post-MI, no gradual build-up."}),
+    sample: () => ({say: "Son: \"She had a heart attack last week, they put a stent in. She's been on her new heart medications since she got home two days ago.\"", kind: "pt",
+      evid: "A recent MI (the classic 2-7 day window for papillary muscle rupture, most often after an inferior infarct) sets up exactly the substrate for an acute mechanical complication like this.", find: "SAMPLE: MI 4 days ago with stent placement, recently started cardiac medications."}),
+    heart: (s, v) => ({say: `Rapid, rate ${v.hr}, and there's a new loud, harsh murmur you didn't expect on a routine listen — you can hear it clearly at the apex.`, kind: "crit",
+      evid: "A NEW loud holosystolic murmur appearing suddenly, days after an MI, together with flash pulmonary edema, is the specific bedside signature of acute mitral regurgitation from papillary muscle or chordal rupture.", find: `Heart: new loud apical systolic murmur, tachycardic at ${v.hr}, signs of acute pulmonary edema.`}),
+    skin: () => ({say: "Pale, cool, diaphoretic.", find: "Skin pale, cool, diaphoretic."}),
+    lungs: () => ({say: "Coarse crackles throughout both lung fields, worse at the bases, with visible pink frothy sputum.", kind: "crit",
+      evid: "Bilateral crackles with pink frothy sputum appearing this suddenly, days post-MI, is flash pulmonary edema from a new, severe backward leak overwhelming the left atrium and pulmonary circulation almost immediately.", find: "Lungs: diffuse coarse crackles, pink frothy sputum, acute flash pulmonary edema."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const gaveNitro = s.given.nitro || s.given.nitroOwn;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Acute severe mitral regurgitation from a ruptured papillary muscle, days after her infarct, with forward output collapsing faster than it could be supported.";
+    if (gaveNitro) notes.push("Nitroglycerin was given — and here, unlike a fixed valve obstruction, that is genuinely helpful: reducing afterload preferentially reduces the regurgitant fraction (the lower-pressure left atrium is an easier path for the leaking blood than a lower-pressure aorta), so a real forward-flow benefit follows from the same drug that would be relatively contraindicated in severe aortic stenosis.");
+    else if (!died) notes.push("Consider that afterload reduction is a real, guideline-supported treatment for acute severe mitral regurgitation — the mechanism here is a backward leak, not a fixed forward obstruction, so a vasodilator genuinely helps forward flow rather than risking it.");
+    notes.push("The recognition point is the SUDDENNESS of severe pulmonary edema days after an MI with a new murmur — a mechanical complication (papillary muscle rupture), not a routine post-MI heart-failure decline, and one that needs rapid transport for surgical evaluation.");
+    return {died, cause, notes, correct: s.pi === "RESP", truth: "Acute severe mitral regurgitation from post-MI papillary muscle rupture, causing flash pulmonary edema and cardiogenic shock"};},
+},
+
+infectiveEndocarditis: {cat: "medical", id: "CARD-050", pronouns: "he", title: "Male, 54. Fever and a new weakness on one side for a week.",
+  limit: 1300, transport: 480,
+  bystanders: "His roommate, worried he's been getting sicker for days, called today when his arm suddenly stopped working right.",
+  units: [{at: 400, level: "emt", name: "BLS 13"}],
+  dispatch: ["54M. Fever for a week, now sudden weakness on one side.", "History of IV drug use per roommate.", "Conscious, alert."],
+  update: ["Roommate: \"His arm just went weak all of a sudden a few minutes ago, and he's been running a fever for days!\""],
+  impression: "Lying on the couch, flushed and diaphoretic, visibly unwell. Alert but uncomfortable, favoring one arm.",
+  imps: ["SEPS", "FEVR", "DYSR"],
+  condition: "infectiveEndocarditis",
+  patient: {age: 54, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"I\'ve been running a fever, chills, feeling wiped out for about a week now. I figured it was the flu. Then just now my arm went weak, out of nowhere."', kind: "pt",
+      evid: "A week-long unexplained fever culminating in a sudden new focal weakness is the real, two-part infective endocarditis pattern — subacute bacteremia with a valve source, followed by a septic embolus.", find: "OPQRST: one week of fever/chills/fatigue, sudden new arm weakness just before your arrival."}),
+    sample: () => ({say: "Roommate: \"He's used IV drugs on and off, on his arm, hasn't been to a doctor about the fever. Otherwise no health problems I know of.\"", kind: "pt",
+      evid: "IV drug use is a well-documented major risk factor for infective endocarditis (introducing bacteria directly into the bloodstream, seeding a heart valve), and a week of untreated fever is exactly the subacute time course this disease follows.", find: "SAMPLE: history of IV drug use, no other significant history, no prior evaluation for the fever."}),
+    heart: (s, v) => ({say: `Rapid, rate ${v.hr}, with a new soft murmur you can pick up on the left side of his chest.`, kind: "crit",
+      evid: "A new murmur in a febrile patient with an IV-drug-use history is the direct valve-involvement finding of infective endocarditis, distinct from an isolated fever with no cardiac source.", find: `Heart: tachycardic (${v.hr}), new soft murmur.`}),
+    skin: () => ({say: "Hot, flushed, diaphoretic.", find: "Skin hot, flushed, diaphoretic."}),
+    neuro: (s, v) => (v.strokeWeakness > 0.3
+      ? {say: "Left-sided weakness, noticeably weaker grip on that side, mild facial droop.", kind: "crit",
+        evid: "A sudden new focal neuro deficit in a patient with days of untreated bacteremia and a new murmur is a septic embolus breaking off an infected valve and lodging in a cerebral vessel — a real, documented complication of infective endocarditis, not a coincidental separate stroke.", find: "Neuro: new left-sided weakness and mild facial droop, consistent with an embolic event."}
+      : {say: "Moves all extremities normally, no focal deficit right now.", find: "Neuro: no focal deficit currently — reassess, this patient's presentation has already been shifting."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated infective endocarditis — ongoing bacteremia and a septic embolic event, with nothing done to support perfusion or expedite transport for source-control and valve evaluation.";
+    notes.push("A week of unexplained fever plus a new heart murmur plus a sudden new focal neuro deficit is the classic infective endocarditis triad — days-old bacteremia seeding a heart valve, followed by a piece of the infected vegetation breaking off as a septic embolus. There is no field antibiotic or definitive treatment here; the job is recognizing the pattern (especially in a patient with IV drug use risk), supporting perfusion, and getting him to a facility that can treat both the infection and, likely, the valve itself.");
+    return {died, cause, notes, correct: s.pi === "SEPS", truth: "Infective endocarditis (IV-drug-use risk) with fever/bacteremia and a septic embolic stroke"};},
+},
+
 asthmaAttack: {cat: "medical", id: "RESP-023", pronouns: "she", title: "Female, 54. Wheezing, cleaning with chemicals.",
   limit: 1200, transport: 480,
   bystanders: "A window is open now. The room still smells strongly of bleach.",

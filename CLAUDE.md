@@ -332,6 +332,20 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Front-end/gameplay batch: queue item 60, part 3 — a real crew-directable FBAO-clearance task, reusing the player's own resolution mechanism rather than duplicating it
+
+Confirmed the gap by reading the tree before building anything (lesson 16), per section 6's item 60 own filing: parts 1 (nebulized epinephrine) and 2 (tracheostomy state) are done/another agent's assignment respectively; part 3 (the FBAO-crew-task sub-gap) was still open. Grepped `s.cleared`/`conditionHas(...,"fbao")` across `App.jsx` before touching anything: the mechanism was reachable only through the player's own two hard-coded special cases inside `start()` (`p.id==="cpr"` and `p.id==="laryngoscopy"`, both gated on `conditionHas(scenOf(s).condition,"fbao")&&!s.cleared&&!s.pushedDeeper`) plus `fbao`'s own scenario-local `clearFB` Magill-forceps extra (`scenarios.js`). No `TASKS` entry in `gear.js` let a crew member be directed to perform this at all.
+
+**Fixed by calling the SAME resolution the player's own action already uses, not by building a second, parallel clearance rule.** Added a new branch to `crewFn` in `App.jsx`, gated on two new task flags (`t.fbaoClear`/`t.fbaoMagill`), that runs the identical `conditionHas(scenOf(m).condition,"fbao")&&!m.cleared&&!m.pushedDeeper` guard the player's own special cases already use, and sets `m.cleared=1` on success — the exact same state field, no separate ledger. Two negative branches were added: a crew member directed at this task on a patient whose airway was already pushed deeper (the fingerSweep extra) gets a real refusal ("wedged, I can't reach it"); a crew member directed at this task on a patient who does NOT have a real foreign-body obstruction gets an honest "there's nothing obstructing this airway" refusal rather than silently clearing an airway that was never blocked.
+
+**Two new `gear.js` TASKS entries, BLS and ALS tiers, per real scope-of-practice**: `fbaoClearBls` (`lvl:0`, `fbaoClear:true`, `dose:"cpr"`) — real 2020 AHA/NREMT guidance for an unconscious complete FBAO is chest compressions themselves, not back blows/abdominal thrusts (which only apply to a conscious, standing patient) — doses real CPR via `dose:"cpr"` in addition to clearing the airway, matching what the player's own `p.id==="cpr"` special case already does. `fbaoMagillClear` (`lvl:4`, `fbaoMagill:true`) — direct laryngoscopy + Magill forceps under direct visualization, the definitive ALS-scope removal, matching `fbao`'s own scenario-local `clearFB` player extra's scope tier.
+
+**MEASURED, not assumed** (a throwaway probe, stripped after use, mirroring `crewFn`'s exact new branch logic against the real `TASKS`/`SCEN` exports): both new tasks exist with the correct fields; both correctly set `cleared=1` against the real `fbao` scenario's own condition key; both correctly refuse against a non-fbao condition (`abdPain`) and against a pushed-deeper airway; and `choking40` (which reuses the SAME `fbao` condition key per an earlier session's own fix) is also correctly reachable through the new BLS task.
+
+**Verification.** `npx eslint src/App.jsx src/gear.js`: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero findings in `gear.js`. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. No new physiology field was introduced, so no `scenarioSweep.mjs`/`mechanismWiring.mjs` changes were needed, per this document's own established precedent for App.jsx/gear.js-only changes that don't touch `src/physio/*` — the throwaway probe above is this batch's own real, measured evidence.
+
+**Also confirmed this session, no code changes needed** (three other assigned items from the same batch, checked against the live tree before attempting anything, per lesson 16): **hypothermia's arrhythmia/coagulopathy limbs** — `accidentalHypothermia` already ships both (a real arrhythmia limb via `cardiovascular.js`'s `a.hypothermic` term + Osborn-wave ECG, and a real coagulopathy limb via `coagulation.js`'s temperature-dependent `tempEff`). **Pulmonary edema separated from generic CHF** — a prior session already built, measured, and deliberately REVERTED this: a real Ppv-driven mechanism was found confounded by non-cardiac intrathoracic-pressure effects (e.g. `opioidOD` reads a higher Ppv than `chf`) — that negative finding was respected rather than re-attempted. **GI hemorrhage** — `esophagealVaricealHemorrhage`, `upperGIBleed`, and `lowerGIBleed` all already exist with the real mechanism (reusing `activeBleedRate`) and the real teaching point (no field hemostasis for internal bleeds) this item asked for.
+
 ### Cholinergic toxidrome / organophosphate poisoning (queue item 67) — a real muscarinic-excess mechanism, closing the MILD/MODERATE gap TP 1240/1240-P's own HAZMAT nerve-agent algorithm exposed (the SEVERE tier already had real signals; miosis/secretions/bradycardia had none)
 
 Confirmed by grep before building anything (lesson 16): atropine/DuoDote's `vagalBlock` mechanism was real but had nothing to antagonize for this toxidrome. Built `organophosphatePoisoning` (conditions.js), scoped to the core muscarinic picture (SLUDGE/killer-B's bradycardia + bronchorrhea/bronchospasm) — nicotinic effects and mass-casualty scope deliberately NOT modeled, per this batch's own scope discipline.
@@ -7849,10 +7863,12 @@ plausible but not fitted to trial data.
     correctly lower priority than items 56-58 above unless a dive-specific
     scenario is specifically wanted.
 
-60. **PARTIALLY RESOLVED (this session) — the nebulized-epinephrine slice is
-    DONE, see section 3's newest entry. The tracheostomy-state and
-    FBAO-crew-task slices remain open, unchanged from the original filing
-    below.**
+60. **PARTIALLY RESOLVED (this session) — the nebulized-epinephrine AND
+    FBAO-crew-task slices are DONE, see section 3's newest entries. The
+    tracheostomy-state slice's status should be re-checked against the
+    live tree (a separate parallel batch was assigned it this session;
+    confirm via `grep -n "pat.tracheostomy" src/physio/patient.js` before
+    assuming it's still open).**
 
     No nebulized-epinephrine drug entry, no tracheostomy-state model, and
     no crew-directable FBAO-clearance task — found while implementing TP

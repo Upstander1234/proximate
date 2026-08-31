@@ -24,6 +24,7 @@ import { Patient } from "../physio/patient.js";
 import { updateVenousReturn } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
 import { LIM } from "../scope.js";
+import { CONDITIONS } from "../physio/conditions.js";
 
 const STEP = 2;
 
@@ -331,6 +332,10 @@ function snapshot(p) {
     pathogenBurden: p.pathogenBurden || 0,
     cytokineLoad: p.cytokineLoad || 0,
     capillaryLeak: p.capillaryLeak || 0,
+    // Queue item 56 (thermalBurn): scenario-authored TBSA fraction. Its
+    // thermal consequence is read via this snapshot's existing `coreTemp`
+    // field (above), its coagulation/hemodynamic one via `co` (below).
+    burnTbsaFraction: p.burnTbsaFraction || 0,
     factorII: p.factorII ?? 100,
     fibrinogen: p.fibrinogen ?? 3,
     // Agitation / psychiatric-crisis severity (queue items 51/52): the
@@ -4730,6 +4735,50 @@ console.log("[CHOLINERGIC TOXIDROME / ORGANOPHOSPHATE POISONING — queue item 6
   bronchoUnchanged ? pass++ : fail++;
   if (!bronchoUnchanged) failures.push(`atropine should not change broncho in this model (documented limitation), got ${untreated.after.broncho.toFixed(3)} -> ${treated.after.broncho.toFixed(3)}`);
   console.log(`  ${bronchoUnchanged ? "PASS" : "FAIL"}  ${"...and, honestly, leaves broncho/bronchorrhea unchanged".padEnd(46)} broncho ${untreated.after.broncho.toFixed(3)} -> ${treated.after.broncho.toFixed(3)}`);
+}
+
+console.log("[THERMAL BURN / TBSA — queue item 56]");
+{
+  // No burn scenario exists yet in scenarios.js (item 56 was scoped to the
+  // physiology mechanism, not authoring a full narrative scenario). Rather
+  // than fake the substrate, `mutate` invokes thermalBurn's own real
+  // progress() function directly, each tick, at the exact dt (STEP/60 min)
+  // physiology.js's stepPatient would pass it if this condition really were
+  // composed into a scenario — an exact-fidelity stand-in, not an
+  // approximation, for "this scenario's condition is thermalBurn."
+  const majorBurn = (p) => { p.burnTbsaFraction = 0.55; CONDITIONS.thermalBurn.progress(p, STEP / 60); };
+  const untreated = probe({ scen: "abdPain", settle: 2, run: 600, mutate: majorBurn });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 600 });
+
+  // Presence: >20% TBSA drives real, measurable capillaryLeak via the SAME
+  // Starling-block handle preeclampsia/sepsis/pancreatitis already use.
+  const fires = untreated.after.capillaryLeak > 0.05;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`55% TBSA burn should drive capillaryLeak>0.05 by 600s, got ${untreated.after.capillaryLeak.toFixed(3)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"55% TBSA burn -> real capillary leak".padEnd(46)} capillaryLeak = ${untreated.after.capillaryLeak.toFixed(3)}`);
+
+  // Specificity: a matched control with burnTbsaFraction at its constructor
+  // default (0) shows EXACTLY zero leak from this mechanism.
+  const healthyOk = healthy.after.capillaryLeak === 0 && healthy.after.burnTbsaFraction === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`condition-less/burn-less control should show zero capillaryLeak, got ${healthy.after.capillaryLeak}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire for burnTbsaFraction=0 (constructor default)".padEnd(46)} capillaryLeak = ${healthy.after.capillaryLeak.toFixed(3)}`);
+
+  // Thermoregulation: the SAME 55% TBSA burn, in a cold environment, loses
+  // core heat faster than a matched non-burned control in the identical
+  // environment — the impaired-skin-barrier heat-loss term (thermo.js),
+  // not a scripted temperature write.
+  const cold = (p) => { p.ambientTemp = 5; };
+  const coldBurn = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => { cold(p); majorBurn(p); } });
+  const coldControl = probe({ scen: "abdPain", settle: 2, run: 900, mutate: cold });
+  assertVersus("...in a cold environment, loses heat faster than a non-burned control (impaired skin barrier)", coldBurn, coldControl, "coreTemp", "down", 0.1);
+
+  // Treatment: escalated fluid resuscitation (TP 1220's own >10% TBSA step)
+  // needs no new drug — saline's existing plasma-volume bolus counters the
+  // Starling shift this condition's capillaryLeak drives, through the SAME
+  // generic path septicShock's own fluid-treatment assertion already uses.
+  const fluidTreated = probe({ scen: "abdPain", settle: 2, run: 600, apply: ["saline"], reapply: 240, mutate: majorBurn });
+  assertVersus("...IV fluids raise co through the shared Starling path (no new drug)", fluidTreated, untreated, "co", "up", 0.1);
 }
 
 console.log("\n" + "=".repeat(74));

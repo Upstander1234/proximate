@@ -57,10 +57,14 @@ export default function BootScreen({ g, setG }) {
 
   useEffect(() => {
     // Real, one-shot kickoff — never re-triggered by re-renders (empty dep
-    // array), never awaited, never blocks the checklist below.
-    preloadLocalAi();
+    // array), never awaited, never blocks the checklist below. preloadLocalAi
+    // itself is a no-op unless g.localAiEnabled===true (opt-in default —
+    // see dialogueManager.js's isLocalAiEnabled), so merely reaching the
+    // boot screen no longer starts a download on its own.
+    preloadLocalAi(g);
     const unsub = subscribeLocalAiProgress(setAi);
     return unsub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot kickoff by design, matching the empty-deps precedent this effect already used before g was read inside it
   }, []);
 
   const enter = () => setG((s) => ({ ...s, phase: "title" }));

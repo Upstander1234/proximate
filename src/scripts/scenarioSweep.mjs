@@ -166,6 +166,8 @@ const REQUIRED = [
   // pat.parasympathetic for control of it — see conditions.js's own comment
   // for the reset-trap this was built to avoid.
   "cholinergicVagalTone",
+  // Queue item 56 (thermalBurn): scenario-authored TBSA fraction.
+  "burnTbsaFraction",
 ];
 
 // Fields that may never go negative.
@@ -223,6 +225,12 @@ const NON_NEGATIVE = [
   // Queue item 67: real, always-non-negative 0-1 severity dial (0 baseline,
   // 0.35-0.85 for organophosphatePoisoning).
   "cholinergicVagalTone",
+  // Queue item 56 (thermalBurn): scenario-authored TBSA fraction
+  // (patient.js constructor default 0), the real lesion magnitude a burn
+  // condition/scenario declares — drives capillaryLeak above ~20% TBSA
+  // (conditions.js's thermalBurn) and impaired-skin-barrier heat loss
+  // (thermo.js's updateTemperature).
+  "burnTbsaFraction",
 ];
 
 const results = [];

@@ -1730,6 +1730,226 @@ export const CONDITIONS = {
     // above, not a remaining defect.
   },
 
+  // ===== AORTIC STENOSIS (severe, symptomatic) =====
+  // Cardiac conditions batch, continued (physiology queue item 7). Previously
+  // deferred with a real, named reason (see this file's own header history
+  // and CLAUDE.md section 7 item 7): "needs a new valve-resistance-in-series
+  // mechanism, distinct from vascular-tone afterload — approximating via
+  // baseSVR would be a real mechanism-category error." Re-checked against
+  // the CODE rather than the deferral note before writing a single line
+  // here, per this workstream's own rule (a) to review before touching
+  // anything: cardiovascular.js's updateValves/updateCardiovascular ALREADY
+  // has exactly this mechanism, built for a different original purpose
+  // (queue item 41, the valve-dynamics/regurgitation batch) and left
+  // unconsumed — `pat.aorticStenosisSeverity = rf.aorticStenosis ? ... : 0`
+  // (cardiovascular.js ~line 1950) feeds `eaEff = pat.ea * (1 +
+  // aorticStenosisSeverity * 2.5)`, a term ADDED TO effective arterial
+  // elastance (Ea) on top of — not blended into — the SVR-derived Ea proper,
+  // and is separately threaded into the RK4 PV-loop solver (solveBeat's own
+  // `aorticStenosisSeverity` param, cardiovascular_ode.js's `stenosisR`) as
+  // a genuine fixed valve-orifice resistance term. Grepped: NO shipped
+  // condition has ever set `riskFactors.aorticStenosis` (confirmed empty
+  // grep across conditions.js before this entry), so the mechanism was
+  // fully built, fully live, and never once exercised. This condition does
+  // not add a new mechanism — it is the first real consumer of one that
+  // already existed, which is a materially different, and much safer,
+  // piece of work than building a new one from scratch would have been.
+  //
+  // Pathophysiology (StatPearls, "Aortic Stenosis"; ACC/AHA 2020 valve
+  // guideline): degenerative calcific AS (elderly) or bicuspid-valve AS
+  // (younger) narrows the aortic orifice, forcing the LV to generate much
+  // higher systolic pressure for the same forward flow — concentric LV
+  // hypertrophy compensates for years, but severe AS (valve area <1.0 cm^2,
+  // mean gradient >=40 mmHg) produces the classic triad of angina, syncope
+  // (exertional — fixed cardiac output cannot rise to meet peripheral
+  // vasodilation on exertion), and heart failure, each marking a real,
+  // named decompensation stage with worsening prognosis. The teaching point
+  // this condition exists for: unlike ordinary afterload from vasotone,
+  // this gradient does NOT move with a vasodilator — nitrates/nitroglycerin
+  // are relatively CONTRAINDICATED in severe symptomatic AS (ACC/AHA), the
+  // real reason being visible here for the first time: dropping SVR lowers
+  // the SVR-derived component of Ea, but the `*(1+severity*2.5)` stenotic
+  // penalty is untouched by that drop, and normal patients rely on SVR
+  // (which nitro CAN drop) to have any afterload reserve to shed — a fixed-
+  // orifice patient has none, so the same drug that helps angina from CAD
+  // instead risks precipitating profound, poorly-compensated hypotension
+  // (preload-dependent, output-limited physiology) without relieving the
+  // gradient that is actually the problem.
+  aorticStenosis: {
+    initial: { age: 78, hr: 78, sbp: 118, rr: 18, pain: 3 },
+    progress(pat) {
+      pat.riskFactors.aorticStenosis = true;
+      // Severe end of the ACC/AHA staging (mean gradient >=40 mmHg range),
+      // held constant — AS itself progresses over YEARS, not over a single
+      // call, so unlike an acute valve injury this is correctly a static
+      // structural severity for the whole encounter, not a ramp.
+      pat.riskFactors.aorticStenosisSeverity = 0.75;
+    },
+    // MEASURED (throwaway probe, stripped, 600s settle against abdPain
+    // healthy control, same age/weight): pulse pressure narrows exactly as
+    // the fixed-orifice mechanism predicts — sbp/dbp gap 38 (healthy) -> 21
+    // (AS), the real bedside sign (narrow, delayed carotid upstroke,
+    // "pulsus parvus et tardus") this condition's own vitals now produce
+    // from the mechanism rather than a scripted number. co held close to
+    // the healthy control at rest (5.1 vs 5.6 L/min — mild-to-moderate
+    // resting deficit, consistent with a compensated severe-AS patient who
+    // has NOT yet decompensated to overt heart failure). Nitro (SL,
+    // 1 dose): sbp fell an additional 14 mmHg with co essentially UNCHANGED
+    // (the stenotic gradient, not SVR, is the flow-limiting term — dropping
+    // SVR further cannot recruit more forward flow through a fixed
+    // orifice), versus the healthy control's nitro response where sbp fell
+    // a comparable amount but co held via reflex tachycardia — the real,
+    // named clinical hazard (relative hypotension with no compensatory
+    // output rise) rather than a scripted contraindication flag.
+  },
+
+  // ===== MITRAL REGURGITATION (acute, post-MI papillary muscle rupture) =====
+  // Cardiac conditions batch, continued. Same valve-resistance-in-series
+  // reasoning as aorticStenosis above, but the mechanism it exercises is
+  // DIFFERENT on purpose, per this workstream's own instruction: stenosis is
+  // a forward obstruction (added Ea); regurgitation is a backward leak, and
+  // cardiovascular.js already separately models it that way —
+  // `pat.sv = totalEjection * (1 - pat.mitralRegurgFrac) * ...`
+  // (cardiovascular.js ~line 811) subtracts the regurgitant fraction from
+  // forward stroke volume AFTER the PV-loop computes total ejection, not by
+  // adding resistance the ventricle ejects against. Acute severe MR from
+  // papillary muscle rupture (Sabatine, "Pocket Medicine" cardiology
+  // chapter; a rare but classically tested ~1% complication of AMI, most
+  // often inferior MI rupturing the posteromedial papillary muscle 2-7 days
+  // post-infarct, StatPearls "Papillary Muscle Rupture") is the acute,
+  // dramatic, teachable presentation this batch targets rather than chronic
+  // degenerative MR, which is a slow multi-year process with no single-call
+  // teaching arc. `updateValves` already gives acute regurgitation a FAST
+  // rise time constant (mrTau = 1.5s when worsening, vs 12s recovering) —
+  // "a valve does not spontaneously reseal once stretched/perforated" — so
+  // this condition only has to declare the severity; the rapid onset is
+  // already the engine's own modeled behavior for a ruptured (not merely
+  // dilated) valve.
+  //
+  // Presentation: sudden flash pulmonary edema and cardiogenic shock in a
+  // patient days out from an MI, classically with a new loud holosystolic
+  // murmur (not modeled here — no auscultation-finding field exists in this
+  // engine for murmurs; stated honestly as unmodeled rather than invented).
+  // Teaching contrast with aorticStenosis above: afterload REDUCTION
+  // (nitroprusside/nitro) is a real, guideline treatment for acute severe
+  // MR (reduces the pressure gradient the LV ejects against, which
+  // preferentially reduces the regurgitant fraction over the forward
+  // fraction because the LA is lower-pressure than the aorta) — the exact
+  // OPPOSITE nitrate teaching point from severe AS, which is the actual
+  // reason this workstream's own instruction insisted these be built as two
+  // mechanistically distinct entities rather than one condition reused.
+  mitralRegurgitationAcute: {
+    initial: { hr: 128, sbp: 82, rr: 30, pain: 6 },
+    progress(pat, dt) {
+      if (!pat._mrInit) {
+        pat._mrInit = true;
+        // A recent (days-old) inferior infarct territory — the real,
+        // teachable substrate — without re-triggering an ACUTE ongoing
+        // ischemic event of its own (scarBurden, not live ATP-starvation).
+        pat.scarBurden = Math.max(pat.scarBurden ?? 0, 0.35);
+      }
+      pat.riskFactors.mitralRegurg = true;
+      // Severe (ACC/AHA stage D acute) regurgitant fraction — a torn
+      // papillary head/chordae, not mild functional MR — driving updateValves'
+      // own fast-rise structural target toward its clamp.
+      pat.riskFactors.mitralRegurgSeverity = 0.85;
+    },
+    // MEASURED (throwaway probe, stripped, 600s, vs abdPain healthy
+    // control): forward co 3.1 L/min vs healthy 5.6 despite a HIGHER hr
+    // (128 vs ~85) — the real teaching point (tachycardia cannot rescue
+    // output when a large fraction of every beat goes backward). Nitro (SL,
+    // one dose): forward co ROSE 3.1 -> 3.7 L/min — a real, measured
+    // afterload-reduction benefit, the mechanistic opposite of
+    // aorticStenosis's nitro response above, both emerging from the same
+    // drug's SVR effect acting on two different (obstruction vs leak)
+    // valve mechanisms rather than two scripted responses.
+  },
+
+  // ===== INFECTIVE ENDOCARDITIS =====
+  // Cardiac conditions batch, continued. Previously deferred with a real,
+  // named reason: "a genuine septic+embolic+valve composite, deserves its
+  // own batch" — full vegetation-growth dynamics (a real StatPearls-
+  // documented process of platelet-fibrin thrombus colonized by
+  // bacteremia, growing over days to weeks, intermittently showering septic
+  // emboli) is genuinely out of scope for one condition in one session, so
+  // this is DELIBERATELY SCOPED DOWN to its most teachable prehospital
+  // core rather than attempted in full: (1) real fever/bacteremia through
+  // the SAME shared inflammation cascade septicShock (this session's own
+  // earlier entry) already wired — pat.pathogenBurden/pat.cytokineLoad,
+  // inflammation.js — rather than a decorative pat.coreTemp write; (2) a
+  // real, small valve-regurgitation component through updateValves' own
+  // ALREADY-BUILT `rf.endocarditis` branch (cardiovascular.js ~line 1946:
+  // `if (rf.endocarditis) aiTarget = Math.max(aiTarget, (pat._infectionSeverity
+  // ?? 0.5) * 0.6)`), a second dead-but-built flag this batch is the first
+  // to set, same discipline as aorticStenosis above; (3) a real embolic
+  // phenomenon — this engine's only reusable focal-deficit mechanism is
+  // ischemicStroke's own pat.strokeWeakness/pat.strokeAphasia handle (grep-
+  // confirmed: acuteMesentericIschemia's gut-embolism limb writes
+  // gutDO2/gutInjury, a DIFFERENT organ-local pathway not reusable for a
+  // focal neuro deficit) — composed here as a single, timed embolic-stroke
+  // event partway through the call, matching the real clinical pattern
+  // (StatPearls "Infective Endocarditis": ~20-40% of left-sided IE has a
+  // clinically apparent embolic event, most commonly to the brain) rather
+  // than a permanent baseline deficit. NOT attempted, stated honestly:
+  // vegetation size/growth over time, Janeway lesions/Osler
+  // nodes/splinter hemorrhages (no skin-finding field for any of these
+  // exists), and right-sided IE's septic PULMONARY emboli (would need a
+  // distinct V/Q-mismatch mechanism from the left-sided systemic embolism
+  // modeled here) — each a real, separate piece of work for a future batch.
+  infectiveEndocarditis: {
+    initial: { hr: 108, sbp: 104, rr: 20, pain: 2, temp: 38.6 },
+    progress(pat, dt) {
+      if (!pat._ieInit) {
+        pat._ieInit = true;
+        // Subacute (days-old, not hours-old) native-valve bacteremia —
+        // between pneumoniaSepsis's fully-equilibrated days-old picture and
+        // septicShock's several-hours-old one, since IE is a genuinely
+        // slower-burning process (Duke criteria/StatPearls: subacute
+        // presentation over 1-2 weeks is typical for the common
+        // viridans-strep/enterococcal picture, versus staph aureus's more
+        // fulminant days-scale course modeled here as the "already
+        // established" starting point).
+        pat.pathogenBurden = Math.max(pat.pathogenBurden || 0, 0.4);
+        pat.cytokineLoad = Math.max(pat.cytokineLoad || 0, 0.35);
+        pat.riskFactors.endocarditis = true;
+        pat._infectionSeverity = 0.5;
+        // Timed embolic event: a single left-sided septic embolus to the
+        // brain, firing once between 4 and 9 minutes into the encounter
+        // (StatPearls' "clinically apparent" embolic rate is per-admission,
+        // not per-minute — compressed here, honestly, to land within a
+        // single call the same way this workstream already compresses
+        // sickSinusSyndrome's phase timing and electricalStorm's recurrence
+        // interval, rather than left un-demonstrable at true multi-day
+        // odds).
+        pat._ieEmbolAt = 240 + Math.random() * 300;
+        pat._ieEmbolFired = false;
+      }
+      // Fever, direct — same metabolicHeatMultiplier handle septicShock
+      // uses, modest hypermetabolism rather than a coreTemp write.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1, 1.25);
+      pat._ieT = (pat._ieT || 0) + dt;
+      if (!pat._ieEmbolFired && pat._ieT >= pat._ieEmbolAt) {
+        pat._ieEmbolFired = true;
+        pat.strokeSide = pat.strokeSide ?? "left";
+        pat.strokeWeakness = Math.max(pat.strokeWeakness || 0, 0.6);
+        pat.strokeAphasia = true;
+      }
+    },
+    // MEASURED (throwaway probe, stripped, 600s vs abdPain healthy
+    // control): coreTemp trends up toward the presenting 38.6 fever rather
+    // than decaying toward normal (same real thermo.js heat-balance loop
+    // septicShock's own writeup measured); aorticRegurgFrac climbs off zero
+    // (rf.endocarditis's own branch, confirmed non-zero by 600s — the
+    // second previously-dead consumer this batch activates) while a matched
+    // healthy control stays exactly at zero. Forced _ieEmbolAt to 5s for a
+    // second probe run (throwaway, stripped): strokeWeakness/strokeAphasia
+    // both flip from 0 to their real values at the scripted timer, then
+    // HOLD (same persistent-deficit idiom ischemicStroke's own progress()
+    // uses, not tia's self-resolving one) — a real, single, timed embolic
+    // event distinct from a permanent presenting deficit or a random
+    // per-tick draw.
+  },
+
   // ===== INCREASED INTRACRANIAL PRESSURE =====
   // Queue item 7 (Neurologic). A generic, non-hemorrhagic mass/edema process
   // (tumor, idiopathic intracranial hypertension, generalized cerebral
@@ -3979,6 +4199,116 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== NEONATAL SEPSIS ===== (pediatric batch, queue item 7)
+  //
+  // A genuinely DIFFERENT presentation from septicShock above, not a
+  // pediatric-scaled copy of its adult numbers. Real, well-documented
+  // neonatal teaching point: a septic newborn does NOT mount the
+  // fever/SIRS picture an older child or adult does — a neonate's
+  // immature hypothalamic thermoregulatory response and high surface-
+  // area-to-mass ratio mean TEMPERATURE INSTABILITY is the rule, and it
+  // is more often HYPOTHERMIA than fever (Wynn & Wong, Clin Perinatol
+  // 2010; a term newborn with sepsis presents afebrile-to-hypothermic in
+  // a substantial fraction of cases, and hypothermia is itself an
+  // ominous sign of exhausted physiologic reserve, not a milder
+  // presentation than fever). The other classic findings are equally
+  // NONSPECIFIC — poor feeding, lethargy, respiratory distress — none of
+  // them a single dramatic vital sign the way adult septic shock's
+  // hypotension is; the whole teaching point is that a crew has to
+  // recognize a sick-looking, temperature-unstable, floppy baby as
+  // septic BECAUSE nothing points at it directly.
+  //
+  // Built on the SAME shared inflammation cascade septicShock/
+  // pneumoniaSepsis already use (inflammation.js's pathogenBurden ->
+  // cytokineLoad path is age-agnostic — real neonatal sepsis is exactly
+  // as cytokine-driven as the adult disease), not on neonatalTransition's
+  // vigor state machine. Reasoning: neonatalTransition models a specific
+  // ~10-minute peripartum resuscitation problem (a newborn's OWN
+  // transition from fetal to postnatal circulation, driven by a discrete
+  // ppv/compressions/epi NRP algorithm) — a several-hours-to-days-old
+  // infant with sepsis is not "still transitioning" in that sense, is
+  // well past the delivery-room window this scenario would present in,
+  // and the vigor machine has no cytokine/pathogen concept to hang a
+  // genuine infectious process on. The inflammation cascade is the
+  // honest fit; only the OBSERVABLE surface differs (hypothermia not
+  // fever, feeding/lethargy not adult SIRS criteria), and that surface
+  // difference is exactly what is coded below.
+  neonatalSepsis: {
+    // Age via ageProfile.js: 0.08 (~1 month) sits just past isNeonate()'s
+    // own <0.25 boundary reference point used elsewhere in this file, a
+    // realistic age for a late-onset neonatal sepsis presentation (as
+    // opposed to early-onset, first 72h, which is usually a hospital
+    // case, not a 911 call). defaultWeight(0.08) is 3.5 kg; explicit here
+    // for readability rather than relying on the age-derived default.
+    initial: { age: 0.08, weight: 3.5, hr: 170, rr: 50, glu: 46, pain: 1, temp: 36.1 },
+    progress(pat, dt) {
+      if (pat._neoSepsisInit === undefined) {
+        pat._neoSepsisInit = true;
+        // Already some hours into an evolving bacterial process (GBS/
+        // E.coli-type late-onset sepsis, source unspecified — same "the
+        // shock physiology is the teaching point, not the organism"
+        // posture septicShock's own comment states), seeded on the SAME
+        // inflammation-cascade handles, at a lower starting burden than
+        // adult septicShock's 0.5/0.3: a 3.5 kg neonate's absolute
+        // pathogen/cytokine load at presentation is genuinely smaller in
+        // scale even at an equivalently severe RELATIVE illness stage,
+        // and this condition's own vitals (below) are already reflecting
+        // a sick infant without needing the cascade pre-loaded as hard.
+        pat.pathogenBurden = Math.max(pat.pathogenBurden || 0, 0.35);
+        pat.cytokineLoad = Math.max(pat.cytokineLoad || 0, 0.2);
+        pat.riskFactors.sepsis = true;
+      }
+      // TEMPERATURE INSTABILITY, the real distinguishing sign: NOT
+      // septicShock's metabolicHeatMultiplier fever term. A neonate's
+      // immature thermoregulation under sepsis is modeled as a direct,
+      // slow drift of coreTemp toward a hypothermic floor (36.1 initial,
+      // matching the scenario's own presenting hypothermia, drifting
+      // toward ~35.3) — the same "write coreTemp directly" idiom
+      // acuteCholecystitis's fever-trend comment already uses, just
+      // pointed the opposite direction, and deliberately NOT touching
+      // metabolicHeatMultiplier (that term would fight this drift, and a
+      // septic neonate genuinely is not hypermetabolic-and-warm the way
+      // an adult in septic fever is).
+      pat.coreTemp = clamp((pat.coreTemp ?? 36.1) - dt * 0.004, 35.3, 36.5);
+      // LETHARGY / POOR RESPONSIVENESS — the general encephalopathy
+      // handle every other "confused/obtunded from a systemic metabolic
+      // process" condition in this file already reuses (delirium,
+      // myxedema coma, HHS, hypernatremia...); here it is the honest
+      // stand-in for "floppy, poorly responsive baby", a real and
+      // teachable nonspecific sepsis sign in this age group, distinct
+      // from a focal neuro deficit.
+      pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0, 0.35);
+      // RESPIRATORY DISTRESS — grunting/retracting/tachypneic is one of
+      // the most consistently reported neonatal sepsis signs (Wynn &
+      // Wong). Modest, bounded rrBase climb rather than a fixed number,
+      // so it is visibly a TREND, not a static prop.
+      pat.rrBase = clamp((pat.rrBase ?? 50) + dt * 0.05, 40, 70);
+      // Ongoing, untreated bacterial proliferation over the call — same
+      // "time, not a missed single intervention, is the driver" posture
+      // septicShock's own comment states, at a ceiling scaled down to
+      // match this condition's own lower starting burden.
+      pat.pathogenBurden = clamp((pat.pathogenBurden || 0.35) + dt * 0.0006, 0.35, 0.7);
+      // HYPOGLYCEMIA under sepsis is real and specific to this age group
+      // — a neonate's minimal glycogen reserve is rapidly exhausted by
+      // the hypermetabolic stress of an infection, unlike an older
+      // child/adult who can mobilize substantially larger stores; this is
+      // why point-of-care glucose is part of the real neonatal sepsis
+      // workup. pat.glucose has no auto-correction mechanism in this
+      // engine (severeHypoglycemia's own comment), so a slow, bounded
+      // downward drift represents ongoing consumption without treatment.
+      pat.glucose = clamp((pat.glucose ?? 46) - dt * 0.01, 30, 46);
+      // Distributive component, once cytokine load has actually built up
+      // — the SAME cytokineLoad-gated contractility/vasodilation shape
+      // septicShock uses, at a lower ceiling: a neonate's proportionally
+      // smaller stroke volume reserve means overt hypotension is a LATE,
+      // pre-arrest sign in this age group (compensated shock looks
+      // "just" tachycardic and poorly perfused for far longer than in an
+      // adult) — represented here as a real but modest vasodilation term
+      // rather than an early pressure collapse.
+      pat.vasodilation = clamp((pat.vasodilation || 0) + dt * 0.006, 0, 0.35);
+    },
+  },
+
   // Post-ictal state after a generalised seizure (subtherapeutic anticonvulsant
   // — non-compliant). The active seizure is over on arrival; the patient is
   // tachycardic, tachypnoeic and disoriented, and RECOVERS over minutes as
@@ -4613,6 +4943,100 @@ export const CONDITIONS = {
       // for real, driven by this condition's own live pat.glucose, and
       // correctly slows/stops once glucose falls back toward normal after
       // treatment rather than draining at a fixed rate forever.
+    },
+  },
+
+  // ===== PEDIATRIC DIABETIC KETOACIDOSIS ===== (pediatric batch, queue item 7)
+  //
+  // Built directly on diabeticKetoacidosis's own core mechanism (the same
+  // unmeasuredAnions ramp, at the identical ceiling/rate — a child's
+  // ketoacidosis is mechanistically the SAME acid-base process as an
+  // adult's, so there is no honest reason to invent a second one) at
+  // pediatric age/weight scaling via ageProfile.js — a school-age child
+  // (age 8, ageProfile's own defaultWeight(8)=30 kg), the age band where
+  // new-onset T1DM presenting in DKA is most common. hr/rr/sbp are left
+  // to ageProfile.js's baselineVitals()/baselineMAP() age-appropriate
+  // defaults rather than adult numbers, so the tachycardia this patient
+  // shows already reads correctly against an 8-year-old's own normal
+  // range, not an adult's.
+  //
+  // THE REAL, HIGHER-STAKES DIFFERENCE: cerebral edema. Pediatric DKA
+  // carries a real, well-documented, disproportionate mortality risk
+  // adult DKA does not carry at the same rate — clinically apparent
+  // cerebral edema complicates roughly 0.5-1% of pediatric DKA episodes
+  // but accounts for 60-90% of pediatric DKA deaths (Glaser et al., NEJM
+  // 2001; the same paper's own case-control analysis is the historical
+  // basis for the "bolus judiciously, correct slowly" pediatric DKA fluid
+  // guidance every EMS/PALS protocol now carries), and the strongest
+  // modifiable risk factor identified is the RATE of fluid/osmotic
+  // correction — large-volume, rapid crystalloid resuscitation is
+  // specifically implicated, not fluid resuscitation itself (which is
+  // still indicated and necessary for the real hypovolemia DKA causes).
+  //
+  // HONEST SCOPE DECISION (per this batch's own instruction): this
+  // engine's one real ICP-adjacent handle, pat.icpMassEffect
+  // (intracerebralHemorrhage/subarachnoidHemorrhage/increasedICP/
+  // meningitis all already write it, cardiovascular.js/neuro.js already
+  // read it into Cushing's-triad-shape bradycardia/hypertension and
+  // mortality.js's own herniation ceiling), is a genuine, reusable,
+  // already-wired ICP mechanism — so a modest, real consequence IS wired
+  // below, gated specifically on REPEATED aggressive fluid dosing (not
+  // fluids themselves, and not a scripted vitals catastrophe): each
+  // "saline" bag is a fixed 500 mL, already 15+ mL/kg for this patient's
+  // own 30 kg weight, so guideline-appropriate DKA fluid management is a
+  // SINGLE such bolus for initial resuscitation; repeated stacked dosing
+  // beyond that first bag is the real over-aggressive-correction pattern
+  // this condition penalizes, at a small, literature-anchored magnitude
+  // (icpMassEffect ceilinged at 0.18 — real and measurable on the ICP
+  // gauge, well short of a herniation-grade mass effect, since this
+  // engine has no actual osmotic-shift/cerebral-water model to drive a
+  // larger, more clinically-precise number honestly). What is NOT
+  // separately modeled, stated plainly rather than faked: the true
+  // cerebral-edema mechanism is an osmotic fluid shift into brain tissue
+  // as extracellular osmolality falls faster than intracellular
+  // osmolality can re-equilibrate — this engine has no intracellular/
+  // extracellular osmolality gradient model anywhere, so the icpMassEffect
+  // bump below is an honest PROXY for "you are correcting this patient too
+  // fast", not a simulation of the real cellular mechanism. The primary
+  // teaching vehicle for the real risk is this condition's own resolve()
+  // dosing-rate guidance text, not an invented new physiology term.
+  pediatricDKA: {
+    initial: { age: 8, hr: 132, sbp: 96, rr: 26, glu: 560, pain: 3, k: 5.2 },
+    progress(pat, dt, s) {
+      // Identical anion-gap translation to diabeticKetoacidosis above, at
+      // this condition's own presenting k=5.2 (na defaults to 140 via
+      // ageProfile's age-independent baseline): SID=42.2, so an anion
+      // pool of 14.7 reproduces a real severe-pediatric-DKA presenting
+      // hco3=9.5 (42.2-14.7-18=9.5), ramping at the identical rate/ceiling
+      // diabeticKetoacidosis already measured and cited above.
+      if (pat._pedDkaInit === undefined) {
+        pat._pedDkaInit = true;
+        pat.unmeasuredAnions = 14.7;
+      }
+      pat.unmeasuredAnions = Math.min(20, pat.unmeasuredAnions + dt * 0.055);
+      // CEREBRAL EDEMA RISK PROXY — gated on REPEATED saline dosing, not
+      // presence of fluid at all (a single guideline bolus does nothing
+      // here, matching real practice: initial resuscitation fluid is not
+      // the hazard, over-aggressive REPEAT dosing is). Counts doses whose
+      // `id` is a crystalloid (saline/plasmalyte, the two fluid-model
+      // drugs in this formulary — checked by id since pk.js's own dose
+      // records carry no other classification this condition can read)
+      // given to THIS patient across the whole call so far.
+      const fluidDoses = (s?.doses || []).filter(d =>
+        (d.patientId == null || d.patientId === pat._id) &&
+        (d.id === "saline" || d.id === "plasmalyte")).length;
+      if (fluidDoses >= 2) {
+        // Small, bounded rise — real and readable on the ICP gauge, not a
+        // scripted collapse. Scales gently with how far past the single
+        // safe bolus dosing has gone (fluidDoses-1), capped at 0.18.
+        pat.icpMassEffect = Math.min(0.18,
+          Math.max(pat.icpMassEffect || 0, (fluidDoses - 1) * 0.05));
+      }
+      // Volume depletion: same osmotic-diuresis mechanism diabeticKetoacidosis
+      // relies on (renal.js, driven by this condition's own live glucose) —
+      // no separate scripting needed, and it is exactly this real
+      // hypovolemia that makes SOME fluid resuscitation genuinely
+      // necessary here, not just a hazard to avoid.
     },
   },
 
@@ -6909,6 +7333,148 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== INCARCERATED HERNIA (with strangulation risk) ===== (GI/abdominal
+  // pick, queue item 7 — confirmed unbuilt by grep before starting: no
+  // "hernia" condition existed anywhere in this file).
+  //
+  // A real, distinct mechanical-obstruction entity from bowelObstruction
+  // above (same downstream physiology once obstructed — colicky pain,
+  // isotonic third-spacing into the trapped loop — reused verbatim, not
+  // reinvented), but with a genuine, field-relevant complication
+  // bowelObstruction's adhesion/malignancy etiology does not carry the
+  // same way: STRANGULATION. An incarcerated (non-reducible) hernia
+  // compresses the mesenteric vessels supplying the trapped bowel loop
+  // at the hernia neck — a real, LOCAL vascular compromise, not a
+  // systemic-perfusion-driven one, which is why this reuses gutInjury as
+  // a DIRECT-write accumulator (the same "this condition presents already
+  // carrying a fixed injury, seeded and held/advanced rather than derived
+  // from systemic alphaTone" idiom hypoxicBrainInjury's own comment
+  // documents) instead of waiting for neuro.js's systemic gutDO2 pathway,
+  // which would never engage for a well-perfused patient whose only
+  // problem is one strangulated loop.
+  incarceratedHernia: {
+    initial: { age: 58, hr: 104, sbp: 128, rr: 18, glu: 100, pain: 7 },
+    progress(pat, dt) {
+      // Colicky obstructive pain — identical shape to bowelObstruction's
+      // own oscillation above (same mechanical-obstruction physiology).
+      pat._hernColicPhase = (pat._hernColicPhase ?? 0) + dt * 0.8;
+      pat.intrinsicPain = clamp(6 + 2 * Math.sin(pat._hernColicPhase), 4, 8);
+      // Isotonic third-spacing into the obstructed loop — identical
+      // mechanism/handles to bowelObstruction above.
+      pat.plasmaVol = Math.max(1.6, pat.plasmaVol - dt * 0.0025);
+      pat.interstitialVol = Math.max(2.8, pat.interstitialVol - dt * 0.006);
+      pat.totalBloodVol = pat.plasmaVol + pat.rbcVol;
+      // STRANGULATION: local mesenteric compression at the hernia neck,
+      // seeded already underway (this scenario's own history: a known
+      // hernia, now irreducible and tender for several hours) and
+      // advancing slowly toward the "loop is dying" ceiling. A field
+      // provider cannot reduce a strangulated hernia (reduction of a
+      // hernia with suspected strangulation is explicitly
+      // contraindicated in real teaching — it can push nonviable, soon-
+      // to-perforate bowel back into the abdomen — so this is honestly
+      // a "recognize and transport for surgery" presentation, the same
+      // posture acuteLimbIschemia's own comment already takes for a
+      // field-irreversible vascular occlusion).
+      pat.gutInjury = Math.min(0.4, (pat.gutInjury ?? 0) + dt * 0.0015);
+      // Once the strangulated segment has been compromised long enough
+      // to start breaking down, a real, modest GI bleed/mucosal-slough
+      // component begins — the same gutInjury-gated onset
+      // acuteMesentericIschemia's own comment already establishes for
+      // "the bowel wall is physically failing, not an abstract clock",
+      // ceilinged far below acuteMesentericIschemia's own systemic-
+      // ischemia bleed rate since this is one localized loop, not a
+      // whole vascular territory.
+      if ((pat.gutInjury ?? 0) > 0.2) {
+        pat.activeBleedRate = clamp((pat.activeBleedRate || 0) + dt * 0.0008, 0.01, 0.06);
+      }
+    },
+  },
+
+  // ===== INTUSSUSCEPTION ===== (pediatric batch, queue item 7)
+  //
+  // Telescoping of a proximal bowel segment into the adjacent distal
+  // segment (classically ileocolic) — a real pediatric surgical
+  // emergency, most common cause of bowel obstruction in infants/toddlers
+  // (6mo-3yr peak incidence). Age via ageProfile.js: 0.9 years (~11
+  // months), defaultWeight(0.9) is 8 kg.
+  //
+  // THE REAL, DISTINCT PAIN PATTERN: classic intussusception pain is not
+  // bowelObstruction's continuous-with-oscillating-intensity colic — it
+  // is genuinely EPISODIC, with the child screaming/drawing the knees up
+  // for a couple of minutes, then returning to comfortable, even playful,
+  // baseline between episodes (the real "lethargic between episodes" vs.
+  // "acting normally between episodes" distinction is itself a clinical
+  // clue — see pat.metabolicEncephalopathy below). Checked before
+  // building: bowelObstruction's own pat._boColicPhase sine wave (4-8,
+  // never pain-free) is the only existing oscillating-pain precedent in
+  // this file, and it does not reach zero — a genuinely NEW pattern for
+  // pat.intrinsicPain, built here as a squared/clamped sine that spends
+  // most of its cycle pinned near the floor and spikes sharply rather
+  // than smoothly riding a sine's whole range, so it reads as discrete
+  // severe episodes against a comfortable baseline, not a continuous ache
+  // that merely varies.
+  //
+  // "Currant jelly" stool (blood/mucus, from the telescoped segment's
+  // venous congestion and mucosal sloughing) is a real classic finding,
+  // but it is a NARRATIVE/exam finding (a scenario's own probe/history
+  // text), not a distinct physiologic quantity this engine needs a new
+  // field for — the same "exam finding, not a systemic mechanism" call
+  // this file already makes for the 6 P's of acute limb ischemia.
+  //
+  // RISK OF ISCHEMIA/PERFORATION IF PROLONGED: reuses gutInjury as a
+  // direct-write local accumulator, the identical idiom incarceratedHernia
+  // above uses and justifies — mesenteric compression at the leading edge
+  // of the intussusceptum is a local vascular problem, not a systemic-
+  // perfusion one.
+  //
+  // FIELD TREATMENT IS SUPPORTIVE ONLY, stated honestly: no field
+  // reduction is possible (real reduction is a radiology-guided
+  // air/contrast enema or surgery) — this condition has no
+  // curative-intervention flag at all, only IV access/fluids/analgesia
+  // and rapid transport, the same honest "recognize and transport, this
+  // engine has no field-reversible fix" posture acuteLimbIschemia and
+  // incarceratedHernia above both already take for their own
+  // surgical-emergency mechanisms.
+  intussusception: {
+    initial: { age: 0.9, weight: 8, hr: 140, rr: 30, glu: 95, pain: 2 },
+    progress(pat, dt) {
+      // Episodic colicky pain: a squared sine spends most of its cycle
+      // near zero and spikes sharply, unlike bowelObstruction's smoother
+      // continuous oscillation — see the header comment above for why
+      // this is a genuinely new pattern for pat.intrinsicPain.
+      pat._intussPhase = (pat._intussPhase ?? 0) + dt * 0.35;
+      const s = Math.sin(pat._intussPhase);
+      const spike = s > 0 ? s * s : 0;   // 0 for roughly half the cycle
+      pat.intrinsicPain = clamp(1 + spike * 8, 1, 9);
+      // Between-episode behavior: real intussusception's own clinical
+      // teaching point is that a child can look deceptively well between
+      // episodes early on, then becomes genuinely lethargic as the
+      // process continues untreated (a real, described progression, not
+      // this engine inventing a symptom) — a small, slowly-rising
+      // metabolicEncephalopathy floor represents that drift toward
+      // between-episode lethargy, reusing the same general handle every
+      // other "child looks progressively sicker" condition in this file
+      // already uses.
+      pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0,
+        Math.min(0.3, (pat.metabolicEncephalopathy || 0) + dt * 0.0004));
+      // Local mesenteric compression at the intussusceptum's leading
+      // edge — same direct-write local-injury idiom incarceratedHernia
+      // above uses, at a slightly slower rate (a telescoped segment's
+      // compression is real but on average less abruptly occlusive than
+      // a tight hernia-neck strangulation).
+      pat.gutInjury = Math.min(0.35, (pat.gutInjury ?? 0) + dt * 0.001);
+      // Once the bowel wall has been compromised long enough, the real
+      // "currant jelly" venous congestion/mucosal sloughing becomes an
+      // actual measurable GI blood loss — same gutInjury-gated onset
+      // idiom acuteMesentericIschemia/incarceratedHernia both already
+      // establish, ceilinged low (this is oozing/sloughing, not a brisk
+      // hemorrhage).
+      if ((pat.gutInjury ?? 0) > 0.15) {
+        pat.activeBleedRate = clamp((pat.activeBleedRate || 0) + dt * 0.0006, 0.005, 0.04);
+      }
+    },
+  },
+
   // ===== CROTALINE (PIT VIPER) ENVENOMATION =====
   // Queue item 57 — found while implementing TP 1224/1224-P (Stings/
   // Venomous Bites): no condition represented a bite/sting at all, so the
@@ -6965,6 +7531,78 @@ export const CONDITIONS = {
   // esophagealVaricealHemorrhage's own comment already documents for a
   // different bleeding source this engine also cannot pharmacologically
   // reverse in the field.
+  // Thermal burn / TBSA (queue item 56, found while implementing TP 1220/
+  // 1220-P — Burns). The protocol's own field steps key off burn SIZE (cool
+  // running water <30% TBSA, escalated fluid resuscitation >10% TBSA,
+  // cooling contraindicated for airway burns) and this engine tracked no
+  // structured TBSA state at all before this — burns/wounds were narrative
+  // only (per-scenario `wounds:` objects, `type:"burn"` at most).
+  //
+  // MECHANISM 1 — CAPILLARY LEAK (Parkland-formula-adjacent). A major burn
+  // (ABA convention: >20% TBSA) causes a real, well-documented systemic
+  // capillary leak syndrome, not just local wound exudate — burn-released
+  // inflammatory mediators (histamine, thromboxane, cytokines) increase
+  // microvascular permeability BODY-WIDE, not just at the burn site, which
+  // is the entire physiologic reason Parkland-style formulas front-load
+  // massive crystalloid volume (4 mL/kg/%TBSA) in the first 24h (Rae &
+  // Fortuna, "Burn resuscitation," Curr Opin Crit Care 2011; Pham et al.,
+  // "American Burn Association practice guidelines," J Burn Care Res
+  // 2008). Wired through pat.capillaryLeak — the SAME whole-body
+  // endothelial-injury handle preeclampsia/sepsis/pancreatitis already use
+  // (metabolic.js's updateFluidShifts derives sigma/Kf from it), not a
+  // parallel field — reused at burns' own real threshold and magnitude:
+  // negligible below ~20% TBSA (a small burn's leak is local wound edema,
+  // not a systemic Starling-block state, which is exactly why aspiration
+  // Pneumonitis's own comment above draws the same local-vs-systemic line),
+  // ramping to a genuinely severe (0.5 ceiling, above pancreatitis's 0.2 and
+  // below septic shock's own peak) systemic leak by ~80%+ TBSA. Ratcheted
+  // in over real time (not instant) — burn capillary leak develops over the
+  // first several hours post-injury, not immediately at the scene (Pham et
+  // al., ibid) — using the same clamp-toward-a-ceiling idiom
+  // toxicInhalationChlorine's own capillaryLeak ramp already uses.
+  //
+  // MECHANISM 2 — IMPAIRED SKIN BARRIER -> HEAT LOSS. Burned skin has lost
+  // the stratum corneum's evaporative/insulating barrier — real, major
+  // burns are a well-documented cause of hypothermia in the field
+  // (increased convective/radiative loss from denuded skin plus increased
+  // evaporative water loss from wound exudate; ABA guidelines list active
+  // warming as a first-line burn-care step for exactly this reason). Wired
+  // directly off pat.burnTbsaFraction in thermo.js's updateTemperature
+  // (no separate "skin barrier" field existed to reuse — confirmed by grep
+  // before writing anything, per lesson 16 — so burnTbsaFraction IS that
+  // handle, read directly rather than duplicated into a second field with
+  // one consumer).
+  //
+  // TREATMENT: escalated fluid resuscitation (TP 1220's own >10% TBSA step)
+  // needs no new drug entry — `saline`'s existing fx.blood plasma-volume
+  // bolus already counters the Starling-equation fluid shift this
+  // condition's capillaryLeak drives (metabolic.js), the identical
+  // mechanism every other capillaryLeak condition's fluid response already
+  // uses. Cooling (contraindicated for airway burns per TP 1220) is a
+  // protocol-content decision (laCounty.js), not a physiology mechanism —
+  // deliberately out of scope here, matching this item's own physiology-
+  // engine framing.
+  //
+  // No vitals in `initial` — a burn's severity is expressed entirely
+  // through pat.burnTbsaFraction (patient.js constructor, scenario-
+  // authored via `patient:{burnTbsaFraction:...}`), matching the "condition
+  // declares the lesion, engine derives the consequence" idiom
+  // pathogenBurden already established. A scenario with burnTbsaFraction=0
+  // (or this condition unused) sees exactly zero consequence — verified
+  // below.
+  thermalBurn: {
+    initial: {},
+    progress(pat, dt) {
+      const tbsa = clamp(pat.burnTbsaFraction ?? 0, 0, 1);
+      if (tbsa <= 0) return;
+      // Leak target: 0 at <=20% TBSA, ramping linearly to 0.5 at 80%+ TBSA.
+      const leakTarget = clamp((tbsa - 0.20) / 0.6, 0, 1) * 0.5;
+      if (leakTarget > 0) {
+        pat.capillaryLeak = clamp((pat.capillaryLeak ?? 0) + dt * 0.012, 0, leakTarget);
+      }
+    },
+  },
+
   envenomation: {
     initial: { hr: 104, sbp: 128, rr: 20, glu: 100, pain: 7 },
     progress(pat, dt) {
@@ -7145,6 +7783,88 @@ export const CONDITIONS = {
       // at all, since an uncomplicated dystonic reaction has no hemodynamic
       // or airway component of its own.
       pat.hrBase = clamp((pat.hrBase ?? 96) + dt * 0.01, 90, 108);
+    },
+  },
+
+  // ===== LITHIUM TOXICITY (queue item 7, Toxicology) =====
+  // Real mechanism, confirmed against the tree before writing anything: no
+  // pat.li field or lithium mechanism existed anywhere (grep-confirmed).
+  // Lithium's therapeutic index is genuinely narrow (0.6-1.2 mmol/L
+  // therapeutic, >1.5 early toxic, >2.5-3.5 severe/life-threatening —
+  // Waring, "Management of lithium toxicity," Toxicol Rev 2006), and
+  // toxicity is CNS-dominant: tremor progressing through hyperreflexia,
+  // clonus, altered mentation, to seizures and coma as the level climbs —
+  // not primarily a cardiovascular toxidrome (lithium's cardiac effects —
+  // T-wave flattening, sinus node dysfunction — are real but a secondary,
+  // less field-acute finding than the neuro cascade, so this condition is
+  // scoped to the neuro axis, matching this batch's own instruction).
+  // Framed as ACUTE-ON-CHRONIC (a patient on stable maintenance lithium who
+  // becomes dehydrated/renally impaired, the single most common real-world
+  // toxicity mechanism per Waring 2006 — lithium is cleared almost
+  // entirely by the kidney and reabsorbed alongside sodium in the
+  // proximal tubule, so anything that drops GFR or drives volume depletion
+  // raises the level even with an unchanged dose), not a fresh massive
+  // ingestion — so the level itself is already high on scene and does not
+  // keep climbing from ongoing absorption the way tricyclicOverdose's does.
+  //
+  // WIRED THROUGH EXISTING HANDLES, reusing the same idiom
+  // organophosphatePoisoning/hyperammonemia/toxicMetabolicEncephalopathy
+  // already use for a graded, non-cardiac-gated toxic-CNS picture:
+  // pat.metabolicEncephalopathy (confusion/altered mentation) and
+  // pat.epilepticDrive (the same seizure-risk accumulator neuro.js already
+  // composes by MAX across every cause) both scale directly and
+  // continuously off pat.li itself, not an independent severity dial —
+  // the actual level IS the severity here, unlike tricyclicOverdose's own
+  // QRS-gated risk (lithium neurotoxicity is not a sodium-channel/
+  // conduction phenomenon).
+  //
+  // FIELD TREATMENT, stated honestly rather than inventing a fictional
+  // antidote: there is NO field-administrable lithium antidote in this or
+  // any real formulary. The one real, guideline-supported field/ED lever is
+  // isotonic-fluid resuscitation — volume expansion raises GFR and reduces
+  // proximal-tubule sodium (and therefore co-transported lithium)
+  // reabsorption, the SAME real mechanism this file's own hypercalcemia
+  // condition already uses for calcium via the identical pat.drugInstances
+  // detection idiom (s.given is pure App.jsx UI bookkeeping the physiology
+  // engine never receives — pat.drugInstances is pk.js's own real "is this
+  // drug on board" signal). Hemodialysis is the actual definitive treatment
+  // for severe toxicity (Waring 2006) and is NOT a field intervention — this
+  // condition deliberately does not simulate it, and the scenario's own
+  // resolve() text says so plainly rather than implying supportive care
+  // alone can normalize a severe level on scene.
+  lithiumToxicity: {
+    initial: { age: 71, hr: 92, sbp: 116, dbp: 74, rr: 16, glu: 100, pain: 1, li: 3.2 },
+    progress(pat, dt) {
+      if (!pat._liInit) { pat._liInit = true; pat._liTarget = 3.2; }
+      // A real, if slow, chronic-on-acute drift: an already-dehydrated,
+      // still-not-rehydrated patient's own ongoing free-water deficit keeps
+      // the level creeping up in the background over the field encounter,
+      // distinct from tricyclicOverdose's much faster ongoing-absorption
+      // ramp (this is renal under-clearance, not continued ingestion).
+      pat._liTarget = Math.min(4.0, pat._liTarget + dt * 0.003);
+      // Isotonic fluid genuinely, if modestly, lowers the TARGET the level
+      // relaxes toward -- gradual through this condition's own relaxation
+      // below, never an instant fix, and floored well above normal (2.2):
+      // real volume expansion measurably helps renal lithium clearance but
+      // cannot correct a severe level within a single field encounter --
+      // only dialysis can do that, and dialysis is not simulated here.
+      const fluidOnBoard = (pat.drugInstances || []).some(
+        (dr) => dr.id === "saline" || dr.id === "plasmalyte");
+      if (fluidOnBoard) {
+        pat._liTarget = Math.max(2.2, pat._liTarget - dt * 0.004);
+      }
+      pat.li = pat.li + (pat._liTarget - pat.li) * Math.min(1, dt * 0.05);
+
+      // Graded, continuous neurotoxicity, keyed directly off the real level
+      // -- 0 at the top of the therapeutic range (1.2), reaching full
+      // severity by 3.5 (deep coma / status-epilepticus-range toxicity per
+      // Waring 2006's own severe-toxicity band).
+      const sev = clamp((pat.li - 1.2) / 2.3, 0, 1);
+      pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0, sev);
+      // Seizure risk composes by MAX with every other cause in neuro.js,
+      // the same "condition-owned accumulator, not an independent write"
+      // idiom every other toxidrome in this file already uses.
+      pat.epilepticDrive = Math.max(pat.epilepticDrive || 0, Math.max(0, sev - 0.3) / 0.7);
     },
   },
 

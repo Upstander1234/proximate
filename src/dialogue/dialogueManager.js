@@ -16,15 +16,23 @@ import { DeterministicProvider, TemplateProvider, LocalLLMProvider, WasmLLMProvi
 // F0 item 10: "Disabled -> deterministic/contextual fallback dialogue." A
 // real on/off flag the player controls from Settings (SettingsOverlay.jsx's
 // "LOCAL AI DIALOGUE" row), stored on the save the same way every other
-// preference on that screen is (g.volume/g.speed/g.procedureAssist) —
-// defaults to enabled (`!== false`, matching the `??true`-style default used
-// elsewhere in this file for shouldSpeakUnprompted's own gates) so existing
-// saves without the field keep today's behavior. Every tier-3 call site MUST
-// route through this — checked once here rather than duplicated at each
+// preference on that screen is (g.volume/g.speed/g.procedureAssist).
+//
+// OPT-IN BY DEFAULT (reliability fix — see CLAUDE.md's LocalLLMProvider-
+// lifecycle investigation): merely launching Proximate must not
+// automatically start downloading a ~370MB model or attempting a WebGPU/WASM
+// load — that has to be something the player affirmatively turns on. So an
+// UNSET preference (`undefined` — a save/session that has never touched this
+// setting) now means DISABLED, not enabled: only `s.localAiEnabled === true`
+// counts as opted in. A save that was PREVIOUSLY given an EXPLICIT value
+// (true or false, e.g. by clicking Settings' Enable/Disable chip before this
+// fix) keeps that exact value either way — this only changes the MEANING of
+// "never touched," not of an explicit prior choice. Every tier-3 call site
+// MUST route through this — checked once here rather than duplicated at each
 // caller, so a future call site (crew reactions, treatment-response) gets the
 // gate for free just by calling generateDialogue/requestLocalUpgrade.
 export function isLocalAiEnabled(s) {
-  return s?.localAiEnabled !== false;
+  return s?.localAiEnabled === true;
 }
 
 const deterministic = new DeterministicProvider();
@@ -101,8 +109,28 @@ export function localAiStatus() {
 // instead of always describing WebGPU specifically, which used to read as
 // "UNSUPPORTED — no WebGPU" on the (common) no-WebGPU-but-WASM-works device
 // — actively wrong, since dialogue works fine there via the WASM tier.
+//
+// Reliability fix: `localLLM.isAvailable()`/`wasmLLM.isAvailable()` are both
+// defined as "supported AND not currently failed" — so the instant WebGPU
+// genuinely fails, this used to fall straight through to reporting "wasm",
+// EVEN IF the WASM tier had never been touched (still sitting at its own
+// untouched, technically-"available" idle state). A real WebGPU failure was
+// silently reported as a generic, uninformative "not yet downloaded (via
+// WebAssembly)" instead of the actual, more useful failure it was — found
+// while investigating a Worker-isolation-batch test failure and confirmed,
+// by testing against the pre-Worker code too, to predate that batch
+// entirely (introduced whenever WasmLLMProvider/activeAiBackend were first
+// added, without this exact interaction being checked). Fixed by only
+// letting WASM take over the report once it has genuinely been ENGAGED
+// (`status() !== "idle"` — attempted, downloading, ready, or itself
+// failed), not merely because it happens to be untouched-and-available;
+// short of that, a device with real WebGPU support keeps reporting WebGPU's
+// own actual state (including a genuine failure), which is the more
+// informative, currently-relevant answer for a status UI to show.
 function activeAiBackend() {
   if (localLLM.isAvailable()) return "webgpu";
+  if (wasmLLM.isAvailable() && wasmLLM.status() !== "idle") return "wasm";
+  if (typeof navigator !== "undefined" && navigator.gpu) return "webgpu";
   if (wasmLLM.isAvailable()) return "wasm";
   return "none";
 }
@@ -176,7 +204,12 @@ export function retryLocalAi() {
 // panel has genuine progress to show, without ever blocking boot (the boot
 // screen calls this and immediately renders "Continue without AI" — see
 // BootScreen.jsx). No-op if unsupported, already loading, or already
-// loaded. Preloads whichever backend is REALLY going to be used: if this
+// loaded — and now ALSO a no-op if the player hasn't opted in (see
+// isLocalAiEnabled's own comment: reliability fix, merely launching the game
+// must not silently start a ~370MB download). `s` is the live game-state
+// object (the same shape isLocalAiEnabled/generateDialogue/
+// requestLocalUpgrade already take) — BootScreen.jsx passes its own `g`.
+// Preloads whichever backend is REALLY going to be used: if this
 // device has no WebGPU at all, WASM is the only real path, so it starts
 // immediately rather than waiting for the first live dialogue event mid-
 // scene to discover that and pay the download latency then. If WebGPU is
@@ -185,7 +218,8 @@ export function retryLocalAi() {
 // downloading right away too, instead of a later dialogue event having to
 // wait out a fresh download on top of already having waited out the failed
 // WebGPU attempt.
-export function preloadLocalAi() {
+export function preloadLocalAi(s) {
+  if (!isLocalAiEnabled(s)) return;
   if (typeof navigator !== "undefined" && navigator.gpu) {
     localLLM.preload();
     localLLM.subscribeProgress(() => {
@@ -331,7 +365,12 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
       localLLM._loadBackend = patch.stubBackend
         ? async () => ({
             hasModelInCache: async () => false,
-            CreateMLCEngine: async (id, opts) => {
+            // Worker-isolation batch: _ensureEngine() calls
+            // CreateWebWorkerMLCEngine, not CreateMLCEngine directly — stub
+            // the same shape so a real click into retry()/_ensureEngine()
+            // still reaches "ready" without a working WebGPU adapter or a
+            // real Worker/postMessage round trip.
+            CreateWebWorkerMLCEngine: async (worker, id, opts) => {
               opts?.initProgressCallback?.({ progress: 1, text: "ready" });
               return { chat: { completions: { create: async () => ({ choices: [{ message: { content: patch.stubBackendText || "Stub retry line." } }] }) } } };
             },

@@ -142,6 +142,17 @@ export class Patient {
     // per-disease one: preeclampsia, sepsis, burns and anaphylaxis all injure
     // the same barrier and differ only in how fast and how far.
     this.capillaryLeak = 0;
+    // BURN TBSA (queue item 56). Total body surface area burned, 0-1
+    // fraction (e.g. 0.35 = 35% TBSA), scenario-authored via `patient:` or a
+    // burn condition's own `initial` block — the engine never derives this
+    // itself, the same "condition declares the lesion, engine derives the
+    // consequence" idiom pathogenBurden already uses two lines below.
+    // Defaults to 0 (no burn) so every existing patient is unaffected.
+    // Read by thermalBurn's own progress() (conditions.js, drives
+    // capillaryLeak above ~20% TBSA per Parkland-formula-adjacent
+    // capillary-leak physiology) and by updateTemperature (thermo.js, via
+    // pat.skinBarrierFn, impaired-barrier heat loss).
+    this.burnTbsaFraction = b.burnTbsaFraction ?? 0;
     // QUEUE ITEM 46 — the inflammatory cascade's own SOURCE variable.
     // pat.pathogenBurden (0-1) is the one thing a condition declares: how
     // large an infectious/inflammatory insult this patient is carrying
@@ -570,6 +581,11 @@ export class Patient {
     // and the extracellular water each tick (see renal.js).
     this.kMass = this.k * (this.plasmaVol + this.interstitialVol);
     this.ca = 2.4;
+    // Serum lithium (mmol/L, queue item 7 — Toxicology: lithiumToxicity).
+    // Therapeutic range is a narrow 0.6-1.2; this default sits inside it
+    // (a patient with no lithium condition/prescription reads as chemically
+    // inert, matching every other drug-level field's own healthy default).
+    this.li = b.li ?? 0.8;
     this.adhs = 1;
     // Resting RAAS activity, not maximal. These were both 1 — full activation —
     // which every scenario then had to spend ~30 minutes of simulated time

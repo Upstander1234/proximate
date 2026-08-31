@@ -279,6 +279,11 @@ export class LocalLLMProvider {
   constructor() {
     this._engine = null;
     this._loadPromise = null;
+    // The dedicated Worker the engine actually runs in (Worker isolation —
+    // see _ensureEngine's own comment). Held only so a future explicit
+    // cleanup path (none exists today; this is a session-long singleton,
+    // same as before) could terminate it — never torn down automatically.
+    this._worker = null;
     this._failed = false;
     this._lastError = null;
     // Reliability fix (see classifyLoadError's own comment above): a
@@ -389,20 +394,16 @@ export class LocalLLMProvider {
   async _loadBackend() {
     // Dynamic import keeps @mlc-ai/web-llm (and its own further dynamic
     // fetches of the model shards/WASM kernel) out of the app's main chunk —
-    // confirmed via `npx vite build`'s per-chunk output (see CLAUDE.md).
+    // confirmed via `npx vite build`'s per-chunk output (see CLAUDE.md). Used
+    // ONLY for static exports the main thread itself needs directly
+    // (hasModelInCache, for checkCache() below, and CreateWebWorkerMLCEngine,
+    // for _ensureEngine() below) — never for constructing an MLCEngine
+    // itself, which now always happens inside the Worker (see _ensureEngine).
     const webllm = await import("@mlc-ai/web-llm");
     return webllm;
   }
 
   async _ensureEngine() {
-    if (DIAGNOSTIC_LOCAL_LLM_DISABLED) {
-      console.log(
-        "LocalLLMProvider: initialization intentionally DISABLED for this diagnostic build (DIAGNOSTIC_LOCAL_LLM_DISABLED=true in dialogueProvider.js). CreateMLCEngine/@mlc-ai/web-llm will not be invoked.",
-      );
-      this._failed = true;
-      this._lastErrorKind = "device";
-      throw new Error("LocalLLMProvider disabled for diagnostic build");
-    }
     if (this._engine) return this._engine;
     if (this._loadPromise) return this._loadPromise;
     this._loadPromise = (async () => {
@@ -420,11 +421,29 @@ export class LocalLLMProvider {
         progress: 0,
         text: this._cacheState === "cached" ? "loading model from cache" : "downloading model",
       });
-      const engine = await webllm.CreateMLCEngine(MODEL_ID, {
+      // Worker isolation (CLAUDE.md's LocalLLMProvider-lifecycle
+      // investigation): the actual MLCEngine — WASM/shader compilation,
+      // model-shard fetch, Cache API reads/writes, and the generation
+      // forward pass — now runs inside a dedicated module Worker
+      // (localLlmWorker.js), not on the main thread, so none of that work
+      // can block a React re-render or an input handler (the volume slider,
+      // etc). CreateWebWorkerMLCEngine (confirmed exported by the installed
+      // @mlc-ai/web-llm@0.2.84, node_modules/@mlc-ai/web-llm/lib/index.js)
+      // returns a WebWorkerMLCEngine — the same public interface as
+      // MLCEngine (engine.chat.completions.create(...), etc.) — so nothing
+      // downstream of this function (generate(), the timeout race) needed
+      // to change. This IIFE only ever runs once per provider instance (the
+      // this._engine/this._loadPromise guards above), so at most one Worker
+      // and one engine are ever created for the life of the singleton —
+      // requestLocalUpgrade()/generate() calling in while a load is already
+      // in flight share this same promise, never spawning a second Worker.
+      this._worker = new Worker(new URL("./localLlmWorker.js", import.meta.url), { type: "module" });
+      const engine = await webllm.CreateWebWorkerMLCEngine(this._worker, MODEL_ID, {
         logLevel: "ERROR",
-        // Real download/compile progress from the library itself, forwarded
-        // to any boot-screen/status-UI subscriber (see subscribeProgress
-        // above) — not fabricated here.
+        // Real download/compile progress from the library itself, relayed
+        // from the Worker via postMessage and forwarded to any boot-screen/
+        // status-UI subscriber (see subscribeProgress above) — not
+        // fabricated here, and not changed in shape by moving to a Worker.
         initProgressCallback: (report) => this._emitProgress(report),
       });
       this._engine = engine;
@@ -439,6 +458,15 @@ export class LocalLLMProvider {
       this._lastErrorKind = classifyLoadError(e);
       this._failCount++;
       this._loadPromise = null;
+      // A failed load's Worker (if one was created before the failure) is
+      // done and unreachable — terminate it so a retry's own fresh
+      // `new Worker(...)` above doesn't leave the old one running
+      // indefinitely in the background. Never throws: terminate() is a
+      // synchronous no-op on an already-dead worker.
+      if (this._worker) {
+        this._worker.terminate();
+        this._worker = null;
+      }
       this._emitProgress(null);
       // Dev/diagnostic-only, never player-facing (see this function's own
       // reliability-fix comment above the classifier): the real caught

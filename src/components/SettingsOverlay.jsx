@@ -229,7 +229,11 @@ export default function SettingsOverlay({g,setG}){
                 :"Status: this device/browser supports neither WebGPU nor WebAssembly, fallback dialogue only"}
             </div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {[["enable",true],["disable",false]].map(([l,val])=>Chip((g.localAiEnabled??true)===val,()=>setG(s=>({...s,localAiEnabled:val})),l,l))}
+              {/* Opt-in by default (reliability fix — see dialogueManager.js's
+                  isLocalAiEnabled comment): an unset g.localAiEnabled means
+                  disabled, so the chip highlighting here must match that
+                  same ??false default, not the old ??true. */}
+              {[["enable",true],["disable",false]].map(([l,val])=>Chip((g.localAiEnabled??false)===val,()=>setG(s=>({...s,localAiEnabled:val})),l,l))}
               {/* Reliability fix: a real Retry control, only shown once a
                   load has genuinely failed (never decorative — clicking it
                   calls the real dialogueManager.retryLocalAi(), which

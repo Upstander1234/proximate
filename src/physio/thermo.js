@@ -24,7 +24,21 @@ export function updateTemperature(pat, dt) {
     const env = pat.ambientTemp ?? 20;
     const radConvCoeff = 6;
     const respHeatLoss = 0.1 * radConvCoeff * bsa * (pat.coreTemp - env);
-    const skinHeatLoss = (1 - pat.alphaTone * 0.5) * radConvCoeff * bsa * (pat.coreTemp - env);
+    // BURN-IMPAIRED SKIN BARRIER (queue item 56). Burned skin has lost the
+    // stratum corneum's insulating/evaporative barrier — a real, documented
+    // cause of field hypothermia in major burns (increased convective/
+    // radiative loss from denuded skin, plus increased evaporative water
+    // loss from wound exudate; ABA guidelines list active warming as
+    // first-line burn care for exactly this reason). No dedicated
+    // "skin barrier function" field exists anywhere in this engine
+    // (confirmed by grep before writing this), so pat.burnTbsaFraction
+    // (patient.js, scenario-authored, 0 for every non-burn patient) IS that
+    // handle, read directly here rather than duplicated into a second field
+    // with a single consumer. Multiplier is a modest, honest 1.0 (no burn)
+    // to 2.0 (100% TBSA) — doubling combined skin heat loss at the extreme
+    // end, not an invented order-of-magnitude effect.
+    const burnHeatLossMult = 1 + Math.max(0, Math.min(1, pat.burnTbsaFraction || 0));
+    const skinHeatLoss = (1 - pat.alphaTone * 0.5) * radConvCoeff * bsa * (pat.coreTemp - env) * burnHeatLossMult;
     // DIRECT SOLAR RADIANT LOAD — standing in direct sun adds real heat on
     // top of ambient air temperature (a documented ~150-300 W for an adult in
     // direct sun, depending on angle/clothing/skin color); shade removes this

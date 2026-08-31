@@ -77,7 +77,12 @@ async function main() {
       // confirm it clears the latch and genuinely reaches "ready".
       p._loadBackend = async () => ({
         hasModelInCache: async () => false,
-        CreateMLCEngine: async (id, opts) => {
+        // Worker-isolation batch: _ensureEngine() now calls
+        // CreateWebWorkerMLCEngine (real worker construction), not
+        // CreateMLCEngine directly — stub the same shape here so this
+        // real-methods-under-test call reaches "ready" the same way it did
+        // before the migration, without a real Worker/postMessage round trip.
+        CreateWebWorkerMLCEngine: async (worker, id, opts) => {
           opts?.initProgressCallback?.({ progress: 1, text: "ready" });
           return { chat: { completions: { create: async () => ({ choices: [{ message: { content: "Recovered stub line." } }] }) } } };
         },

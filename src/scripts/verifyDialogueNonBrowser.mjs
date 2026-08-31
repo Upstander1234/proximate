@@ -243,7 +243,7 @@ function makeV(overrides = {}) {
     typeof navigator === "undefined" || !navigator.gpu);
 }
 {
-  check("isLocalAiEnabled defaults to true when unset (existing saves keep today's behavior)", isLocalAiEnabled({}) === true);
+  check("isLocalAiEnabled defaults to false when unset (opt-in, reliability fix — see dialogueManager.js)", isLocalAiEnabled({}) === false);
   check("isLocalAiEnabled respects an explicit false", isLocalAiEnabled({ localAiEnabled: false }) === false);
   check("isLocalAiEnabled respects an explicit true", isLocalAiEnabled({ localAiEnabled: true }) === true);
 }
