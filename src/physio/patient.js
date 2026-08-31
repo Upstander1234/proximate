@@ -287,6 +287,22 @@ export class Patient {
     // as "no device in place" rather than undefined.
     this.artificialAirway = 0;      // fraction of anatomic dead space bypassed
     this.artificialAirwayRes = 1;   // multiplier on upper-airway resistance
+    // TRACHEOSTOMY (queue item 60, part 2 of 3 — the nebulized-epi slice
+    // shipped separately; the FBAO-crew-task slice remains open). A
+    // pre-existing surgical airway is a structural PATIENT TRAIT
+    // (scenario-authored, like a comorbidity), not a device placed during
+    // the call — distinct from artificialAirway above, which pk.js sets
+    // live from a during-call procedure (ETT/SGA). A tracheostomy bypasses
+    // the upper airway (larynx/pharynx) entirely, so upperAirwayObstruction
+    // (croup/epiglottitis's fixed-extrathoracic-narrowing field) correctly
+    // has NO effect on a trach patient (respiratory.js reads this to gate
+    // that term out) — but the tube itself can become obstructed by
+    // secretions, tracked separately by trachObstruction so the two real,
+    // opposite consequences of having a tracheostomy (protection from
+    // upper-airway swelling, vulnerability to cannula plugging) are both
+    // representable at once.
+    this.tracheostomy = b.tracheostomy ?? false;
+    this.trachObstruction = b.trachObstruction ?? 0;   // 0-1, inner-cannula secretion obstruction
     this.pacerRate = 0;             // demanded rate (bpm) from a transcutaneous pacer
     this.pacerOutput = 0;           // stimulus strength (mA)
     this.pacedCapture = 0;          // 0-1, decided by cardiovascular.js

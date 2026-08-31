@@ -331,9 +331,36 @@ export function updateVentilation(pat, dt) {
     // narrowing is a real, sometimes airway-threatening obstruction, but
     // this model does not give it bronchospasm's full severity ceiling,
     // since the two are anatomically and mechanistically distinct lesions.
+    // TRACHEOSTOMY (queue item 60, part 2 of 3). A surgical airway sits
+    // BELOW the larynx/pharynx, so it physically bypasses croup/
+    // epiglottitis's whole fixed-extrathoracic-narrowing lesion — a real
+    // trach patient in laryngeal edema breathes fine through the stoma even
+    // as their native upper airway swells shut. Gated out entirely (not
+    // scaled down) when pat.tracheostomy is set, rather than left to
+    // silently apply to a patient it cannot physically affect. The tube
+    // itself is a real, DIFFERENT vulnerability: inner-cannula secretions
+    // narrow that one fixed-diameter conduit the same way airwayFluid
+    // narrows a native airway — coefficient 1.6 (between airwayFluid's 1.3
+    // and upperAirwayObstruction's 1.5) reflects that a small-bore trach
+    // tube can occlude more severely, proportionally, than the same volume
+    // of secretions in a native airway (TP 1234's own "inner-cannula
+    // obstruction" emergency branch).
+    // Real time course, not a static severity: tracheostomy secretions
+    // genuinely accumulate without airway care (routine, scheduled
+    // suctioning is real, standard home/facility trach care specifically
+    // because they do). Modest and slow — a scenario presenting an
+    // already-symptomatic patient authors the starting trachObstruction
+    // directly (patient.js's own scenario-authored default), and this term
+    // represents ONGOING worsening over the course of the call if nothing
+    // clears it, not the initial presentation itself.
+    if (pat.tracheostomy) {
+      pat.trachObstruction = Math.max(0, Math.min(1, (pat.trachObstruction || 0) + dt * 0.006));
+    }
+    const uaoTerm = pat.tracheostomy ? 0 : (pat.upperAirwayObstruction || 0);
+    const trachTerm = pat.tracheostomy ? (pat.trachObstruction || 0) : 0;
     const Rairway = pat.airwayResistance * (pat.artificialAirwayRes ?? 1) *
       Math.exp(effBroncho * 1.7) * Math.exp((pat.airwayFluid || 0) * 1.3) *
-      Math.exp((pat.upperAirwayObstruction || 0) * 1.5);
+      Math.exp(uaoTerm * 1.5) * Math.exp(trachTerm * 1.6);
     const R = Rairway + (pat.tissueResistance ?? 2.2);
 
     // ----- LOAD-DEPENDENT EFFORT AND RESPIRATORY MUSCLE FATIGUE -----

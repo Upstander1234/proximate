@@ -634,6 +634,21 @@ export function applyProcedures(pat, s) {
         if (!pat._suctionedAt.has(key)) {
           pat._suctionedAt.add(key);
           pat.airwayFluid = Math.max(0, (pat.airwayFluid || 0) * (1 - proc.reducesAirwayFluid));
+          // TRACHEOSTOMY INNER-CANNULA CLEARANCE (queue item 60, part 2 of
+          // 3). Real "clear/replace the inner cannula" field care uses the
+          // SAME suction catheter/equipment as oropharyngeal suctioning —
+          // reusing the existing crew-directable "suction" action rather
+          // than inventing a second, near-duplicate procedure that would
+          // need its own gear.js/scope registration across every
+          // jurisdiction. Cleared essentially completely (0.95, not a
+          // partial fraction like airwayFluid's 0.6) — TP 1234's own field
+          // step is "clear/replace the inner cannula", a real,
+          // near-total-resolution intervention, not a partial suction of
+          // an open airway. Only fires for a patient who actually has a
+          // tracheostomy — a no-op, not an error, for everyone else.
+          if (pat.tracheostomy) {
+            pat.trachObstruction = Math.max(0, (pat.trachObstruction || 0) * 0.05);
+          }
         }
       }
     });

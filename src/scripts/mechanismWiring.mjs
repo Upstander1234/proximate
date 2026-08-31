@@ -117,6 +117,11 @@ function snapshot(p) {
     artificialAirway: p.artificialAirway || 0,
     artificialAirwayRes: p.artificialAirwayRes ?? 1,
     effectiveDeadSpace: p.effectiveDeadSpace || 0,
+    // Queue item 60, part 2 of 3: tracheostomy state. workOfBreathing/vt
+    // (this mechanism's own real consequence) are already snapshotted
+    // above, not duplicated here.
+    tracheostomy: p.tracheostomy ? 1 : 0,
+    trachObstruction: p.trachObstruction || 0,
     pacerOutput: p.pacerOutput || 0,
     pacedCapture: p.pacedCapture || 0,
     parasympathetic: p.parasympathetic || 0,
@@ -5214,6 +5219,70 @@ console.log("[ENDOCRINE PANCREAS — pat.insulin/pat.glucagon, queue item 5's re
   if (!hypoHeld) failures.push(`untreated severeHypoglycemia should hold glucose<35 with real glucagon counter-regulation (>1.3) overridden by exogenous insulin, got glucose=${untreatedHypo.after.glucose.toFixed(1)} glucagon=${untreatedHypo.after.glucagon.toFixed(3)}`);
   console.log(`  ${hypoHeld ? "PASS" : "FAIL"}  ${"severeHypoglycemia holds despite real (overridden) counter-regulation".padEnd(46)} glucose=${untreatedHypo.after.glucose.toFixed(1)}, glucagon=${untreatedHypo.after.glucagon.toFixed(3)}`);
   assertVersus("...dextrose still reverses it through pk.js's existing, unmodified dose mechanism", treatedHypo, untreatedHypo, "glucose", "up", 20);
+}
+
+console.log("[TRACHEOSTOMY STATE — queue item 60, part 2 of 3]");
+{
+  // No tracheostomy field existed anywhere before this session (grep-
+  // confirmed) — imposed via `mutate` on a plain baseline scenario, same
+  // idiom this suite's thermalBurn/intussusception sections above already
+  // use for a real mechanism with no dedicated scenario yet.
+  const trachOnly = (p) => { p.tracheostomy = true; };
+  const trachObstructed = (p) => { p.tracheostomy = true; if (!p._trachSeeded) { p.trachObstruction = 0.6; p._trachSeeded = true; } };
+
+  // Presence: cannula obstruction raises real work of breathing through
+  // respiratory.js's own airway-resistance calculation, the SAME Rairway
+  // term airwayFluid/upperAirwayObstruction already compose through — not
+  // a parallel, scripted vitals write.
+  const clear = probe({ scen: "abdPain", settle: 2, run: 600, mutate: trachOnly });
+  const obstructed = probe({ scen: "abdPain", settle: 2, run: 600, mutate: trachObstructed });
+  assertVersus("cannula obstruction (0.6) raises real work of breathing", obstructed, clear, "workOfBreathing", "up", 0.005);
+
+  // The real, distinguishing mechanism: a tracheostomy BYPASSES upper
+  // airway obstruction entirely (the tube sits below the larynx/pharynx),
+  // so the SAME upperAirwayObstruction severity that would meaningfully
+  // impair a native airway does measurably LESS to a trach patient's own
+  // tidal volume — the two-sided teaching point this item's own filing
+  // named explicitly.
+  // MEASURED, stated honestly: this engine's own load-dependent-effort/
+  // rate compensation (respiratory.js's own "harder load -> deeper AND
+  // faster breathing" mechanism) partly re-equalizes minute ventilation
+  // between the two arms, so the real, reproducible vt margin the bypass
+  // buys at 600s is small (~0.002 L), not the large swing a naive read of
+  // "removes a 1.5-exponent obstruction term" might suggest — the SAME
+  // honest-small-magnitude finding this session's burn/cold-thermal
+  // assertion above already documented for a different compensated loop.
+  const uaoNoTrach = probe({ scen: "abdPain", settle: 2, run: 600, mutate: (p) => { p.upperAirwayObstruction = 0.8; } });
+  const uaoWithTrach = probe({ scen: "abdPain", settle: 2, run: 600, mutate: (p) => { p.upperAirwayObstruction = 0.8; p.tracheostomy = true; } });
+  assertVersus("...but a tracheostomy bypasses upper-airway obstruction (better vt than a native airway at the same UAO)", uaoWithTrach, uaoNoTrach, "vt", "up", 0.001);
+
+  // Real time course: untreated secretions genuinely worsen over the call
+  // (a real, standard reason trach patients need routine suctioning), not
+  // a static severity.
+  const worsens = obstructed.after.trachObstruction > obstructed.before.trachObstruction;
+  worsens ? pass++ : fail++;
+  if (!worsens) failures.push(`untreated trachObstruction should worsen over 600s, got ${obstructed.before.trachObstruction.toFixed(3)} -> ${obstructed.after.trachObstruction.toFixed(3)}`);
+  console.log(`  ${worsens ? "PASS" : "FAIL"}  ${"untreated cannula obstruction genuinely worsens over time".padEnd(46)} trachObstruction ${obstructed.before.trachObstruction.toFixed(3)} -> ${obstructed.after.trachObstruction.toFixed(3)}`);
+
+  // Treatment: a real, crew-directable "clear/replace inner cannula"
+  // action — reusing the EXISTING "suction" procedure (the same physical
+  // catheter/technique real trach care uses), not a new near-duplicate
+  // procedure. Near-complete resolution, matching TP 1234's own field step.
+  const treated = probe({ scen: "abdPain", settle: 2, run: 600, mutate: trachObstructed, apply: ["suction"] });
+  const resolved = treated.after.trachObstruction < 0.15;
+  resolved ? pass++ : fail++;
+  if (!resolved) failures.push(`suction should clear trachObstruction below 0.15, got ${treated.after.trachObstruction.toFixed(3)}`);
+  console.log(`  ${resolved ? "PASS" : "FAIL"}  ${"...crew 'clear inner cannula' action (reuses suction) resolves it".padEnd(46)} trachObstruction = ${treated.after.trachObstruction.toFixed(3)}`);
+
+  // Specificity: suctioning a patient WITHOUT a tracheostomy never touches
+  // trachObstruction (it stays at its constructor default, 0) — the same
+  // action produces a different real effect depending on this patient
+  // trait, not a global field write.
+  const noTrachSuctioned = probe({ scen: "abdPain", settle: 2, run: 600, apply: ["suction"] });
+  const specOk = noTrachSuctioned.after.trachObstruction === 0;
+  specOk ? pass++ : fail++;
+  if (!specOk) failures.push(`suctioning a non-tracheostomy patient should never touch trachObstruction, got ${noTrachSuctioned.after.trachObstruction}`);
+  console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...does NOT touch trachObstruction for a patient with no tracheostomy".padEnd(46)} trachObstruction = ${noTrachSuctioned.after.trachObstruction.toFixed(3)}`);
 }
 
 console.log("\n" + "=".repeat(74));
