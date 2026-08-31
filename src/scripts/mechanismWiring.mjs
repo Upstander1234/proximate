@@ -4507,6 +4507,93 @@ console.log("[LOCALIZED ANGIOEDEMA — queue item 61]");
   assertVersus("...which falls back as epi treats the angioedema", treated, untreated, "upperAirwayObstruction", "down", 0.05);
 }
 
+console.log("[CROTALINE ENVENOMATION — queue item 57]");
+{
+  // Two-sided per lesson 6, but a ONE-ARM two-sided check (real condition vs
+  // matched healthy control), not a treatment-reversal comparison: TP 1224's
+  // own text carries no field antivenom step (real crotaline antivenom is a
+  // hospital-administered, monitored-infusion product), so there is no
+  // pharmacologic lever to assert a reversal through — the same honest
+  // "no field hemostasis" shape esophagealVaricealHemorrhage already has.
+  // 900s (not 600) because coagPct's own display rounding/1.2 ceiling
+  // headroom (coagulation.js) means a HEALTHY patient's clotStrength stays
+  // pinned at the 100 display ceiling for a while even as this condition's
+  // real, underlying factorII/plateletCount ceilings are already measurably
+  // below baseline well before 900s — asserting against the underlying
+  // factor/platelet numbers directly, not just the capped display.
+  const bitten = probe({ scen: "copperheadBite", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const factorFalls = bitten.after.factorII < healthy.after.factorII - 5;
+  factorFalls ? pass++ : fail++;
+  if (!factorFalls) failures.push(`envenomation should measurably lower factorII vs healthy control by 900s, got ${bitten.after.factorII.toFixed(1)} vs ${healthy.after.factorII.toFixed(1)}`);
+  console.log(`  ${factorFalls ? "PASS" : "FAIL"}  ${"envenomation -> consumptive coagulopathy (factorII)".padEnd(46)} factorII ${healthy.after.factorII.toFixed(1)} (control) -> ${bitten.after.factorII.toFixed(1)}`);
+
+  const pltFalls = bitten.after.plateletCount < healthy.after.plateletCount - 10;
+  pltFalls ? pass++ : fail++;
+  if (!pltFalls) failures.push(`envenomation should measurably lower plateletCount vs healthy control by 900s, got ${bitten.after.plateletCount.toFixed(1)} vs ${healthy.after.plateletCount.toFixed(1)}`);
+  console.log(`  ${pltFalls ? "PASS" : "FAIL"}  ${"...and plateletCount".padEnd(46)} plateletCount ${healthy.after.plateletCount.toFixed(1)} (control) -> ${bitten.after.plateletCount.toFixed(1)}`);
+
+  const coagFalls = bitten.after.coagPct < healthy.after.coagPct - 5;
+  coagFalls ? pass++ : fail++;
+  if (!coagFalls) failures.push(`envenomation's factor/platelet consumption should show up in the aggregate coagPct by 900s, got ${bitten.after.coagPct} vs healthy ${healthy.after.coagPct}`);
+  console.log(`  ${coagFalls ? "PASS" : "FAIL"}  ${"...and the aggregate coagPct observable".padEnd(46)} coagPct ${healthy.after.coagPct} (control) -> ${bitten.after.coagPct}`);
+
+  // No contrast control here: abdPain (appendicitis) also has real pain of
+  // its own, so this is a single-sided presence check (same pattern
+  // ectopicPregnancyRuptured's own pain assertion already uses above),
+  // confirming the disproportionate local pain crotaline bites are
+  // clinically known for is real in this engine, not a decorative initial
+  // value that decays away.
+  const painReal = bitten.after.intrinsicPain >= 5;
+  painReal ? pass++ : fail++;
+  if (!painReal) failures.push(`envenomation should present with real, sustained severe local pain (>=5) by 900s, got ${bitten.after.intrinsicPain}`);
+  console.log(`  ${painReal ? "PASS" : "FAIL"}  ${"...and presents with real, sustained local pain".padEnd(46)} intrinsicPain = ${bitten.after.intrinsicPain.toFixed(1)}`);
+}
+
+console.log("[SEPTIC SHOCK — queue item 7, condition-library workstream]");
+{
+  // The mechanism this batch actually wires up: pat.riskFactors.sepsis was
+  // ALREADY read by cardiovascular.js (SVR x0.45, venous compliance x1.6)
+  // and metabolic.js (+lactate production) but nothing in the condition
+  // library had ever set it — a dead flag with three live consumers. Two-
+  // sided per lesson 6: confirm the septic patient's SVR is genuinely lower
+  // than a matched healthy control (the flag is doing something), AND that
+  // it is not simply reproducing anaphylaxis's own vasodilation-only
+  // collapse (this is a SEPARATE, additive multiplier — the actual thing
+  // under test, not just "some vasodilation exists").
+  const septic = probe({ scen: "septicShock", settle: 2, run: 600 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 600 });
+  assertVersus("septic shock -> SVR collapse (riskFactors.sepsis wired)", septic, healthy, "svr", "down", 100);
+
+  // Cardiac output STAYS preserved (or rises) in the early hyperdynamic
+  // phase this scenario's own ~600s probe window sits in — the textbook
+  // distributive-shock signature (same shape anaph's own section-6 worked
+  // example uses: falling SVR, RISING or held cardiac output), the real
+  // discriminator between this condition's early phase and a hypovolemic/
+  // cardiogenic shock where CO falls WITH the pressure.
+  const coHeld = septic.after.co >= healthy.after.co - 0.3;
+  coHeld ? pass++ : fail++;
+  if (!coHeld) failures.push(`septic shock should hold/raise co (hyperdynamic phase) vs healthy control at 600s, got ${septic.after.co.toFixed(2)} vs ${healthy.after.co.toFixed(2)}`);
+  console.log(`  ${coHeld ? "PASS" : "FAIL"}  ${"...while co stays preserved (hyperdynamic, not failing)".padEnd(46)} co ${healthy.after.co.toFixed(2)} (control) -> ${septic.after.co.toFixed(2)}`);
+
+  // Treatment side: fluids raise cardiac output through the SAME generic
+  // Starling-equation path every other capillary-leak condition already
+  // uses (metabolic.js) — real fluid responsiveness, not a scripted bump.
+  const fluidTreated = probe({ scen: "septicShock", settle: 2, run: 600, apply: ["saline"], reapply: 240 });
+  const untreated = probe({ scen: "septicShock", settle: 2, run: 600 });
+  assertVersus("...fluids raise co through the shared Starling path", fluidTreated, untreated, "co", "up", 0.3);
+
+  // Norepinephrine (this formulary's own "first-line vasopressor for septic
+  // shock" per its data/drugs.js note, unchanged by this batch) raises SVR
+  // through its existing alpha:1.0 receptor composition (pk.js) — the same
+  // alphaTone path every other pressor already uses, now with something to
+  // treat. Confirms the box already had the right tool; this batch only
+  // built the disease it was labeled for.
+  const pressorTreated = probe({ scen: "septicShock", settle: 2, run: 600, apply: ["norepi"], reapply: 60 });
+  assertVersus("...norepinephrine raises SVR through its existing alpha-receptor path", pressorTreated, untreated, "svr", "up", 50);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {

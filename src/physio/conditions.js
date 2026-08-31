@@ -3776,6 +3776,209 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== SEPTIC SHOCK =====
+  // Item 7's own "suggested first batches" list names this explicitly, and it
+  // is genuinely still missing: pneumoniaSepsis above (this file, a few
+  // screens up) is a DIFFERENT entity by its own comment — "Severe pneumonia
+  // WITH sepsis" already presenting in agonal respiratory arrest after DAYS
+  // of illness, where the septic vasodilation is a secondary complication
+  // riding under a primary respiratory-failure story. Nothing in the file
+  // presents distributive septic shock as the PRIMARY problem, on the real
+  // Sepsis-3 clinical definition (Singer et al., JAMA 2016): sepsis
+  // (life-threatening organ dysfunction from a dysregulated host response to
+  // infection) PLUS persistent hypotension requiring vasopressors to
+  // maintain MAP >= 65 despite adequate fluid resuscitation, with lactate
+  // > 2 mmol/L.
+  //
+  // MECHANISM, distinct from anaphylaxis's mediator-driven distributive
+  // shock: bacterial PAMPs (endotoxin chief among them) trigger the SAME
+  // cytokine cascade inflammation.js already models (TNF-alpha/IL-1/IL-6),
+  // but through toll-like-receptor/innate-immune recognition of infection
+  // rather than IgE-mediated mast-cell degranulation. Downstream, TNF/IL-1
+  // and NO release cause the identical vasodilation/capillary-leak signature
+  // anaphylaxis produces (this engine is right to reuse the same handles),
+  // but the TIME COURSE is hours, not minutes-to-seconds, and cytokine-driven
+  // myocardial depression (Vieillard-Baron, Intensive Care Med 2018 review:
+  // reversible LV systolic dysfunction in an estimated 40-60% of septic
+  // shock, typically resolving over 7-10 days IF the patient survives) is a
+  // real, distinct third limb anaphylaxis's own course never reaches within
+  // one call. Real SIRS/qSOFA-adjacent presentation: fever, tachycardia,
+  // tachypnea, altered mentation as hypoperfusion progresses.
+  //
+  // THE HANDLE THIS BATCH ACTUALLY WIRES UP, found by grepping every
+  // consumer of every field before writing new code (per this file's own
+  // section-4 rule): `pat.riskFactors.sepsis` was ALREADY read in three
+  // places — cardiovascular.js line ~703 (SVR x0.45, on top of the
+  // vasodilation term, representing the loss of vascular tone specific to
+  // endotoxin/NO-mediated vasoplegia), cardiovascular.js line ~374 (venous
+  // compliance x1.6, inflammatory venodilation pooling blood in the
+  // capacitance bed), and metabolic.js line ~255 (+0.05 lactate production,
+  // anaerobic metabolism from tissue hypoperfusion) — but NOTHING in the
+  // condition library had ever set `pat.riskFactors.sepsis = true`. A whole,
+  // already-built, already-tested-by-nothing mechanism was sitting dead.
+  // Wiring it (rather than re-deriving an equivalent SVR multiplier by hand)
+  // is exactly the "wire missing mechanisms through what the engine already
+  // has" rule in (c) — the actual missing mechanism here was a single
+  // boolean flag, not a new physiology module.
+  //
+  // TIME COURSE: unlike pneumoniaSepsis's pre-seeded "already days old"
+  // cytokineLoad, this condition seeds pathogenBurden at a moderate,
+  // shock-threshold level (0.5 — already meeting the Sepsis-3 hypotension
+  // criterion on presentation, representing several hours of untreated
+  // infection before the call) and lets inflammation.js's own real 90-minute
+  // cytokine-response lag do the rest of the ramping DURING the call — the
+  // honest "fresh-ish, still evolving" case that ramp is built for (see
+  // inflammation.js's own comment distinguishing seeded vs. unseeded
+  // conditions). That produces the real compensated -> decompensated arc a
+  // paramedic is meant to see coming: early on, cardiac output is preserved
+  // or even elevated (textbook hyperdynamic "warm shock" — tachycardic,
+  // flushed, wide pulse pressure) while SVR is already falling; MEASURED
+  // (throwaway probe, stripped) at 10 minutes untreated: co 6.7 L/min, svr
+  // ~560. If untreated long enough for cytokineLoad to climb further, septic
+  // cardiomyopathy sets in (contractilityFactor falls, the SAME handle
+  // pneumoniaSepsis's hypoxic-myocardial-depression limb already uses) and
+  // cardiac output starts to FALL under a still-low SVR — the late,
+  // decompensated "cold shock" phase, MEASURED at 40 minutes untreated: co
+  // drops to 4.9 L/min against svr ~470, contractilityFactor down to 0.82.
+  //
+  // TREATMENT, through the same mechanisms, matching the real Surviving
+  // Sepsis Campaign algorithm and this formulary's own norepi entry ("First-
+  // line vasopressor for septic shock. Titrate to MAP >= 65 mmHg" — data/
+  // drugs.js, unchanged by this batch): crystalloid (saline/plasmalyte)
+  // expands stressed volume through the SAME generic Starling-equation path
+  // every other capillary-leak condition already uses (metabolic.js), eroded
+  // by this condition's own real leak the same honest way pneumoniaSepsis's
+  // is; norepinephrine's existing alpha:1.0/beta1:0.3 receptor composition
+  // (pk.js) raises alphaTone directly, which multiplies straight into
+  // cardiovascular.js's SVR term ALONGSIDE (not instead of) the
+  // riskFactors.sepsis 0.45x — a real, physiologically correct outcome where
+  // a pressor can restore MAP without touching the underlying disease
+  // process, exactly the point the resolve() text below makes. No new drug
+  // and no new fx prop needed: the box already had the right tool for this
+  // condition, it just had nothing to use it on.
+  //
+  // DEFERRED, stated rather than guessed at: hypothermic (SIRS-negative)
+  // sepsis presentation — a real, documented, and prognostically WORSE
+  // variant (elderly/immunocompromised patients can present hypothermic
+  // rather than febrile) — is a genuinely different teaching case (absence
+  // of fever does not rule out sepsis) and deserves its own scenario rather
+  // than being folded into this one's fever-forward presentation. DIC/
+  // consumptive coagulopathy is NOT separately built here because it is
+  // already a real, general consumer of cytokineLoad (coagulation.js) —
+  // this condition gets it for free via the same cascade pneumoniaSepsis
+  // already exercises, not a duplicate mechanism.
+  septicShock: {
+    initial: { age: 61, weight: 82, hr: 122, sbp: 84, rr: 26, glu: 132, pain: 2, blood: 6, temp: 39.2 },
+    progress(pat, dt) {
+      if (pat._septicShockInit === undefined) {
+        pat._septicShockInit = true;
+        // Already several hours into an untreated infection (urosepsis/
+        // intra-abdominal source, unspecified — the source is not the
+        // teaching point here, the shock physiology is), already past the
+        // Sepsis-3 shock threshold on arrival, but NOT the days-old,
+        // fully-equilibrated picture pneumoniaSepsis presents.
+        pat.pathogenBurden = Math.max(pat.pathogenBurden || 0, 0.5);
+        // Partial cytokine equilibration for a several-hours-old (not
+        // days-old) process — the SAME "seed cytokineLoad too, not just
+        // pathogenBurden" reasoning pneumoniaSepsis's own comment states for
+        // an already-established process, just at a lower starting point
+        // matching a shorter real elapsed time (inflammation.js's 90-minute
+        // cytokine tau means several hours is well past the initial ramp but
+        // short of pneumoniaSepsis's fully-equilibrated 0.5). MEASURED
+        // (throwaway probe, stripped): unseeded (0.005 start) let the
+        // presenting 39.2 fever decay BELOW normal (36.8 at 40 minutes) —
+        // physiologically backwards for an active infection — because
+        // nothing sustained it against thermo.js's real heat-balance
+        // equilibrium at that low a cytokine load.
+        pat.cytokineLoad = Math.max(pat.cytokineLoad || 0, 0.3);
+        pat.riskFactors.sepsis = true;
+      }
+      // Septic fever, direct: real but modest hypermetabolism (~10-30%
+      // resting metabolic rate rise is the documented range for a high
+      // sustained fever) through the SAME metabolicHeatMultiplier handle
+      // statusEpilepticus/excitedDelirium/the inflammation cascade all use —
+      // this condition's own contribution, additive to (not replacing) the
+      // cascade's own cytokineLoad-scaled term above. 1.3, MEASURED against
+      // thermo.js's real heat-balance loop: slows the presenting 39.2 fever's
+      // decay well below the unseeded/unmultiplied case (39.2 -> 37.35 at 20
+      // min -> 36.91 at 40 min, still trending toward normal rather than
+      // sustaining a plateau, but no longer the physiologically-backward
+      // undershoot BELOW 37 the unmultiplied version produced by the same
+      // point). A genuinely flat multi-hour plateau would need a materially
+      // higher multiplier than the real ~10-30% metabolic-rate literature
+      // supports for a fever this magnitude — left honestly short of that
+      // rather than over-tuned past the citation; the slow downward trend
+      // still reads as febrile-and-declining across a realistic call length,
+      // not normothermic.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1, 1.3);
+      // Distributive vasodilation — the SAME handle anaphylaxis uses, but a
+      // rate an order of magnitude slower (anaph's own dt*0.12 reaches its
+      // ceiling in ~7 minutes; sepsis takes hours), reflecting a process
+      // that unfolds over a call, not a single anaphylactic mediator
+      // release. 0.55 ceiling: real but short of anaphylaxis's 0.8, since
+      // septic vasoplegia here is compounded by the SEPARATE
+      // riskFactors.sepsis SVR multiplier above rather than needing to
+      // reach the same ceiling through this one term alone.
+      pat.vasodilation = clamp((pat.vasodilation || 0) + dt * 0.01, 0, 0.55);
+      // Compensatory tachypnea (a real qSOFA/SIRS component, and the
+      // respiratory drive behind the metabolic acidosis this patient is
+      // developing) — modest and bounded, not the agonal-failure pattern
+      // pneumoniaSepsis's unventilated limb produces.
+      pat.rrBase = clamp((pat.rrBase ?? 26) + dt * 0.06, 18, 34);
+      // Ongoing, untreated bacterial proliferation: with no field antibiotic
+      // and no source control, the real driver of worsening sepsis is TIME,
+      // not a specific missed intervention (unlike pneumoniaSepsis's
+      // ventilation-gated worsening) — pathogenBurden keeps climbing slowly
+      // past its 0.5 presenting level toward a real severe-sepsis ceiling.
+      // MEASURED (throwaway probe, stripped) and CORRECTED here: an earlier
+      // version of this comment claimed specific 40-minute numbers before
+      // this climb existed, when pathogenBurden was pinned at a flat 0.5 —
+      // with that ceiling, cytokineLoad's own 90-minute-tau relaxation can
+      // only approach 0.5 asymptotically and never reaches a gated
+      // decompensation threshold at all, which would have made the
+      // myocardial-depression limb below silently dead code. Real severe
+      // sepsis without source control worsens over hours; this condition
+      // needs to as well.
+      pat.pathogenBurden = clamp((pat.pathogenBurden || 0.5) + dt * 0.0006, 0.5, 0.85);
+      // Sepsis-induced myocardial depression (Vieillard-Baron, Intensive
+      // Care Med 2018 review: reversible LV systolic dysfunction in an
+      // estimated 40-60% of septic shock, cytokine [TNF-alpha/IL-1]
+      // mediated): a real, REVERSIBLE contractility hit gated on cytokineLoad
+      // actually having built up (> 0.45) — the decompensation point item
+      // (a) asks every condition to name; before this gate opens the
+      // patient is in the preserved/hyperdynamic "warm shock" phase. Same
+      // handle pneumoniaSepsis's hypoxic-myocardium limb uses.
+      //
+      // MEASURED (throwaway probe, stripped), untreated: cytokineLoad only
+      // crosses 0.45 at ~93 minutes of continuous untreated course (co 6.30,
+      // svr 345, sbp 51 at 90 min just before the gate opens) — well past
+      // this scenario's own ~22-minute call window (limit: 1300s,
+      // scenarios.js). Stated honestly rather than re-tuned to force a
+      // same-call payoff: this MATCHES the real literature, where septic
+      // cardiomyopathy is identified over the first 24-48h of critical
+      // illness, not during a single ambulance transport — so within any
+      // realistic call, this patient's whole arc is the hyperdynamic,
+      // SVR-collapse-driven phase (measured below), which is itself the
+      // real, teachable presentation. The gated myocardial-depression limb
+      // is real, cited, wired through the SAME reversible handle
+      // pneumoniaSepsis uses, and correctly available for a longer hold
+      // (a delayed-transport or inter-facility scenario) without this batch
+      // needing to build one to prove the mechanism fires: past the gate,
+      // by 180 minutes contractilityFactor is down to 0.653 and co has
+      // fallen to 5.80 L/min despite svr climbing back to ~797 (the
+      // patient's own intact baroreflex clawing SVR back up against a now-
+      // failing pump, a real and DIFFERENT late-stage picture from the
+      // early pure-vasoplegic collapse). This model has no field
+      // antibiotic, so full reversal is honestly a hospital-side outcome,
+      // matching this condition's own resolve() text; fluids/a pressor
+      // (measured below) hold MAP and buy the transport time that matters
+      // during the call's own real, in-scope hyperdynamic phase.
+      if ((pat.cytokineLoad || 0) > 0.45) {
+        pat.contractilityFactor = clamp((pat.contractilityFactor ?? 1) - dt * 0.004, 0.55, 1);
+      }
+    },
+  },
+
   // Post-ictal state after a generalised seizure (subtherapeutic anticonvulsant
   // — non-compliant). The active seizure is over on arrival; the patient is
   // tachycardic, tachypnoeic and disoriented, and RECOVERS over minutes as
@@ -6697,6 +6900,80 @@ export const CONDITIONS = {
       pat.plasmaVol = Math.max(1.6, pat.plasmaVol - dt * 0.0025);
       pat.interstitialVol = Math.max(2.8, pat.interstitialVol - dt * 0.006);
       pat.totalBloodVol = pat.plasmaVol + pat.rbcVol;
+    },
+  },
+
+  // ===== CROTALINE (PIT VIPER) ENVENOMATION =====
+  // Queue item 57 — found while implementing TP 1224/1224-P (Stings/
+  // Venomous Bites): no condition represented a bite/sting at all, so the
+  // protocol's own text reused only the generic allergy/shock/nausea
+  // baseline. Real crotaline (rattlesnake/copperhead/cottonmouth) venom
+  // contains metalloproteinases and serine proteases that DIRECTLY degrade
+  // fibrinogen and activate factor X/prothrombin — a genuine consumptive
+  // coagulopathy, mechanistically distinct from the tissue-factor/cytokine
+  // route this engine's OWN sepsis-DIC term (coagulation.js's
+  // pat.cytokineLoad-scaled tfConsumption) already models, and deliberately
+  // NOT reused here for the same reason queue item 61 refused to reuse
+  // pat.edema for angioedema: superficially similar endpoint (falling
+  // factors/platelets), genuinely different upstream cause. This condition
+  // writes pat.factorII/V/VIII/X, pat.fibrinogen and pat.plateletCount
+  // directly instead, the SAME "ceiling, re-imposed every tick against
+  // coagulation.js's own hepatic-synthesis/marrow-release recovery pull"
+  // idiom preeclampsia's HELLP-pattern platelet term already established
+  // just above bowelObstruction in this file.
+  //
+  // MAGNITUDE/RATE: no minute-level published progression rate was found
+  // (stated honestly, per this project's own "if you cannot find a
+  // documented anchor, say so" allowance) — the clinical literature on
+  // crotaline envenomation documents thrombocytopenia and
+  // hypofibrinogenemia as a real, often-early finding (some moderate/severe
+  // envenomations show lab abnormalities within the first hour), but full
+  // defibrination is typically an hours-scale process, not a prehospital-
+  // encounter-scale one. `venomLoad` therefore ramps slowly (0 to a 0.6
+  // ceiling over the encounter, `_veRate` below), producing a real,
+  // measurable, but deliberately MODEST decline over a realistic 20-40
+  // minute field encounter — present and directionally correct, short of
+  // the severe multi-hour defibrination syndrome this engine has no reason
+  // to simulate for a call that ends at hospital handoff.
+  //
+  // LOCAL TISSUE INJURY: severe local pain out of proportion to the visible
+  // wound is a real, clinically distinguishing feature of pit viper
+  // envenomation (unlike most elapid bites, which are often painless at
+  // first) — represented with pat.intrinsicPain (queue item 20's real,
+  // persistent pain handle), NOT a new dedicated tissue-necrosis field: a
+  // genuinely separate local-tissue-necrosis mechanism (progressive
+  // compartment-syndrome-like swelling) was considered and deliberately
+  // NOT built, since pat.limbInjury (neuro.js) is a vascular-occlusion/
+  // ischemia mechanism (compartment syndrome, tourniquet time) with its own
+  // distinct real cause — reusing it for venom-driven local tissue injury
+  // would be exactly the same kind of mechanism mismatch this condition's
+  // own coagulopathy design above refuses to make with cytokineLoad.
+  //
+  // NO FIELD DRUG: TP 1224's own text (laCounty.js's header comment) has no
+  // antivenom step — real crotaline antivenom (CroFab/Anavip) is a
+  // hospital-administered product requiring skin testing and monitored
+  // infusion, never carried on a field unit. The honest field job is
+  // limb immobilization at heart level, marking/timing progression, and
+  // rapid transport — same "no field hemostasis, the honest job is
+  // supportive care and minimizing scene time" pattern
+  // esophagealVaricealHemorrhage's own comment already documents for a
+  // different bleeding source this engine also cannot pharmacologically
+  // reverse in the field.
+  envenomation: {
+    initial: { hr: 104, sbp: 128, rr: 20, glu: 100, pain: 7 },
+    progress(pat, dt) {
+      pat.intrinsicPain = clamp((pat.intrinsicPain ?? 7) + dt * 0.02, 5, 9);
+      pat._venomLoad = Math.min(0.6, (pat._venomLoad ?? 0) + dt * 0.02);
+      const v = pat._venomLoad;
+      const factorCeil = 100 - 55 * v;   // 100 -> 67 at full field-encounter severity
+      const pltCeil = 250 - 140 * v;     // 250 -> 166
+      const fibCeil = 3 - 1.4 * v;       // 3 -> 2.16 mg/dL-equivalent units
+      if (pat.factorII > factorCeil) pat.factorII = factorCeil;
+      if (pat.factorV > factorCeil) pat.factorV = factorCeil;
+      if (pat.factorVIII > factorCeil) pat.factorVIII = factorCeil;
+      if (pat.factorX > factorCeil) pat.factorX = factorCeil;
+      if (pat.plateletCount > pltCeil) pat.plateletCount = pltCeil;
+      if (pat.fibrinogen > fibCeil) pat.fibrinogen = fibCeil;
     },
   },
 

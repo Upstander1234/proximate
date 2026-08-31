@@ -443,6 +443,48 @@ cardiogenicShock: {cat: "medical", id: "SHOCK-011", pronouns: "he", title: "Male
     return {died, cause, notes, correct: s.pi === "SHOK", truth: "Cardiogenic shock (post-MI pump failure)"};},
 },
 
+// Septic shock as its own primary presentation (queue item 7's own
+// suggested first-batch entity), distinct from pneumoniaSepsis (this file's
+// existing sepsis condition, which is a respiratory-arrest call with septic
+// shock as a secondary complication under days of illness). This patient
+// presents mid-course: several hours of untreated urosepsis, already past
+// the Sepsis-3 shock threshold, still in the hyperdynamic "warm shock" phase
+// — the teaching point is recognizing distributive shock from fever +
+// tachycardia + hypotension + WARM, FLUSHED skin (the opposite exam finding
+// from the cool, clammy skin hypovolemic/cardiogenic shock produce), not a
+// cold-shock arrest.
+septicShock: {cat: "medical", id: "SHOCK-012", pronouns: "she", title: "Female, 61. Fever and confusion, found weak on the bathroom floor.",
+  limit: 1300, transport: 480,
+  bystanders: "Her husband found her like this and is standing in the doorway, badly frightened.",
+  units: [{at: 340, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["61F. Fever, confusion, found on the floor.", "Husband says she's had flank pain and fever for two days."],
+  update: ["Husband: \"She was fine yesterday evening, just tired. This morning she wasn't making sense.\""],
+  impression: "On the bathroom floor, flushed and sweating, breathing fast. She answers but drifts off mid-sentence. Her skin is hot and surprisingly warm to the touch, not cool or clammy.",
+  imps: ["SEPS", "FEVR", "SHOK", "HOTN", "ALOC"],
+  condition: "septicShock",
+  patient: {age: 61, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "Husband: \"Two days of fever and pain in her right side, low back. She said it burned when she went to the bathroom. This morning I couldn't wake her up right.\"", kind: "pt",
+      evid: "Two days of fever with flank pain and dysuria is a classic pyelonephritis history, the kind of untreated urinary source that progresses to septic shock over hours to days — and the new confusion this morning is the shock itself arriving.", find: "Hx (collateral): 2 days fever + flank pain/dysuria, new confusion this morning."}),
+    sample: () => ({say: "Husband: \"No allergies. She takes a pill for her thyroid, nothing else. No other health problems — she's never been sick like this.\"", kind: "pt",
+      evid: "No prior chronic illness to explain the presentation any other way, and no medications that would cause this — an untreated infection is the whole story.", find: "SAMPLE: NKDA, levothyroxine only, no other history."}),
+    skin: (s, v) => ({say: `Hot and flushed, sweating. ${v.sbp < 100 ? "Cap refill is actually fairly brisk despite how low that pressure is." : "Cap refill brisk."}`, kind: "crit",
+      evid: "WARM, flushed skin with a low pressure is the specific sign that separates distributive (septic) shock from hypovolemic or cardiogenic shock, where the skin would be cool and clammy from peripheral vasoconstriction — here the vessels are pathologically DILATED, not clamped down.", find: "Skin hot, flushed, diaphoretic; brisk cap refill despite hypotension."}),
+    heart: (s, v) => ({say: `Fast and bounding. Pressure reads ${v.sbp}/${v.dbp}, pulse pressure wide.`, find: `Heart: tachycardic, bounding pulses. BP ${v.sbp}/${v.dbp}.`}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const fluidL = (s.given.saline || 0) * 0.5 + (s.given.plasmalyte || 0) * 0.5;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated septic shock: the vasodilation and capillary leak this process drives keep eroding pressure faster than the field can keep up with, and nothing here holds it back on its own.";
+    notes.push("Fever, new confusion, and hypotension with WARM, flushed skin (not the cool, clammy skin of hypovolemic or cardiogenic shock) is the pattern to recognize: distributive shock from an infection, not an empty tank or a failing pump.");
+    if (fluidL >= 1) notes.push("Aggressive crystalloid was the right first move — early fluid resuscitation is the single highest-yield field intervention in septic shock, matching how this call actually responds to it.");
+    else notes.push("No meaningful fluid resuscitation given. Septic shock is a fluid-responsive process, at least early on, and this call needed volume as the first move, not just rapid transport.");
+    if (s.given.norepi) notes.push("A pressor is the correct SECOND-line move here (this box's own norepi is labeled first-line for septic shock) once fluids alone aren't holding a MAP — good escalation, not a substitute for the fluid.");
+    notes.push("There is no field antibiotic and no field source control in this box — the fever, the confusion and the falling pressure all trace back to an infection nothing here can cure. The job is recognizing it fast, running volume, considering a pressor if trained and equipped for one, and getting her to a facility that can give antibiotics and find the source.");
+    return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Septic shock (urosepsis source), hyperdynamic/warm phase"};},
+},
+
 takotsubo: {cat: "medical", id: "STRS-011B", pronouns: "she", title: "Female, 68. Crushing chest pain and breathlessness an hour after her husband's funeral.",
   limit: 1500, transport: 540,
   bystanders: "Her son is beside her, still in a dark suit. 'She collapsed at the reception. She keeps saying it's just grief.'",
@@ -4696,6 +4738,52 @@ allergicReactionMildCall: {cat: "medical", id: "ALLERGY-014", pronouns: "he", ti
     else notes.push("No treatment given for a real, symptomatic (if minor) allergic reaction. An antihistamine is indicated even for a mild, isolated reaction.");
     notes.push("The skill on this call is recognizing when NOT to escalate: hives alone, with clear lungs, no angioedema and stable vitals, is Grade 1 — the antihistamine is the whole job, not a bridge to epinephrine.");
     return {died, cause, notes, correct: s.pi === "ALRX", truth: "Mild (Grade 1) allergic reaction — isolated urticaria/pruritus, skin/mucosal only"};},
+},
+
+// Queue item 57. TP 1224/1224-P (Stings/Venomous Bites) — real crotaline
+// envenomation, previously undetectable (no condition existed at all). The
+// teaching point is deliberately NOT a drug: TP 1224's own text carries no
+// field antivenom step, so the correct field job is limb immobilization at
+// heart level, marking/timing the swelling margin, and rapid transport
+// without agitating the limb (exertion accelerates systemic venom
+// absorption) — matching this scenario's own resolve() below.
+copperheadBite: {cat: "medical", id: "ENV-014", pronouns: "he", title: "Male, 44. Snakebite while gardening.",
+  limit: 900, transport: 420,
+  bystanders: "His wife, who saw the snake and got a photo of it on her phone before it left.",
+  units: [{at: 300, level: "emt", name: "Engine 14"}],
+  dispatch: ["44M, snakebite to the leg.", "Conscious, alert, in pain.", "Wife says it happened in the garden a few minutes ago."],
+  update: [],
+  impression: "Sitting on the porch steps, gripping his lower right leg. Two puncture marks above the ankle, already swelling, skin darkening around the bite. He is in obvious pain but breathing easily.",
+  imps: ["ENVN", "TRMA"],
+  condition: "envenomation",
+  locWeights: {house: 6, park: 3, business: 1},
+  patient: {age: 44, gender: "male"},
+  clothing: {top: "short", bottom: "shorts", shoes: true},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "\"I reached into the mulch and it got me right on the ankle. Maybe five minutes ago. Hurts a lot worse than a bug bite, and it's already swelling.\"", kind: "pt",
+      evid: "Rapid-onset, disproportionate local pain and swelling within minutes of a bite is the classic crotaline (pit viper) envenomation presentation.", find: "OPQRST: snakebite to ankle ~5 min ago, rapidly worsening local pain and swelling."}),
+    sample: () => ({say: "\"No allergies, no meds. My wife got a picture of it — she says it was a copperhead.\"", kind: "pt",
+      evid: "A photographed, identified pit viper plus the local findings on exam is enough to treat this as a real envenomation rather than a dry bite.", find: "SAMPLE: no allergies/meds, snake photographed and identified as a copperhead (crotaline)."}),
+    skin: () => ({say: "Two puncture wounds above the right lateral malleolus, surrounding tissue swollen and darkening, tense to the touch. No active bleeding.", kind: "warn",
+      evid: "Progressive local swelling and ecchymosis around the puncture site is the expected early local-tissue effect of crotaline venom.", find: "Skin: two puncture marks, right ankle, progressive local swelling/ecchymosis."}),
+    // Reads v.coag live — the real, progressive venom-driven consumptive
+    // coagulopathy this condition's own conditions.js progress() produces,
+    // not scripted text (same "live instrument reading" pattern the
+    // anaph scenario's lungs/airwayLook probes already established).
+    heart: (s, v) => {
+      if (v.coag < 85) return {say: "Regular, but there's a fresh bruise spreading at the old IV stick site from earlier — his blood isn't clotting the way it should.", kind: "warn",
+        evid: "A falling coagulation reading with new spontaneous bruising is real, developing venom-induced consumptive coagulopathy — the systemic half of this bite, not just the local swelling.", find: "Heart: regular rhythm; new bruising, falling coagulation panel."};
+      return {say: `Regular, rate ${v.hr}.`, kind: "obs", find: `Heart: sinus rhythm, rate ${v.hr}.`};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const immobilized = s.given.splint;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A single extremity envenomation, immobilized and transported promptly, does not kill a patient over the span of one call. Something else in this call's management went wrong.";
+    if (immobilized) notes.push("The limb was immobilized at heart level, the actual field intervention that matters here — it slows lymphatic/venous spread of venom without a tourniquet's own well-documented harm.");
+    else notes.push("The bitten limb was never immobilized. There is no field antivenom to give; splinting the extremity and keeping it still is the one concrete thing this call's treatment could have done.");
+    notes.push("There is no field-administrable antivenom for this call to reach for; the real job is recognition, limb immobilization, marking the advancing swelling margin for the receiving hospital, and prompt transport without letting the patient walk on or exert the bitten limb.");
+    return {died, cause, notes, correct: s.pi === "ENVN" || s.pi === "TRMA", truth: "Crotaline (pit viper) envenomation — local tissue injury with a real, developing consumptive coagulopathy"};},
 },
 
 hyperkalemiaMissedDialysis: {cat: "medical", id: "RENL-001", pronouns: "he", title: "Male, 58. Generalized weakness, on dialysis.",

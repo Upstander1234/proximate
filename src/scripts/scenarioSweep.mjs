@@ -148,6 +148,12 @@ const REQUIRED = [
   // drives pat.upperAirwayObstruction directly and is reduced by IM
   // epinephrine (pk.js "angioedema" fx prop).
   "angioedema",
+  // Queue item 7 (septicShock): contractilityFactor is not new — it
+  // predates this batch (pneumoniaSepsis's own hypoxic-myocardium limb) —
+  // but had never been added to this sweep either (lesson 2). septicShock's
+  // own cytokine-gated septic-cardiomyopathy limb makes it a second real
+  // writer, closing a pre-existing gap while adding the new one.
+  "contractilityFactor",
 ];
 
 // Fields that may never go negative.
@@ -197,6 +203,9 @@ const NON_NEGATIVE = [
   "urticaria",
   // Queue item 61: real, always-non-negative 0-1 severity dial.
   "angioedema",
+  // Queue item 7 (septicShock): a real multiplier, clamped to [0.55,1] by
+  // every writer of it (never negative).
+  "contractilityFactor",
 ];
 
 const results = [];
