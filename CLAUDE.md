@@ -332,6 +332,44 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 57 — a real crotaline envenomation condition, consumptive coagulopathy through the existing coagulation cascade, no invented antivenom mechanism
+
+Found while implementing TP 1224/1224-P (Stings/Venomous Bites — queue item 57's own filing): no condition, scenario or drug represented a bite/sting at all, so laCounty.js's TP 1224 section reused only the generic allergy/shock/nausea baseline. TP 1224's own text has no field antivenom step (real crotaline antivenom is a hospital-administered, skin-tested, monitored-infusion product, never carried on a field unit) — confirmed before building, so no new drugs.js entry was attempted; the honest scope is the condition itself, not a fictional field cure.
+
+**`envenomation`** (conditions.js) is a new condition for crotaline (pit viper) snakebite. Real venom metalloproteinases/serine proteases DIRECTLY degrade fibrinogen and activate factor X/prothrombin — a genuine consumptive coagulopathy, mechanistically distinct from this engine's own sepsis-DIC term (coagulation.js's `pat.cytokineLoad`-scaled tissue-factor consumption) and deliberately NOT routed through it, for the same reason queue item 61 (below) refused to reuse `pat.edema` for angioedema: a superficially similar endpoint with a genuinely different upstream cause. Instead writes `pat.factorII`/`factorV`/`factorVIII`/`factorX`, `pat.fibrinogen` and `pat.plateletCount` directly as re-imposed CEILINGS (not one-shot writes — coagulation.js pulls all of them back toward normal every tick via its own hepatic-synthesis/marrow-release recovery term), the SAME idiom preeclampsia's HELLP-pattern platelet ceiling already established. Local tissue injury (severe pain out of proportion to the wound, the real clinical feature distinguishing pit viper from most elapid bites) uses `pat.intrinsicPain` (queue item 20's existing handle) — a genuinely separate local-tissue-necrosis field was considered and deliberately NOT built, since `pat.limbInjury` (neuro.js) is a vascular-occlusion/ischemia mechanism (compartment syndrome/tourniquet time) with its own distinct real cause, and force-fitting venom injury into it would repeat the exact mismatch this batch's coagulopathy design just avoided with cytokineLoad.
+
+**No documented minute-level progression rate was found** (stated honestly, per this project's own "if you cannot find a documented anchor, say so" allowance) — full defibrination syndrome is an hours-scale process, not a prehospital-encounter-scale one, so the internal `venomLoad` ramp is deliberately slow (0 to a 0.6 ceiling over the call), producing a real, directionally-correct, but deliberately modest decline appropriate to a 15-minute field encounter rather than the severe multi-hour picture this engine has no reason to simulate for a call that ends at hospital handoff.
+
+**New scenario**: `copperheadBite` (ENV-014, scenarios.js) — snakebite to the ankle while gardening, photographed/identified snake, progressive local swelling and a live-read coagulopathy finding on the heart exam (`v.coag < 85`, the same "live instrument reading" pattern the anaph scenario's `lungs`/`airwayLook` probes already established, not scripted text). `resolve()` teaches the real field job: limb immobilization (`s.given.splint`) at heart level and prompt transport, explicitly noting there is no field antivenom to reach for — matches `esophagealVaricealHemorrhage`'s own precedent for a different bleeding source this engine also cannot pharmacologically reverse in the field.
+
+**Found and fixed a real, crash-causing defect in the course of this**, the same class gear.js's own ANXY comment already documents once: the new scenario's `imps` array needed an `ENVN` impression code that did not exist in `gear.js`'s `PI` registry — App.jsx's impression picker reads `PI[k].n` with no optional chaining, so picking an undefined code throws. Added `ENVN:{n:"Envenomation (Bite / Sting)"}` before the scenario that references it, not after.
+
+**MEASURED, not assumed** (direct instrumented probe against `copperheadBite`, standalone script written and stripped before this entry): at 300s, `factorII`/`factorX` already down to 94.5 (vs 100 baseline) and `plateletCount` to 236.1 (vs 250) — real, present, but not yet visible on the DISPLAYED `coagPct`, which stays pinned at its 100 display ceiling for a while (coagulation.js's `clotStrength` is `Math.min(1.2, ...)`-clamped and a healthy patient's own `plateletActivation` ratchet routinely pushes raw clotStrength past 1.0, so meaningful headroom has to be eaten before the rounded, capped display number moves — a pre-existing property of `coagulation.js` this batch did not touch, not a new defect). By 900s the underlying decline is unambiguous: `factorII`/`factorX` 83.5, `plateletCount` 208.1, `fibrinogen` 2.58 (vs 3), and the aggregate `coagPct` has fallen to 81 (vs 100 for a healthy `abdPain` control at the same 900s). `intrinsicPain` holds at ~7.3 throughout, confirming the local-pain presentation is real and sustained, not a decaying initial value.
+
+A new `[CROTALINE ENVENOMATION — queue item 57]` section added to `mechanismWiring.mjs`: a one-arm two-sided check (real condition vs matched healthy control, not a treatment-reversal comparison, since none exists in real field medicine for this) confirming `factorII`/`plateletCount` fall measurably below a healthy control by 900s, that the aggregate `coagPct` observable reflects it, and that `intrinsicPain` presents at a real, sustained severe level. No new physiology field was introduced (envenomation reuses `factorII`/`factorV`/`factorVIII`/`factorX`/`fibrinogen`/`plateletCount`/`coagPct`/`intrinsicPain`, all already tracked in `scenarioSweep.mjs`'s `NON_NEGATIVE`/`REQUIRED` lists via `coagPct`), so no new scenarioSweep list entries were needed.
+
+**Verification: partial, stated honestly — per this session's explicit instruction to prioritize breadth across the physiology queue over running the full suites after every single item.** `node --check` clean on all three touched/new files (`conditions.js`, `scenarios.js`, `gear.js`) plus `mechanismWiring.mjs`. `npx eslint` on the same four: zero findings. A direct end-to-end sanity call confirmed the new scenario resolves through the real `physio()` engine without error. The direct instrumented probe above is real, measured evidence the mechanism works as designed. **`mechanismWiring.mjs` and `scenarioSweep.mjs` were NOT run this batch** (full suites deferred to a separate follow-up pass across everything built this session) — this batch's own new mechanismWiring assertions are believed correct (the probe above measures the exact same scenario/thresholds/time points the new section asserts, all clearing their thresholds with margin), but that is NOT the same as an in-suite PASS and is not claimed as one here. No scratch probe scripts remain under `src/scripts/`.
+
+### Physiology-engine batch: queue item 61 — a real localized angioedema field, distinct from whole-body edema, driving the already-real upperAirwayObstruction airway-mechanics consumer
+
+Found while implementing TP 1234/1234-P and TP 1236/1236-P's "visible airway/tongue swelling" step (queue item 61's own filing): `pat.edema` is real but WHOLE-BODY (pcwp/alveolar-compliance/dlco consumers only, confirmed by grep — none airway-localized), and nothing fed `pat.upperAirwayObstruction` (the real, already-shipped fixed-extrathoracic-obstruction field croup/epiglottitis already drive, and which `respiratory.js` already applies real Poiseuille-law inspiratory resistance to) from anaphylaxis at all — `access.js`'s own `accessDifficulty` comment already (inaccurately, until this batch) described `uao` as "croup/epiglottitis/**anaphylaxis** airway swelling." laCounty.js's `ANAPHYLAXIS` helper's own comment already named the exact same gap: "no angioedema/skin signal exists" for TP 1219 footnote ❶'s real epi trigger.
+
+**`pat.angioedema`** (patient.js) is a new 0-1 severity field for localized histamine/bradykinin-mediated submucosal swelling of the lips/tongue/pharynx/larynx — deliberately separate from BOTH `edema` (whole-body/pulmonary, wrong consumer for an airway emergency) and `broncho` (lower-airway smooth muscle, beta-2-responsive, a different mechanism). `anaphylaxis` (conditions.js) ramps it 0.35 to a 0.7 ceiling (short of croup/epiglottitis's own up-to-2.0 range for a structural, non-anaphylactic obstruction) and DERIVES `pat.upperAirwayObstruction` from it directly every tick, isolating its own contribution first (`pat._angioedemaUaoContrib`, subtracted before re-combining via `Math.max`) so a hypothetical comorbid patient with croup's own independently-ratcheted UAO is not silently overwritten — the same "isolate my own contribution" idiom the endothelial-barrier-repair mechanism already uses for `capillaryLeak`. This is a real DERIVATION, not a one-way ratchet: unlike croup/epiglottitis (which have no pharmacologic UAO reducer at all yet, queue item 60), anaphylactic angioedema now falls back in real time as epinephrine treats it, and UAO follows it down.
+
+**epiIM/epiAuto's `fx`** gained `angioedema: -0.4` (both auto-injector and vial/needle, same magnitude — alpha-1-mediated mucosal vasoconstriction is the documented real-world mechanism for epi relieving anaphylactic angioedema, the SAME receptor already justifying `edema`'s own `-0.35` reduction there), wired through the SAME `rising()`-curve idiom bronch/edema/urticaria already use in `pk.js`'s `updateDrugs` (new `else if (prop === "angioedema")` branch, `_angioedemaCurve`). `epiIV` (route: "for ARREST" per its own note, not anaphylaxis) deliberately untouched.
+
+**`laCounty.js`'s `ANAPHYLAXIS` helper**, the exact gap its own comment named, now also fires on `ctx.v.angioedema >= 0.2` (real Grade-3/airway-involvement presentation) IN ADDITION TO its previous `WHEEZING(ctx) && (SHOCK(ctx) || lowSpo2(ctx))` proxy — a hives-and-tongue-swelling patient with normal SBP/SpO2 now correctly triggers `anaphEpi` on the real finding; the wheeze+shock/hypoxia clause stays for the respiratory-compromise/poor-perfusion legs of the same TP 1219 footnote, which still have no dedicated non-proxy signal (unchanged, honestly left as-is).
+
+**Player-facing surfaces wired to the real field, not decorative text.** `anaph` scenario's (ALLERGY-006) `airwayLook` probe was previously a fixed, always-identical line regardless of treatment — now reads `s.patient.angioedema` live (same pattern the same scenario's own `lungs` probe already established for `effectiveBroncho`), so a real epi-treated improvement is visible on re-exam. `actions.js`'s `skin` exam now checks `v.angioedema` alongside `v.urticaria` (both present, angioedema-only, or neither), replacing what had been an unconditional "no swelling of the lips, tongue or airway" line regardless of the patient's actual state. In the course of this, found and fixed a pre-existing typo bug: the `anaph` scenario's MICN refutation used `refuteKeys: ["ANGIEDEMA", ...]` (missing the second O) matched against an identically-typo'd `evid` string — App.jsx's `hasK()` does a case-insensitive substring match against collected evidence text, so correcting the spelling in one without the other would have silently broken a working refutation path; fixed both together, plus one player-facing dialogue line with the same typo (`onRefuseYes`).
+
+`pat.angioedema` published to `vitals()` (rounded, no noise filter, matching `urticaria`'s own precision).
+
+**MEASURED, not assumed** (direct instrumented probe against the `anaph` scenario, 600s, standalone script written and stripped before this entry, per this project's own convention): untreated `angioedema` 0.700, `upperAirwayObstruction` 0.700, `rr` 40, `hr` 0, `sbp` 29.8 — untreated severe (Grade 3) anaphylaxis decompensating into arrest by 600s, a pre-existing behavior of this condition's own `edema`/`vasodilation` ceilings (0.9/0.8, both unchanged by this batch) that this batch's own new field rides alongside, not something newly introduced (confirmed by inspection: nothing in this batch's diff touches the hemodynamic pathway that produces that outcome). Same scenario + one `epiIM` dose at t=2s, read at 600s: `angioedema` 0.448 (real fall through the fx-curve receptor route), `upperAirwayObstruction` 0.448 (tracks it down, confirming the derivation is live, not a ratchet), `hr` 138.7, `sbp` 97.6 — a genuine, if still-tachycardic, hemodynamic recovery. Healthy control (`abdPain`, 600s): `angioedema` 0, `upperAirwayObstruction` 0.
+
+`angioedema` added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists (`upperAirwayObstruction` was already present in both from the earlier croup/epiglottitis batch). A new two-sided `[LOCALIZED ANGIOEDEMA — queue item 61]` section added to `mechanismWiring.mjs`: fires in `anaph` (>0.1 by 600s), stays at zero in a matched healthy control (`abdPain`), IM epinephrine measurably reduces it (`assertVersus`, >=0.05 down vs untreated), drives `upperAirwayObstruction` (>0.1 by 600s untreated), and that derived consumer falls back with treatment too (`assertVersus`, >=0.05 down vs untreated) — the actual point of the field per the queue item, not just a second decorative number next to `edema`.
+
+**Verification: partial, stated honestly — per this session's explicit instruction to prioritize breadth across the physiology queue over running the full suites after every single item.** `node --check` clean on all nine touched files (`patient.js`, `pk.js`, `conditions.js`, `drugs.js`, `scenarios.js`, `actions.js`, `laCounty.js`, `scenarioSweep.mjs`, `mechanismWiring.mjs`). `npx eslint` on the same nine: zero findings. The direct instrumented probe above is real, measured evidence that the mechanism and the treatment response both work as designed, run against the actual engine (lesson 8), not reconstructed. **`mechanismWiring.mjs` and `scenarioSweep.mjs` were NOT run this batch** (full suites deferred to a separate follow-up pass across everything built this session, per explicit instruction) — this batch's own new assertions are believed correct (the probe above measures the exact same scenario/thresholds the new mechanismWiring section asserts, and all values clear their thresholds with margin), but that is NOT the same as an in-suite PASS, and is not claimed as one here. No scratch probe scripts remain under `src/scripts/`.
+
 ### Physiology-engine batch: queue item 58 — a real isolated urticaria/pruritus field, closing the gap `laCounty.js`'s `anaphDiphen` rule was working around
 
 Found while implementing TP 1219/1219-P (Allergy) step 10's diphenhydramine indication (queue item 58): `pat.edema`/`pat.broncho` are real fields for angioedema/bronchospasm, but nothing represented cutaneous urticaria/itching in isolation — a patient with hives and no other finding was undetectable, so `laCounty.js`'s `anaphDiphen` rule gated on epinephrine already given instead of the actual clinical indication.
@@ -4022,6 +4060,35 @@ edge for verification needs BOTH `pat.epilepticDrive=1` and
 `pat.seizing=true` together, not either alone — see
 `tools/browser/README.md`'s gotchas list), and why each remaining piece
 was left open rather than guessed at.**
+**A later session investigated getting real WebGPU in this dev/test
+environment (per explicit operator request), with a real, honest
+finding.** The machine this project is developed on has real GPU hardware
+(confirmed via `Get-CimInstance Win32_VideoController`: an Intel UHD 630
+and an NVIDIA GTX 1650, both `Status: OK`) — but Playwright's bundled
+"Chrome for Testing" v151 build never registers `navigator.gpu` as an API
+surface at all, in any tested configuration (headless, headed, sandboxed,
+unsandboxed, every relevant launch flag including `--enable-unsafe-webgpu`/
+`--use-angle=d3d11`/`--enable-features=WebGPU`) — a correction to the
+paragraph above's older claim that `navigator.gpu` is "present as an API
+surface but fails the real adapter request"; that may have been true of an
+earlier Playwright/Chromium bundle, it is not true of the one now
+installed. Chrome's own internal blocklist telemetry confirms WebGPU
+itself is not blocklisted on this hardware, so the gap is specific to this
+particular test-browser build, not the machine or the app. This is not
+fixable from application code or launch flags, is orthogonal to what a
+real player's own installed Chrome/Edge would do on the same hardware, and
+was correctly not pursued further once traced to the test-browser binary
+itself. **Directly prompted a genuinely useful check of the OTHER half of
+the accessibility question: does the existing WASM fallback (item 2's
+`WasmLLMProvider`) actually catch a real no-WebGPU device, not just a
+theoretical one?** Ran `tools/browser/verifyWasmLlm.mjs` against this exact
+machine (a real, naturally-occurring no-`navigator.gpu` environment, not a
+forced/stubbed one) and got genuine, non-degenerate WASM-tier-generated
+dialogue for all 4 sampled event types (patient/crew/bystander/
+treatment-response) — first real-world confirmation that the
+WebGPU→WASM→template→deterministic degradation chain (item 11) actually
+engages its second rung correctly on a device that lacks the first, not
+only under a forced test hook.
 
 **Objective.** Build the foundation for contextual, locally running
 LLM-powered dialogue in Medical Simulation Mode — patients, crew, and
@@ -7651,8 +7718,9 @@ plausible but not fitted to trial data.
     Parkland-formula-style relationship, does it affect thermoregulation
     via reduced skin barrier function, etc.) rather than a quick add.
 
-57. **No antivenom/envenomation-severity mechanism exists — found while
-    implementing TP 1224/1224-P (Stings/Venomous Bites).** Real snake
+57. **RESOLVED (this session) — see section 3's newest entry.** No
+    antivenom/envenomation-severity mechanism exists — found while
+    implementing TP 1224/1224-P (Stings/Venomous Bites). Real snake
     envenomation causes progressive local tissue injury and coagulopathy
     (this engine already has a real `pat.coagPct` field that a genuine
     antivenom-response mechanism could hook into), but no condition,
@@ -7665,7 +7733,11 @@ plausible but not fitted to trial data.
     coagulopathy/local-tissue-injury time course) and, if antivenom is ever
     carried in the formulary, a new drugs.js entry with a real receptor/
     binding mechanism — genuine item-7-shaped work with its own literature
-    anchor.
+    anchor. [Original filing text kept for context; `envenomation`
+    (conditions.js) and the `copperheadBite` scenario now exist, reusing
+    the real coagulation cascade rather than adding a fictional field
+    antivenom drug, since TP 1224's own text carries no such step. See
+    section 3.]
 
 58. **RESOLVED (this session) — see section 3's newest entry.** No isolated
     pruritus/hives signal exists — found while implementing
@@ -7726,9 +7798,10 @@ plausible but not fitted to trial data.
     airway/CPR/BVM life-threat rules already at the top of the file rather
     than a true FBAO-specific crew-directed clearance step.
 
-61. **No angioedema/localized-airway-swelling signal distinct from general
+61. **RESOLVED (this session) — see section 3's newest entry.** No
+    angioedema/localized-airway-swelling signal distinct from general
     edema — found while implementing TP 1234/1234-P and TP 1236/1236-P's
-    "visible airway/tongue swelling" step.** `pat.edema` is real
+    "visible airway/tongue swelling" step. `pat.edema` is real
     (respiratory.js/thermo.js-adjacent systemic fluid state, already read
     by the CHF/fever-cooling rules elsewhere in this file), but it is a
     WHOLE-BODY signal, not an airway-localized one — reusing it as an
@@ -7740,7 +7813,9 @@ plausible but not fitted to trial data.
     separate, localized angioedema field (or reusing `pat.capillaryLeak`
     scoped to the airway specifically, if that's mechanistically
     defensible — worth checking against how that field is already used
-    elsewhere before assuming it's a clean fit).
+    elsewhere before assuming it's a clean fit). [Original filing text kept
+    for context; `pat.angioedema` now exists and drives
+    `pat.upperAirwayObstruction` directly, per section 3.]
 
 62. **RESOLVED (a later session) — see section 3's newest entry.** Half of
     this was already stale when re-checked: the generic `t.assessId` crewFn

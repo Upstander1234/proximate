@@ -45,6 +45,15 @@ export const PI={
   // HEAT already covers hyperthermia; nothing in this registry covered the
   // opposite direction until accidentalHypothermia (queue item 7) needed it.
   HYTH:{n:"Hypothermia / Cold Exposure",base:1},
+  // Queue item 57 (copperheadBite, ENV-014): no existing code fit an
+  // envenomation — ODPO is toxin exposure generically but reads as
+  // ingestion/overdose, not a bite with a real local-tissue-injury and
+  // coagulopathy mechanism distinct from that. Found the same way ANXY's
+  // own comment above already documented once: App.jsx's impression picker
+  // reads `PI[k].n` with no optional chaining, so a scenario declaring an
+  // undefined code crashes the picker on selection, not just displays
+  // wrong — added before the scenario referencing it, not after.
+  ENVN:{n:"Envenomation (Bite / Sting)"},
 };
 export const POCKETS={shears:{name:"Trauma shears",note:"Cut to what you cannot see."},
   penlight:{name:"Penlight",note:"Pupils."},scope:{name:"Stethoscope",note:"Heart, lungs, manual BP."},

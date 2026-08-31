@@ -58,9 +58,14 @@
 // reasoning: no electrical-injury field, reuses the generic baseline plus
 // the arrest/dysrhythmia rules already in this file), TP 1222/1222-P
 // (Hyperthermia, Environmental), TP 1223/1223-P (Hypothermia/Cold Injury),
-// TP 1224/1224-P (Stings/Venomous Bites — no new rules; no
-// antivenom/envenomation-severity mechanism exists, see the CLAUDE.md
-// queue entry), and TP 1225/1225-P (Submersion — no new rules of its own;
+// TP 1224/1224-P (Stings/Venomous Bites — still no new PROTOCOL RULES here:
+// TP 1224's own text has no field-specific step beyond the generic allergy/
+// shock/nausea baseline already covered elsewhere in this file. Queue item
+// 57 (RESOLVED a later session, see CLAUDE.md section 3) did add a real
+// envenomation CONDITION/scenario at the physiology layer — this file's own
+// TP 1224 section correctly still needs no new rule, since immobilization/
+// transport has no drug or protocol-gated procedure to key off), and TP
+// 1225/1225-P (Submersion — no new rules of its own;
 // composes entirely from the arrest, hypothermia and generic
 // poor-perfusion rules already in this file, exactly as its own text
 // directs: "treat per TP 1210," "treat in conjunction with...").
