@@ -354,6 +354,16 @@ export class Patient {
     this.deadSpace = resp.deadSpace;
     this.frc = resp.frc;
     this.shuntFraction = b.shunt ?? 0;
+    // PULMONARY VASCULAR RESISTANCE MULTIPLIER — real, live field
+    // (cardiovascular.js's pvr calculation, `pe`/decompressionIllness's own
+    // mechanical-obstruction mechanism) that had no constructor default at
+    // all before this session (every consumer read it via `|| 1`, so a
+    // patient who never touched it correctly behaved as 1, but the field
+    // itself was undefined pre-first-tick — confirmed by grep). Given a
+    // real default here, matching every existing consumer's own fallback
+    // exactly (a no-op for behavior, but lets scenarioSweep.mjs assert
+    // presence/finiteness on it like any other real field).
+    this.pulmResistFactor = b.pulmResistFactor ?? 1;
     // FLUID/SECRETIONS SITTING IN THE CONDUCTING AIRWAY (0-1) — physiology
     // queue item 13. Distinct from shuntFraction (blood perfusing UNVENTILATED
     // alveoli, distal, not suctionable) and from edema (interstitial/alveolar

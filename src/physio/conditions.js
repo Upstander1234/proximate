@@ -2742,6 +2742,70 @@ export const CONDITIONS = {
     },
   },
 
+  // Decompression illness (queue item 59, filed while implementing TP
+  // 1225/1225-P — Submersion, step 3/11's decompression-specific branches;
+  // explicitly lower priority than items 56-58, attempted here since 56
+  // went cleanly). Real, literature-anchored mechanism: on ascent,
+  // dissolved nitrogen comes out of solution faster than it can be
+  // eliminated by ventilation, forming bubbles in venous blood and tissue
+  // (Vann et al., "Decompression illness," Lancet 2011). Venous gas
+  // emboli shower the pulmonary vasculature — mechanically the SAME lesion
+  // a thrombotic pulmonary embolism produces (obstruction of the pulmonary
+  // bed, raising pulmonary vascular resistance independent of hypoxia, and
+  // a real V/Q-mismatch shunt as perfused-but-obstructed units fail to
+  // exchange gas) — so this condition deliberately REUSES `pe`'s own
+  // pat.shuntFraction/pat.pulmResistFactor mechanism immediately above,
+  // rather than inventing a parallel embolism handle for a mechanistically
+  // identical lesion with a different cause. Scoped to the pulmonary
+  // ("chokes") limb only — arterial gas embolism and spinal-cord DCS (the
+  // neurologic Type II presentation) are real but mechanistically separate
+  // lesions (cerebral/spinal arterial occlusion, not pulmonary V/Q
+  // mismatch) this engine has no comparable existing handle for, and are
+  // deliberately NOT modeled here rather than forced onto a handle that
+  // does not fit — an honest scope boundary, not an oversight.
+  //
+  // TREATMENT: high-flow/100% oxygen is TP 1225's own field-specific step
+  // for decompression illness, and it works through a real mechanism
+  // distinct from generic oxygenation support — maximizing the alveolar
+  // O2 partial pressure maximizes the OUTWARD nitrogen partial-pressure
+  // gradient between the bubble and the blood (Henry's/Fick's law:
+  // washout is driven by that gradient), accelerating nitrogen resorption
+  // from existing bubbles and slowing new bubble growth (Moon, "Hyperbaric
+  // oxygen therapy for decompression sickness," Undersea Hyperb Med 2014).
+  // This is genuinely slower and less complete than hyperbaric
+  // recompression (which acts on bubble volume directly via Boyle's law —
+  // pressure, not oxygen fraction — and is why TP 1225's own algorithm
+  // separately mandates base contact and hyperbaric-facility routing,
+  // neither of which this engine can model), but it is real and the
+  // correct field-scope mechanism: reusing pat.effectiveFio2 (respiratory.js,
+  // the SAME real "what is this patient actually breathing" value CO
+  // poisoning's own clearance mechanism already reads), gated at a real
+  // high-flow-oxygen threshold. 0.8 is deliberately calibrated to this
+  // formulary's own `o2nrb` (Oxygen — NRB 15 L/min, `fx:{fio2:.85}` in
+  // procedures.js) — the actual field device TP 1225's "high-flow O2" step
+  // means — rather than an arbitrary round number that would incorrectly
+  // exclude the real treatment this condition is built to respond to.
+  decompressionIllness: {
+    initial: { hr: 112, sbp: 108, rr: 26, glu: 100, pain: 6, blood: 6, shunt: 0.3 },
+    progress(pat, dt) {
+      const o2 = pat.effectiveFio2 ?? 0.21;
+      const highFlowO2 = o2 > 0.8;
+      if (highFlowO2) {
+        // Denitrogenation: bubbles genuinely shrink/resorb, slowly — a
+        // real field benefit, not a cure (recompression is what actually
+        // resolves this).
+        pat.shuntFraction = clamp((pat.shuntFraction ?? 0.3) - dt * 0.01, 0.08, 0.6);
+        pat.pulmResistFactor = clamp((pat.pulmResistFactor || 1) - dt * 0.06, 1, 3);
+      } else {
+        // Untreated (room air or low-flow O2): ongoing bubble formation/
+        // coalescence as nitrogen continues outgassing — a real, if slower
+        // than massive thrombotic PE, worsening course.
+        pat.shuntFraction = clamp((pat.shuntFraction ?? 0.3) + dt * 0.008, 0, 0.6);
+        pat.pulmResistFactor = clamp((pat.pulmResistFactor || 1) + dt * 0.15, 1, 3);
+      }
+    },
+  },
+
   // Complete foreign-body airway obstruction. No airflow until cleared;
   // hypoxia does the rest through the engine's own gas-exchange/cerebral
   // chain. `s.cleared` is set by the scenario's own airway-clearance action.

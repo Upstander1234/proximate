@@ -264,6 +264,11 @@ function snapshot(p) {
     // acute-chest-syndrome shunt consequence.
     rbcVol: p.rbcVol || 0,
     shuntFraction: p.shuntFraction || 0,
+    // Queue item 59 (decompressionIllness): pulmResistFactor predates this
+    // session (`pe`'s own mechanical-obstruction mechanism, now given a
+    // real patient.js constructor default of 1) but had never been
+    // snapshotted before.
+    pulmResistFactor: p.pulmResistFactor ?? 1,
     // Heat stroke (queue item 26): the thermal environment/inputs, the
     // thermoregulatory-failure state itself, and the two intervention levers.
     ambientTemp: p.ambientTemp ?? 20,
@@ -5283,6 +5288,53 @@ console.log("[TRACHEOSTOMY STATE — queue item 60, part 2 of 3]");
   specOk ? pass++ : fail++;
   if (!specOk) failures.push(`suctioning a non-tracheostomy patient should never touch trachObstruction, got ${noTrachSuctioned.after.trachObstruction}`);
   console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...does NOT touch trachObstruction for a patient with no tracheostomy".padEnd(46)} trachObstruction = ${noTrachSuctioned.after.trachObstruction.toFixed(3)}`);
+}
+
+console.log("[DECOMPRESSION ILLNESS — queue item 59]");
+{
+  // No decompressionIllness scenario exists yet (item 59 was explicitly
+  // filed as lower priority than 56-58 — attempted here since 56 went
+  // cleanly, scoped to the physiology mechanism only). Same real-function-
+  // invocation idiom this session's thermalBurn/tracheostomy sections
+  // above already use: `mutate` calls the condition's own progress()
+  // directly, at the exact dt physiology.js's stepPatient would pass it,
+  // and seeds the one field (shuntFraction) that only patient.js's
+  // constructor `initial` merge (not a raw progress() call) would normally
+  // set.
+  const dci = (p) => {
+    if (!p._dciSeeded) { p.shuntFraction = 0.3; p._dciSeeded = true; }
+    CONDITIONS.decompressionIllness.progress(p, STEP / 60);
+  };
+  const untreated = probe({ scen: "abdPain", settle: 2, run: 1200, mutate: dci });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 1200 });
+
+  // Presence: untreated venous gas embolism genuinely worsens (real V/Q
+  // mismatch + pulmonary vascular obstruction) through the SAME
+  // shuntFraction/pulmResistFactor mechanism `pe` (thrombotic pulmonary
+  // embolism) already uses — not a parallel, invented handle for a
+  // mechanistically identical lesion.
+  const fires = untreated.after.shuntFraction > 0.35 && untreated.after.pulmResistFactor > 2;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`untreated decompression illness should show shuntFraction>0.35 and pulmResistFactor>2 by 1200s, got ${untreated.after.shuntFraction.toFixed(3)}/${untreated.after.pulmResistFactor.toFixed(3)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"untreated -> real venous gas embolism (shunt + pulm. resistance rise)".padEnd(46)} shuntFraction=${untreated.after.shuntFraction.toFixed(3)}, pulmResistFactor=${untreated.after.pulmResistFactor.toFixed(3)}`);
+
+  // Specificity: a matched control with no condition shows exactly zero.
+  const healthyOk = healthy.after.shuntFraction === 0 && healthy.after.pulmResistFactor === 1;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control should show shuntFraction=0/pulmResistFactor=1, got ${healthy.after.shuntFraction}/${healthy.after.pulmResistFactor}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} shuntFraction=${healthy.after.shuntFraction.toFixed(3)}, pulmResistFactor=${healthy.after.pulmResistFactor.toFixed(3)}`);
+
+  // Treatment: TP 1225's own field-specific step (high-flow O2) genuinely
+  // reverses BOTH the shunt and the pulmonary-resistance rise, through the
+  // real denitrogenation mechanism gated on pat.effectiveFio2 — the SAME
+  // "what is this patient actually breathing" value CO poisoning's own
+  // clearance mechanism already reads, not a scripted "O2 cures this"
+  // shortcut. o2nrb (this formulary's real 15 L/min non-rebreather,
+  // fx.fio2=.85) is the actual field device this threshold is calibrated
+  // against.
+  const treated = probe({ scen: "abdPain", settle: 2, run: 1200, mutate: dci, apply: ["o2nrb"], reapply: 400 });
+  assertVersus("...high-flow O2 (o2nrb) genuinely reverses the shunt (denitrogenation)", treated, untreated, "shuntFraction", "down", 0.1);
+  assertVersus("...and reverses the pulmonary-vascular-resistance rise", treated, untreated, "pulmResistFactor", "down", 0.5);
 }
 
 console.log("\n" + "=".repeat(74));

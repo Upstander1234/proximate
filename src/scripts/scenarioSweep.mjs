@@ -199,6 +199,13 @@ const REQUIRED = [
   // severity, read by respiratory.js's airway-resistance calculation only
   // when pat.tracheostomy is set.
   "trachObstruction",
+  // Queue item 59 (decompressionIllness): shuntFraction/pulmResistFactor
+  // predate this session (real, live fields — `pe`'s own V/Q-mismatch and
+  // pulmonary-vascular-resistance mechanism this new condition deliberately
+  // reuses) but had never been added to this sweep, confirmed by grep
+  // before writing this. Given a genuine second/third real writer now,
+  // worth closing the gap per lesson 2 rather than leaving them unchecked.
+  "shuntFraction", "pulmResistFactor",
 ];
 
 // Fields that may never go negative.
@@ -281,6 +288,13 @@ const NON_NEGATIVE = [
   // severity, read by respiratory.js's airway-resistance calculation only
   // when pat.tracheostomy is set.
   "trachObstruction",
+  // Queue item 59 (decompressionIllness): shuntFraction/pulmResistFactor
+  // predate this session (real, live fields — `pe`'s own V/Q-mismatch and
+  // pulmonary-vascular-resistance mechanism this new condition deliberately
+  // reuses) but had never been added to this sweep, confirmed by grep
+  // before writing this. Given a genuine second/third real writer now,
+  // worth closing the gap per lesson 2 rather than leaving them unchecked.
+  "shuntFraction", "pulmResistFactor",
 ];
 
 const results = [];
