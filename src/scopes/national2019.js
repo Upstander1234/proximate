@@ -25,6 +25,7 @@ export default {
     albuterol: 2,         // Albuterol 5 mg
     ipratropium: 2,       // Ipratropium 0.5 mg
     epiIM: 3,             // Epinephrine 0.5 mg (1:1000)
+    nebEpi: 3,            // Epinephrine (nebulized) 5 mg (1:1000) — queue item 60, same tier as epiIM
     nitroOwn: 2,          // Nitroglycerin — patient's own
     nitrous: 2,           // Nitrous oxide (Entonox)
     otcAnalgesic: 2,      // OTC analgesic (paracetamol/ibuprofen)
@@ -51,6 +52,7 @@ export default {
     pushEpi: 4,           // Push-dose Epinephrine
     dexamethasone: 4,     // Dexamethasone 10 mg
     diphen: 4,            // Diphenhydramine 50 mg
+    metoclopramide: 4,    // Metoclopramide 10 mg (queue item 66)
     midazolam: 4,         // Midazolam 5 mg
     magnesium: 4,         // Magnesium Sulfate 4 g
     txa: 4,               // Tranexamic Acid 1 g

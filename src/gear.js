@@ -54,6 +54,14 @@ export const PI={
   // undefined code crashes the picker on selection, not just displays
   // wrong — added before the scenario referencing it, not after.
   ENVN:{n:"Envenomation (Bite / Sting)"},
+  // Queue item 66 (acuteDystonicReactionCall, TP 1239/1239-P): no existing
+  // code fit a drug-induced dystonic reaction — ODPO reads as ingestion/
+  // overdose, ALOC/SEIZ are both wrong (this patient is neither altered nor
+  // seizing), and STRK is actively misleading, since the whole teaching
+  // point is that a FAST-negative dystonic reaction is a stroke MIMIC, not a
+  // stroke. Added before the scenario referencing it, per ENVN's own
+  // precedent above (App.jsx's `PI[k].n` picker has no optional chaining).
+  DYST:{n:"Dystonic Reaction (Drug-Induced)"},
 };
 export const POCKETS={shears:{name:"Trauma shears",note:"Cut to what you cannot see."},
   penlight:{name:"Penlight",note:"Pupils."},scope:{name:"Stethoscope",note:"Heart, lungs, manual BP."},
@@ -169,7 +177,18 @@ export const TASKS=[
   {id:"fundalMassage",name:"Fundal massage",lvl:2,dur:20,readback:'"Massaging the fundus."',report:'"Uterus is firming up under my hand."',dose:"fundalMassage"},
   {id:"epiIM",name:"Epinephrine 0.5mg IM",lvl:2,dur:15,readback:'"Epi IM, copy."',report:'"Epi is in, lateral thigh."',dose:"epiIM"},
   {id:"albuterolNeb",name:"Albuterol neb",lvl:2,dur:20,readback:'"Albuterol, copy."',report:'"Neb is running."',dose:"albuterol"},
+  // Queue item 60 (nebulized-epi slice) — TP 1234/1234-P and TP 1236/1236-P's
+  // own nebulized-epi step for stridor. lvl:3 mirrors epiIM's own crew-task
+  // level a few lines above (a route difference of the same drug/mechanism
+  // family, not a different scope tier), same convention this file's own
+  // naloxoneArrest comment documents for gating crew capability off a drug's
+  // clinical note rather than its raw drugs.js `.lvl`.
+  {id:"nebEpiTask",name:"Nebulized epinephrine",lvl:3,dur:20,readback:'"Neb epi, copy."',report:'"Neb epi is running."',dose:"nebEpi"},
   {id:"diphenhydramine",name:"Diphenhydramine 50mg",lvl:4,dur:15,readback:'"Benadryl, copy."',report:'"Fifty of Benadryl is in."',dose:"diphen"},
+  // Queue item 66: metoclopramide had no gear entry at all (the drug did not
+  // exist in drugs.js either) — kept available for manual crew ordering, no
+  // automatic protocol rule, matching diphenhydramine's own precedent above.
+  {id:"metoclopramide",name:"Metoclopramide 10mg",lvl:4,dur:15,readback:'"Reglan, copy."',report:'"Ten of Reglan is in."',dose:"metoclopramide"},
   // Kept available for manual crew ordering even though laCounty.js has no
   // automatic rule for it — this engine's `iv` task doesn't distinguish
   // IV from IO access, so there's no honest predicate for "an IO was just

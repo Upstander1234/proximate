@@ -40,6 +40,7 @@ export default {
     albuterol: 3,          // AEMT — P-115 green; B-451 §III.B.7.d "inhaled beta-2 agonists"
     ipratropium: 4,        // Paramedic — P-115 red/red/green (NOT granted to AEMT, unlike albuterol)
     epiIM: 3,              // AEMT — B-451 §III.B.7.g "epinephrine" (non-auto-injector, non-IV route)
+    nebEpi: 5,             // not named anywhere in P-115 (queue item 60)
     nitroOwn: 2,           // EMT — P-115: "assist patient to self-medicate own prescribed NTG only"
     nitrous: 5,            // not named
     otcAnalgesic: 5,       // not named
@@ -66,6 +67,7 @@ export default {
     pushEpi: 4,            // Paramedic — epinephrine 1:100,000, push-dose
     dexamethasone: 5,      // not named
     diphen: 4,             // Paramedic — "diphenhydramine hydrochloride"
+    metoclopramide: 4,     // Paramedic — queue item 66, "Reglan" antiemetic
     midazolam: 4,          // Paramedic
     magnesium: 4,          // Paramedic — "magnesium sulfate"
     txa: 4,                // Paramedic — "tranexamic acid"

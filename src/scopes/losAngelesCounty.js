@@ -42,6 +42,7 @@ export default {
     albuterol: 4,          // Paramedic — Ref. 803 "aerosolized/nebulized albuterol" (standalone, non-patient-owned)
     ipratropium: 5,        // not named anywhere in either document
     epiIM: 4,              // Paramedic — "epinephrine," IM route
+    nebEpi: 5,             // not named anywhere in either document (queue item 60)
     nitroOwn: 2,           // EMT — assist patient's own SL nitroglycerin (Ref. 802 §I.E.1)
     nitrous: 5,            // not named
     otcAnalgesic: 5,       // not named
@@ -68,6 +69,7 @@ export default {
     pushEpi: 4,            // Paramedic — "epinephrine" (push-dose technique)
     dexamethasone: 5,      // not named
     diphen: 4,             // Paramedic — "diphenhydramine hydrochloride"
+    metoclopramide: 4,     // Paramedic — queue item 66, "Reglan" antiemetic
     midazolam: 4,          // Paramedic
     magnesium: 4,          // Paramedic — "magnesium sulfate"
     txa: 4,                // Paramedic — "tranexamic acid"

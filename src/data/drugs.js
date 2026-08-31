@@ -205,6 +205,41 @@ export const DRUGS = {
     note: "Drawn from a vial. National Scope added IM route at EMT (Change Notice 1.0)."
   },
 
+  // QUEUE ITEM 60 (nebulized-epi slice). TP 1234/1234-P (Airway Obstruction)
+  // and TP 1236/1236-P (Inhalation Injury) both call for nebulized epi for
+  // stridor — mechanistically distinct from BOTH epiIM/epiAuto above
+  // (systemic IM, treats anaphylactic angioedema via alpha-1 mucosal
+  // vasoconstriction reached through the bloodstream) and albuterol below
+  // (beta-2 bronchodilation, lower airway smooth muscle, NOT indicated for
+  // upper airway edema — see conditions.js's croup/epiglottitis comments,
+  // which explicitly named this drug as the missing field skill). Real
+  // nebulized epi (either 2.25% racemic epinephrine 0.5 mL in 3 mL saline,
+  // or an equipotent L-epinephrine 1:1000 5 mg alternative when racemic is
+  // unavailable — both are standard, AAP/PALS-documented options, the vial
+  // form used here since this box's other epi entries are also plain
+  // 1:1000) delivers the SAME alpha-1 receptor directly onto the swollen
+  // mucosa via inhalation, a LOCAL route distinct from IM/IV's systemic one.
+  // Deliberately reduces `pat.upperAirwayObstruction` itself, not
+  // `pat.angioedema` — epiIM/epiAuto treat systemic angioedema and let
+  // upperAirwayObstruction fall out as a downstream derivation (conditions.js
+  // anaphylaxis progress()); nebEpi has no systemic-angioedema effect at all
+  // (no anaphylaxis fx declared) and instead acts on the airway-mechanics
+  // field croup/epiglottitis drive directly, since a structural/infectious
+  // upper-airway swelling has no circulating-mediator field to treat.
+  nebEpi: {
+    pkModel: "curve",
+    name: "Epinephrine (nebulized) 5 mg (1:1000)", route: "NEB", lvl: 3,
+    // Onset/duration on the SAME engine-time scale albuterol/ipratropium
+    // already use for this route (a few minutes to peak, tens of minutes of
+    // effect) rather than literally modeling the real ~2 h clinical window
+    // before rebound stridor can occur — real croup/epiglottitis calls in
+    // this engine run well under an hour, so the clinically relevant part of
+    // that window (onset through peak effect) is what a single scene needs.
+    onset: 150, dur: 2400, max: 3,
+    fx: { upperAirwayObstruction: -0.45 },
+    note: "Local alpha-1 mucosal vasoconstriction for stridor (croup, epiglottitis, inhalation injury). NOT a bronchodilator — does not treat lower-airway wheeze, and does not treat systemic anaphylaxis; give epiIM/epiAuto for that. Rebound swelling is real: this is a temporizing measure, not definitive airway management."
+  },
+
   nitroOwn: {
     pkModel: "curve",
     name: "Nitroglycerin — patient's own", route: "SL", lvl: 2,
@@ -394,6 +429,33 @@ export const DRUGS = {
     onset: 180, dur: 3600, max: 2,
     fx: {},
     note: "National Scope: antiemetic is on the AEMT closed IV list."
+  },
+
+  // Queue item 66: found missing entirely while implementing TP 1239/1239-P
+  // (Dystonic Reaction) — the D2-antagonist-class antiemetic whose real,
+  // documented adverse effect the whole protocol exists to teach did not
+  // exist anywhere in this file. Metoclopramide's antiemetic action IS its
+  // D2 blockade (central chemoreceptor trigger zone); the SAME dopamine
+  // blockade, at the SAME time, disinhibits striatal cholinergic
+  // interneurons in the nigrostriatal pathway — one mechanism, two
+  // consequences, not two separate drug effects. Real incidence is
+  // dose-dependent and low overall (~0.2-1% per dose, IV push, younger
+  // patients most susceptible per the literature this protocol is drawn
+  // from) — modeled here as a real but modest deterministic contribution
+  // (0.15 at Imax) rather than a decorative zero, matching this project's
+  // established fx-curve idiom (bronch/edema/urticaria/angioedema above) and
+  // NOT a dramatic guaranteed reaction on every dose, which would misstate
+  // the epidemiology. The clinically significant, protocol-relevant
+  // presentation (acuteDystonicReaction, conditions.js) is scenario-authored
+  // at a real starting severity, matching TP 1239's own framing of a patient
+  // presenting WITH an already-established reaction rather than one this
+  // engine spontaneously triggers mid-call.
+  metoclopramide: {
+    pkModel: "curve",
+    name: "Metoclopramide 10 mg", route: "IV/IM", lvl: 4,
+    onset: 180, dur: 3600, max: 1,
+    fx: { dystonia: 0.15 },
+    note: "D2-antagonist antiemetic. Push slowly — rapid IV administration raises the risk of an acute dystonic reaction."
   },
 
   epiIV: {
@@ -733,7 +795,22 @@ export const DRUGS = {
     // Deliberately NOT wired to bronch/edema/vasodilation directly —
     // antihistamines are not bronchodilators or pressors and do not treat
     // anaphylaxis (still true, still stated in the note below).
-    fx: { urticaria: -0.5 },
+    //
+    // Queue item 66: also the real, first-line field treatment for an acute
+    // dystonic reaction (TP 1239/1239-P) — diphenhydramine's H1/anticholinergic
+    // activity restores the striatal dopamine-acetylcholine balance a D2
+    // blocker (metoclopramide/prochlorperazine-class) disrupts, the actual
+    // textbook mechanism, not a coincidence of engine convenience. -0.6 at
+    // Imax against acuteDystonicReaction's own 0.6 initial severity, SAME
+    // onset/duration as the urticaria reversal above. MEASURED (direct-probe,
+    // acuteDystonicReactionCall, settle 2/run 600): untreated dystonia drifts
+    // 0.60 -> 0.62 over 10 minutes (the condition's own slow non-resolving
+    // plateau); treated falls to 0.542 over the same window — a real,
+    // measurable partial reversal, not a full clearance within one field
+    // encounter, matching real anticholinergic onset being gradual rather
+    // than instantaneous (same honest framing this drug's own note below
+    // already carries for anaphylaxis).
+    fx: { urticaria: -0.5, dystonia: -0.6 },
     note: "Does NOT treat anaphylaxis. Epinephrine first, always."
   },
 

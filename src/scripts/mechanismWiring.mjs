@@ -361,6 +361,10 @@ function snapshot(p) {
     // consumer it drives directly (respiratory.js reads upperAirwayObstruction
     // for inspiratory resistance/rr, same route as croup/epiglottitis).
     angioedema: p.angioedema || 0,
+    // Queue item 66: acute dystonic reaction (drug-induced, D2-blockade),
+    // real diphenhydramine receptor target (pk.js "dystonia" fx prop), same
+    // idiom as urticaria/angioedema above.
+    dystonia: p.dystonia || 0,
     upperAirwayObstruction: p.upperAirwayObstruction || 0,
     vagalBlock: p.vagalBlock || 0,
     ph: p.ph ?? 7.4,
@@ -4470,6 +4474,45 @@ console.log("[ISOLATED URTICARIA/PRURITUS — queue item 58]");
   console.log(`  ${vasoModest ? "PASS" : "FAIL"}  ${"...and stays modest, not full-anaphylaxis magnitude".padEnd(46)} vasodilation = ${untreated.after.vasodilation.toFixed(3)}`);
 }
 
+console.log("[ACUTE DYSTONIC REACTION — queue item 66]");
+{
+  // Two-sided per lesson 6: fires in the real condition, stays at zero in a
+  // matched healthy control, and diphenhydramine measurably reduces it
+  // through the real fx-curve receptor route (pk.js "dystonia" prop, drugs.js
+  // "diphen" fx), not a decorative write — the SAME drug/curve already
+  // treating urticaria above, reused rather than a parallel antidote.
+  const untreated = probe({ scen: "acuteDystonicReactionCall", settle: 2, run: 600 });
+  const treated = probe({ scen: "acuteDystonicReactionCall", settle: 2, run: 600, apply: ["diphen"] });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 600 });
+
+  const fires = untreated.after.dystonia > 0.1;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`acuteDystonicReaction should show dystonia>0.1 by 600s, got ${untreated.after.dystonia.toFixed(3)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"acuteDystonicReaction -> dystonia fires".padEnd(46)} dystonia = ${untreated.after.dystonia.toFixed(3)}`);
+
+  const healthyOk = healthy.after.dystonia < 0.01;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero dystonia, got ${healthy.after.dystonia.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} dystonia = ${healthy.after.dystonia.toFixed(3)}`);
+
+  assertVersus("diphenhydramine -> dystonia measurably reduced", treated, untreated, "dystonia", "down", 0.05);
+
+  // Real, if modest, physiologic consequence — not a cosmetic field: sustained
+  // spasm drives real pain (through pat.intrinsicPain, queue item 20's actual
+  // persistent-pain handle, NOT the write-only pat.pain field), distinct from
+  // any hemodynamic/airway compromise this condition deliberately does not
+  // cause.
+  assertNonZero("acuteDystonicReaction -> real pain via intrinsicPain", untreated, "intrinsicPain", 5);
+
+  // A metoclopramide dose given mid-call should also measurably raise
+  // dystonia through the SAME fx-curve route — the rarer case where a
+  // crew's own antiemetic dose precipitates/worsens the reaction, not just
+  // the scenario-authored already-established presentation.
+  const baseline = probe({ scen: "abdPain", settle: 2, run: 600 });
+  const metoDosed = probe({ scen: "abdPain", settle: 2, run: 600, apply: ["metoclopramide"] });
+  assertVersus("metoclopramide -> dystonia measurably raised from zero", metoDosed, baseline, "dystonia", "up", 0.02);
+}
+
 console.log("[LOCALIZED ANGIOEDEMA — queue item 61]");
 {
   // Two-sided per lesson 6: fires in anaphylaxis, stays at zero in a matched
@@ -4505,6 +4548,42 @@ console.log("[LOCALIZED ANGIOEDEMA — queue item 61]");
   console.log(`  ${uaoFires ? "PASS" : "FAIL"}  ${"...and drives the real upperAirwayObstruction consumer".padEnd(46)} uao = ${untreated.after.upperAirwayObstruction.toFixed(3)}`);
 
   assertVersus("...which falls back as epi treats the angioedema", treated, untreated, "upperAirwayObstruction", "down", 0.05);
+}
+
+console.log("[NEBULIZED EPINEPHRINE — queue item 60]");
+{
+  // Two-sided per lesson 6: fires (i.e. is present) in a real upper-airway-
+  // obstruction condition (croupToddler), a nebEpi dose measurably lowers
+  // upperAirwayObstruction through the real fx-curve receptor route (pk.js
+  // "upperAirwayObstruction" prop, not a decorative write), stays at zero in
+  // a matched healthy control both with and without the dose, and — the
+  // negative control the queue item itself asked for — does NOT clear a
+  // foreign-body airway obstruction (fbao), which is a mechanical occlusion
+  // (pat.airway state, cleared only by the Magill-forceps action) with no
+  // mucosal-edema component nebEpi's alpha-1 mechanism could plausibly treat.
+  const croupUntreated = probe({ scen: "croupToddler", settle: 180, run: 600 });
+  const croupTreated = probe({ scen: "croupToddler", settle: 180, run: 600, apply: ["nebEpi"] });
+  const healthy = probe({ scen: "abdPain", settle: 180, run: 600 });
+  const healthyTreated = probe({ scen: "abdPain", settle: 180, run: 600, apply: ["nebEpi"] });
+  const fbaoUntreated = probe({ scen: "fbao", settle: 30, run: 200 });
+  const fbaoTreated = probe({ scen: "fbao", settle: 30, run: 200, apply: ["nebEpi"] });
+
+  const fires = croupUntreated.after.upperAirwayObstruction > 0.1;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`croup should show upperAirwayObstruction>0.1 by 600s, got ${croupUntreated.after.upperAirwayObstruction.toFixed(3)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"croup -> real upperAirwayObstruction present".padEnd(46)} uao = ${croupUntreated.after.upperAirwayObstruction.toFixed(3)}`);
+
+  assertVersus("nebEpi -> upperAirwayObstruction measurably reduced (croup)", croupTreated, croupUntreated, "upperAirwayObstruction", "down", 0.05);
+
+  const healthyOk = healthy.after.upperAirwayObstruction < 0.01 && healthyTreated.after.upperAirwayObstruction < 0.01;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero upperAirwayObstruction with or without nebEpi, got ${healthy.after.upperAirwayObstruction.toFixed(3)} / ${healthyTreated.after.upperAirwayObstruction.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control, treated or not".padEnd(46)} uao = ${healthy.after.upperAirwayObstruction.toFixed(3)} / ${healthyTreated.after.upperAirwayObstruction.toFixed(3)}`);
+
+  const fbaoUnmoved = Math.abs(fbaoTreated.after.upperAirwayObstruction - fbaoUntreated.after.upperAirwayObstruction) < 0.01;
+  fbaoUnmoved ? pass++ : fail++;
+  if (!fbaoUnmoved) failures.push(`nebEpi should NOT change upperAirwayObstruction on a foreign-body obstruction (mechanical, not mucosal): control ${fbaoUntreated.after.upperAirwayObstruction.toFixed(3)} vs nebEpi ${fbaoTreated.after.upperAirwayObstruction.toFixed(3)}`);
+  console.log(`  ${fbaoUnmoved ? "PASS" : "FAIL"}  ${"nebEpi does NOT clear a foreign-body obstruction".padEnd(46)} control ${fbaoUntreated.after.upperAirwayObstruction.toFixed(3)} vs nebEpi ${fbaoTreated.after.upperAirwayObstruction.toFixed(3)}`);
 }
 
 console.log("[CROTALINE ENVENOMATION — queue item 57]");

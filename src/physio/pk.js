@@ -1356,6 +1356,24 @@ export function updateDrugs(pat, s, dt) {
           // airway swelling is a real pharmacokinetic curve, not an instant
           // step.
           else if (prop === "angioedema") pat.angioedema = Math.max(0, Math.min(1, (pat.angioedema || 0) + val * rising("_angioedemaCurve")));
+          // Acute dystonic reaction (queue item 66) — SAME rising()-curve
+          // idiom as bronch/edema/urticaria/angioedema above, so diphenhydramine's
+          // real anticholinergic reversal of drug-induced dystonia (and
+          // metoclopramide's own capacity to precipitate/worsen it) are both
+          // real pharmacokinetic curves, not instant steps.
+          else if (prop === "dystonia") pat.dystonia = Math.max(0, Math.min(1, (pat.dystonia || 0) + val * rising("_dystoniaCurve")));
+          // Upper airway obstruction (queue item 60's nebulized-epi slice) —
+          // SAME rising()-curve idiom bronch/edema/urticaria/angioedema above
+          // already use. Deliberately distinct from the angioedema branch:
+          // this is nebulized epi's LOCAL alpha-1 mucosal vasoconstriction
+          // acting directly on the swollen mucosa (croup/epiglottitis's own
+          // structural narrowing, and any comorbid angioedema contribution),
+          // not IM/auto-injector epi's SYSTEMIC route reducing angioedema
+          // upstream, which only then derives upperAirwayObstruction from it.
+          // No 0-1 clamp on the ceiling side — this field has no fixed upper
+          // bound (epiglottitis alone ratchets it up to 2.0), unlike the
+          // other rising()-curve props above, so only a floor of 0 applies.
+          else if (prop === "upperAirwayObstruction") pat.upperAirwayObstruction = Math.max(0, (pat.upperAirwayObstruction || 0) + val * rising("_uaoCurve"));
           else if (prop === "shunt")  pat.shuntFraction += val * rising("_shuntCurve");
           else if (prop === "glu") {
             // GLUCOSE IS A DOSE, NOT AN INFUSION RATE — physiology queue item
