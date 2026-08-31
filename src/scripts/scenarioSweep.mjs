@@ -98,6 +98,11 @@ const REQUIRED = [
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",
+  // lithiumToxicity (queue item 7, Toxicology): serum lithium (mmol/L),
+  // a real physical concentration, never negative, patient.js constructor
+  // default 0.8 (inside the therapeutic range for a patient with no
+  // lithium condition/prescription).
+  "li",
   // Carbon monoxide poisoning (queue item 7, Toxicology): the carboxyhemoglobin
   // fraction — reduces caO2 (metabolic.js), and inflates the DISPLAYED spo2
   // reading (patient.js's vitals()) since standard pulse oximetry cannot
@@ -168,6 +173,20 @@ const REQUIRED = [
   "cholinergicVagalTone",
   // Queue item 56 (thermalBurn): scenario-authored TBSA fraction.
   "burnTbsaFraction",
+  // Cardiac batch, valve-mechanism items (aorticStenosis/
+  // mitralRegurgitationAcute/infectiveEndocarditis, physiology queue item
+  // 7): these five fields (cardiovascular.js's updateValves) predate this
+  // batch — built for queue item 41's regurgitation/PV-loop work — but had
+  // never been added to this sweep because nothing had ever set the
+  // riskFactors flags that drive them (grep-confirmed empty before this
+  // batch). aorticStenosisSeverity feeds the added-Ea stenotic term;
+  // mitralRegurgFrac/aorticRegurgFrac are the composite (structural +
+  // ischemic + dilation) regurgitant fractions the lumped model consumes;
+  // mitralRegurgStructural/aorticRegurgStructural are the structural-only
+  // split the authoritative PV-loop solver consumes instead (see
+  // cardiovascular.js's own comment on why that split exists).
+  "aorticStenosisSeverity", "mitralRegurgFrac", "aorticRegurgFrac",
+  "mitralRegurgStructural", "aorticRegurgStructural",
 ];
 
 // Fields that may never go negative.
@@ -191,6 +210,11 @@ const NON_NEGATIVE = [
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",
+  // lithiumToxicity (queue item 7, Toxicology): serum lithium (mmol/L),
+  // a real physical concentration, never negative, patient.js constructor
+  // default 0.8 (inside the therapeutic range for a patient with no
+  // lithium condition/prescription).
+  "li",
   // Queue item 44: serum chloride (real strong-cation-difference output,
   // never negative) and the pathological unmeasured-anion pool (a real
   // physical mEq/L quantity, never negative). clShift/sidAdjust are NOT
@@ -231,6 +255,11 @@ const NON_NEGATIVE = [
   // (conditions.js's thermalBurn) and impaired-skin-barrier heat loss
   // (thermo.js's updateTemperature).
   "burnTbsaFraction",
+  // Cardiac batch, valve-mechanism items: all five are clamped [0,0.9] (or
+  // derived [0,0.95] ef) 0-1 dials in cardiovascular.js's updateValves,
+  // never negative — same set added to REQUIRED above.
+  "aorticStenosisSeverity", "mitralRegurgFrac", "aorticRegurgFrac",
+  "mitralRegurgStructural", "aorticRegurgStructural",
 ];
 
 const results = [];

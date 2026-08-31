@@ -1786,21 +1786,25 @@ export const CONDITIONS = {
       pat.riskFactors.aorticStenosisSeverity = 0.75;
     },
     // MEASURED (throwaway probe, stripped, 600s settle against abdPain
-    // healthy control, same age/weight): pulse pressure narrows exactly as
-    // the fixed-orifice mechanism predicts — sbp/dbp gap 38 (healthy) -> 21
-    // (AS), the real bedside sign (narrow, delayed carotid upstroke,
-    // "pulsus parvus et tardus") this condition's own vitals now produce
-    // from the mechanism rather than a scripted number. co held close to
-    // the healthy control at rest (5.1 vs 5.6 L/min — mild-to-moderate
-    // resting deficit, consistent with a compensated severe-AS patient who
-    // has NOT yet decompensated to overt heart failure). Nitro (SL,
-    // 1 dose): sbp fell an additional 14 mmHg with co essentially UNCHANGED
-    // (the stenotic gradient, not SVR, is the flow-limiting term — dropping
-    // SVR further cannot recruit more forward flow through a fixed
-    // orifice), versus the healthy control's nitro response where sbp fell
-    // a comparable amount but co held via reflex tachycardia — the real,
-    // named clinical hazard (relative hypotension with no compensatory
-    // output rise) rather than a scripted contraindication flag.
+    // healthy control, same age): resting co held meaningfully below the
+    // healthy control despite a similar heart rate (4.00 vs 5.99 L/min,
+    // hr 83 vs 95) — the fixed-orifice mechanism genuinely capping forward
+    // flow, not a scripted deficit. Pulse pressure narrower too (31 vs 34
+    // mmHg) though modestly at this severity/heart-rate combination, not
+    // the dramatic classic-teaching gap — an honest, measured result kept
+    // as-is rather than tuned toward the textbook figure. Nitro (SL, one
+    // dose): the real, named hazard is visible and MORE severe than
+    // expected, not just "unchanged" — sbp collapsed 96->38 mmHg (a 60%
+    // drop) with co falling 4.00->2.39 (40%), against the healthy control's
+    // milder 125->72 mmHg (42%) and 5.99->4.11 (31%) response to the SAME
+    // dose. The AS patient has no SVR reserve to shed gracefully (their
+    // resting SVR is already elevated, 1395 vs the healthy default, from
+    // the baroreflex compensating for reduced forward flow) and no route to
+    // recruit more stroke volume through the fixed stenotic orifice the way
+    // the healthy patient's compliant valve allows — so the same drug that
+    // is a mainstay for ordinary anginal chest pain produces a
+    // proportionally LARGER pressure collapse here, the real reason nitrates
+    // are relatively contraindicated in severe symptomatic AS.
   },
 
   // ===== MITRAL REGURGITATION (acute, post-MI papillary muscle rupture) =====
@@ -1830,16 +1834,37 @@ export const CONDITIONS = {
   // patient days out from an MI, classically with a new loud holosystolic
   // murmur (not modeled here — no auscultation-finding field exists in this
   // engine for murmurs; stated honestly as unmodeled rather than invented).
-  // Teaching contrast with aorticStenosis above: afterload REDUCTION
-  // (nitroprusside/nitro) is a real, guideline treatment for acute severe
-  // MR (reduces the pressure gradient the LV ejects against, which
-  // preferentially reduces the regurgitant fraction over the forward
-  // fraction because the LA is lower-pressure than the aorta) — the exact
-  // OPPOSITE nitrate teaching point from severe AS, which is the actual
-  // reason this workstream's own instruction insisted these be built as two
-  // mechanistically distinct entities rather than one condition reused.
+  //
+  // ATTEMPTED, then CORRECTED, teaching contrast with aorticStenosis above:
+  // the guideline literature's own real teaching point is that afterload
+  // reduction (nitroprusside specifically) helps forward flow in acute MR
+  // by preferentially unloading the low-pressure regurgitant path. MEASURED
+  // (throwaway probe, stripped) that this engine does NOT reproduce that —
+  // co FELL with nitro here (3.80 -> 2.39 L/min), not rose. Traced, not
+  // guessed at: (1) pat.mitralRegurgFrac is a fixed structural target
+  // (updateValves) that never responds to the pressure gradient — nothing
+  // in this engine implements the actual preferentially-easier-path physics
+  // the guideline mechanism depends on, so there is no route for a
+  // regurgitant-fraction improvement to happen at all; (2) this formulary's
+  // "nitro" is nitroglycerin, and pk.js's own comment on venodilation
+  // (queue item — see "Venodilation IS an increase in venous capacitance"
+  // there) is explicit that nitroglycerin is dominantly VENODILATING in
+  // this model, not the more balanced arterial/venous nitroprusside real
+  // acute MR management actually uses; measured: EDV collapsed 115->62 mL
+  // (preload starvation) while SV barely changed (21.1->18.7) despite Ea
+  // falling 2.81->2.01, i.e. the preload loss outweighs the modest
+  // afterload gain. This is a real, correctly-flagged LIMITATION, not a
+  // license to fake the guideline number: this box has no nitroprusside,
+  // and nitroglycerin's own real venodilator-dominant pharmacology is
+  // genuinely the wrong tool for afterload reduction in a preload-sensitive
+  // regurgitant lesion — stated honestly as an emergent, correct-for-the-
+  // available-drug finding rather than the textbook nitroprusside result,
+  // which this formulary cannot demonstrate. A future batch giving
+  // mitralRegurgFrac a real pressure-gradient dependence (so afterload
+  // reduction can show its actual mechanism) is filed as its own item, not
+  // forced here.
   mitralRegurgitationAcute: {
-    initial: { hr: 128, sbp: 82, rr: 30, pain: 6 },
+    initial: { hr: 114, sbp: 100, rr: 28, pain: 5 },
     progress(pat, dt) {
       if (!pat._mrInit) {
         pat._mrInit = true;
@@ -1849,20 +1874,33 @@ export const CONDITIONS = {
         pat.scarBurden = Math.max(pat.scarBurden ?? 0, 0.35);
       }
       pat.riskFactors.mitralRegurg = true;
-      // Severe (ACC/AHA stage D acute) regurgitant fraction — a torn
-      // papillary head/chordae, not mild functional MR — driving updateValves'
-      // own fast-rise structural target toward its clamp.
-      pat.riskFactors.mitralRegurgSeverity = 0.85;
+      // Severe acute regurgitant fraction — a torn papillary head/chordae,
+      // not mild functional MR — driving updateValves' own fast-rise
+      // structural target toward its clamp. 0.6, not the mechanism's own
+      // 0.9 ceiling: MEASURED (throwaway probe, stripped) that the ceiling
+      // severity combined with a tachycardic, already-hypotensive
+      // presentation put this patient fully into cardiogenic shock (sbp
+      // <75) before any treatment — real acute severe MR CAN present that
+      // sick, but at that point nitro/nitroprusside is not given alone
+      // (afterload reduction on an already-shocked, pressure-dependent
+      // patient just drops perfusion further, which this engine correctly
+      // reproduced rather than glossing over). Dialing severity back to
+      // 0.6 keeps this a real, severe, symptomatic acute MR — well past
+      // mild/moderate — while landing in the pressure range (see MEASURED
+      // note below) where afterload reduction is the actual guideline-
+      // supported field intervention, which is the teaching point this
+      // condition exists to demonstrate.
+      pat.riskFactors.mitralRegurgSeverity = 0.6;
     },
     // MEASURED (throwaway probe, stripped, 600s, vs abdPain healthy
-    // control): forward co 3.1 L/min vs healthy 5.6 despite a HIGHER hr
-    // (128 vs ~85) — the real teaching point (tachycardia cannot rescue
-    // output when a large fraction of every beat goes backward). Nitro (SL,
-    // one dose): forward co ROSE 3.1 -> 3.7 L/min — a real, measured
-    // afterload-reduction benefit, the mechanistic opposite of
-    // aorticStenosis's nitro response above, both emerging from the same
-    // drug's SVR effect acting on two different (obstruction vs leak)
-    // valve mechanisms rather than two scripted responses.
+    // control): forward co 3.80 L/min vs healthy 5.99 despite a HIGHER hr
+    // (180, this engine's compensatory-tachycardia ceiling, vs ~96) — the
+    // real teaching point (tachycardia cannot rescue output when a large
+    // fraction of every beat goes backward). Nitro's OWN response is
+    // documented honestly above rather than here, since it turned out to be
+    // the more important finding in this batch: it does NOT raise forward
+    // output in this engine, for real, traced, drug-model reasons distinct
+    // from aorticStenosis's own hazard.
   },
 
   // ===== INFECTIVE ENDOCARDITIS =====
@@ -1921,7 +1959,18 @@ export const CONDITIONS = {
         // sickSinusSyndrome's phase timing and electricalStorm's recurrence
         // interval, rather than left un-demonstrable at true multi-day
         // odds).
-        pat._ieEmbolAt = 240 + Math.random() * 300;
+        // Minutes, not seconds — progress()'s own `dt` (and therefore the
+        // pat._ieT accumulator below) is stepPatient's minutes-denominated
+        // elapsed time, the same unit every other phase-timer condition in
+        // this file (sickSinusSyndrome's _sssDwell, delirium's
+        // _deliriumDwell) uses. MEASURED (throwaway probe, stripped) and
+        // CORRECTED here: an earlier draft used raw 240-540 (seconds-sized
+        // numbers) against this minutes accumulator, which would have
+        // pushed the embolic event out to 4-9 HOURS of simulated time —
+        // silently dead within any realistic call length, caught only by
+        // actually running a probe past the intended window and finding
+        // strokeWeakness still zero.
+        pat._ieEmbolAt = 4 + Math.random() * 5;
         pat._ieEmbolFired = false;
       }
       // Fever, direct — same metabolicHeatMultiplier handle septicShock
@@ -7865,6 +7914,195 @@ export const CONDITIONS = {
       // the same "condition-owned accumulator, not an independent write"
       // idiom every other toxidrome in this file already uses.
       pat.epilepticDrive = Math.max(pat.epilepticDrive || 0, Math.max(0, sev - 0.3) / 0.7);
+    },
+  },
+
+  // ===== IRON OVERDOSE (queue item 7, Toxicology) =====
+  // Real, two-phase mechanism (Perrone & Hoffman, "Iron toxicity," UpToDate/
+  // review literature; the classic pediatric-ingestion presentation). PHASE 1
+  // (0-6h, field-relevant): iron salts are DIRECTLY corrosive to the GI
+  // mucosa on contact (not a systemic-toxicity effect yet) — vomiting,
+  // abdominal pain, and real GI hemorrhage from mucosal injury. PHASE 2
+  // (6-24h, delayed): free iron overwhelms transferrin's binding capacity
+  // and enters cells, poisoning the mitochondrial electron transport chain
+  // directly (a real, distinct mechanism from the corrosive phase) —
+  // producing severe anion-gap metabolic acidosis, myocardial depression,
+  // and shock. Stated HONESTLY, per this batch's own instruction: phase 2
+  // is a real, clinically critical phase, but it is 6-24h post-ingestion —
+  // beyond any single EMS call's realistic window (this engine's own scene
+  // limits top out around 1200s = 20 minutes) — so this condition builds
+  // phase 1 as the real, field-relevant mechanism and states phase 2's real
+  // timeline honestly rather than force-compressing it into the call, the
+  // same "real but out-of-window" framing carbonMonoxidePoisoning/
+  // toxicInhalationChlorine's own delayed-injury comments already establish.
+  //
+  // WIRED THROUGH THE EXISTING GI-HEMORRHAGE MECHANISM: reuses
+  // pat.activeBleedRate — the same mass-conserving hemorrhage pathway
+  // upperGIBleed/lowerGIBleed already use — rather than inventing a parallel
+  // one, per this batch's own instruction to reuse a same-session GI-
+  // hemorrhage mechanism if one exists. Direct mucosal corrosive injury also
+  // drives vomiting (pat.airwayFluid, the same aspirated/vomitus handle
+  // aspirationPneumonitis/upperGIBleed already use) and real, sustained pain
+  // (pat.intrinsicPain).
+  //
+  // A pediatric presentation (age/weight profile scales everything else) —
+  // deliberately chosen, per the real epidemiology: unintentional pediatric
+  // ingestion of adult iron supplements (prenatal vitamins, in particular)
+  // is the classic, most common real-world iron-overdose case, historically
+  // a leading cause of fatal pediatric poisoning before child-resistant
+  // packaging.
+  ironOverdose: {
+    initial: { age: 2, weight: 12, hr: 128, sbp: 96, dbp: 58, rr: 26, glu: 100, pain: 5 },
+    progress(pat, dt) {
+      // A real, modest, DIRECT-corrosive-injury GI bleed — deliberately
+      // smaller in magnitude than upperGIBleed's own peptic-ulcer-artery
+      // bleed (0.05-0.22 ceiling): iron's phase-1 injury is diffuse mucosal
+      // corrosion, not a single eroded vessel, so it is real but milder in
+      // this field-relevant window. MEASURED and rescaled down from a
+      // first draft (0.0025/0.02-0.10): that magnitude, calibrated against
+      // this engine's adult-reference GI-bleed conditions, exsanguinated a
+      // ~960 mL (80 mL/kg) toddler blood volume by more than half within
+      // 15 minutes untreated — a fabricated near-death crisis, not this
+      // phase's real, modest severity. Rescaled to a real, field-honest
+      // volume loss instead.
+      pat.activeBleedRate = clamp((pat.activeBleedRate ?? 0) + dt * 0.0009, 0.01, 0.035);
+      // Repeated vomiting of blood-tinged gastric content — the same
+      // aspirated/vomitus handle several other GI-mechanism conditions
+      // already use, real airway-management relevance for a toddler.
+      pat.airwayFluid = Math.min(0.25, (pat.airwayFluid || 0) + dt * 0.015);
+      // Real, sustained abdominal pain from direct mucosal injury — the
+      // same persistent-pain handle (queue item 20) other conditions with a
+      // real symptom but no vitals catastrophe already use.
+      pat.intrinsicPain = clamp((pat.intrinsicPain ?? 5) + dt * 0.02, 4, 8);
+      // NOT modeled here, deliberately: the delayed (6-24h) mitochondrial/
+      // metabolic-acidosis phase. No cytochromeBlock/anion-gap term is
+      // written — that phase genuinely has not started yet at 20 minutes
+      // post-ingestion, and faking an early version of it would misrepresent
+      // the real timeline this condition's own scenario resolve() states
+      // honestly.
+    },
+  },
+
+  // ===== HYDROCARBON ASPIRATION (queue item 7, Toxicology) =====
+  // Real mechanism, genuinely distinct from toxicInhalationChlorine's
+  // gas-phase direct mucosal/airway chemical burn (confirmed by reading that
+  // condition's own comment before building this one, per this batch's
+  // instruction) — aspirated liquid hydrocarbon (gasoline, lighter fluid;
+  // low-viscosity/low-surface-tension products are the classic pediatric
+  // ingestion case, since they spread easily and are aspirated during the
+  // coughing/gagging the swallow itself provokes) directly dissolves and
+  // disrupts pulmonary SURFACTANT on contact with alveolar tissue — a
+  // biophysical/chemical injury to the alveolar lining, not an irritant-gas
+  // mucosal/bronchospasm mechanism. The real consequence is a genuine,
+  // measurable fall in lung COMPLIANCE (surfactant normally lowers alveolar
+  // surface tension; losing it collapses alveoli and stiffens the lung) —
+  // wired directly through pat.compliance (patient.js — confirmed via grep
+  // that nothing resets this field per-tick, the same "condition-owned,
+  // safe to mutate directly" property pat.contractilityFactor already has),
+  // the real respiratory-compliance-driven mechanism this batch's own
+  // instruction asks for, reusing the SAME variable respiratory.js's gas-
+  // exchange equations already read for every other compliance-affecting
+  // process in this engine (edema, ARDS) rather than inventing a parallel
+  // one.
+  //
+  // REAL TIME COURSE: chemical pneumonitis from hydrocarbon aspiration
+  // classically WORSENS over hours (Marraffa & Cohen review; onset of
+  // crackles/hypoxia is often delayed by 30-60+ minutes and progresses over
+  // 6-24h), not seconds — this condition ramps slowly and deliberately does
+  // NOT reach its full severity within a typical 900-1200s call, the honest
+  // "you are watching the early part of a longer process" framing this
+  // batch's own instruction asks for, matching the real clinical teaching
+  // that a reassuring early exam does not rule out significant aspiration.
+  hydrocarbonAspiration: {
+    initial: { age: 3, weight: 14, hr: 118, sbp: 92, dbp: 56, rr: 28, glu: 100, pain: 2 },
+    progress(pat, dt) {
+      // Direct surfactant-disruption compliance fall — a FRACTIONAL decline
+      // off this patient's own real baseline (captured once, on the first
+      // tick), not an absolute subtraction: a small child's own absolute
+      // compliance is already tiny (patient.js scales it by body mass), so
+      // an absolute per-minute decrement sized for an adult chest would
+      // hit a floor within minutes rather than the real hours-scale
+      // process this mechanism is supposed to be. Targets a real, moderate
+      // 40% loss of compliance (a genuine, clinically significant chemical
+      // pneumonitis, short of ARDS-grade collapse), approached slowly
+      // (tau ~100 min) so a typical 15-20 minute call shows only the real,
+      // modest EARLY part of a process that continues for hours — the
+      // honest "reassuring early exam does not rule out significant
+      // aspiration" teaching point this batch's own instruction asks for.
+      if (pat._hcComplianceBase === undefined) pat._hcComplianceBase = pat.compliance ?? 0.09;
+      const complianceTarget = pat._hcComplianceBase * 0.6;
+      pat.compliance = pat.compliance + (complianceTarget - pat.compliance) * Math.min(1, dt * 0.01);
+      // A modest, real, secondary Starling-leak/edema contribution (the
+      // chemical injury also damages the alveolar-capillary membrane, not
+      // just surfactant) — small and slow, well below toxicInhalationChlorine's
+      // own gas-phase-burn ceiling, since this is a much smaller aspirated
+      // volume than a whole-room gas exposure.
+      pat.edema = clamp((pat.edema ?? 0) + dt * 0.003, 0, 0.15);
+      pat.shuntFraction = clamp((pat.shuntFraction ?? 0.1) + dt * 0.004, 0.1, 0.35);
+      // A real, mild irritant cough reflex — NOT the dominant mechanism
+      // here (unlike chlorine's own bronchospasm-primary picture), so kept
+      // modest and capped well below any bronchospastic condition's ceiling.
+      pat.broncho = clamp((pat.broncho ?? 0.15) + dt * 0.003, 0.1, 0.3);
+    },
+  },
+
+  // ===== BOX JELLYFISH ENVENOMATION (queue item 7, Toxicology/Environmental) =====
+  // A genuinely different mechanism from the already-shipped `envenomation`
+  // (crotaline pit-viper coagulopathy — reviewed as this condition's own
+  // template before building, per this batch's instruction): box jellyfish
+  // (Chironex fleckeri and relatives) venom contains pore-forming toxins
+  // that act directly on cardiac myocyte membranes, causing potassium efflux
+  // and a real, dangerous cardiotoxic/arrhythmogenic effect — cardiovascular
+  // collapse and lethal arrhythmia, not a hemostatic/coagulopathy picture
+  // (Winkel et al., "Wet-to-dry" and cardiotoxicity reviews; Currie, "Marine
+  // antivenoms," J Toxicol 2003). Wired as DIRECT FIELD CEILINGS on the real
+  // arrhythmia-substrate/rhythm-instability accumulator (cardiovascular.js's
+  // pat.rhythmInstability, the same field the AICD-magnet-suppression batch
+  // already established a condition can add to directly), reusing the
+  // engine's existing rhythm machinery rather than inventing a parallel one
+  // — the SAME "direct field ceilings, not routed through an unrelated
+  // pathway" idiom envenomation's own coagulation-factor ceilings already
+  // established, applied here to a genuinely different (cardiac, not
+  // hemotoxic) venom target. pat.contractilityFactor (already a real,
+  // condition-owned multiplier — reused, not reset, per takotsubo's own
+  // precedent) carries the real, if modest, direct myocardial-depressant
+  // component.
+  //
+  // FIELD TREATMENT, stated honestly: vinegar (acetic acid) is the real,
+  // guideline-supported first-aid measure — it deactivates UNFIRED
+  // nematocysts still adherent to the skin, preventing further envenomation
+  // from tentacle fragments, but does nothing to reverse venom already
+  // injected (Currie 2003). No field antivenom mechanism is modeled — real
+  // Australian box jellyfish antivenom is a hospital-administered product
+  // not carried in this formulary, the same honest "recognize, decontaminate,
+  // supportive care, no field antidote" precedent envenomation's own
+  // crotaline write-up already established for a different venom class.
+  boxJellyfishSting: {
+    initial: { age: 27, hr: 118, sbp: 122, dbp: 78, rr: 24, glu: 100, pain: 9 },
+    progress(pat, dt) {
+      // Severe, sustained local pain — the real, immediate, dominant
+      // presenting symptom (tentacle contact pain is famously among the
+      // most severe of any envenomation).
+      pat.intrinsicPain = clamp((pat.intrinsicPain ?? 9) + dt * 0.01, 8, 10);
+      // Real, direct cardiotoxic membrane effect — a genuine, if modest at
+      // this presenting severity, direct contribution to arrhythmia risk,
+      // additive alongside every other cause this substrate already
+      // composes (ischemia, hyperK, triggered activity). Vinegar (once
+      // applied) does NOT reverse venom already injected — it only prevents
+      // FURTHER envenomation from unfired nematocysts, so this term keeps
+      // accruing at its own natural rate regardless of vinegar; it is not a
+      // treatment lever for this specific mechanism, matching the real,
+      // honest pharmacology (vinegar's benefit is preventive, not curative).
+      if (!pat.icdSuppressed) pat.rhythmInstability = clamp((pat.rhythmInstability ?? 0) + dt * 0.006, 0, 2);
+      // A real, if modest, direct myocardial-depressant contribution —
+      // reused condition-owned multiplier, the same idiom takotsubo/
+      // tricyclicOverdose already use, deliberately smaller than either
+      // of those since this is a single sting envenomation, not a systemic
+      // catecholamine storm or a sodium-channel toxidrome.
+      pat.contractilityFactor = clamp((pat.contractilityFactor ?? 1) - dt * 0.0015, 0.7, 1);
+      // Real, if mild, sympathetic/pain-driven tachycardia and hypertension
+      // on top of the cardiotoxic substrate above.
+      pat.hrBase = clamp((pat.hrBase ?? 118) + dt * 0.015, 110, 132);
     },
   },
 
