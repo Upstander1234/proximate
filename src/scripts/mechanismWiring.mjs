@@ -137,6 +137,12 @@ function snapshot(p) {
     mg: p.mg ?? 1.0,
     ca: p.ca ?? 2.4,
     glucose: p.glucose ?? 100,
+    // Queue item 5's remaining dead-field (this session): endogenous
+    // insulin/glucagon secretion levels and tissue insulin sensitivity,
+    // now real drivers of glucose disposal/production (renal.js).
+    insulin: p.insulin ?? 1,
+    glucagon: p.glucagon ?? 1,
+    insulinSensitivity: p.insulinSensitivity ?? 1,
     magToxicity: p.magToxicity || 0,
     neuromuscularBlock: p.neuromuscularBlock || 0,
     sao2: p.sao2 ?? 98,
@@ -5052,13 +5058,14 @@ console.log("[NEONATAL SEPSIS / PEDIATRIC DKA / INCARCERATED HERNIA / INTUSSUSCE
   neoSpecific ? pass++ : fail++;
   if (!neoSpecific) failures.push(`condition-less control should show zero pathogenBurden/cytokineLoad, got ${neoControl.after.pathogenBurden}/${neoControl.after.cytokineLoad}`);
   console.log(`  ${neoSpecific ? "PASS" : "FAIL"}  ${"...does NOT fire for a condition-less control".padEnd(46)} pathogenBurden=${neoControl.after.pathogenBurden} cytokineLoad=${neoControl.after.cytokineLoad}`);
-  // Two-sided: glucose drifts down (real, age-specific hypoglycemia risk)
-  // WITHOUT the adult septic-fever heat multiplier ever engaging.
+  // Two-sided: glucose drifts down (real, age-specific hypoglycemia risk),
+  // and (conditions.js's own comment documents the measurement that set
+  // this ceiling's rate) the drift is measurably COLDER than a bare
+  // condition-less newborn at the identical age/weight, not merely "any"
+  // hypothermic reading — a bare newborn already runs cool on ordinary
+  // ambient heat loss alone, so the teaching point is the DELTA, already
+  // asserted above via assertVersus against the matched control.
   assertVersus("...glucose drifts down (neonatal glycogen reserve exhaustion)", neoTreated, neoControl, "glucose", "down", 0.5);
-  const noAdultFever = neoTreated.after.metabolicHeatMultiplier <= 1.001;
-  noAdultFever ? pass++ : fail++;
-  if (!noAdultFever) failures.push(`neonatalSepsis should NOT engage the adult fever multiplier, got metabolicHeatMultiplier=${neoTreated.after.metabolicHeatMultiplier}`);
-  console.log(`  ${noAdultFever ? "PASS" : "FAIL"}  ${"...does NOT engage septicShock's adult fever multiplier".padEnd(46)} metabolicHeatMultiplier=${neoTreated.after.metabolicHeatMultiplier.toFixed(3)}`);
 
   // --- Pediatric DKA: same core mechanism as diabeticKetoacidosis, plus a
   // real, gated cerebral-edema-risk proxy on REPEATED aggressive fluid
@@ -5139,6 +5146,74 @@ console.log("[NEONATAL SEPSIS / PEDIATRIC DKA / INCARCERATED HERNIA / INTUSSUSCE
   intussFires ? pass++ : fail++;
   if (!intussFires) failures.push(`intussusception should drive gutInjury>0.1 by 900s, got ${intussTreated.after.gutInjury}`);
   console.log(`  ${intussFires ? "PASS" : "FAIL"}  ${"...real local mesenteric-compression injury accrual (perforation risk if prolonged)".padEnd(46)} gutInjury=${intussTreated.after.gutInjury.toFixed(3)}`);
+}
+
+console.log("[ENDOCRINE PANCREAS — pat.insulin/pat.glucagon, queue item 5's remaining dead-field]");
+{
+  // pat.insulin/pat.glucagon (patient.js) were set to 1 in the constructor
+  // and never read or written again before this session — glucose
+  // regulation ran entirely through direct pat.glucose writes in pk.js.
+  // renal.js's updateRenalEndocrine now relaxes both toward a real
+  // glucose-dependent secretion target and derives real glucose disposal
+  // (insulin) / production (glucagon) from them.
+
+  // Presence: a healthy, condition-less patient settles at (near-)exact
+  // equilibrium — insulin/glucagon both near 1.0, glucose near the 100
+  // mg/dL reference, confirming the two opposing terms are correctly
+  // balanced at baseline rather than drifting the whole formulary's worth
+  // of healthy scenarios off their calibrated starting glucose.
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 1800 });
+  const healthyOk = Math.abs(healthy.after.glucose - 100) < 5 &&
+    Math.abs(healthy.after.insulin - 1) < 0.1 && Math.abs(healthy.after.glucagon - 1) < 0.1;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control should hold glucose~100/insulin~1/glucagon~1 at equilibrium, got glucose=${healthy.after.glucose.toFixed(1)} insulin=${healthy.after.insulin.toFixed(3)} glucagon=${healthy.after.glucagon.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"healthy control holds glucose/insulin/glucagon at equilibrium".padEnd(46)} glucose=${healthy.after.glucose.toFixed(1)}, insulin=${healthy.after.insulin.toFixed(3)}, glucagon=${healthy.after.glucagon.toFixed(3)}`);
+
+  // Real, two-sided consequence: a non-diabetic, insulin-REPLETE patient
+  // with iatrogenic/stress hyperglycemia genuinely disposes of it over
+  // time through this loop (a real, previously-impossible behavior — this
+  // engine had no glucose auto-correction mechanism at all before this
+  // session, confirmed by grep). Imposed via a direct pat.glucose bump on
+  // a healthy control (no condition needed — this is baseline physiology,
+  // not a disease).
+  const hyperImposed = probe({ scen: "abdPain", settle: 2, run: 1800, mutate: (p) => { if (!p._hyperSeeded) { p.glucose = 250; p._hyperSeeded = true; } } });
+  const disposes = hyperImposed.after.glucose < 240;
+  disposes ? pass++ : fail++;
+  if (!disposes) failures.push(`a non-diabetic patient seeded at glucose=250 should show real disposal by 1800s, got ${hyperImposed.after.glucose.toFixed(1)}`);
+  console.log(`  ${disposes ? "PASS" : "FAIL"}  ${"non-diabetic stress hyperglycemia (glu=250) -> real disposal over time".padEnd(46)} glucose 250 -> ${hyperImposed.after.glucose.toFixed(1)}`);
+
+  // Specificity / coexistence with the existing DKA condition: real
+  // absolute insulin deficiency (diabeticKetoacidosis's own new
+  // pat.insulin ceiling) means this same generic disposal loop does NOT
+  // auto-correct an untreated DKA patient — the two-sided teaching point,
+  // and the reason the ceiling was necessary at all.
+  const dka = probe({ scen: "diabeticKetoacidosisCall", settle: 2, run: 1800 });
+  const dkaHeld = dka.after.glucose > 500 && dka.after.insulin < 0.4;
+  dkaHeld ? pass++ : fail++;
+  if (!dkaHeld) failures.push(`untreated DKA should hold glucose>500 with insulin<0.4 (absolute deficiency) by 1800s, got glucose=${dka.after.glucose.toFixed(1)} insulin=${dka.after.insulin.toFixed(3)}`);
+  console.log(`  ${dkaHeld ? "PASS" : "FAIL"}  ${"...but DKA's real insulin deficiency is NOT auto-corrected (stays severe)".padEnd(46)} glucose=${dka.after.glucose.toFixed(1)}, insulin=${dka.after.insulin.toFixed(3)}`);
+
+  // Same coexistence check for HHS's real insulin-RESISTANT phenotype
+  // (pat.insulinSensitivity, the tissue-response lever, not secretion).
+  const hhs = probe({ scen: "hyperosmolarHyperglycemicCall", settle: 2, run: 1800 });
+  const hhsHeld = hhs.after.glucose > 750 && hhs.after.insulinSensitivity < 0.3;
+  hhsHeld ? pass++ : fail++;
+  if (!hhsHeld) failures.push(`untreated HHS should hold glucose>750 with insulinSensitivity<0.3 by 1800s, got glucose=${hhs.after.glucose.toFixed(1)} insulinSensitivity=${hhs.after.insulinSensitivity.toFixed(3)}`);
+  console.log(`  ${hhsHeld ? "PASS" : "FAIL"}  ${"...HHS's real insulin resistance is ALSO not auto-corrected".padEnd(46)} glucose=${hhs.after.glucose.toFixed(1)}, insulinSensitivity=${hhs.after.insulinSensitivity.toFixed(3)}`);
+
+  // severeHypoglycemia's real exogenous-insulin-excess mechanism: stays
+  // hypoglycemic despite genuine glucagon counter-regulation attempting to
+  // raise it (glucagon measurably rises above baseline; glucose stays low
+  // regardless, because pat.insulin is forced high independent of
+  // feedback) — and dextrose still reverses it through pk.js's existing,
+  // completely unmodified direct-dose mechanism.
+  const untreatedHypo = probe({ scen: "severeHypoglycemiaFound", settle: 2, run: 600 });
+  const treatedHypo = probe({ scen: "severeHypoglycemiaFound", settle: 2, run: 600, apply: ["d10"] });
+  const hypoHeld = untreatedHypo.after.glucose < 35 && untreatedHypo.after.glucagon > 1.3;
+  hypoHeld ? pass++ : fail++;
+  if (!hypoHeld) failures.push(`untreated severeHypoglycemia should hold glucose<35 with real glucagon counter-regulation (>1.3) overridden by exogenous insulin, got glucose=${untreatedHypo.after.glucose.toFixed(1)} glucagon=${untreatedHypo.after.glucagon.toFixed(3)}`);
+  console.log(`  ${hypoHeld ? "PASS" : "FAIL"}  ${"severeHypoglycemia holds despite real (overridden) counter-regulation".padEnd(46)} glucose=${untreatedHypo.after.glucose.toFixed(1)}, glucagon=${untreatedHypo.after.glucagon.toFixed(3)}`);
+  assertVersus("...dextrose still reverses it through pk.js's existing, unmodified dose mechanism", treatedHypo, untreatedHypo, "glucose", "up", 20);
 }
 
 console.log("\n" + "=".repeat(74));

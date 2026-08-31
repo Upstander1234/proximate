@@ -95,6 +95,13 @@ const REQUIRED = [
   // cardiovascular.js's cortisol-permissive vascular tone term — added
   // here now that it actually matters, per lesson 2.
   "cortisol",
+  // pat.insulin/pat.glucagon (patient.js) predate this session but were
+  // never behaviorally significant until this session's endocrine-
+  // pancreas batch (queue item 5's remaining dead-field) wired them into
+  // renal.js's real glucose disposal/production loop. pat.insulinSensitivity
+  // is the new tissue-response lever (diabetesT2/HHS's own real insulin-
+  // resistant phenotype).
+  "insulin", "glucagon", "insulinSensitivity",
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",
@@ -207,6 +214,10 @@ const NON_NEGATIVE = [
   "gutDO2", "gutO2Debt", "gutInjury",
   "skinDO2",
   "cortisol",
+  // Queue item 5's remaining dead-field (this session): all three are
+  // real, always-non-negative quantities (insulin/glucagon secretion
+  // levels, insulinSensitivity a tissue-response multiplier).
+  "insulin", "glucagon", "insulinSensitivity",
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",

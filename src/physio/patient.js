@@ -596,8 +596,25 @@ export class Patient {
     this.renin = 0.05;
     this.aldosterone = 0.05;
     this.cortisol = 1;
+    // ENDOCRINE PANCREAS (queue item 5's remaining dead-field, this
+    // session). pat.insulin/pat.glucagon were set here and never read or
+    // written again — glucose regulation ran entirely through direct
+    // pat.glucose writes in pk.js. Both are now real: renal.js's
+    // updateRenalEndocrine relaxes each toward a glucose-dependent
+    // secretion target (the SAME beta-cell/alpha-cell feedback idiom
+    // pat.cortisol's own sympathetic-relaxation line two lines below
+    // already establishes for a different axis), and BOTH now drive real
+    // glucose disposal/production — see that file's own comment for the
+    // full mechanism. 1 = baseline (euglycemic) secretion for both, same
+    // as before.
     this.insulin = 1;
     this.glucagon = 1;
+    // Tissue insulin SENSITIVITY (distinct from secretion) — 1 = normal
+    // response to a given insulin level, lowered by conditions with a real
+    // insulin-RESISTANT phenotype (diabetesT2/HHS) rather than an
+    // insulin-DEFICIENT one (DKA/T1DM, which caps pat.insulin itself
+    // instead — see conditions.js's own comments on each).
+    this.insulinSensitivity = 1;
     this.afferentConstriction = 0;
     this.atnProgression = 0;
 
