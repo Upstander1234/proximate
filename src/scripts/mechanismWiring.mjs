@@ -381,6 +381,14 @@ function snapshot(p) {
     // presents at the bedside; read here so it can be asserted rather than
     // inferred from lactate.
     anionGap: p.anionGap ?? 12,
+    // organophosphatePoisoning (queue item 67): the condition-owned
+    // muscarinic vagal-tone accumulator (see conditions.js's own comment for
+    // why this could not just ratchet pat.parasympathetic directly) plus the
+    // raw pat.broncho it shares with asthma/anaphylaxis/chlorine, so the
+    // bradycardia-vs-bronchospasm distinction (and atropine's real effect on
+    // one but not the other) can be asserted directly.
+    cholinergicVagalTone: p.cholinergicVagalTone || 0,
+    broncho: p.broncho || 0,
   };
 }
 
@@ -4671,6 +4679,57 @@ console.log("[SEPTIC SHOCK — queue item 7, condition-library workstream]");
   // built the disease it was labeled for.
   const pressorTreated = probe({ scen: "septicShock", settle: 2, run: 600, apply: ["norepi"], reapply: 60 });
   assertVersus("...norepinephrine raises SVR through its existing alpha-receptor path", pressorTreated, untreated, "svr", "up", 50);
+}
+
+console.log("[CHOLINERGIC TOXIDROME / ORGANOPHOSPHATE POISONING — queue item 67]");
+{
+  // Two-sided per lesson 6: fires in the real condition, stays at zero in a
+  // matched healthy control, and genuinely reverses through atropine's
+  // EXISTING vagalBlock mechanism (the same receptor-level antagonism
+  // atropineOverdose/secondDegreeAVBlockTypeI already exercise for other
+  // causes) rather than a parallel one. Presence check at 600s, well within
+  // this condition's own ramp toward its 0.85 ceiling.
+  const untreated = probe({ scen: "organophosphatePoisoning", settle: 2, run: 600 });
+  const treated = probe({ scen: "organophosphatePoisoning", settle: 2, run: 600, apply: ["atropine"], reapply: 140 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 600 });
+
+  const fires = untreated.after.cholinergicVagalTone > 0.4 && untreated.after.broncho > 0.4;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`organophosphatePoisoning should show cholinergicVagalTone>0.4 and broncho>0.4 by 600s, got ${untreated.after.cholinergicVagalTone.toFixed(3)}/${untreated.after.broncho.toFixed(3)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"organophosphatePoisoning -> muscarinic toxidrome fires".padEnd(46)} cholinergicVagalTone = ${untreated.after.cholinergicVagalTone.toFixed(3)}, broncho = ${untreated.after.broncho.toFixed(3)}`);
+
+  const healthyOk = healthy.after.cholinergicVagalTone < 0.01 && healthy.after.broncho < 0.01;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero cholinergicVagalTone/broncho, got ${healthy.after.cholinergicVagalTone.toFixed(3)}/${healthy.after.broncho.toFixed(3)}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} cholinergicVagalTone = ${healthy.after.cholinergicVagalTone.toFixed(3)}, broncho = ${healthy.after.broncho.toFixed(3)}`);
+
+  // The real, clinically dangerous consequence: hr genuinely bradycardic
+  // (well below a healthy control) while cholinergicVagalTone itself is
+  // unaffected by anything but this condition's own ramp — a real emergent
+  // consequence, not a scripted vitals write.
+  assertVersus("...untreated -> genuine bradycardia (hr well below healthy control)", untreated, healthy, "hr", "down", 15);
+
+  // Atropine genuinely raises hr here through the SAME vagalBlock receptor
+  // mechanism it already uses everywhere else in this engine (the new
+  // cardiovascular.js hr term this batch added is proportionally antagonized
+  // by vagalBlock, not an independent effect) — WITHOUT moving
+  // cholinergicVagalTone itself, the same "treats the effect, not the level"
+  // shape bicarb/calcium's own two-sided assertions already establish for
+  // other toxidromes.
+  assertVersus("atropine -> reverses the bradycardia (existing vagalBlock mechanism)", treated, untreated, "hr", "up", 15);
+  const toneUnchanged = Math.abs(treated.after.cholinergicVagalTone - untreated.after.cholinergicVagalTone) < 0.02;
+  toneUnchanged ? pass++ : fail++;
+  if (!toneUnchanged) failures.push(`atropine should not change cholinergicVagalTone itself, got ${untreated.after.cholinergicVagalTone.toFixed(3)} -> ${treated.after.cholinergicVagalTone.toFixed(3)}`);
+  console.log(`  ${toneUnchanged ? "PASS" : "FAIL"}  ${"...without changing cholinergicVagalTone itself".padEnd(46)} cholinergicVagalTone ${untreated.after.cholinergicVagalTone.toFixed(3)} -> ${treated.after.cholinergicVagalTone.toFixed(3)}`);
+
+  // Stated honestly, not silently overclaimed: atropine does NOT reduce
+  // broncho/bronchorrhea in this model (no consumer wires vagalBlock into
+  // respiratory.js's beta2-only relaxation path) — a real, documented
+  // limitation, not a defect this assertion papers over.
+  const bronchoUnchanged = Math.abs(treated.after.broncho - untreated.after.broncho) < 0.02;
+  bronchoUnchanged ? pass++ : fail++;
+  if (!bronchoUnchanged) failures.push(`atropine should not change broncho in this model (documented limitation), got ${untreated.after.broncho.toFixed(3)} -> ${treated.after.broncho.toFixed(3)}`);
+  console.log(`  ${bronchoUnchanged ? "PASS" : "FAIL"}  ${"...and, honestly, leaves broncho/bronchorrhea unchanged".padEnd(46)} broncho ${untreated.after.broncho.toFixed(3)} -> ${treated.after.broncho.toFixed(3)}`);
 }
 
 console.log("\n" + "=".repeat(74));

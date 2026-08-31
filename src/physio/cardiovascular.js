@@ -438,6 +438,26 @@ export function updateCardiovascular(pat, dt) {
   // condition writing it directly would be silently wiped (measured
   // directly, the same reset trap as sodiumChannelBlock/drugInotropy above).
   hr += clamp((pat.vagalBlock || 0) + (pat.tcaVagalBlock || 0), 0, 1) * 25;
+  // pat.cholinergicVagalTone (organophosphatePoisoning, conditions.js, queue
+  // item 67) — a THIRD condition-owned vagal accumulator, same reset-trap
+  // reasoning as tcaVagalBlock immediately above (pat.parasympathetic itself
+  // is fully recomputed every tick by updateAutonomic's own baroreflex model
+  // a few lines below this one and clamped to a 0.95 physiological ceiling,
+  // so a condition writing it directly gets silently pulled back toward
+  // baseline before this formula next reads it — measured directly: an
+  // early attempt to ratchet pat.parasympathetic up in conditions.js moved
+  // hr by less than 1 bpm at steady state). Unlike vagalBlock/tcaVagalBlock,
+  // which only ever ADD a flat rate-bump, this term genuinely LOWERS hr
+  // (real muscarinic-crisis bradycardia, distinct from any reflex/AV-block
+  // vagal tone this engine already models) and is genuinely, proportionally
+  // ANTAGONIZED by atropine's own vagalBlock/tcaVagalBlock coefficient — the
+  // actual pharmacology (atropine competitively blocks the muscarinic
+  // receptor the excess acetylcholine is acting on) rather than an unrelated
+  // counter-bump. 45 bpm chosen as the ceiling swing so a fully atropine-
+  // unopposed crisis (cholinergicVagalTone=1) can reach real, dangerous
+  // bradycardia territory (see that condition's own comment/measurement).
+  hr -= clamp(pat.cholinergicVagalTone || 0, 0, 1) * 45 *
+    (1 - clamp((pat.vagalBlock || 0) + (pat.tcaVagalBlock || 0), 0, 1));
   if (pat.coreTemp < 35) hr *= Math.max(0.55, 1 - (35 - pat.coreTemp) * 0.05); // hypothermic slowing
   // A newborn in transition (see conditions.neonatalTransition) has its rate
   // governed by the transition state itself — bradycardic when depressed, rising
@@ -1768,7 +1788,13 @@ function updateConduction(pat, dt) {
   // real consumer. Verified NOT to move any already-measured value: vagalBlock
   // is 0 in every previously-shipped assertion that does not give atropine,
   // making this a no-op (effPara === pat.parasympathetic) for all of them.
-  const effPara = pat.parasympathetic * (1 - clamp((pat.vagalBlock || 0) + (pat.tcaVagalBlock || 0), 0, 1));
+  // pat.cholinergicVagalTone (organophosphatePoisoning, queue item 67) adds a
+  // real AV-nodal muscarinic-excess component here too, capped modestly
+  // (0.25) since the HR-formula term above already carries most of this
+  // condition's real bradycardia — this is a secondary, genuinely
+  // atropine-antagonized contributor, not a re-derivation of it.
+  const effPara = (pat.parasympathetic + clamp(pat.cholinergicVagalTone || 0, 0, 1) * 0.25) *
+    (1 - clamp((pat.vagalBlock || 0) + (pat.tcaVagalBlock || 0), 0, 1));
   av -= Math.max(0, effPara - 0.7) * 0.3;
   // HYPERMAGNESAEMIA slows AV conduction — the documented ECG progression is
   // "prolonged PR interval and widened QRS" at 5.0-7.5 mmol/L and "complete

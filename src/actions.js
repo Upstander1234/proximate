@@ -82,6 +82,16 @@ export const LIB=[
     run:(s,v)=>{const pat=s.patient;
       if((pat?.icp||10)>25) return {say:"One pupil is bigger than the other, and slow to react.",kind:"crit",
         find:"Anisocoria, sluggish — rising ICP.",evid:"A newly blown, sluggish pupil with rising ICP is a herniation warning sign."};
+      // Cholinergic toxidrome (organophosphatePoisoning, queue item 67) —
+      // narrated only, gated on the real pat.cholinergicVagalTone that
+      // condition itself drives (0.35-0.85 range — see conditions.js), not a
+      // new decorative flag. No pupil-diameter mechanism exists anywhere in
+      // this engine (the same standing limitation atropineOverdose's/
+      // tricyclicOverdose's own mydriasis narration carries for the
+      // opposite, anticholinergic, direction) — this field has exactly one
+      // writer, so a >0 check cannot fire for any other condition.
+      if((pat?.cholinergicVagalTone||0)>0) return {say:"Both pupils are pinpoint, barely visible.",kind:"warn",
+        find:"Pupils: bilateral miosis (pinpoint).",evid:"Miosis fits the muscarinic toxidrome (cholinergic excess) — the opposite finding from an anticholinergic or opioid picture, and a real bedside clue toward organophosphate/nerve-agent exposure."};
       if(v._cons&&v._cons!=="awake") return {say:"Equal, but sluggish to react.",kind:"warn",find:"Pupils sluggish."};
       return {say:"Equal, reactive.",find:"PERRL."};}},
   // Physiology queue item 34: pat.strokeWeakness/strokeSide/strokeAphasia
@@ -108,7 +118,21 @@ export const LIB=[
   // strokeAphasia) a speech deficit — matching Cincinnati's three positive
   // findings together.
   {id:"strokeScreen",region:"head",tab:"assess",label:"Stroke screen — face, arm, speech (FAST)",gerund:"Running a stroke screen",cost:15,lvl:0,probe:"strokeScreen",
+    // Queue item 66: pat.dystonia checked FIRST, ahead of the FAST logic
+    // below — an acute dystonic reaction (sustained involuntary head/neck/
+    // face spasm, forced gaze deviation) is a well-documented real stroke
+    // mimic, exactly the differential a candidate running this screen needs
+    // to learn to recognize, not a coincidental reuse of this exam. Arms are
+    // NOT weak/drifting in an uncomplicated dystonic reaction (acuteDystonicReaction,
+    // conditions.js, deliberately does not touch strokeWeakness) and speech
+    // is dysarthric from trismus/tongue involvement rather than aphasic, so
+    // this is written as its own distinct finding instead of reusing FAST's
+    // positive-screen wording, which would misrepresent the actual exam.
     run:(s)=>{const pat=s.patient,w=pat?.strokeWeakness||0,side=pat?.strokeSide,aphasia=!!pat?.strokeAphasia;
+      const dystonia=pat?.dystonia||0;
+      if(dystonia>0.3) return {say:"No arm drift or facial droop — but the neck is twisted hard to one side and won't release, jaw forced open, eyes deviated upward. Not a stroke pattern.",kind:"crit",
+        find:`Stroke screen: negative for FAST (no drift/droop), but sustained dystonic spasm present (neck/jaw/eye deviation) — a real stroke mimic, not CVA.`,
+        evid:"Involuntary sustained head/neck/face spasm with a NEGATIVE FAST screen is the classic acute dystonic reaction pattern, not a stroke — ask about any antiemetic/antipsychotic given recently and treat with diphenhydramine, not a stroke activation."};
       if(w<0.15) return {say:"Face symmetric, no droop. Both arms hold steady, no drift. Speech clear.",
         find:"FAST: negative — no facial droop, arm drift, or speech deficit."};
       const armPart=w>=0.5?`the ${side||"affected"} arm drifts all the way down and can't be held up against gravity`

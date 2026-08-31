@@ -4740,6 +4740,44 @@ allergicReactionMildCall: {cat: "medical", id: "ALLERGY-014", pronouns: "he", ti
     return {died, cause, notes, correct: s.pi === "ALRX", truth: "Mild (Grade 1) allergic reaction — isolated urticaria/pruritus, skin/mucosal only"};},
 },
 
+// Queue item 66. TP 1239/1239-P (Dystonic Reaction) — real acute dystonic
+// reaction, previously undetectable (no condition existed at all). Patient
+// presents WITH an already-established reaction from an antiemetic dose
+// given before EMS arrival (matching TP 1239's own framing and this queue
+// item's original filing: the protocol's own base-contact-to-confirm step
+// keeps the diagnosis human, not automatic). The teaching point is the real
+// stroke-mimic differential (actions.js's strokeScreen exam) and the real
+// diphenhydramine mechanism, not a scripted "give Benadryl" prompt.
+acuteDystonicReactionCall: {cat: "medical", id: "NEURO-014", pronouns: "she", title: "Female, 24. Neck twisted to one side, won't straighten.",
+  limit: 900, transport: 420,
+  bystanders: "Her mother, who says she was given \"a shot for nausea\" at urgent care about an hour ago.",
+  units: [],
+  dispatch: ["24F, neck spasm, family worried it's a stroke.", "Conscious, alert, in obvious distress."],
+  update: [],
+  impression: "Sitting rigidly upright, neck twisted hard to the left and won't release, jaw forced open, eyes rolled upward. Speaking in a strained, dysarthric voice but making sense.",
+  imps: ["DYST"],
+  condition: "acuteDystonicReaction",
+  locWeights: {house: 8, business: 1},
+  patient: {age: 24, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "\"It started right after we got home from urgent care, maybe forty minutes ago. My neck just... locked. It won't turn back and my jaw hurts.\"", kind: "pt",
+      evid: "Onset within an hour of a dopamine-antagonist antiemetic dose is the classic timing for an acute dystonic reaction — this is a real, recognizable drug adverse effect, not a mystery presentation.", find: "OPQRST: sustained neck/jaw spasm began ~40 min after an antiemetic injection at urgent care."}),
+    sample: () => ({say: "\"They gave me a shot for nausea. I don't know the name. No other medications, no allergies.\"", kind: "pt", find: "SAMPLE: antiemetic injection ~1 hour prior for nausea, no known drug allergy."}),
+    loc: () => ({say: "Alert and oriented, answering questions appropriately despite the spasm.", kind: "obs", find: "AVPU: alert, oriented x4."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const gaveDiphen = s.given.diphen;
+    const gaveStrokeWorkup = s.given.strokeScreen;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Something else in this call's management went wrong — an isolated dystonic reaction, with no airway or hemodynamic compromise, does not kill a patient over the span of a single call.";
+    if (gaveDiphen) notes.push("Diphenhydramine was given — the correct, real first-line field treatment. Its anticholinergic activity restores the striatal dopamine-acetylcholine balance the antiemetic's D2 blockade disrupted.");
+    else notes.push("No diphenhydramine was given for a real, symptomatic dystonic reaction. It is indicated here and TP 1239 requires base contact to confirm, but the treatment itself is not optional once confirmed.");
+    if (gaveStrokeWorkup) notes.push("A stroke screen was run — the right call. A negative FAST with a sustained, involuntary head/neck spasm is exactly the pattern that separates a dystonic reaction from a true CVA.");
+    notes.push("The skill on this call is the differential: sustained involuntary spasm with a NEGATIVE FAST screen and a recent dopamine-antagonist dose is a dystonic reaction, not a stroke — recognizing that avoids an unnecessary stroke-center activation.");
+    return {died, cause, notes, correct: s.pi === "DYST", truth: "Acute dystonic reaction — drug-induced (dopamine D2-receptor blockade), a real stroke mimic"};},
+},
+
 // Queue item 57. TP 1224/1224-P (Stings/Venomous Bites) — real crotaline
 // envenomation, previously undetectable (no condition existed at all). The
 // teaching point is deliberately NOT a drug: TP 1224's own text carries no
@@ -5191,6 +5229,70 @@ cyanidePoisoning: {cat: "medical", id: "TOX-008", pronouns: "he", title: "Male, 
     if (pat && pat.seizing) notes.push("He is seizing. In this toxidrome that is cerebral energy failure, not a primary seizure disorder. A benzodiazepine will treat the convulsion; it does nothing to the cytochrome block underneath it.");
     notes.push("On scene safety: a patient soaked in a cyanide solution is a contamination risk to you and to the receiving hospital, so decontamination and fire's hazmat assessment are part of this call, not an afterthought.");
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Cyanide poisoning — histotoxic hypoxia from cytochrome c oxidase inhibition, presenting as coma and severe lactic acidosis with a normal SpO2; hydroxocobalamin is the field antidote"};},
+},
+
+// Organophosphate (cholinergic) poisoning (queue item 67 — found while
+// implementing TP 1240/1240-P's HAZMAT nerve-agent algorithm, whose own
+// SEVERE tier already had real signals but whose MILD/MODERATE tier had
+// none). A pesticide-applicator exposure, deliberately NOT a nerve-agent/
+// mass-casualty framing — the same "one real, well-scoped mechanism" choice
+// item 67 itself makes, and a real, ordinary EMS dispatch type this engine
+// otherwise had no way to present at all. See conditions.js's
+// organophosphatePoisoning entry for the full muscarinic mechanism/
+// measurement writeup.
+organophosphatePoisoning: {cat: "medical", id: "TOX-009", pronouns: "he", title: "Male, 47. Crop-duster spill, soaked in pesticide, weak and short of breath.",
+  limit: 900, transport: 480,
+  bystanders: "A coworker, keeping his distance and still in a respirator. \"A hose blew loose while he was loading the sprayer, and it soaked him head to toe. He was fine for a few minutes, then started drooling and said he couldn't get a breath. That's organophosphate concentrate, the label's right there on the drum.\"",
+  units: [{at: 300, level: "paramedic", name: "Medic 21"}],
+  dispatch: ["47M, possible chemical exposure at an agricultural site.", "Coworker reports an organophosphate pesticide spill, patient symptomatic and worsening."],
+  update: ["Fire advises the patient has been moved upwind and gross-decontaminated; the spill itself is contained."],
+  impression: "Slumped against a truck tire, drenched, drooling steadily down his chin. Breathing is wet and labored, and his hands won't stop shaking.",
+  imps: ["ODPO", "RARF", "SOBB"],
+  condition: "organophosphatePoisoning",
+  locWeights: {business: 4, house: 1},
+  patient: {age: 47, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Coworker: \"He's healthy as far as I know, no meds, no allergies. This started maybe five minutes after the spill, and it's been getting worse since, not better.\"", kind: "pt",
+      evid: "A witnessed organophosphate concentrate spill with symptom onset within minutes, worsening rather than resolving, is the real setup for cholinergic toxidrome from acetylcholinesterase inhibition — not a benign chemical splash.", find: "SAMPLE (collateral): previously well, no medications. Organophosphate pesticide concentrate exposure approximately 5 minutes prior, symptoms progressive."}),
+    opqrst: (s, v) => ({say: v._cons === "awake" ? "He can barely get a sentence out between coughs and gasps." : "He doesn't respond to your voice.", kind: "pt",
+      find: "OPQRST unobtainable — patient too dyspneic/altered to give a reliable history.", evid: "Progressive respiratory distress this soon after a documented organophosphate exposure is itself part of the toxidrome, not a separate complaint."}),
+    // MEASURED, not scripted (see conditions.js): reads pat.effectiveBroncho
+    // live, the same "live instrument reading" pattern anaphylaxis's/
+    // toxicInhalationChlorine's own lungs probes already established — but a
+    // genuinely different underlying cause (glandular hypersecretion PLUS
+    // bronchospasm, folded into the same broncho handle, versus a purely
+    // allergic or irritant one) and a distinct secretions finding no other
+    // toxidrome in this engine narrates.
+    lungs: (s) => {
+      const eb = s.patient?.effectiveBroncho ?? 0.25;
+      if (eb > 0.6) return {say: "Wet, coarse breath sounds everywhere, and secretions are pooling faster than he can clear them.", kind: "crit",
+        evid: "Severe bronchorrhea and bronchospasm together are the real cause of death in cholinergic crisis — the airway drowns from within.", find: "Lungs: diffuse coarse/wet breath sounds, copious secretions, severe bronchospasm."};
+      if (eb > 0.3) return {say: "Wheezy and wet-sounding, with visible drooling and tearing.", kind: "warn",
+        evid: "Bronchorrhea plus bronchospasm, worsening — muscarinic excess from acetylcholinesterase inhibition.", find: "Lungs: bronchospasm with excess secretions."};
+      return {say: "Breath sounds clearer, secretions drying up.", kind: "obs",
+        evid: "Secretions/bronchospasm improving — the real, treatable half of this toxidrome responding to atropine.", find: "Lungs: improving, secretions drying."};
+    },
+    // MEASURED, not scripted: reads v.hr live. pat.parasympathetic (see
+    // conditions.js) drives real, atropine-responsive bradycardia through
+    // the SAME vagalBlock mechanism atropineOverdose/secondDegreeAVBlockTypeI
+    // already exercise for other causes.
+    heart: (s, v) => ({say: `Rate ${v.hr}, and he is soaked in his own sweat on top of the chemical.`, kind: v.hr < 60 ? "crit" : "obs",
+      find: `Heart: rate ${v.hr}, sinus.${v.hr < 60 ? " Bradycardic." : ""}`,
+      evid: v.hr < 60
+        ? "Bradycardia from unopposed muscarinic (vagal) tone is a real, dangerous part of this toxidrome, and it is exactly what atropine is first-line for."
+        : "Heart rate not yet critically slow, but a cholinergic crisis this early can still worsen quickly without treatment."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; const pat = s.patient; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Organophosphate (cholinergic) poisoning, with unmanaged bronchorrhea/bronchospasm and bradycardia progressing to respiratory failure.";
+    notes.push("This is organophosphate (cholinergic) poisoning. Acetylcholinesterase inhibition lets acetylcholine accumulate at muscarinic synapses — the SLUDGE/killer-B's picture: salivation, lacrimation, urination, defecation, GI distress, bradycardia, bronchorrhea, and bronchospasm. Bronchorrhea plus bronchospasm together, not the bradycardia alone, is the real cause of death — the airway drowns from within.");
+    if (s.given.atropine || s.given.duodote) notes.push("Atropine (or DuoDote's own atropine component) was given — the correct, specific move. It works by blocking muscarinic acetylcholine receptors, drying secretions, relieving bronchospasm, and reversing the bradycardia — the real endpoint is titrating repeat doses to dry secretions and an improving heart rate (\"atropinization\"), not one fixed dose.");
+    else notes.push("No atropine or DuoDote was given. Atropine is the specific, first-line antidote here, dosed and repeated until secretions dry and the bradycardia resolves — supportive airway care alone does not fix the underlying muscarinic excess driving it.");
+    notes.push("Pralidoxime (2-PAM), which reactivates the enzyme itself rather than just blocking its downstream effect, is the other real antidote for this toxidrome — it is not carried in this drug box, so recognition, atropine, and rapid transport are the field job.");
+    if (pat) notes.push("Both pupils were pinpoint on exam — miosis fits the muscarinic picture, the opposite finding from an anticholinergic or opioid overdose.");
+    notes.push("Decontamination matters for your own safety too — a patient still soaked in concentrate is an ongoing exposure risk to responders, not just a historical detail.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "RARF", truth: "Organophosphate (cholinergic) poisoning — muscarinic excess (bronchorrhea/bronchospasm, bradycardia, miosis) from acetylcholinesterase inhibition; atropine is the field antidote"};},
 },
 
 // Carbon monoxide poisoning (queue item 7, Toxicology — TOX-005). A power-

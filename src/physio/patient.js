@@ -170,6 +170,15 @@ export class Patient {
     this.tcaNaBlock = 0;
     this.tcaInotropyFactor = 1;
     this.tcaVagalBlock = 0;
+    // Queue item 67 (organophosphatePoisoning) — a THIRD condition-owned
+    // vagal accumulator, same idiom as tcaVagalBlock immediately above and
+    // for the same reason: pat.parasympathetic itself is fully recomputed
+    // every tick by cardiovascular.js's baroreflex model, so a disease state
+    // that needs to genuinely lower it (not just reflexively) needs its own
+    // handle, composed alongside vagalBlock/tcaVagalBlock at both of their
+    // real consumers (cardiovascular.js's hr formula and updateConduction's
+    // effPara). Defaulted here so a pre-first-tick read is never undefined.
+    this.cholinergicVagalTone = 0;
     // QUEUE ITEM 7 (cyanidePoisoning, Toxicology) — a generic, 0-1 cellular
     // UTILIZATION-blockade handle, distinct from every other hypoxia
     // mechanism in this engine (all of which act on DELIVERY: caO2, do2,
@@ -406,6 +415,27 @@ export class Patient {
     // (distinct from item 60's still-open nebulized-epi-for-stridor gap,
     // which is local topical vasoconstriction for a different presentation).
     this.angioedema = b.angioedema ?? 0;
+    // Acute dystonic reaction (queue item 66) — 0-1 severity of involuntary
+    // muscle spasm (torticollis/oculogyric crisis/trismus/opisthotonus),
+    // distinct from `this.seizing` (a different, already-modeled electrical
+    // phenomenon). Found missing while implementing TP 1239/1239-P: dopamine
+    // D2-receptor blockade by an antiemetic/antipsychotic (metoclopramide,
+    // prochlorperazine-class) disinhibits striatal cholinergic interneurons,
+    // producing sustained involuntary contraction — no field anywhere in
+    // this engine represented that. Real, modest physiologic consequence
+    // rather than a decorative field: sustained spasm is genuinely painful
+    // (conditions.js's acuteDystonicReaction drives pat.pain from it, the
+    // same intrinsicPain-adjacent idiom envenomation/appendicitis already
+    // use for a real-but-non-vital-signs symptom) and read by actions.js's
+    // stroke-screen exam, since an acute dystonic reaction is a well-
+    // documented FAST-positive stroke mimic in the field differential.
+    // Reduced by diphenhydramine's real anticholinergic action (pk.js
+    // "dystonia" fx prop, drugs.js diphen) — the SAME drug already treating
+    // urticaria above, reused rather than inventing a parallel antidote,
+    // since diphenhydramine's H1/anticholinergic activity is the actual
+    // first-line treatment for drug-induced dystonia, not a coincidence of
+    // engine convenience.
+    this.dystonia = b.dystonia ?? 0;
     this.airway = b.airway ?? "clear";
     this.ptx = b.ptx ?? null;
     // Respiratory mechanics scale with body size: lung compliance tracks lung
@@ -1030,6 +1060,9 @@ export class Patient {
     // of the wheeze+shock/hypoxia proxy the file's own comment already
     // documented as a known gap.
     const angioedema = parseFloat((this.angioedema || 0).toFixed(2));
+    // Queue item 66: published so actions.js's stroke-screen exam can read
+    // the real finding instead of nothing existing at all.
+    const dystonia = parseFloat((this.dystonia || 0).toFixed(2));
     const tv     = parseFloat((this.vt + filter("tv", 0, 0.02)).toFixed(2));
     // ECTOPY OVERLAY (cardiac conditions batch, queue item 7): pvcFrequency
     // (cardiovascular.js) was a real, richly-computed aggregate that nothing
@@ -1076,7 +1109,7 @@ export class Patient {
       // mid-accumulation.
       pain: Math.max(0, this.drugPain || 0),
       k, blood, ph: phScaled, kidney, temp, coag,
-      bronch, edema, urticaria, angioedema, airway: this.airway || "clear", ptx: this.ptx,
+      bronch, edema, urticaria, angioedema, dystonia, airway: this.airway || "clear", ptx: this.ptx,
       rhythm: this.rhythm || "sinus", tv, ecg: ecgDesc,
       // QUEUE ITEM 54: qrsWidth (cardiovascular.js's updateConduction) is a
       // real, already-live quantity (seconds — 0.08 baseline, widened by

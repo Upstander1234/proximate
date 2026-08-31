@@ -154,6 +154,18 @@ const REQUIRED = [
   // own cytokine-gated septic-cardiomyopathy limb makes it a second real
   // writer, closing a pre-existing gap while adding the new one.
   "contractilityFactor",
+  // Queue item 66: pat.dystonia, a real, always-non-negative 0-1 severity
+  // dial (acuteDystonicReaction) that also feeds actions.js's stroke-screen
+  // exam directly and is reduced by diphenhydramine (pk.js "dystonia" fx
+  // prop) — same idiom as urticaria/angioedema above.
+  "dystonia",
+  // Queue item 67 (organophosphatePoisoning): the condition-owned muscarinic
+  // vagal-tone accumulator, composed alongside vagalBlock/tcaVagalBlock at
+  // both of their real consumers (cardiovascular.js's hr formula and
+  // updateConduction's effPara) rather than fighting the baroreflex-driven
+  // pat.parasympathetic for control of it — see conditions.js's own comment
+  // for the reset-trap this was built to avoid.
+  "cholinergicVagalTone",
 ];
 
 // Fields that may never go negative.
@@ -206,6 +218,11 @@ const NON_NEGATIVE = [
   // Queue item 7 (septicShock): a real multiplier, clamped to [0.55,1] by
   // every writer of it (never negative).
   "contractilityFactor",
+  // Queue item 66: real, always-non-negative 0-1 severity dial.
+  "dystonia",
+  // Queue item 67: real, always-non-negative 0-1 severity dial (0 baseline,
+  // 0.35-0.85 for organophosphatePoisoning).
+  "cholinergicVagalTone",
 ];
 
 const results = [];

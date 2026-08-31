@@ -395,6 +395,14 @@ export class LocalLLMProvider {
   }
 
   async _ensureEngine() {
+    if (DIAGNOSTIC_LOCAL_LLM_DISABLED) {
+      console.log(
+        "LocalLLMProvider: initialization intentionally DISABLED for this diagnostic build (DIAGNOSTIC_LOCAL_LLM_DISABLED=true in dialogueProvider.js). CreateMLCEngine/@mlc-ai/web-llm will not be invoked.",
+      );
+      this._failed = true;
+      this._lastErrorKind = "device";
+      throw new Error("LocalLLMProvider disabled for diagnostic build");
+    }
     if (this._engine) return this._engine;
     if (this._loadPromise) return this._loadPromise;
     this._loadPromise = (async () => {

@@ -5990,14 +5990,17 @@ export const CONDITIONS = {
   // respiratory.js). A toddler with a barky cough and inspiratory stridor,
   // moderate severity, NOT beta-2-responsive — the real, important
   // distinction from bronchiolitis/asthma this handle exists to preserve.
-  // Deliberately NOT given a pharmacologic treatment lever: real first-line
-  // croup treatment (nebulized racemic epinephrine, a genuine alpha-agonist
-  // mucosal vasoconstrictor, mechanistically distinct from albuterol's
-  // beta-2 action) is a drug this box does not carry, and wiring albuterol
-  // to "fix" this would teach the wrong lesson — a bronchodilator is not
-  // indicated for upper airway edema. The honest field skill is
+  // Real first-line croup treatment (nebulized racemic epinephrine, a
+  // genuine alpha-agonist mucosal vasoconstrictor, mechanistically distinct
+  // from albuterol's beta-2 action) was previously a drug this box did not
+  // carry at all — QUEUE ITEM 60 closed that gap (drugs.js `nebEpi`,
+  // pk.js's own `upperAirwayObstruction` fx-curve branch), so this condition
+  // no longer needs a pharmacologic-treatment workaround; wiring albuterol
+  // to "fix" this would still teach the wrong lesson — a bronchodilator is
+  // not indicated for upper airway edema. The honest field skill remains
   // recognition, keeping the child calm (agitation/crying measurably
-  // worsens upper airway obstruction in real croup), and transport.
+  // worsens upper airway obstruction in real croup), and transport, now
+  // alongside a real drug lever that measurably helps.
   croup: {
     initial: { age: 2, weight: 13, hr: 132, rr: 32, glu: 95, pain: 1,
       upperAirwayObstruction: 0.35, temp: 38.2 },
@@ -6012,12 +6015,15 @@ export const CONDITIONS = {
   // ceiling: acute onset (hours, not days), a much faster climb, and a
   // higher, more dangerous ceiling — real epiglottitis can progress to
   // complete obstruction. Same pat.upperAirwayObstruction handle, no new
-  // mechanism, calibrated to the disease's own severity. Same honest "no
-  // field pharmacologic fix" reasoning as croup applies here even more
-  // sharply: the actual field skill is recognizing it and NOT agitating the
+  // mechanism, calibrated to the disease's own severity. Per QUEUE ITEM 60,
+  // nebulized epi (drugs.js `nebEpi`) now reaches this field the same way it
+  // reaches croup's above, real for real supraglottic-swelling temporizing
+  // use in practice, but the actual field skill still matters even more
+  // sharply here than for croup: recognizing it and NOT agitating the
   // airway (no forced exam, no forced positioning, no attempt to look at
   // the epiglottis directly) while moving fast toward a facility that can
-  // secure a difficult airway surgically if it closes.
+  // secure a difficult airway surgically if it closes, since nebEpi is a
+  // temporizing bridge, not a cure, for an infectious/structural process.
   //
   // QUEUE ITEM 41 RECALIBRATION. This comment's own claim — "a much faster
   // climb, and a higher, more dangerous ceiling... can progress to complete
@@ -6974,6 +6980,171 @@ export const CONDITIONS = {
       if (pat.factorX > factorCeil) pat.factorX = factorCeil;
       if (pat.plateletCount > pltCeil) pat.plateletCount = pltCeil;
       if (pat.fibrinogen > fibCeil) pat.fibrinogen = fibCeil;
+    },
+  },
+
+  // Cholinergic toxidrome / organophosphate (nerve-agent-class) poisoning
+  // (queue item 67, filed while implementing TP 1240/1240-P's HAZMAT
+  // nerve-agent algorithm). The SEVERE tier of that protocol already has
+  // real signals (apnea/seizure/spo2<90) and a real rule (hazmatDuodoteSevere,
+  // laCounty.js), but MILD/MODERATE is defined entirely by pupil size and
+  // secretions this engine tracked nowhere (grep-confirmed before writing
+  // anything: no pupil-diameter field anywhere, no glandular-secretion-volume
+  // field distinct from airwayFluid's aspirated/edema-fluid mechanism).
+  //
+  // MECHANISM: organophosphate/nerve-agent poisoning irreversibly inhibits
+  // acetylcholinesterase, so acetylcholine accumulates at both muscarinic and
+  // nicotinic synapses (Eddleston et al., "Management of acute
+  // organophosphorus pesticide poisoning," Lancet 2008; StatPearls
+  // "Organophosphate Toxicity"). Scoped to the MUSCARINIC half only
+  // (SLUDGE/killer-B's — Salivation, Lacrimation, Urination, Defecation, GI
+  // distress, Emesis / Bradycardia, Bronchorrhea, Bronchospasm), which is
+  // both the real, clinically dominant cause of death (bronchorrhea +
+  // bronchospasm drowning the airway, compounded by bradycardia-driven low
+  // output) and exactly what atropine is first-line for. Nicotinic effects
+  // (fasciculations, weakness, and a nicotinic tachycardia that can partly
+  // mask the muscarinic bradycardia) are a genuinely separate receptor class,
+  // deliberately NOT modeled here — scoped down to the core toxidrome +
+  // atropine response per this batch's own instruction, not a full
+  // mass-casualty nerve-agent build.
+  //
+  // WIRED THROUGH EXISTING HANDLES, reusing rather than duplicating. The
+  // bradycardia drives pat.parasympathetic — the SAME axis atropine's own
+  // vagalBlock already antagonizes, both in updateCardiovascular's direct hr
+  // term and updateConduction's effPara (see atropineOverdose /
+  // secondDegreeAVBlockTypeI's own comments for that mechanism's history) —
+  // so atropine works here through the identical receptor-level mechanism it
+  // already uses everywhere else in this engine, not a parallel one. The
+  // bronchorrhea/bronchospasm drives pat.broncho — the SAME axis asthma /
+  // anaphylaxis / toxicInhalationChlorine already drive (respiratory.js's
+  // effectiveBroncho -> Rexp -> work-of-breathing/hypoxia chain) — at a
+  // genuinely different magnitude and time course from any of them, per this
+  // item's own "reuse the mechanism, not the same magnitude" instruction.
+  // Glandular hypersecretion has no dedicated volume field in this engine (a
+  // gap this same queue item already names for airwayFluid, a mechanically
+  // different aspirated/edema-fluid process) — folded honestly into the same
+  // broncho handle bronchospasm uses, rather than inventing a new field with
+  // only one consumer.
+  //
+  // MIOSIS is narrated only (actions.js's generic `pupils` probe, gated on
+  // the real pat.parasympathetic elevation this condition itself drives, not
+  // a new decorative flag) — no pupil-diameter mechanism exists anywhere in
+  // this engine, the same standing limitation atropineOverdose's/
+  // tricyclicOverdose's own mydriasis narration already carries for the
+  // opposite (anticholinergic) direction.
+  //
+  // TIME COURSE: real organophosphate/nerve-agent exposure is symptomatic
+  // within minutes (inhalation/nerve agent) to about an hour (dermal/
+  // ingestion pesticide) of exposure, then WORSENS over the following tens
+  // of minutes to hours as absorption continues and AChE inhibition deepens
+  // (Eddleston 2008, ibid) — presented already partly symptomatic on scene
+  // (matching atropineOverdose's/tricyclicOverdose's own "already
+  // symptomatic on arrival" framing) and ramping further over the field
+  // encounter, not an instant step to ceiling.
+  organophosphatePoisoning: {
+    initial: { age: 41, hr: 78, sbp: 118, dbp: 76, rr: 20, glu: 100, pain: 1, bronch: 0.25 },
+    progress(pat, dt) {
+      // FOUND WHILE BUILDING THIS: pat.parasympathetic itself is NOT a
+      // settable disease-severity dial -- cardiovascular.js's updateAutonomic
+      // fully recomputes it every tick from the baroreflex model and clamps
+      // it to a 0.95 physiological ceiling, so a condition ratcheting it
+      // upward is silently pulled back toward baseline before the hr formula
+      // next reads it (measured directly: moved hr less than 1 bpm at
+      // steady state, the exact reset-trap shape tcaVagalBlock's own comment
+      // already documents for pat.vagalBlock). Fixed the same way that fix
+      // was: a separate, condition-owned accumulator
+      // (pat.cholinergicVagalTone) composed alongside vagalBlock/
+      // tcaVagalBlock at BOTH of their real consumers (cardiovascular.js's
+      // hr formula and updateConduction's effPara) rather than fighting the
+      // reflex model for pat.parasympathetic itself.
+      //
+      // Presented already partly symptomatic on scene (0.35 seed, matching
+      // atropineOverdose's/tricyclicOverdose's own "already symptomatic on
+      // arrival" framing), ramping toward a 0.85 ceiling. At 0.85 and fully
+      // atropine-unopposed, cardiovascular.js's hr formula
+      // (-45*cholinergicVagalTone) pulls a ~78 bpm baseline down to the real,
+      // dangerous 40s bradycardia this toxidrome produces (Eddleston 2008;
+      // StatPearls "Organophosphate Toxicity").
+      if (!pat._cholinergicSeeded) { pat._cholinergicSeeded = true; pat.cholinergicVagalTone = 0.35; }
+      pat.cholinergicVagalTone = clamp((pat.cholinergicVagalTone ?? 0.35) + dt * 0.025, 0.35, 0.85);
+      // Ceiling 0.78 sits below asthma's 0.96 status-asthmaticus ceiling
+      // (severe, but not this engine's single most extreme bronchospasm) and
+      // starts lower / ramps slower than anaphylaxis's 0.55-starting, 0.06/min
+      // climb -- a genuinely different magnitude AND rate from either.
+      pat.broncho = clamp((pat.broncho ?? 0.25) + dt * 0.022, 0.2, 0.78);
+    },
+  },
+
+  // ===== ACUTE DYSTONIC REACTION (queue item 66, TP 1239/1239-P) =====
+  // Found missing while implementing TP 1239/1239-P: the presentation
+  // (involuntary spasm of head/neck/face/eyes/trunk, forced jaw opening,
+  // inability to retract the tongue, eye deviation) had no representable
+  // field anywhere in this engine at all — distinct from pat.seizing (a
+  // different, already-modeled electrical phenomenon).
+  //
+  // MECHANISM: a dopamine D2-receptor antagonist (metoclopramide/
+  // prochlorperazine-class antiemetic, or an antipsychotic) blocks striatal
+  // D2 receptors; the SAME blockade responsible for its antiemetic action at
+  // the chemoreceptor trigger zone also disinhibits striatal cholinergic
+  // interneurons in the nigrostriatal pathway, producing sustained
+  // involuntary muscle contraction. TP 1239 itself presents a patient WHO
+  // ALREADY HAS an established reaction (typically from a dose given before
+  // EMS arrival — urgent care, ED, a prior dose at home) rather than one this
+  // engine triggers mid-call, matching this queue item's own original filing
+  // ("the protocol's own required base-contact-to-confirm step means a human
+  // diagnosis is load-bearing here anyway"). drugs.js's own new
+  // `metoclopramide` entry (fx.dystonia, small/modest) is a real, separate
+  // consumer for the rarer case where a crew's OWN dose precipitates or
+  // worsens it mid-call.
+  //
+  // REAL, MODEST PHYSIOLOGIC CONSEQUENCE, not a decorative field: sustained
+  // dystonic spasm is genuinely painful (drives pat.pain, the SAME "real
+  // symptom without a vitals catastrophe" idiom envenomation/appendicitis
+  // already use) and a real, if mild, sympathetic response (a modest hr
+  // bump from pain/anxiety, well short of any shock-grade tachycardia) — NOT
+  // wired to broncho/edema/hemodynamics, since a genuine (non-laryngeal)
+  // dystonic reaction does not compromise the airway or circulation on its
+  // own, and overstating that would be exactly the kind of mechanism
+  // mismatch this project's own condition-library discipline forbids.
+  // Untreated, severity does not spontaneously resolve within a single field
+  // encounter (real dystonic reactions persist for hours without an
+  // anticholinergic/antihistamine) — a flat, non-worsening plateau, not a
+  // progressive one, since this is a static receptor blockade, not an
+  // accumulating toxic process the way tricyclicOverdose/cyanidePoisoning
+  // are.
+  //
+  // TREATED THROUGH THE REAL MECHANISM: diphenhydramine's H1/anticholinergic
+  // activity restores the striatal dopamine-acetylcholine balance the D2
+  // blocker disrupted — the actual first-line field treatment (drugs.js
+  // "diphen" fx.dystonia, the SAME drug already treating urticaria above,
+  // reused rather than inventing a parallel antidote). No automatic protocol
+  // rule added (laCounty.js) — TP 1239's own required base-contact-to-confirm
+  // step keeps the human diagnosis load-bearing, the same reasoning already
+  // on record for TP 1229/1232's assessment-only sections; diphenhydramine
+  // remains available for manual crew ordering, per this item's original
+  // filing.
+  acuteDystonicReaction: {
+    initial: { age: 26, hr: 96, sbp: 128, rr: 18, glu: 100, pain: 6, dystonia: 0.6 },
+    progress(pat, dt) {
+      // Flat plateau with a small, slow drift toward worse (not better) —
+      // real dystonic reactions do not spontaneously resolve over a field
+      // encounter's timescale. Ceiling 0.85 leaves real headroom below 1.0
+      // (a maximal, airway-threatening laryngeal dystonia this condition
+      // deliberately does not model — a genuinely separate, rarer and more
+      // severe presentation, out of scope for this batch).
+      pat.dystonia = clamp((pat.dystonia ?? 0.6) + dt * 0.002, 0.55, 0.85);
+      // Pain tracks spasm severity directly, through the real persistent-pain
+      // handle (queue item 20's pat.intrinsicPain) — NOT pat.pain, a
+      // write-only dead field that same queue item's own comment documents
+      // (this file's magToxicity/icdShockCount blocks confirm nothing reads
+      // it) — the actual reason this patient is distressed and calling 911,
+      // not a free-floating number.
+      pat.intrinsicPain = clamp(6 + (pat.dystonia - 0.6) * 10, 5, 9);
+      // Modest pain/anxiety-driven tachycardia, well short of any
+      // shock-grade rate — this condition does not touch sbp/broncho/edema
+      // at all, since an uncomplicated dystonic reaction has no hemodynamic
+      // or airway component of its own.
+      pat.hrBase = clamp((pat.hrBase ?? 96) + dt * 0.01, 90, 108);
     },
   },
 
