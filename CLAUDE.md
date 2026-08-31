@@ -332,6 +332,24 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Cholinergic toxidrome / organophosphate poisoning (queue item 67) — a real muscarinic-excess mechanism, closing the MILD/MODERATE gap TP 1240/1240-P's own HAZMAT nerve-agent algorithm exposed (the SEVERE tier already had real signals; miosis/secretions/bradycardia had none)
+
+Confirmed by grep before building anything (lesson 16): atropine/DuoDote's `vagalBlock` mechanism was real but had nothing to antagonize for this toxidrome. Built `organophosphatePoisoning` (conditions.js), scoped to the core muscarinic picture (SLUDGE/killer-B's bradycardia + bronchorrhea/bronchospasm) — nicotinic effects and mass-casualty scope deliberately NOT modeled, per this batch's own scope discipline.
+
+**FOUND WHILE BUILDING IT**: `pat.parasympathetic` is not a settable disease dial — `cardiovascular.js`'s baroreflex model (`updateAutonomic`) recomputes and clamps it to 0.95 every tick, silently pulling a condition's write back toward baseline before the hr formula next reads it (measured: an initial attempt to ratchet it moved hr by less than 1 bpm at steady state — the same reset-trap shape `tcaVagalBlock`'s own comment already documents for `pat.vagalBlock`). Fixed the same way that fix was: a THIRD condition-owned vagal accumulator, `pat.cholinergicVagalTone` (patient.js, defaulted to 0), composed alongside `vagalBlock`/`tcaVagalBlock` at BOTH of their real consumers in `cardiovascular.js` — the hr formula (a genuine, real bradycardia term, unlike `vagalBlock`/`tcaVagalBlock` which only ever add a flat rate-BUMP) and `updateConduction`'s `effPara` AV-nodal term. Atropine's existing `vagalBlock` genuinely, proportionally ANTAGONIZES this new term (the actual pharmacology — competitive muscarinic receptor blockade — rather than an unrelated counter-bump), so atropine works here through the identical receptor-level mechanism it already uses everywhere else in this engine.
+
+Bronchorrhea/bronchospasm reuse `pat.broncho`, the SAME handle asthma/anaphylaxis/`toxicInhalationChlorine` already drive, at a genuinely different magnitude (ceiling 0.78, below asthma's 0.96) and rate. No dedicated glandular-secretion-volume field exists (the same gap this queue item already names for `airwayFluid`, a mechanically different aspirated/edema-fluid process) — folded honestly into `broncho` rather than inventing a field with one consumer. Miosis is narrated only (`actions.js`'s pupils probe, gated on the real `cholinergicVagalTone` field) — no pupil-diameter mechanism exists anywhere in this engine, the same standing limitation `atropineOverdose`'s/`tricyclicOverdose`'s own mydriasis narration carries for the opposite (anticholinergic) direction.
+
+**TIME COURSE**: presented already partly symptomatic on scene (0.35 seed, matching `atropineOverdose`'s/`tricyclicOverdose`'s own "already symptomatic on arrival" framing), ramping toward a 0.85 ceiling over the field encounter — real, continued AChE inhibition (Eddleston et al., Lancet 2008; StatPearls "Organophosphate Toxicity"), not an instant step.
+
+New scenario: `organophosphatePoisoning` (TOX-009, scenarios.js) — a pesticide-applicator exposure, deliberately NOT a nerve-agent/mass-casualty framing, so this is exercised by `scenarioSweep.mjs`.
+
+**MEASURED**, via a direct-probe/scenario harness (stripped after use, per lesson 8): untreated hr 56.4 vs a healthy control 95.6 (real, dangerous bradycardia); atropine reverses to 90.9 (a genuine ~35 bpm rescue through the existing receptor mechanism) while `cholinergicVagalTone` itself is UNCHANGED (0.599 -> 0.599 across the same run) — treats the effect, not the level, the same two-sided shape bicarb/calcium's own assertions already establish for other toxidromes. Stated honestly, not silently overclaimed: atropine does NOT reduce `broncho`/bronchorrhea in this model (no consumer wires `vagalBlock` into `respiratory.js`'s beta2-only relaxation path) — a real, documented limitation, confirmed unchanged (0.469 -> 0.469) rather than assumed. Regression-checked against previously-documented numbers for `secondDegreeAVBlockTypeI` (hr 54.9->69.0 originally, 54.1->71.4 now) and `tricyclicOverdose` (hr 133-135, 134.7 now) — both essentially unchanged, confirming the new `cardiovascular.js` term (0 for every other condition) did not disturb the shared hot path.
+
+Six new two-sided `mechanismWiring.mjs` assertions in a new `[CHOLINERGIC TOXIDROME / ORGANOPHOSPHATE POISONING — queue item 67]` section: presence (fires in the condition, zero in a healthy control); the real bradycardia vs. a healthy control; atropine's genuine reversal; atropine leaving `cholinergicVagalTone` itself unchanged; and the honest broncho-unchanged-by-atropine limitation. `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE gained `cholinergicVagalTone`. `npx eslint`: zero findings on every touched file. All throwaway probe scripts stripped, confirmed via directory listing.
+
+**DEFERRED, stated honestly**: nicotinic effects (fasciculations, weakness, tachycardia); pralidoxime (2-PAM, the enzyme-reactivating antidote — not carried in this formulary, same "recognition + supportive care" framing `cyanidePoisoning`'s hydroxocobalamin-adjacent honesty already established); atropine's real drying effect on bronchorrhea specifically (would need a new consumer wiring `vagalBlock` into `respiratory.js`, out of this batch's scope).
+
 ### Physiology-engine batch: queue item 66 — a real acute dystonic reaction mechanism (TP 1239/1239-P), no invented parallel drug effect, reusing diphenhydramine's existing anticholinergic action
 
 Confirmed the gap by grep before touching anything: no muscle-tone/spasm field existed anywhere in this engine (distinct from `pat.seizing`), and no metoclopramide/prochlorperazine-class drug existed in `drugs.js` either, exactly as this queue item's original filing stated.
@@ -8108,7 +8126,17 @@ plausible but not fitted to trial data.
     genuinely new content work, not something to guess at from a protocol
     batch.
 
-67. **No cholinergic-toxidrome signal (miosis, rhinorrhea, salivation) —
+67. **RESOLVED (this session) — see section 3's newest entry.**
+    `organophosphatePoisoning` (conditions.js) is a real muscarinic-excess
+    condition (bradycardia via a new `pat.cholinergicVagalTone` accumulator,
+    genuinely atropine-responsive through the existing `vagalBlock`
+    mechanism; bronchorrhea/bronchospasm via the shared `pat.broncho`
+    handle; narrative-only miosis), plus a new scenario
+    (`organophosphatePoisoning`, TOX-009). Nicotinic effects and
+    pralidoxime deliberately deferred, stated honestly in section 3.
+    Original filing, kept for context:
+
+    No cholinergic-toxidrome signal (miosis, rhinorrhea, salivation) —
     found while implementing TP 1240/1240-P (HAZMAT)'s nerve-agent
     exposure algorithm.** The SEVERE tier (apnea, seizure, spo2<90) has
     real, already-available signals and a real automatic rule
