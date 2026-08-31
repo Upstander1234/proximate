@@ -2109,6 +2109,18 @@ export default function App(){
       }
       m.devices={...(m.devices||{}),[t.attachDevice]:{at:m.t}};
       if(t.attachDevice==="leads"){m.leadsOn=1;m.leadsSecured=0;} }
+    // Contraindication enforcement, mirroring medActs()'s own d.hold(v) check
+    // (App.jsx's player dosing path, e.g. nitro's SBP<100 hold) — a real gap:
+    // crew-directed doses skipped this entirely, so a crew member could be
+    // ordered to push a contraindicated drug (nitro on a hypotensive patient)
+    // that the player's own UI would have blocked. Only drugs that declare
+    // `hold` are affected (e.g. nitro); this is a no-op for every other drug
+    // and for non-drug `t.dose` (DRUGS[undefined] is undefined).
+    const dHold=DRUGS[t.dose];
+    if(dHold&&dHold.hold){
+      const h=dHold.hold(v);
+      if(h) return {say:`${c.name.toUpperCase()}: "${h}"`,kind:"warn"};
+    }
     // Max-dose enforcement, mirroring medActs()'s own s.given[id]/DRUGS[id].max
     // check (App.jsx's player dosing path) — a real, previously-undiscovered
     // gap: crew-directed doses called giveDose() directly with no cap check
