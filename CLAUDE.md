@@ -332,6 +332,22 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 64 (nitroglycerin SBP-tiered escalation) — re-investigated this session, still correctly blocked, no code changed
+
+Re-verified the prior session's own finding still holds: `nitro`'s current coefficients (`drugs.js` line 238, `venodilation:0.8, arteriolarDilation:0.4`) are unchanged and still produce an oversized single-dose effect. Also confirmed, contrary to this item's original framing, that its two core asks are ALREADY built and working: a real SBP-gated contraindication (`nitro.hold`, blocks at sbp<100 — measured directly: `hold({sbp:90})` blocks, `hold({sbp:100})` clears) and real repeat-dose capping (`laCounty.js`'s `nitroChestPain` rule, `doseCount(ctx,"nitro")<3` gated on live `ctx.v.sbp>=100` each re-evaluation, TP 1211). MEASURED (`physio()`/`activePatient()` direct instantiation, `chestPainM`): baseline sbp 120, one dose → 115.5; forcing 3 doses back-to-back with the hold gate bypassed (a synthetic stress probe, not a real gameplay path) crashes sbp to 8.6/dbp 6.5 — confirming the existing gate is load-bearing and must not be built upon (tiered `nitro2`/`nitro3`) until `nitro`'s baseline magnitude is separately recalibrated, exactly as the prior session concluded. Also noticed in passing, while reading `crewFn`'s `t.dose` branch (App.jsx) for this: it has **no `hold` check at all** — a crew member directed to give nitro bypasses the SBP<100 contraindication the player's own UI enforces. Left unfixed (a real, distinct gap from item 63's max-dose-cap fix at the same call site, not this item's own scope) — flagged here so a future session doesn't have to re-find it.
+
+### Front-end/physiology-boundary batch: queue item 63 (crew-directed doses bypass max-dose enforcement) — already resolved, no gap found on re-verification
+
+Re-checked the claim per lesson 16 (a document claim is not the same as what the tree contains) rather than trusting the queue's framing at face value. `App.jsx`'s `crewFn`, in the `t.dose` branch (right before the `giveDose()` call), already checks `DRUGS[t.dose].max` against `m.given[t.dose]` and blocks with `"We're already at max dose on that — call Base."` before incrementing — the identical counter and identical semantics as the player's own `medActs()` `run()` handler (`s.given[id]`/`DRUGS[id].max`), so the two paths share state rather than duplicating logic that could drift. Scope matches exactly: only `DRUGS` entries carry `max` (no `PROCS` entry does), and the crew check only reads `DRUGS[t.dose]`, same as the player path's `Object.entries(DRUGS)` loop. Verified by tracing a concrete case (`naloxone_iv`, `max:4`): a 5th crew-directed dose computes `given=5>4` and is blocked pre-`giveDose()`. `npx eslint src/App.jsx`: same pre-existing 3-error `react-refresh/only-export-components` baseline, zero new findings. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. No code changes made, since none were needed; no probe scripts created. (See item 64's entry above for a related, still-open gap found in the same function: crew-directed doses skip the `hold` SBP-contraindication check entirely.)
+
+### Physiology-engine batch: queue item 7 (standing workstream) — septic shock, a distinct distributive-shock entity built on a previously dead risk-factor flag
+
+`pneumoniaSepsis` (conditions.js) is a different call by its own comment — respiratory-failure-primary, presenting agonal after days of illness, with septic vasodilation riding underneath as a secondary complication. Nothing modeled primary septic shock on the real Sepsis-3 definition (Singer et al., JAMA 2016). Built `septicShock` (conditions.js) around a mechanism found by grepping every consumer before writing code: `pat.riskFactors.sepsis` was ALREADY read three times — `cardiovascular.js` (SVR ×0.45, venous compliance ×1.6) and `metabolic.js` (+lactate production) — but no condition ever set it. A whole, already-tested-by-nothing mechanism was dead. Wiring that single flag, on top of the shared inflammation cascade (`inflammation.js`, partially pre-seeded `cytokineLoad` for a several-hours- not days-old process), a slow (1/10th anaph's rate) vasodilation ramp, a direct 1.3x fever multiplier, and a cytokine-gated reversible `contractilityFactor` depression (Vieillard-Baron, Intensive Care Med 2018 — septic cardiomyopathy), produces the real compensated/hyperdynamic-to-decompensated arc.
+
+**MEASURED** (throwaway probe, stripped): untreated, SVR 686→443 over 40 min while CO holds 7.05-7.16 L/min (textbook distributive shock, CO preserved not falling). An earlier version gated the myocardial-depression limb at `cytokineLoad>0.6` against a `pathogenBurden` ceiling of 0.5 — measured that `cytokineLoad` can then only approach 0.5 asymptotically and the gate never opens at all, silently dead code; fixed by letting `pathogenBurden` climb slowly without source control. Re-measured: the gate now opens at ~93 minutes untreated — past any single call's realistic ~22-minute window, which HONESTLY matches the literature (septic cardiomyopathy is an ICU-timescale finding) rather than being force-tuned to fire in one call; within a real call this patient's whole arc is the hyperdynamic phase, which is itself the teaching point. Treatment through the SAME mechanisms: fluids raise CO 7.08→9.40 L/min at 600s through the generic Starling-leak path every capillary-leak condition already uses; norepinephrine (this formulary's own existing "first-line vasopressor for septic shock," `data/drugs.js`, previously unused by any condition) raises SVR 608→1260 at 600s through its existing alpha:1.0 receptor composition.
+
+Added scenario `SHOCK-012` (`scenarios.js`), a two-sided `assertVersus` block in `mechanismWiring.mjs` (SVR-collapse-vs-control, CO-held, fluid response, pressor response — all verified standalone before shipping, wide margins), and `contractilityFactor` to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE (a pre-existing gap — `pneumoniaSepsis` already wrote this field but it was never swept; closed now that `septicShock` makes it a second real writer). **DEFERRED**: hypothermic (SIRS-negative) sepsis presentation — real, prognostically worse, and a genuinely different teaching case (absence of fever does not rule out sepsis) — left for its own scenario rather than folded in here. Verification: `node --check` and `npx eslint` clean on all four touched files; full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites NOT run to completion this session (deferred to the later full-suite pass); the new assertions were verified standalone first. No throwaway probe scripts remain.
+
 ### Physiology-engine batch: queue item 57 — a real crotaline envenomation condition, consumptive coagulopathy through the existing coagulation cascade, no invented antivenom mechanism
 
 Found while implementing TP 1224/1224-P (Stings/Venomous Bites — queue item 57's own filing): no condition, scenario or drug represented a bite/sting at all, so laCounty.js's TP 1224 section reused only the generic allergy/shock/nausea baseline. TP 1224's own text has no field antivenom step (real crotaline antivenom is a hospital-administered, skin-tested, monitored-infusion product, never carried on a field unit) — confirmed before building, so no new drugs.js entry was attempted; the honest scope is the condition itself, not a fictional field cure.
@@ -6093,7 +6109,12 @@ an unrelated batch).
    pericardialTamponade, symptomaticBradycardia, atrialFlutter,
    secondDegreeAVBlockTypeI, secondDegreeAVBlockTypeII, monomorphicVT, wpw,
    digoxinToxicity, pericarditis, myocarditis, hypertensiveUrgency,
-   hypertensiveEmergency. That batch is the new reference for how far this
+   hypertensiveEmergency. A subsequent session added `septicShock` (SHOCK-012)
+   as a standalone batch — septic shock as an entity distinct from
+   anaphylaxis, one of item 7's own suggested first batches — wiring the
+   previously dead `pat.riskFactors.sepsis` flag into the real mechanism
+   (`cardiovascular.js`/`metabolic.js` already read it; nothing had ever set
+   it). See section 3's newest entry for the full writeup. That earlier batch is still the reference for how far this
    loop can go in one session when several conditions share underlying
    machinery (the avNodalDisease axis alone underpins four of them). Still
    explicitly DEFERRED with real technical reasons, not guessed at: HOCM
@@ -7845,7 +7866,17 @@ plausible but not fitted to trial data.
     worth building generally, which this batch deliberately did not decide
     unilaterally.
 
-63. **Crew-directed doses bypass the player's own max-dose enforcement — a
+63. **RESOLVED (already fixed by the time this session re-checked it) — see
+    section 3's newest entry.** Re-verified against the current tree rather
+    than trusting this item's own filing at face value (lesson 16): `crewFn`'s
+    `t.dose` branch now DOES check `DRUGS[t.dose].max` against `m.given[t.dose]`
+    before calling `giveDose()`, sharing the same counter and semantics as the
+    player's own `medActs()` path — confirmed by tracing a concrete case
+    (`naloxone_iv`, max 4). No code change was needed this session. Original
+    filing, kept for context (the gap it describes is what an EARLIER session
+    fixed, though not documented as closing this item at the time):
+
+    Crew-directed doses bypass the player's own max-dose enforcement — a
     real, previously-undiscovered systemic gap, found while completing TP
     1210's amiodarone-repeat and naloxone rules (the batch that finished
     the earlier truncated cardiac-arrest text).** The player's own manual
@@ -7877,10 +7908,27 @@ plausible but not fitted to trial data.
     every crew-directed task in the game goes through and needs its own
     careful verification pass, not a bolt-on alongside protocol rules.
 
-64. **Nitroglycerin has only one flat 0.4mg dose entry — TP 1214
+64. **STILL BLOCKED (re-investigated this session, no code changed) — see
+    section 3's newest entry.** Confirmed the SBP-hold and repeat-dose-cap
+    mechanisms this item originally assumed were missing already exist and
+    work correctly (measured: `nitro.hold` blocks below sbp 100, clears at
+    100+; `laCounty.js`'s `nitroChestPain` caps repeats at 3 gated on live
+    sbp). The SBP-tiered escalation itself remains correctly deferred
+    pending a separate `nitro` recalibration item, per a prior session's
+    own measured finding that any tested dose-scale-up compounds an already
+    oversized baseline effect (forcing 3 unconditional doses crashes sbp to
+    8.6). **A real, still-open, DIFFERENT gap was found in passing**: crew-
+    directed nitro doses (`crewFn`'s `t.dose` branch, App.jsx) have no
+    `hold` check at all, so a crew member ordered to give nitro bypasses the
+    SBP<100 contraindication the player's own UI enforces — distinct from
+    item 63's now-resolved max-dose-cap gap at the same call site. Not
+    fixed this session; flagged for a future batch. Original filing, kept
+    for context:
+
+    Nitroglycerin has only one flat 0.4mg dose entry — TP 1214
     (Pulmonary Edema/CHF) wants an SBP-tiered ESCALATING dose (0.4mg at
     SBP>=100, 0.8mg at SBP>=150, 1.2mg at SBP>=200) that this engine can't
-    represent.** Found while implementing TP 1214's own step 8, which is a
+    represent. Found while implementing TP 1214's own step 8, which is a
     genuinely different dosing scheme from TP 1211 (Cardiac Chest Pain)'s
     flat, repeat-capped 0.4mg — both protocols end up sharing the same
     `nitroTask`/`nitro` drug entry in `laCounty.js` today, which is an
@@ -8837,13 +8885,14 @@ Hydrocarbon Aspiration ·
 Lithium Toxicity ·
 Iron Overdose ·
 Marine Envenomation ·
-Snake Envenomation ·
 Scorpion Envenomation ·
 Spider Envenomation
+(Snake/crotaline Envenomation shipped this session as `envenomation` — see section 3)
 
 ### Shock states
 Hypovolemic Shock · Hemorrhagic Shock · Non-Hemorrhagic Hypovolemic Shock ·
-Burn Shock · Septic Shock · Obstructive Shock ·
+Burn Shock · Obstructive Shock ·
+(Septic Shock shipped this session as `septicShock` — see section 3)
 Metabolic Shock · Undifferentiated Shock ·
 Mixed Shock ·
 Post-Cardiac Arrest Syndrome
