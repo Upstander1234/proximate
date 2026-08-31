@@ -343,6 +343,64 @@ export function updateRenalEndocrine(pat, dt) {
     // acidbase.js's updateAcidBase(), which runs later in this tick's own
     // pipeline (after this function) — and hco3 derives FROM it instead.
     pat.cortisol += (pat.sympathetic - pat.cortisol) * 0.1 * dt;
+
+    // --- ENDOCRINE PANCREAS (queue item 5's remaining dead-field) ---
+    // pat.insulin/pat.glucagon (patient.js constructor, both defaulted to
+    // 1) were set once and never read or written again — glucose
+    // regulation ran entirely through direct pat.glucose writes in pk.js
+    // (dextrose/glucagon/oralGlucose dosing) and each condition's own
+    // `initial.glu`. This is a real, minimal beta-cell/alpha-cell feedback
+    // loop, not a fitted curve: insulin secretion rises with glucose
+    // (Sherwin et al.'s classic dose-response is steep and roughly linear
+    // over the clinically relevant 70-250 mg/dL range before saturating at
+    // higher glucose); glucagon is the mirror counter-regulatory hormone,
+    // rising as glucose falls below euglycemia (its whole physiological
+    // job). Both targets are centered on 1.0 at the same 100 mg/dL
+    // reference this engine's own patient.js constructor default already
+    // uses, so a healthy, condition-less patient starts and stays at
+    // insulin=glucagon=1 with zero net glucose drift (verified below).
+    const insulinTarget = Math.max(0.1, Math.min(5, 1 + (pat.glucose - 100) / 50));
+    const glucagonTarget = Math.max(0.1, Math.min(4, 1 - (pat.glucose - 100) / 80));
+    // Real endogenous secretion responds within minutes (first-phase
+    // insulin release peaks within ~5 min of a glucose stimulus; glucagon's
+    // counter-regulatory rise on falling glucose is similarly fast) — same
+    // relaxation-toward-target shape as cortisol's own line above, at a
+    // comparably fast tau (~8 min, rate 0.125/min) rather than a slower
+    // multi-hour hormonal axis.
+    pat.insulin += (insulinTarget - pat.insulin) * 0.125 * dt;
+    pat.glucagon += (glucagonTarget - pat.glucagon) * 0.125 * dt;
+
+    // GLUCOSE DISPOSAL/PRODUCTION — the real, new consequence that makes
+    // insulin/glucagon more than a decorative pair of numbers. Insulin
+    // drives peripheral glucose UPTAKE (disposal), glucagon drives hepatic
+    // glycogenolysis/gluconeogenesis (production) — the two opposing real
+    // mechanisms that, in health, hold glucose near a set point with no
+    // outside intervention (this engine previously had NO such mechanism
+    // at all: pat.glucose was completely static outside a drug dose or a
+    // condition's one-time `initial.glu`, confirmed by grep before writing
+    // this). pat.insulinSensitivity (patient.js, default 1) is the
+    // TISSUE-RESPONSE lever, deliberately separate from secretion —
+    // diabetesT2/HHS's real insulin-RESISTANT phenotype lowers this
+    // instead of pat.insulin itself, while DKA/T1DM's real insulin-
+    // DEFICIENT phenotype caps pat.insulin directly (see conditions.js).
+    // Coefficients chosen so a healthy patient (insulin=glucagon=1,
+    // sensitivity=1, glucose=100) sits at exact equilibrium (disposal ==
+    // production, verified below), and a non-diabetic hyperglycemic
+    // patient (e.g. stress hyperglycemia, glu~250) drifts back toward
+    // normal over a real, gentle, multi-tens-of-minutes timescale — a
+    // physiological correction, not a same-tick cure. The 60 mg/dL floor
+    // on the disposal term prevents insulin from driving glucose into
+    // hypoglycemia on its own (real basal insulin does not overshoot into
+    // hypoglycemia in a person with intact counter-regulation); the 40x
+    // ratio between the two rate constants is exactly what equilibrium at
+    // the 100 mg/dL reference point (glucose-60=40) requires algebraically
+    // once both targets are pinned to 1.0 there.
+    const DISPOSE_RATE = 0.0007;   // mg/dL/min per (insulin unit x mg/dL above floor)
+    const PROD_RATE = 0.028;       // mg/dL/min per glucagon unit
+    const disposal = DISPOSE_RATE * pat.insulin * (pat.insulinSensitivity ?? 1) *
+      Math.max(0, pat.glucose - 60) * dt;
+    const production = PROD_RATE * pat.glucagon * dt;
+    pat.glucose = Math.max(0, pat.glucose - disposal + production);
 }
 
 export function updateElectrolytes(pat, dt) {

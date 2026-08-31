@@ -7523,7 +7523,20 @@ export const CONDITIONS = {
       // a "recognize and transport for surgery" presentation, the same
       // posture acuteLimbIschemia's own comment already takes for a
       // field-irreversible vascular occlusion).
-      pat.gutInjury = Math.min(0.4, (pat.gutInjury ?? 0) + dt * 0.0015);
+      //
+      // RATE, measured against a real opposing pull (throwaway probe,
+      // stripped, lesson 8): neuro.js's own updateOrganInjury runs every
+      // tick AFTER conditions.progress() and, for a patient who is NOT
+      // systemically ischemic (this condition's whole point — the injury
+      // here is LOCAL, at the hernia neck, not from a falling gutDO2), its
+      // own resting-recovery branch decays gutInjury by 0.005/min
+      // unconditionally. A first version of this line at 0.0015/min was
+      // silently erased every tick, net negative, and gutInjury never
+      // once left 0 across a real 300s measurement — the same "written,
+      // read, but fought to a standstill" defect class neonatalSepsis's
+      // own coreTemp comment documents on a different field. Raised with
+      // real margin above that 0.005/min floor.
+      pat.gutInjury = Math.min(0.4, (pat.gutInjury ?? 0) + dt * 0.026);
       // Once the strangulated segment has been compromised long enough
       // to start breaking down, a real, modest GI bleed/mucosal-slough
       // component begins — the same gutInjury-gated onset
@@ -7607,10 +7620,15 @@ export const CONDITIONS = {
         Math.min(0.3, (pat.metabolicEncephalopathy || 0) + dt * 0.0004));
       // Local mesenteric compression at the intussusceptum's leading
       // edge — same direct-write local-injury idiom incarceratedHernia
-      // above uses, at a slightly slower rate (a telescoped segment's
-      // compression is real but on average less abruptly occlusive than
-      // a tight hernia-neck strangulation).
-      pat.gutInjury = Math.min(0.35, (pat.gutInjury ?? 0) + dt * 0.001);
+      // above uses (see that condition's own comment for the real
+      // opposing-decay measurement that set the rate's floor: neuro.js's
+      // updateOrganInjury decays a non-systemically-ischemic patient's
+      // gutInjury by 0.005/min every tick, so this must clear that with
+      // real margin or be silently erased), at a somewhat slower net rate
+      // than incarceratedHernia (a telescoped segment's compression is
+      // real but on average less abruptly occlusive than a tight
+      // hernia-neck strangulation).
+      pat.gutInjury = Math.min(0.35, (pat.gutInjury ?? 0) + dt * 0.021);
       // Once the bowel wall has been compromised long enough, the real
       // "currant jelly" venous congestion/mucosal sloughing becomes an
       // actual measurable GI blood loss — same gutInjury-gated onset
