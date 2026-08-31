@@ -332,6 +332,22 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 66 — a real acute dystonic reaction mechanism (TP 1239/1239-P), no invented parallel drug effect, reusing diphenhydramine's existing anticholinergic action
+
+Confirmed the gap by grep before touching anything: no muscle-tone/spasm field existed anywhere in this engine (distinct from `pat.seizing`), and no metoclopramide/prochlorperazine-class drug existed in `drugs.js` either, exactly as this queue item's original filing stated.
+
+**MECHANISM.** A D2-antagonist antiemetic's dopamine blockade at the chemoreceptor trigger zone (the antiemetic action) is the SAME blockade that disinhibits striatal cholinergic interneurons in the nigrostriatal pathway (the dystonia) — one mechanism, two consequences. `pat.dystonia` (patient.js, 0-1) uses the identical `rising()`-curve idiom pk.js already applies to urticaria/angioedema. `drugs.js` gained a real `metoclopramide` entry (`fx.dystonia: 0.15`, sized to the real ~0.2-1%-per-dose incidence, not a dramatic guaranteed reaction) and `diphen` gained `fx.dystonia: -0.6` — the SAME drug already treating urticaria, reused for its real anticholinergic reversal of the D2-blockade imbalance, not a parallel antidote invented for convenience.
+
+**acuteDystonicReaction (conditions.js)** is scenario-authored at a real starting severity (0.6) rather than triggered mid-call by default, matching TP 1239's own framing — the protocol's patient already has an established reaction (a dose given before EMS arrival), and its own required base-contact-to-confirm step keeps the diagnosis human, the same reasoning already on record for TP 1229/1232's assessment-only sections. No automatic laCounty.js rule added for the same reason; diphenhydramine stays available for manual crew ordering. Drives real pain through `pat.intrinsicPain` (queue item 20's actual persistent-pain handle, NOT the write-only `pat.pain` field this file's own comments elsewhere document as dead) and a modest pain-driven hr bump — deliberately NOT wired to broncho/edema/hemodynamics, since an uncomplicated (non-laryngeal) dystonic reaction has no airway or circulatory component of its own, and overstating that would be a real mechanism-category error.
+
+**actions.js's strokeScreen exam** checks `pat.dystonia` first, ahead of the FAST logic — a real, documented clinical stroke mimic (negative FAST + sustained involuntary head/neck spasm), not a coincidental reuse of the exam.
+
+**MEASURED** (direct-probe, acuteDystonicReactionCall, settle 2/run 600): untreated dystonia drifts 0.60 -> 0.62 over 10 minutes (the condition's own flat, non-resolving plateau — real dystonic reactions do not spontaneously clear within a field encounter); diphenhydramine brings it to 0.542, a real, measurable partial reversal within the window, not a full clearance — stated honestly rather than tuned to look complete. metoclopramide on a healthy control raises dystonia 0 -> 0.63 by 600s (this suite's own 5-stacked-reapplied-dose convention over 10 minutes, a wiring check, not a magnitude claim).
+
+**Verification, complete.** `node --check` and `npx eslint` clean on every touched file (patient.js, pk.js, drugs.js, conditions.js, actions.js, gear.js, scenarios.js, all three scopes files, scenarioSweep.mjs, mechanismWiring.mjs). `dystonia` added to both scenarioSweep.mjs's REQUIRED and NON_NEGATIVE lists. A new two-sided mechanismWiring.mjs block (fires in the real condition, stays zero in a matched healthy control, diphenhydramine measurably reduces it, metoclopramide measurably raises it, real pain via intrinsicPain) added as source; not run to completion this session per the standing full-suite deferral, but its five checks were verified directly via a targeted throwaway probe (stripped before this entry was written) reproducing the suite's own probe()/pinTraitsNeutral()/snapshot() machinery: 5/5 passed.
+
+Deferred, stated honestly: a laryngeal/airway-threatening dystonia tier (a rarer, more severe presentation with a real hemodynamic/airway component) and an automatic protocol rule — both real, scoped-out follow-ups, not silently assumed away.
+
 ### Physiology-engine batch: queue item 60's nebulized-epinephrine slice — a real drug entry treating pat.upperAirwayObstruction directly, closing the gap conditions.js's own croup/epiglottitis comments named
 
 Found while implementing TP 1234/1234-P (Airway Obstruction) and TP 1236/1236-P (Inhalation Injury)'s nebulized-epi step (queue item 60, part 1 of 3 — tracheostomy state and the FBAO crew task are the other two, deliberately not touched here): real nebulized epi works via LOCAL alpha-1 mucosal vasoconstriction, mechanistically distinct from both the already-shipped `epiIM`/`epiAuto` (systemic IM, treats `pat.angioedema` for anaphylaxis) and `albuterol` (beta-2 bronchodilation, lower-airway smooth muscle) — and nothing pharmacologically reduced `pat.upperAirwayObstruction` (the real, already-shipped fixed-extrathoracic-obstruction field croup/epiglottitis drive, item 61's recent angioedema-derivation work notwithstanding). conditions.js's own croup/epiglottitis comments explicitly named this as the missing field skill ("a drug this box does not carry").
@@ -8062,7 +8078,16 @@ plausible but not fitted to trial data.
     worth more — this is very likely not the last pediatric-weight-based
     dose this project's protocol library will need.
 
-66. **No extrapyramidal/dystonic-muscle-spasm signal exists — found while
+66. **RESOLVED (this session) — see section 3's newest physiology-engine
+    entry.** `pat.dystonia` (patient.js/pk.js), a real `metoclopramide`
+    drug entry and `diphen`'s reused anticholinergic mechanism (drugs.js),
+    `acuteDystonicReaction` (conditions.js, TP 1239/1239-P), and a real
+    stroke-mimic finding in actions.js's strokeScreen exam now exist;
+    measured, `eslint`-clean, two-sided assertion added to
+    mechanismWiring.mjs (source only, verified via targeted probe, not
+    run to completion this session). Original filing, kept for context:
+
+    No extrapyramidal/dystonic-muscle-spasm signal exists — found while
     implementing TP 1239/1239-P (Dystonic Reaction).** The presentation
     (involuntary spasm of head/neck/face/eyes/trunk, forced jaw opening,
     inability to retract the tongue, eye deviation) has no representable
