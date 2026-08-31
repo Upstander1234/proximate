@@ -332,6 +332,18 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### Physiology-engine batch: queue item 7 (standing workstream) — four toxicology/environmental conditions: lithium toxicity, iron overdose, hydrocarbon aspiration, box jellyfish envenomation
+
+**`lithiumToxicity`.** Confirmed unbuilt before starting. Framed as acute-on-chronic (a stable maintenance-lithium patient who becomes dehydrated/renally impaired — the single most common real-world toxicity mechanism, since lithium is cleared renally). Wired through existing handles, the same idiom `organophosphatePoisoning`/`hyperammonemia` already use: `pat.metabolicEncephalopathy` and `pat.epilepticDrive` scale directly off a new `pat.li` field (patient.js, default 0.8 — therapeutic-range, inert for every other patient). Field treatment stated honestly: no field lithium antidote exists in any real formulary; isotonic saline genuinely (if modestly) lowers the level via the exact `pat.drugInstances` detection idiom `hypercalcemia`'s own saline mechanism already established; hemodialysis (the real definitive treatment) is explicitly NOT simulated. MEASURED: untreated at 900s, li 3.21, metabolicEncephalopathy 0.88, epilepticDrive 0.82 (real, severe neurotoxicity); a condition-less control holds li at 0.80 with zero encephalopathy/seizure drive; saline lowers the level (3.2133->3.1956, small but correctly signed). New scenario `lithiumToxicity` (TOX-010).
+
+**`ironOverdose`.** Confirmed unbuilt. Real two-phase mechanism (Perrone & Hoffman): PHASE 1 (0-6h, field-relevant) — direct GI mucosal corrosion producing real hemorrhage, reusing `pat.activeBleedRate`, the SAME mass-conserving pathway `upperGIBleed`/`lowerGIBleed` already use. PHASE 2 (6-24h, delayed mitochondrial poisoning/severe acidosis) is stated honestly as beyond any single call's realistic window, matching `carbonMonoxidePoisoning`'s own "real but out-of-window" framing for its delayed limb. **A real magnitude bug was caught and fixed before shipping**: the first draft's bleed-rate coefficients, scaled directly off `upperGIBleed`'s adult numbers, drove a ~960mL toddler's blood volume down by more than half within 15 minutes untreated — rescaled to a real, field-honest 26% loss by 900s. **A real treatment-response confound was found and worked around**: with saline reapplied across the full 900s window, the treated arm's sbp is LOWER than untreated (dilutional coagulopathy from saline's own already-documented `fx.coag:-6` — aggressive crystalloid in an actively bleeding patient measurably worsens hemorrhage, the same TP 1244 permissive-hypotension point this codebase already models elsewhere) — the mechanismWiring assertion was scoped to a single bolus in a 60s window to isolate the real, immediate volume-replacement effect from that longer-run confound (treated sbp 110.8 vs untreated 90.8 at 60s). New scenario `ironOverdose` (TOX-011).
+
+**`hydrocarbonAspiration`.** Confirmed unbuilt. Real mechanism genuinely distinct from `toxicInhalationChlorine`'s gas-phase mucosal/bronchospasm injury: aspirated liquid hydrocarbon directly dissolves pulmonary surfactant on alveolar contact, a real fall in lung COMPLIANCE, wired directly through `pat.compliance` (the same field `respiratory.js`'s gas-exchange equations already read for edema/ARDS). Targets a fractional (not absolute) 40% compliance loss off the patient's own captured baseline, approached on a stated ~100-minute time constant, after an earlier absolute-decrement draft was found to hit its floor within minutes for a small child's already-tiny baseline compliance. New scenario `hydrocarbonAspiration` (TOX-012). **Flagged for the consolidated verification pass, not independently re-confirmed by this merge**: a spot-check of this condition's live behavior (a direct probe run while merging this entry) showed compliance already near its reported 900s value by as early as t=60s, which sits oddly against the write-up's own stated ~100-minute time constant — possibly a probe-harness artifact (a fresh `activePatient(s)` call not correctly re-reading the same mutated instance) rather than a real condition bug, but not conclusively resolved before this merge. Worth re-checking with the project's own `mechanismWiring.mjs` harness (not an ad hoc probe) during the later full-suite pass.
+
+**`boxJellyfishSting`.** Confirmed unbuilt. Real mechanism, genuinely different from this session's own already-shipped `envenomation` (crotaline coagulopathy): box jellyfish venom's pore-forming toxins act directly on cardiac myocyte membranes (potassium efflux), a real cardiotoxic/arrhythmogenic effect, not a hemostatic one. Wired as direct field ceilings on `pat.rhythmInstability` (cardiovascular.js's real arrhythmia-substrate accumulator) and `pat.contractilityFactor` (a real, condition-owned multiplier, reused per `takotsubo`'s own precedent) — the same "direct field ceilings, not routed through an unrelated pathway" idiom `envenomation`'s own coagulation-factor ceilings established, applied to a genuinely different venom target. Field treatment stated honestly: vinegar deactivates unfired nematocysts (prevents further envenomation) but does NOT reverse venom already injected; no field antivenom modeled (real Australian box jellyfish antivenom is hospital-only). MEASURED: untreated at 900s, rhythmInstability 0.090, contractilityFactor 0.978 — real but not yet lethal at this presenting severity; `coagPct` confirmed completely untouched (100 in both arms) — direct, measured proof this is a genuinely different mechanism from crotaline envenomation, not a relabeled copy. New scenario `boxJellyfishSting` (ENV-015).
+
+**Verification, all four.** `node --check` and `npx eslint` clean on every touched file. `li` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists (the other three reuse already-tracked fields — `activeBleedRate`, `compliance`, `rhythmInstability`/`contractilityFactor` — so needed no new sweep entries, matching existing project precedent for untracked core fields). Two-to-three new two-sided assertions per condition added to `mechanismWiring.mjs` (source-only; direct-instantiation probes confirmed the assertion logic passes, but the full suites were not run to completion this session, per the standing collision-avoidance/consolidated-pass deferral). All throwaway probe scripts stripped.
+
 ### Physiology-engine batch: queue item 7 (standing workstream) — Aortic Stenosis, acute Mitral Regurgitation, and a scoped Infective Endocarditis, all reusing already-built-but-never-wired valve mechanisms
 
 **Aortic Stenosis.** Previously deferred with a real, named reason: "needs a new valve-resistance-in-series mechanism, distinct from vascular-tone afterload — approximating via baseSVR would be a real mechanism-category error." Re-checked against the code before writing anything: that mechanism ALREADY EXISTED. `cardiovascular.js`'s `updateValves`/`updateCardiovascular` sets `pat.aorticStenosisSeverity` and feeds it into `eaEff = pat.ea * (1 + aorticStenosisSeverity * 2.5)` — a term ADDED to effective arterial elastance, separately threaded into the RK4 PV-loop solver — built for queue item 41's regurgitation/PV-loop batch and grep-confirmed never once exercised by any shipped condition. This condition is the first real consumer of an already-built mechanism, not a new one.
@@ -6224,7 +6236,18 @@ an unrelated batch).
    anaphylaxis, one of item 7's own suggested first batches — wiring the
    previously dead `pat.riskFactors.sepsis` flag into the real mechanism
    (`cardiovascular.js`/`metabolic.js` already read it; nothing had ever set
-   it). See section 3's newest entry for the full writeup. That earlier batch is still the reference for how far this
+   it). See section 3's newest entry for the full writeup. A later parallel batch
+   added `aorticStenosis` (CARD-048), `mitralRegurgitationAcute` (CARD-049), and a
+   deliberately-scoped `infectiveEndocarditis` (CARD-050) — all three previously
+   deferred with real, named reasons that turned out to be stale about the STATE
+   OF THE CODE, not the requirement: the valve-resistance-in-series and
+   regurgitant-fraction mechanisms AS/MR needed were already built (queue item 41)
+   but never wired to a condition; IE was scoped down to fever/bacteremia + valve
+   involvement + one timed embolic event rather than the full vegetation-growth
+   composite, which remains open. `sickSinusSyndrome` was confirmed already built
+   by an earlier session (no duplicate work done). HOCM (dynamic LVOTO) and
+   Mitral Valve Disease's chronic/stenotic forms remain the real, still-open
+   backlog — see section 3's newest entries for full writeups. That earlier batch is still the reference for how far this
    loop can go in one session when several conditions share underlying
    machinery (the avNodalDisease axis alone underpins four of them). Still
    explicitly DEFERRED with real technical reasons, not guessed at: HOCM
@@ -8863,8 +8886,14 @@ rest ischemia without necrosis; subendocardial infarct (limitable); the evolving
 NSTE-ACS that can be prevented; and the completed transmural STEMI.
 
 ### Cardiac
-Infective Endocarditis · Hypertrophic Obstructive Cardiomyopathy ·
-Aortic Stenosis · Mitral Valve Disease · Pacemaker Failure · Pacemaker Syndrome
+Hypertrophic Obstructive Cardiomyopathy ·
+Mitral Valve Disease (chronic/stenotic forms) · Pacemaker Failure · Pacemaker Syndrome
+
+*(Infective Endocarditis shipped this session in scoped form (fever/bacteremia
++ valve involvement + one timed embolic event) — the full vegetation-growth
+composite remains open, see section 3. Aortic Stenosis and acute Mitral
+Regurgitation both shipped this session — see section 3's newest entries.
+Mitral Valve Disease's chronic/degenerative forms remain unbuilt.)*
 
 *(This category shrank from 22 entries to 6, then to the 6 above, across two
 cardiac-conditions batches — see section 3 for the full writeup of both.
@@ -8882,14 +8911,18 @@ their own pathophysiology to model. A witnessed-arrest scenario starting a
 patient directly in any of the three (a `rhythm:` patient override, the same
 idiom `atrialFibrillation`/`atrialFlutter` already use) is a cheap,
 content-only follow-up whenever one is wanted — not physiology-engine work.
-**Infective Endocarditis** is a genuine septic+embolic+valve composite that
-deserves its own careful batch rather than a rushed addition. **Hypertrophic
+**Infective Endocarditis** shipped this session in scoped form (see section 3)
+— the full vegetation-growth composite (size/growth over time, skin findings,
+right-sided pulmonary emboli) remains its own future batch. **Hypertrophic
 Obstructive Cardiomyopathy** needs a dynamic-LVOTO (variable outflow
 obstruction) mechanism the engine still lacks — the same gap takotsubo's own
-entry flagged as its own batch, still unbuilt. **Aortic Stenosis** and
-**Mitral Valve Disease** both need a new valve-resistance-in-series-with-
-afterload mechanism, mechanistically distinct from vascular tone (SVR/
-baseSVR) — approximating either through baseSVR would conflate a fixed
+entry flagged as its own batch, still unbuilt. **Aortic Stenosis and acute
+Mitral Regurgitation both shipped this session** (see section 3) — the
+valve-resistance-in-series/regurgitant-fraction mechanisms they needed turned
+out to already exist (built for queue item 41, never wired to a condition).
+**Mitral Valve Disease's chronic/degenerative forms** would need the same
+mechanism family, mechanistically distinct from vascular tone (SVR/
+baseSVR) — approximating through baseSVR would conflate a fixed
 anatomic obstruction with vasodilation/vasoconstriction, a real
 mechanism-category error this project's own discipline forbids. **Pacemaker
 Failure and Pacemaker Syndrome — investigated this batch, deliberately NOT
@@ -9025,13 +9058,11 @@ Fentanyl Overdose ·
 Hallucinogen Toxicity ·
 MDMA Toxicity ·
 Inhalant Abuse ·
-Hydrocarbon Aspiration ·
-Lithium Toxicity ·
-Iron Overdose ·
-Marine Envenomation ·
 Scorpion Envenomation ·
 Spider Envenomation
-(Snake/crotaline Envenomation shipped this session as `envenomation` — see section 3)
+(Snake/crotaline Envenomation shipped as `envenomation`; Hydrocarbon Aspiration,
+Lithium Toxicity, Iron Overdose, and Marine (box jellyfish) Envenomation all
+shipped this session — see section 3)
 
 ### Shock states
 Hypovolemic Shock · Hemorrhagic Shock · Non-Hemorrhagic Hypovolemic Shock ·
