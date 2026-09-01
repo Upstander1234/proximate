@@ -331,6 +331,14 @@ function snapshot(p) {
     airwayFluid: p.airwayFluid || 0,
     baseSVR: p.baseSVR || 0,
     lactate: p.lactate ?? 1,
+    // Pediatric/GI batch (queue item 7): incarceratedHernia/intussusception
+    // both write this directly (neuro.js also decays it at rest, the
+    // "written, read, but fought to a standstill" defect that batch's own
+    // comment documents finding and fixing). Was never added to this
+    // snapshot when those assertions were written (found during the
+    // consolidated full-suite pass — the suite crashed on
+    // `.toFixed()` against undefined).
+    gutInjury: p.gutInjury ?? 0,
     // Carbon monoxide poisoning (queue item 7, Toxicology): the true COHb
     // fraction and the real oxygen-CONTENT it discounts (caO2, metabolic.js
     // — every organ DO2 signal in this engine already derives from it), plus

@@ -748,6 +748,23 @@ export class Patient {
     this.pericardialP = 0;         // mmHg; external pressure on the heart from pericardial fluid
     this.cardiacExternalP = -4;    // intrathoracicP + pericardialP; what the ventricle sees for filling
 
+    // Valve lesions (queue item 41's regurgitation/PV-loop batch; consumed
+    // by updateValves/updateFullLoopODE, cardiovascular.js). Real, not
+    // decorative — aorticStenosisSeverity feeds the added-Ea stenotic term;
+    // mitralRegurgFrac/aorticRegurgFrac are the composite (structural +
+    // ischemic) regurgitant fraction the PV-loop solver actually consumes;
+    // mitralRegurgStructural/aorticRegurgStructural are the structural-only
+    // component. All were previously left with no constructor default —
+    // undefined on the very first tick, before updateValves' own `?? 0`
+    // guard runs — caught by the consolidated scenarioSweep.mjs pass
+    // (865 "field is undefined" failures at t=2s across every scenario)
+    // after being added to that suite's REQUIRED list without one.
+    this.aorticStenosisSeverity = 0;
+    this.mitralRegurgFrac = 0;
+    this.aorticRegurgFrac = 0;
+    this.mitralRegurgStructural = 0;
+    this.aorticRegurgStructural = 0;
+
     // Myocardial energetics: coronary O2 supply vs demand -> ATP -> contractility.
     this.atp = 1.0;                // myocardial high-energy phosphate reserve (0..1)
     this.myoO2Balance = 0;         // instantaneous supply - demand (relative)
