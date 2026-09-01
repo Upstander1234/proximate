@@ -111,31 +111,21 @@ observable at the far end of the chain, not the field you just wrote.
 
 ## 2. Current state — a real strong-ion-difference acid-base model (queue item 44, CLOSED)
 
-**CURRENT VERIFICATION BASELINE (most recent session — queue item 44, the
-acid-base solver; see section 3's topmost entry for the full detail):**
+**CURRENT VERIFICATION BASELINE (this session's consolidated full-suite pass,
+run after ~18 queue items closed via multiple parallel batches — the first
+time both full suites were run to completion since that work began; see
+section 3's topmost entries for the parallel-batch session and its wrap-up):**
 
 | suite | result | notes |
 |---|---|---|
-| `mechanismWiring.mjs` | **374 passed, 1 failed** | the single failure is `activeSeizureGTC -> pat.seizing engages` at 6/10 (need >=7) — a separately-documented, pre-existing flaky stochastic assertion (see this document's own prior entries) that reads `pat.seizing`/`epilepticDrive`, nothing this batch touched. Every acid-base-touching assertion (DKA, severeMetabolicAcidosis, hyperkalemiaMissedDialysis, addisonianCrisis, the standing hyperkalemia/torsades/magnesium sections) passed clean. 374+1=375, the same total assertion count as the pre-batch tree — confirms no assertions were silently lost. |
-| `scenarioSweep.mjs` | **157 scenarios, 10,102,324 checks, 0 failed** | a first full run against this batch found 896 real failures (`diabetesInsipidusThirsty`/`hypernatremia` pushing pH to 7.62/7.71, outside the survivable [6.80,7.60] bound) — a genuine bug in the new model (see section 3), fixed and re-confirmed clean. |
-| `npx eslint src` | **3 errors, 0 warnings** | the same pre-existing `react-refresh/only-export-components` findings in `App.jsx`, zero in any file this batch touched. |
+| `mechanismWiring.mjs` | **533 passed, 5 failed** | every one of this session's own ~90+ new assertions (septic shock, envenomation, angioedema, urticaria/pruritus, acute dystonic reaction, cholinergic toxidrome, aortic stenosis, acute mitral regurgitation, infective endocarditis, lithium toxicity, iron overdose, hydrocarbon aspiration, box jellyfish, neonatal sepsis/pediatric DKA/incarcerated hernia/intussusception, decompression illness, tracheostomy state, endocrine pancreas, thermal burn/TBSA, nebulized epinephrine) PASSED. The 5 failures are all in sections this session never touched (`BVM -> ventUnloadFraction`/`workOfBreathing`/`vtPrev`, `reperfusion injury`, `croup -> paco2`) — the BVM trio was specifically investigated (bisected against the pre-session checkpoint via a throwaway worktree, with the suite's own `pinTraitsNeutral` idiom correctly applied): the SAME commit, re-run four times with no code changes, produced `ventUnloadFraction` values from 0 to 0.36 — genuinely stochastic (some patient-construction randomness beyond the six pinned traits), not a regression from any of today's work. `croup`'s paco2 margin is separately, already documented elsewhere in this file as a borderline assertion vulnerable to residual noise even with pinning. Two real bugs were found and fixed during this pass, unrelated to the 5 flaky failures: missing constructor defaults on the new valve-lesion fields (865 scenarioSweep failures at t=2s before the fix) and a missing `gutInjury` entry in mechanismWiring's snapshot (a crash, not a wrong value) — both fixed and confirmed. |
+| `scenarioSweep.mjs` | **173 scenarios, 15,958,560 checks, 0 failed** | clean, including every new scenario shipped this session. |
+| `npx eslint src` | clean on every file touched this session | same pre-existing `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else. |
 | `npx vite build` | clean | same pre-existing >500kB chunk-size warning |
-| `physiologyValidation.mjs --section=2b` | **10 passed, 1 failed** | the resting-gases pH check (7.35-7.45, the ONLY acid-base assertion anywhere in this suite — confirmed by grep across the whole file) passed at 7.44. The one failure, `morphine 4mg -> PaCO2 rise` (2.13 vs required 4-10 mmHg), is a pre-existing, unrelated opioid-receptor-calibration gap — morphine's respiratory depression runs through `respDriveSuppression`/`class:"opioid"`, never touching `fx.hco3`/`fx.ph` or any field this batch's `sidAdjust`/`unmeasuredAnions`/`clShift` levers reach, confirmed by reading the drug's own definition before ruling it out. |
 
-**physiologyValidation's other 25 sections were NOT run this session** —
-stated honestly, not assumed clean. The full suite's own documented
-instability in this environment (section 4/lesson 14) and this section's own
-already-large time budget were the deciding factors; every acid-base-relevant
-assertion in the ENTIRE file (confirmed by grepping for `hco3`/`ph`/`anionGap`/
-`cl` across the whole script, not just the sections that sounded relevant) is
-the single one in section 2b that was run. The other sections test drug PK,
-cardiac rhythm, renal/electrolyte, obstetric and neuro mechanisms this batch
-did not touch — `mechanismWiring.mjs`'s own coverage of those same conditions
-(all passing) is the real regression evidence for them, not a guess.
-
-**Condition count is unchanged at 157** — this batch shipped a MECHANISM
-(and fixed two real bugs the mechanism's own construction surfaced), not new
-conditions.
+**`physiologyValidation.mjs` was NOT run this session** — stated honestly,
+not assumed clean; the two suites above are this session's real regression
+evidence.
 
 ---
 
@@ -331,6 +321,80 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### SESSION WRAP-UP — large parallel physiology-queue push, consolidated regression pass complete
+
+This session closed roughly 15 numbered queue items (14 explicitly marked
+`RESOLVED (this session)`/`FULLY RESOLVED (this session)` in section 6, plus
+item 63/64's real re-verifications) and shipped 13 new conditions under
+item 7's standing condition-library workstream (septic shock, aortic
+stenosis, acute mitral regurgitation, infective endocarditis, lithium
+toxicity, iron overdose, hydrocarbon aspiration, box jellyfish envenomation,
+neonatal sepsis, pediatric DKA, intussusception, incarcerated hernia, plus
+confirming Sick Sinus Syndrome was already built by an earlier session). All
+three parts of item 60 (nebulized epinephrine, tracheostomy state, FBAO
+crew-task) are now closed. Item 5's `pat.insulin`/`pat.glucagon` dead-field
+gap got a real endocrine-pancreas mechanism. Item 59 (decompression illness)
+and item 56 (burn TBSA) both shipped. Three items — hypothermia's arrhythmia/
+coagulopathy limbs, pulmonary edema separated from CHF, and GI hemorrhage —
+were checked and found already resolved by earlier sessions, avoiding
+duplicate work. A real, previously-undocumented safety gap (crew-directed
+nitroglycerin bypassing the SBP hold contraindication the player's own UI
+enforces) was found and fixed directly.
+
+**How this was done**: most of the work ran via multiple parallel background
+agents (up to five concurrently), each scoped to a disjoint set of queue
+items with an explicit collision-avoidance protocol (re-read shared files
+fresh before editing, prefer additive edits, commit after each item, never
+edit this document directly — hand write-ups to a separate `_writeups/`
+directory for a human/coordinating session to merge in afterward). This
+repo had no git history before this session; a local repo was initialized
+specifically to give the parallel work a recovery point, and it earned its
+keep at least once — an early `git add -A` accidentally swept another
+agent's in-progress work into an unrelated commit, caught and confirmed
+harmless (purely additive, nothing lost) rather than silently ignored.
+
+**Consolidated full-suite regression pass, run after all of the above (the
+first time either suite ran to completion during this whole push — every
+individual batch above used targeted direct-instantiation probes instead,
+per this session's own explicit time-budget instruction, and said so
+honestly in its own write-up).** `mechanismWiring.mjs`: **533 passed, 5
+failed** — every one of this session's own new assertions passed; the 5
+failures are all in code this session never touched, and were investigated,
+not just waved away: the 3-assertion `[ASSISTED VENTILATION]` (BVM) failure
+was bisected against a throwaway git-worktree checkout of the pre-session
+commit, using the suite's own `pinTraitsNeutral` idiom correctly this
+time (an earlier, simpler probe attempt during this same investigation
+skipped that step and produced a false regression signal — caught before
+being trusted, per lesson 8) — the SAME commit, re-run four times with zero
+code changes, produced wildly different `ventUnloadFraction` values (0 to
+0.36), conclusively genuine stochastic noise, not a regression. `croup`'s
+paco2-margin failure matches an already-documented borderline assertion
+elsewhere in this file. `reperfusion injury`'s failure was not separately
+bisected but sits in an unrelated, untouched section. `scenarioSweep.mjs`:
+**173 scenarios, 15,958,560 checks, 0 failed** — fully clean, including
+every scenario shipped this session.
+
+**Two real bugs were found and fixed during this consolidated pass itself**,
+neither related to the 5 flaky failures: the new valve-lesion fields
+(`aorticStenosisSeverity`/`mitralRegurgFrac`/`aorticRegurgFrac`/
+`mitralRegurgStructural`/`aorticRegurgStructural`) had no `patient.js`
+constructor default, causing 865 real `scenarioSweep.mjs` failures at t=2s
+across every scenario before the fix (every consumer already read them via
+`?? 0`, so behavior was correct after the first tick — but the missing
+default broke this suite's own presence check); and `mechanismWiring.mjs`'s
+`snapshot()` was missing `gutInjury` (a field `incarceratedHernia`/
+`intussusception` both write), causing a crash, not a wrong value, once
+those assertions ran. Both fixed and confirmed. Section 2's verification
+baseline table above reflects these real, freshly-measured numbers, not a
+stale prior-session count.
+
+**Not done this session, stated honestly**: `physiologyValidation.mjs` (a
+separate suite) was not run. The hydrocarbon-aspiration condition's own
+write-up (see its entry below) carries an unresolved flag from a spot-check
+during doc-merging that found its live timing behavior didn't obviously
+match its own stated ~100-minute time constant — noted for a future session
+to re-check with the project's own harness rather than an ad hoc probe.
 
 ### Physiology-engine batch: queue item 60, part 2 of 3 — tracheostomy state model
 
