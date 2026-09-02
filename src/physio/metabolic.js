@@ -265,7 +265,30 @@ export function updateMetabolism(pat, dt) {
     const loadFactor = 1 + (pat.effectiveBroncho ?? pat.broncho ?? 0) * 1.5;
     const wob = 1 + Math.min(0.35, wobRatio * 0.10 * loadFactor);
     const seizing = pat.seizing ? 2.2 : 1;
-    pat.vo2Demand = restVO2 * feverFactor * adrenergic * wob * seizing;
+    // AGITATION-SPECIFIC METABOLIC DEMAND (queue item V2-22, second half).
+    // pat.agitationBurden (excitedDelirium/cocaineToxicity/neurolepticMalignant
+    // Syndrome/serotoninSyndrome) already drives pat.agitation, a purely
+    // BEHAVIORAL/display quantity in neuro.js, and indirectly raises adrenergic
+    // demand above only through whatever sympathetic tone the underlying
+    // condition separately generates (hrBase/baseSVR) — but nothing here ever
+    // treated the physical act of sustained struggling/psychomotor agitation
+    // itself as a real, direct oxygen-consuming muscular activity, distinct from
+    // the generic sympathetic-tone-driven `adrenergic` term two lines above.
+    // Real clinical fact, and the actual reason excited delirium produces severe
+    // lactic acidosis and hyperthermia even before any restraint/struggle with
+    // responders: sustained gross-motor agitation is genuine, ongoing muscular
+    // work, not just an autonomic/thermal side effect of the underlying crisis.
+    // No study was found quantifying an agitation-specific VO2 multiplier
+    // precisely (stated honestly, per this file's own citation discipline) —
+    // the anchor used here is the closest documented proxy: the Ainsworth et al.
+    // Compendium of Physical Activities classes "restless/agitated behavior" and
+    // comparable low-intensity, intermittent whole-body motor activity around
+    // 2-3 METs, i.e. roughly 30-40% above resting VO2 for a WHOLE-BODY average
+    // (agitation is not sustained peak full-body exertion the way a seizure's
+    // generalized tonic-clonic contraction is, hence a materially smaller
+    // multiplier than the seizure term just above, not the same order).
+    const agitationVO2 = 1 + Math.min(0.4, (pat.agitationBurden ?? 0) * 0.4);
+    pat.vo2Demand = restVO2 * feverFactor * adrenergic * wob * seizing * agitationVO2;
     const vo2Demand = pat.vo2Demand;
     const criticalDO2 = vo2Demand * 1.2;
     let actualVO2;
