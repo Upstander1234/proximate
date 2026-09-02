@@ -111,21 +111,31 @@ observable at the far end of the chain, not the field you just wrote.
 
 ## 2. Current state — a real strong-ion-difference acid-base model (queue item 44, CLOSED)
 
-**CURRENT VERIFICATION BASELINE (this session's multi-agent parallel batch —
-7 V2/physiology-queue items shipped via isolated git worktrees, merged and
-verified to completion; see section 3's topmost entry for the full writeup
-and workflow notes):**
+**CURRENT VERIFICATION BASELINE (this session's multi-agent parallel batch,
+SECOND wave — five more conditions plus a mass-conservation audit tool,
+merged and verified to completion; see section 3's topmost entry for the
+full writeup, including a real snapshot()-crash found and fixed during this
+verification pass):**
 
 | suite | result | notes |
 |---|---|---|
-| `mechanismWiring.mjs` | **574 passed, 1 failed** | every one of this session's own new sections (blood viscosity/V2-15-16, methemoglobinemia/V2-30, ketamine/V2-26, thirst/V2-9, reversible hepatic/gut dysfunction/item 48, acute traumatic coagulopathy/V2-17, serotonin syndrome) PASSED, including the previously-flaky BVM and croup assertions, which also passed clean on this run. The single failure is the same already-long-documented, pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion, unrelated by content. |
-| `scenarioSweep.mjs` | **176 scenarios, 17,185,698 checks, 0 failed** | clean across the entire scenario library, including both new scenarios shipped this session (`methemoglobinemia`, `serotoninSyndrome`). |
+| `mechanismWiring.mjs` | **612 passed, 5 failed** | every new section for all five conditions shipped this wave (Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine Toxicity, Malaria, Dengue Fever) PASSED, including their own treatment-response and specificity assertions. All 5 failures are pre-existing, already-documented flaky/borderline assertions unrelated to this wave: the BVM trio (`ventUnloadFraction`/`workOfBreathing`/`vtPrev`), the PAC HR-variance stdev check, and the tracheostomy-vs-native-airway `vt` comparison (an inherently razor-thin 0.002 L margin, already documented elsewhere in this file as asserted at the real measured threshold, not an invented larger one). |
+| `scenarioSweep.mjs` | **181 scenarios, 17,999,728 checks, 0 failed** | clean across the entire scenario library, including all five new scenarios shipped this wave. |
 | `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else. |
-| `npx vite build` | clean (20.34s) | same pre-existing >500kB chunk-size warning |
+| `npx vite build` | clean (22.90s) | same pre-existing >500kB chunk-size warning |
 
 **`physiologyValidation.mjs` was NOT run this session** — stated honestly,
 not assumed clean; the two suites above are this session's real regression
 evidence.
+
+---
+
+**Everything below this line is the PRIOR wave's own baseline, carried
+forward for its own detail — not the current numbers.** `mechanismWiring.mjs`
+574/1, `scenarioSweep.mjs` 176 scenarios/17,185,698 checks/0 failed, from
+the first wave (blood viscosity, methemoglobinemia, ketamine, thirst,
+liver/gut reversible injury, acute traumatic coagulopathy, serotonin
+syndrome) — see section 3's second-topmost entry.
 
 ---
 
@@ -321,6 +331,26 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### 2026-09-01 — Multi-agent parallel batch, second wave: five more conditions (Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine Toxicity, Malaria, Dengue Fever) plus a mass-conservation audit tool (V2-31), all via non-self-delegating worktree agents
+
+**Direct continuation of the entry immediately below (the first wave's own workflow notes still apply — worktree isolation, disk-space-limited waves, `git add -A` discipline). One new, real infrastructure finding this wave: self-delegation is unsafe under worktree isolation.** Two agents in this wave's first attempts (V2-31 twice, Necrotizing Fasciitis once) spawned their own child `Agent` calls rather than doing the work directly — an emergent behavior of the `claude` subagent type on a large task, not something this session asked for — and in every case the CHILD's worktree was found already removed once it tried to act, while the PARENT had already reported "completed" after only 2-4 tool calls. The pattern is consistent: the harness appears to tear down a worktree-isolated agent's own worktree once that agent itself returns, without waiting for any background child it spawned to finish using it. Every affected grandchild correctly refused to improvise outside its assigned isolation boundary and reported back cleanly with zero work done and zero damage — but the work still had to be redone. Fixed for the rest of this wave by adding an explicit "do this yourself, do NOT spawn another Agent call" instruction at the top of every subsequent agent prompt, which worked cleanly for the remaining five launches. **Lesson for a future session: never let a worktree-isolated `claude` agent self-delegate to a child Agent call — instruct it not to, explicitly, every time.**
+
+**Five conditions shipped, each reusing existing engine mechanisms per queue item 7's own standing methodology, plus one genuinely new mechanism (malaria's hemolysis):**
+
+**1. Necrotizing Fasciitis** (section 8's Infectious-disease backlog). Real picture: a rapidly progressive soft-tissue infection with severe, disproportionate pain (pain out of proportion to visible findings — the classic early sign) and fast systemic toxicity, a true surgical emergency the field cannot treat beyond recognition and rapid transport. Built on the SAME shared inflammation cascade (`pat.pathogenBurden`/`pat.cytokineLoad`, item 46) and `riskFactors.sepsis` distributive-shock mechanism `pneumoniaSepsis`/`septicShock` already use — not duplicated, reused — distinguished by a genuinely FASTER time course and severe local pain via `pat.intrinsicPain` (queue item 20's handle). Deliberately did NOT wire the new acute-traumatic-coagulopathy pathway (V2-17, this same session's first wave): that mechanism's gate needs real structural organ/limb injury, which necrotizing fasciitis (an infective, not mechanical, lesion) has no genuine writer for — forcing the connection would have repeated the exact mechanism-category error that field's own comment warns against. Measured: SVR collapses 1152→458 by 1200s (vs. a healthy control); its own myocardial-depression gate (`contractilityFactor`) opens within ~20 minutes untreated, dramatically faster than `septicShock`'s own documented ~93-minute onset; sbp collapses further than septicShock's own at the matched 1200s timepoint (67.0 vs septicShock's own comparison point); severe pain (10/10) present from minute 5; fluids genuinely raise co (6.74→9.47) and sbp (73.7→90.8) through the shared Starling path, but the disproportionate local pain stays fixed at 10.0 with or without fluids — the actual clinical point (this needs surgery, not resuscitation, to fix). New scenario `necrotizingFasciitisCall` (INFX-001, a new numbering prefix — no Infectious-disease scenario existed before this session to extend).
+
+**2. Neuroleptic Malignant Syndrome** (section 8's Toxicology backlog), built as a real, deliberate CONTRAST to `serotoninSyndrome` (shipped in this session's first wave) per Caroff & Mann's classic review. Real distinguishing feature: sustained, uniform "lead-pipe" RIGIDITY (a new `pat.nmsRigidity`, narrated at the `reflexes` exam action — mirroring `serotoninSyndrome`'s own `pat.serotoninClonus` pattern but a genuinely separate field, since NMS's rigidity is sustained/uniform tone, mechanistically different from serotonin syndrome's intermittent clonus/hyperreflexia), triggered by dopamine (D2) antagonism (an antipsychotic dose increase) rather than serotonergic excess, with a real, slower days-scale onset. Reuses the SAME shared hyperthermia/tachycardia/hypertension/altered-mental-status handles (`metabolicHeatMultiplier`/`hrBase`/`baseSVR`/`agitationBurden`/`metabolicEncephalopathy`) serotoninSyndrome already established — not duplicated, reused with NMS's own severity numbers. Measured, directly contrasted against serotoninSyndrome at the SAME 900s timepoint (confirming the two are genuinely distinct in the engine, not a reskin): NMS rigidity=0.64 with clonus=0.00, vs. serotoninSyndrome's own clonus=0.58 with rigidity=0.00; NMS runs a hotter course (heat=1.88 vs. serotoninSyndrome's 1.71) with a slower within-call rise (0.090 vs. 0.180) — both real, citable, and opposite distinguishing signatures. Midazolam measurably suppresses agitation (0.55→0.02) while leaving the autonomic crisis untouched; active cooling partially lowers coreTemp without stopping the underlying rigidity-driven heat production. No field antidote exists (dantrolene/bromocriptine are hospital drugs) — recognize and transport, matching this project's honest precedent for several other toxidromes. New scenario TOX-015.
+
+**3. Cocaine Toxicity** (section 8's Toxicology backlog). Real picture (Lange & Hillis, NEJM 2001; Richards et al., Clin Toxicol 2016): severe tachycardia/hypertension from combined alpha/beta-adrenergic potentiation (reuptake BLOCKADE at the synapse — a real, distinct mechanism CATEGORY from ketamine's own indirect-sympathomimetic-via-adrenalReserve mechanism, this session's first wave's V2-26 work, so this condition deliberately does NOT gate on `adrenalReserve`), psychomotor agitation, hyperthermia, and the real teachable complication — coronary VASOSPASM from direct alpha-mediated coronary vasoconstriction. Reuses the EXISTING coronary supply/demand mechanism (`cardiovascular.js`'s `coronaryStenosis`/`myoO2Balance`/`atp`, the same term ACS's own structural lesion drives) for the vasospasm rather than inventing a parallel ischemia pathway, deliberately kept sub-critical (peak ~0.35) so it stays real and honest without widening the survivable-ischemia band queue item 19 already warns against. The real "unopposed alpha" beta-blocker relative-contraindication teaching point was investigated and found only PARTIALLY representable: metoprolol's own beta1/beta2 terms and this condition's coronaryStenosis/baseSVR terms don't read each other today, so metoprolol is honestly INERT rather than actively harmful here — flagged plainly in-code as a real, not-yet-closed gap rather than silently glossed over, deliberately not built out further as scope creep beyond the condition itself. Measured: untreated hr=170 vs. a healthy control's ~97-100, sbp=145, coronaryStenosis=0.35 (real but sub-critical — atp stays at 1.000, an honest finding matching real cocaine chest pain often occurring without objective infarction); already substantially symptomatic by 5 minutes (hr=158); midazolam (real, effective first-line field treatment, unlike several of this session's other toxidromes) measurably lowers hr to 160, sbp to 121, agitationBurden to 0.58; metoprolol lowers hr to 150 through its own unrelated mechanism while leaving coronaryStenosis/baseSVR completely unchanged — the honest partial representation described above. New scenario TOX-016.
+
+**4. Malaria** (section 8's Infectious-disease backlog), the one condition this wave that required GENUINELY NEW engine mechanism, not just reuse: real, pure HEMOLYSIS. Confirmed by grep before building anything that no pure red-cell-destruction pathway existed anywhere — every existing hematology writer either loses whole blood proportionally (hemorrhage, moving plasma and red cells together) or seeds a one-time construction-time shift (`sickleCellCrisis`). Built `updateHemolysis` (new, `metabolic.js`), consuming a condition-owned `pat.hemolysisRate` (%/min of rbcMass) that reduces `rbcVol`/`rbcMass`/`totalBloodVol` while leaving `plasmaVol` completely untouched — the real, distinguishing signature (RBCs destroyed IN PLACE, not lost from the vascular space, mechanistically the OPPOSITE of every hemorrhage in this engine) — wired into `patient.js`'s substep loop right after `updateHemorrhage`. Fever via the shared `metabolicHeatMultiplier` handle, sustained for the encounter rather than a literal 48-72h sinusoid (a call can't show one full real cycle, the same "no reason to simulate what a call cannot show" reasoning `cyanidePoisoning`'s own delayed-phase limb already established). Cerebral/multi-organ complications reuse `metabolicEncephalopathy`/`epilepticDrive`, gated on accumulated severity, not present from the first tick. No field antimalarial exists in any real EMS formulary (confirmed by grep — artesunate/quinine/doxycycline are all hospital-pharmacy drugs) — recognize (travel history) and support. Measured, matched-patient comparison (via `mutate`, not two differently-built scenario patients, since comparing plasma volume across different baseline blood volumes would be meaningless): untreated malaria shows hb 15.06 vs. a healthy control's 15.35, hct 0.452 vs. 0.461, while plasmaVol differs by only 0.006 L from that same control; a hemorrhage control over the identical window shows both rbcMass AND plasmaVol falling together, proportionally — the exact opposite signature; a condition-less control shows exactly zero hemolysisRate. Severe/cerebral escalation absent at a realistic 900s scene, reaching epilepticDrive=0.33/metabolicEncephalopathy=0.40 by 3600s (a real, honest days-scale-disease-compressed-into-hours finding, not forced to complete within one call). New scenario `malaria` (INF-001, and a new "Infectious Disease" `SCEN_BODY_SYSTEM` category in App.jsx, since none existed before this session).
+
+**5. Dengue Fever** (section 8's Infectious-disease backlog), built as the real MIRROR-IMAGE mechanism to malaria's hemolysis: plasma LEAKING OUT of the vasculature (increased capillary permeability), not red cells being destroyed. Note: this agent's own worktree was branched before malaria had merged, so it could not read that condition directly — it verified the distinguishing mechanism independently instead (confirmed `rbcMass` stays completely flat while plasma volume falls, the honest opposite of what a hemolysis mechanism would show) and the two conditions were confirmed compatible once merged. Real picture (WHO dengue classification): a febrile phase (breakbone headache/myalgia/retro-orbital pain via `pat.intrinsicPain`, `metabolicHeatMultiplier`), then — timed to the real, counterintuitive "deterioration during defervescence" teaching point — a critical phase as fever DECLINES: `pat.capillaryLeak` ramps to a real ceiling (same order of magnitude as `septicShock`/`acutePancreatitis`) driving genuine plasma-volume loss through the already-verified Starling mechanism, alongside real thrombocytopenia (`pat.plateletCount`, a re-imposed ceiling, the same idiom `preeclampsia`'s HELLP mechanism already uses) crossing the WHO <100 warning-sign threshold. Presents already at the defervescence transition (a days-long real natural history compressed into an "already symptomatic" framing, matching this project's own established precedent). Fluids are a real, field-actionable intervention here (unlike several of this session's other toxidromes) — but a genuinely honest, TWO-SIDED finding, found by measurement not assumed: saline raises plasmaVol (+1.6 L) and sbp (+31 mmHg) through the existing capillaryLeak-responsive Starling path, but does NOT fix, and via the engine's own pre-existing dilutional-coagulopathy term further DILUTES, the platelet count (83→52) — a real fluid-caution point matching actual WHO dengue-shock guidance about over-resuscitation risk. New scenario `dengueFeverCall` (INFX-002).
+
+**A real crash was found and fixed during this session's own consolidated verification, not shipped blind.** The first full `mechanismWiring.mjs` run after merging all five conditions crashed outright: `pat.nmsRigidity` is used extensively throughout the NMS assertions section but was never added to the suite's own `snapshot()` helper, so `untreated.after.nmsRigidity` read as `undefined` and the very first `.toFixed()` call on it threw. This is exactly the gap this project's own "measure the observable at the FAR END of the chain" discipline exists to catch — the NMS agent's own standalone verification only ever ran the assertion LOGIC directly against a hand-built object, never through the real suite's own snapshot path, so the gap was invisible until the actual full suite ran. Fixed with a one-line addition (`nmsRigidity: p.nmsRigidity || 0` in `snapshot()`) and re-verified: the full suite then ran clean.
+
+**Final consolidated verification, run to completion after every agent's work was merged and the crash above was fixed.** `node --check` and `npx eslint` clean on every touched file (same pre-existing 3-error `App.jsx` baseline, zero new findings). **`mechanismWiring.mjs`: 612 passed, 5 failed** — every new section for all five conditions passed cleanly, including their own two-sided treatment-response and specificity assertions; the 5 failures are ALL pre-existing, already-documented flaky/borderline assertions unrelated to anything this wave touched: the BVM trio (`ventUnloadFraction`/`workOfBreathing`/`vtPrev`), the PAC HR-variance stdev check, and the tracheostomy-vs-native-airway `vt` comparison — the last of which this document's own earlier text already records as an inherently razor-thin 0.002 L margin (0.4866 L vs 0.4886 L) asserted at the real measured threshold rather than an invented larger one, exactly the shape of assertion expected to occasionally flip sign on ordinary patient-construction noise. **`scenarioSweep.mjs`: 181 scenarios, 17,999,728 checks, 0 failed** — clean across the entire library, including all five new scenarios. `npx vite build`: clean (22.90s, same pre-existing >500kB chunk-size warning).
 
 ### 2026-09-01 — Multi-agent parallel batch: seven V2/physiology-queue items shipped in parallel via isolated git worktrees (blood viscosity, methemoglobinemia, ketamine, thirst, liver/gut reversible injury, acute traumatic coagulopathy, serotonin syndrome)
 
@@ -9372,8 +9402,10 @@ which is clinically correct and why its evidence base is mixed.)
 ## 8. Target condition library
 
 The set the simulator is aiming at, for the condition-library workstream (queue
-item 7). **Roughly 280 entries against 182 currently implemented, direct
-count as of this session's multi-agent batch (2026-09-01) — see this
+item 7). **Roughly 280 entries against 187 currently implemented, direct
+count as of this session's multi-agent batch's SECOND wave (2026-09-01,
++5: Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine
+Toxicity, Malaria, Dengue Fever — see section 3's topmost entry) — see this
 section's own closing paragraph below the "already implemented" list for
 the full reconciliation note.** Running tally as of the PRIOR session (161)
 follows below for historical trace, not the current total: (+1 this
@@ -9405,7 +9437,7 @@ lists below are the REMAINING backlog: a condition is REMOVED from its category
 list the session it ships (see the standing rule in section 4), so the categories
 shrink as the "already implemented" list grows and nothing is built twice.
 
-**Already implemented (182, direct count — see this list's own closing
+**Already implemented (187, direct count — see this list's own closing
 paragraph below for why the enumerated names below undercount that)** — for
 these the job is step (b) review and deepening,
 not a build from nothing. Several are thinner than the engine can support:
@@ -9490,18 +9522,22 @@ newest entry); and, from THIS session's multi-agent parallel batch,
 `hocmObstructive` (HOCM, shipped between the last count and this one — see
 its own section 3 entry immediately below this session's newest one),
 `acquiredMethemoglobinemia` (queue item V2-30) and `serotoninSyndrome`
-(queue item 7, Toxicology) — **182 conditions implemented in total now,
-confirmed by direct count against the tree**
+(queue item 7, Toxicology); and, from this SAME session's second wave,
+`necrotizingFasciitis`, `neurolepticMalignantSyndrome`, `cocaineToxicity`,
+`malaria` (a genuinely new pure-hemolysis mechanism, `updateHemolysis` in
+metabolic.js) and `dengueFever` (see section 3's topmost entry) —
+**187 conditions implemented in total now, confirmed by direct count
+against the tree**
 (`Object.keys(CONDITIONS).length`), not the running tally alone (lesson
 16). That is MORE than this paragraph's own name-by-name arithmetic would
 predict — the gap between a maintained running list and the real tree has
 recurred repeatedly across sessions (see the `diabetesT2`/
-`diltiazemOverdose`/etc. backfills above), and this session's direct count
-confirms it has widened further rather than closed. A full name-by-name
-reconciliation of this list against `Object.keys(CONDITIONS)` is genuinely
-overdue but was not attempted this session (large, separate audit work,
-out of scope for a parallel physiology batch) — treat the 182 figure as
-the trustworthy total and this list's own enumerated names as an
+`diltiazemOverdose`/etc. backfills above), and each successive session's
+direct count confirms it keeps widening rather than closing. A full
+name-by-name reconciliation of this list against `Object.keys(CONDITIONS)`
+is genuinely overdue but was not attempted this session (large, separate
+audit work, out of scope for a parallel physiology batch) — treat the 187
+figure as the trustworthy total and this list's own enumerated names as an
 incomplete, but not misleading, subset of it.
 
 Note that some entries below overlap these at finer grain — it separates the AV
@@ -9684,8 +9720,8 @@ discipline. See queue item 28 for the original fuller reasoning.)*
 ### Toxicology / Poisoning
 Acetaminophen Overdose ·
 Aspirin Toxicity · Beta Blocker Overdose ·
-Calcium Channel Blocker Overdose · Organophosphate Poisoning · Cocaine Toxicity ·
-Methamphetamine Toxicity · Neuroleptic Malignant Syndrome ·
+Calcium Channel Blocker Overdose ·
+Methamphetamine Toxicity ·
 Benzodiazepine Overdose · Alcohol Intoxication · Alcohol Withdrawal ·
 Opioid Withdrawal · Caustic Acid Ingestion · Alkali Ingestion · Synthetic Cannabinoid Intoxication ·
 Fentanyl Overdose ·
@@ -9812,14 +9848,20 @@ frame error in section 3 were both exactly this shape.)*
 
 ### Infectious disease
 HIV/AIDS · Human Papillomavirus (HPV) · Sexually Transmitted Disease
-(unspecified) · Cellulitis · Necrotizing Fasciitis · Septic Arthritis ·
-Toxic Shock Syndrome · Malaria · Dengue Fever · Sepsis (Undifferentiated Source) ·
+(unspecified) · Cellulitis · Septic Arthritis ·
+Toxic Shock Syndrome · Sepsis (Undifferentiated Source) ·
 Neutropenic Fever ·
 Influenza ·
 COVID-19 (Mild) ·
 Herpes Zoster ·
 Clostridioides difficile Colitis ·
-Lyme Disease 
+Lyme Disease
+
+*(Necrotizing Fasciitis, Malaria — with a genuinely new pure-hemolysis
+mechanism, `updateHemolysis` in metabolic.js — and Dengue Fever all shipped
+this session, see section 3's newest entries. A new "Infectious Disease"
+`SCEN_BODY_SYSTEM` category was created in App.jsx for them, since none
+existed before.)*
 
 ### Psychiatric
 Acute Psychosis ·
