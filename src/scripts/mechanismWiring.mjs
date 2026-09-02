@@ -109,6 +109,11 @@ function snapshot(p) {
     alphaTone: p.alphaTone || 0,
     beta1Tone: p.beta1Tone || 0,
     // Renal / endocrine
+    // V2-26 (ketamine dual sympathomimetic/direct-depression mechanism):
+    // the depletable catecholamine-reserve signal cardiovascular.js already
+    // maintains for every patient, reused (not reinvented) as the substrate
+    // that decides whether ketamine's indirect pressor support is present.
+    adrenalReserve: p.adrenalReserve ?? 1,
     adhs: p.adhs || 0,
     kMass: p.kMass || 0,
     naMass: p.naMass || 0,
@@ -5474,6 +5479,66 @@ console.log("\n[BLOOD VISCOSITY -> VASCULAR RESISTANCE — V2 physiology queue i
   hctNearNormal ? pass++ : fail++;
   if (!hctNearNormal) failures.push(`healthy control hct expected near 0.45, got ${healthy.after.hct.toFixed(3)}`);
   console.log(`  ${hctNearNormal ? "PASS" : "FAIL"}  ${"...a healthy control sits at its own normal hct (mechanism inert at rest)".padEnd(46)} hct=${healthy.after.hct.toFixed(3)}, svr=${healthy.after.svr.toFixed(1)}`);
+}
+
+console.log("\n[KETAMINE — indirect sympathomimetic + masked direct depression, V2-26]");
+{
+  // Ketamine does not stimulate adrenoceptors directly (Domino, Anesthesiology
+  // 2010 review; White, Way & Trevor, Anesthesiology 1982). Its cardiovascular
+  // support is produced BY THE PATIENT'S OWN CATECHOLAMINES — central
+  // sympathetic outflow plus inhibited noradrenaline reuptake — so
+  // `drugs.js`'s `indirectSympathomimetic:true` scales ketamine's declared
+  // alpha/beta1 receptor terms by `pat.adrenalReserve` (pk.js), the SAME
+  // depletable reserve cardiovascular.js already drains under sustained
+  // sympathetic drive for every patient (no new state was added for this).
+  // Ketamine's real, direct negative inotropy (`myocardialDepression:0.25`,
+  // drugs.js) is unconditional and always present — it is ordinarily masked
+  // by the indirect pressor support, and only becomes hemodynamically
+  // dominant once that support has nothing left to draw on, which is the
+  // real, documented reason ketamine is reported to cause hypotension
+  // specifically in prolonged/decompensated shock.
+  //
+  // Common case first, per this suite's own standing risk: a healthy or
+  // moderately-shocked patient with an intact catecholamine reserve must
+  // still show ketamine RAISING hr/sbp — the actual reason it is favored
+  // as a hypotensive-trauma induction agent.
+  const healthy = probe({ scen: "abdPain", apply: ["ketamine"] });
+  assertMoved("ketamine raises HR in a healthy/intact-reserve patient", healthy, "hr", "up", 10);
+  assertMoved("ketamine raises SBP in a healthy/intact-reserve patient", healthy, "sbp", "up", 15);
+
+  // A real, already-shipped, moderate-shock condition (septicShock, queue
+  // item 7's own standing workstream) with reserve still intact: the same
+  // indirect pressor response should still fire despite the underlying
+  // distributive shock — ketamine remains a reasonable induction choice
+  // here, matching real clinical practice.
+  const modShockIntact = probe({ scen: "septicShock", settle: 180, run: 900, apply: ["ketamine"] });
+  assertMoved("...also raises HR in a real moderate-shock patient with reserve intact", modShockIntact, "hr", "up", 10);
+  assertMoved("...also raises SBP in a real moderate-shock patient with reserve intact", modShockIntact, "sbp", "up", 5);
+
+  // Late/decompensated shock: the SAME condition, with adrenalReserve held
+  // near-exhausted every tick (mutate — the same substrate-imposition idiom
+  // every other probe() call in this suite already uses, e.g. the blood-
+  // viscosity section's hct overrides above). This is the real clinical
+  // patient ketamine is documented to cause hypotension in: someone who has
+  // been compensating for an hour and has no more indirect reserve to give.
+  const lateShockDepleted = probe({
+    scen: "septicShock", settle: 180, run: 900, apply: ["ketamine"],
+    mutate: (p) => { p.adrenalReserve = Math.min(p.adrenalReserve, 0.08); },
+  });
+  // Direct check: the depleted patient's own indirect receptor terms stay
+  // near zero despite the same dose, confirming the masking mechanism
+  // itself is disabled, not just that the outcome happens to differ.
+  const depletedIndirectOff = lateShockDepleted.patient._beta1Drug < 0.1 && lateShockDepleted.patient._alphaDrug < 0.1;
+  depletedIndirectOff ? pass++ : fail++;
+  if (!depletedIndirectOff) failures.push(`depleted-reserve patient should show near-zero indirect alpha/beta1 drug terms, got alpha=${lateShockDepleted.patient._alphaDrug}, beta1=${lateShockDepleted.patient._beta1Drug}`);
+  console.log(`  ${depletedIndirectOff ? "PASS" : "FAIL"}  ${"...indirect alpha/beta1 support is genuinely absent once reserve is depleted".padEnd(46)} alpha=${(lateShockDepleted.patient._alphaDrug||0).toFixed(3)}, beta1=${(lateShockDepleted.patient._beta1Drug||0).toFixed(3)}`);
+
+  // The teaching point itself, two-sided against the reserve-intact arm of
+  // the SAME condition and SAME dose: with no indirect support left to mask
+  // it, ketamine's unconditional direct myocardial depression is unopposed
+  // and SBP falls relative to the reserve-intact patient, rather than rising.
+  assertVersus("...unmasks direct myocardial depression -> SBP falls vs reserve-intact patient", lateShockDepleted, modShockIntact, "sbp", "down", 15);
+  assertVersus("...same effect on HR: no indirect tachycardic support left", lateShockDepleted, modShockIntact, "hr", "down", 15);
 }
 
 console.log("\n" + "=".repeat(74));
