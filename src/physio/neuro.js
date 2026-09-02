@@ -320,6 +320,72 @@ export function updateOrganInjury(pat, dt) {
       if (deficit < 0.01) pat.limbInjury[loc] = Math.max(0, pat.limbInjury[loc] - 0.0008 * dt);
       pat.limbInjury[loc] = Math.max(0, Math.min(1, pat.limbInjury[loc]));
     }
+
+    // PER-ORGAN OXYGEN EXTRACTION, generalized (queue item V2-2). Item 42
+    // already built real per-organ DO2 (delivery) for kidney/liver/gut/skin
+    // and, above, skeletal muscle -- but delivery alone only says whether an
+    // organ is ischemic (DO2 below its own threshold), not how much of what
+    // IS delivered the organ is actually extracting. Real organs compensate
+    // for falling delivery by extracting MORE of the oxygen they still get,
+    // up to a real physiologic ceiling -- and different organs have very
+    // different amounts of that reserve at rest. Resting extraction targets
+    // (Guyton & Hall, Textbook of Medical Physiology -- the same order-of-
+    // magnitude figures this project's own literature-anchor discipline
+    // asks for, stated as calibration targets, not fixed constants):
+    // kidney ~10%, liver ~25%, gut ~25%, skeletal muscle ~25% at rest (can
+    // rise sharply during exercise -- not modeled here, this is a resting/
+    // shock-state target). The heart already extracts ~60% of what it's
+    // given AT REST -- almost its whole physiologic ceiling -- which is the
+    // real, teachable reason the myocardium has the LEAST reserve against
+    // hypoperfusion of any organ in the body and decompensates first; brain
+    // sits around 35%. Extraction rises reciprocally as delivery falls
+    // (real compensatory physiology, not guessed), capped at a real
+    // ceiling beyond which anaerobic metabolism/lactate production takes
+    // over rather than further extraction (65% for the organs below; the
+    // heart is given a narrower ceiling since it starts closer to its own
+    // limit already).
+    //
+    // Brain and heart are deliberately NOT given a live dynamic extraction
+    // here: brainO2now (this file) and myoO2Balance (cardiovascular.js) are
+    // real signals but in units that don't reduce to the same 0-1
+    // DO2-normalized-to-rest scale kidney/liver/gut/skin/muscle share --
+    // making them dynamic honestly would need a real, separately-derived
+    // conversion, which is new perfusion-model work, explicitly out of
+    // scope for this item ("wire it through EXISTING per-organ DO2 signals,
+    // don't invent new organ perfusion mechanisms"). They compose into the
+    // mixed-venous estimate below at their own cited RESTING target instead
+    // -- a real, honest limitation, not silently glossed over.
+    const extractionOf = (do2n, restTarget, ceiling) => {
+      const d = Math.max(0.05, do2n);
+      return Math.min(ceiling, Math.max(restTarget, restTarget / d));
+    };
+    pat.organExtraction = pat.organExtraction || {};
+    pat.organExtraction.kidney = extractionOf(pat.renalDO2 ?? 1, 0.10, 0.65);
+    pat.organExtraction.liver = extractionOf(pat.hepaticDO2 ?? 1, 0.25, 0.65);
+    pat.organExtraction.gut = extractionOf(pat.gutDO2 ?? 1, 0.25, 0.65);
+    pat.organExtraction.skin = extractionOf(pat.skinDO2 ?? 1, 0.10, 0.65);
+    pat.organExtraction.muscle = extractionOf(muscleFactor * ((pat.caO2 ?? 20) / 20), 0.25, 0.70);
+    pat.organExtraction.brain = 0.35; // static target -- see comment above
+    pat.organExtraction.heart = 0.60; // static target -- see comment above
+
+    // FLOW-WEIGHTED COMPOSITE, real Fick mixing (mixed venous O2 content is
+    // the flow-weighted average of every venous bed's own content): weights
+    // are approximate resting fractions of cardiac output per organ bed
+    // (Guyton & Hall Ch.14's own resting-distribution table -- kidneys
+    // ~20-25%, splanchnic/hepatic bed ~25% combined here split gut/liver,
+    // skeletal muscle ~20% at rest, skin ~5%, brain ~15%, heart(coronary)
+    // ~5%, everything else -- bone, adipose, remainder -- ~10% at a
+    // generic mid-range extraction). These are STATIC weights, not a new
+    // dynamic flow-distribution mechanism -- the same "reuse existing
+    // signals, cite literature constants" posture this item's own text
+    // requires, not new perfusion modeling.
+    const W = { kidney: 0.20, liver: 0.10, gut: 0.15, skin: 0.05, muscle: 0.20, brain: 0.15, heart: 0.05 };
+    const OTHER_W = 0.10, OTHER_ER = 0.25; // remainder tissue bed, generic mid-range target
+    let weightedER = OTHER_W * OTHER_ER;
+    for (const k of Object.keys(W)) weightedER += W[k] * pat.organExtraction[k];
+    // Same 0-100 scale as respiratory.js's own pat.svO2 (both are
+    // sao2 * (1 - extraction)) so the two are directly comparable.
+    pat.svO2Composite = Math.max(0, (pat.sao2 ?? 98) * (1 - weightedER));
 }
 
 export function updateCerebral(pat, dt) {

@@ -966,6 +966,18 @@ export class Patient {
     // signal only, deliberately no injury accumulator (see neuro.js's
     // comment); real values computed every tick by updateOrganInjury.
     this.skinDO2 = 1;
+    // MIXED VENOUS O2 SATURATION, per-organ-extraction composite (queue item
+    // V2-2). respiratory.js's own pat.svO2 is a real whole-body Fick number
+    // (VO2/DO2 against the WHOLE patient) -- confirmed real before building
+    // anything here, not decorative, and already has a genuine consumer
+    // (feeds pat.pvO2, which feeds venous admixture back into pat.pao2). This
+    // is a SEPARATE, additional composite built from each organ's own
+    // already-real DO2 signal (item 42) and its own resting extraction
+    // target, flow-weighted -- so two patients with the SAME whole-body
+    // svO2 can show a genuinely different composite if their hypoperfusion
+    // is distributed differently across organs. See neuro.js's
+    // updateOrganInjury for the real computation and citations.
+    this.svO2Composite = 1;
     // PER-LIMB arterial occlusion/perfusion (queue item 74, Phase 2). Unlike
     // woundBleedByLocation (a static construction-time snapshot), this is a
     // LIVE, mutable per-limb state: 0 = normal arterial inflow, 1 = fully

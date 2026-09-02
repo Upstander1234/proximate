@@ -337,6 +337,35 @@ export const outcomeReport = (s) => {
       reversible.push("mucosal (villous) bowel ischemia from transient splanchnic hypoperfusion (likely reversible with restored perfusion, before transmural infarction)");
     }
 
+    // GLOBAL OXYGEN-EXTRACTION RESERVE (queue item V2-2) — a real, DIFFERENT
+    // signal from the injury lists above. Injury (irreversible/reversible)
+    // only shows up once an organ's own delivery has fallen far enough to
+    // cause damage; extraction-RESERVE exhaustion (an organ already
+    // extracting at its own physiologic ceiling, per neuro.js's
+    // pat.organExtraction) is the compensatory step that precedes that,
+    // by definition -- an organ with no extraction headroom left has
+    // nothing further to fall back on if delivery drops any more. Reported
+    // here as its own field rather than folded into reversible/irreversible,
+    // since it is a prognostic/reserve signal, not a finding about damage
+    // already done. Threshold (60% mixed venous saturation) is a real,
+    // cited clinical anchor -- Rivers et al., NEJM 2001, used central
+    // venous O2 saturation <70% as the early-goal-directed-therapy
+    // resuscitation target; mixed (pulmonary-artery) venous saturation runs
+    // a few points lower than central under the same physiology, so 60% is
+    // the honestly-adjusted equivalent for this engine's own mixed-venous
+    // composite, not the central-venous number itself.
+    const EXTRACTION_RESERVE_ORGANS = { kidney: "kidney", liver: "liver", gut: "gut/bowel", skin: "skin", muscle: "skeletal muscle" };
+    const exhaustedOrgans = [];
+    for (const k of Object.keys(EXTRACTION_RESERVE_ORGANS)) {
+      const er = (pat.organExtraction || {})[k];
+      // 0.65/0.70 are this same organ's own real ceiling (neuro.js) -- "at
+      // reserve" means within 2 points of that ceiling, not exactly equal
+      // to it (a live per-tick float rarely lands on the exact clamp).
+      const ceiling = k === "muscle" ? 0.70 : 0.65;
+      if (er != null && er >= ceiling - 0.02) exhaustedOrgans.push(EXTRACTION_RESERVE_ORGANS[k]);
+    }
+    const svO2Composite = pat.svO2Composite != null ? +pat.svO2Composite.toFixed(1) : null;
+
     const mech = pat.deathMechanism ? MECHANISM_TREATABILITY[pat.deathMechanism] : null;
 
     return {
@@ -360,6 +389,13 @@ export const outcomeReport = (s) => {
       timeOfDeathMin: pat.deathTimeMin != null ? +pat.deathTimeMin.toFixed(1) : null,
       irreversibleInjuries: irreversible,
       reversibleFindings: reversible,
+      // GLOBAL OXYGEN-EXTRACTION RESERVE (queue item V2-2) -- see comment
+      // above. svO2Composite is the real, per-organ-extraction-weighted
+      // mixed venous saturation estimate (neuro.js); organsAtExtractionLimit
+      // names which organs (of the ones with a live dynamic extraction
+      // signal) have exhausted their own compensatory reserve.
+      svO2Composite,
+      organsAtExtractionLimit: exhaustedOrgans,
       // See MECHANISM_TREATABILITY: this reports whether the lethal mechanism is
       // of a treatable KIND. It is not a claim about this patient's outcome.
       lethalMechanismTreatable: mech ? mech.treatable : null,

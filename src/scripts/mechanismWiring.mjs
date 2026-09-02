@@ -452,6 +452,13 @@ function snapshot(p) {
     // one but not the other) can be asserted directly.
     cholinergicVagalTone: p.cholinergicVagalTone || 0,
     broncho: p.broncho || 0,
+    // Per-organ oxygen extraction (queue item V2-2). svO2Composite is the
+    // real flow-weighted mixed venous saturation; the two organ-extraction
+    // ratios are read directly since they diverge from each other even when
+    // svO2Composite alone would not (see this section's own assertions).
+    svO2Composite: p.svO2Composite ?? 100,
+    kidneyExtraction: (p.organExtraction || {}).kidney ?? 0.10,
+    gutExtraction: (p.organExtraction || {}).gut ?? 0.25,
   };
 }
 
@@ -6186,6 +6193,72 @@ console.log("[COCAINE TOXICITY — queue item 7, Toxicology backlog]");
   pltNotImproved ? pass++ : fail++;
   if (!pltNotImproved) failures.push(`saline should NOT improve plateletCount (fluids treat volume, not thrombocytopenia — and repeated dosing genuinely dilutes it further via the existing dilutional-coagulopathy term), got untreated=${untreated.after.plateletCount.toFixed(1)}, treated=${treated.after.plateletCount.toFixed(1)}`);
   console.log(`  ${pltNotImproved ? "PASS" : "FAIL"}  ${"...but does NOT correct thrombocytopenia (dilutes it further)".padEnd(46)} plt: untreated=${untreated.after.plateletCount.toFixed(0)}, saline-treated=${treated.after.plateletCount.toFixed(0)}`);
+}
+
+console.log("[PER-ORGAN OXYGEN EXTRACTION — queue item V2-2]");
+{
+  // Confirmed before building anything (per this item's own instructions):
+  // metabolic.js has no pat.svO2/er calculation at all -- that logic
+  // actually lives in respiratory.js, and it IS already a real, whole-body
+  // Fick-equation number (pat.svO2 = sao2*(1-VO2/DO2)) with a genuine
+  // consumer (pat.pvO2 -> venous admixture -> pat.pao2). This section tests
+  // the NEW addition: real, per-organ extraction ratios (neuro.js), built
+  // from each organ's ALREADY-REAL DO2 signal (item 42) and a cited resting
+  // extraction target, composed into pat.svO2Composite -- and confirms
+  // organs genuinely diverge from each other even when the single
+  // whole-body number would not distinguish them.
+  const control = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  // Presence + specificity: a healthy control's organ extraction ratios
+  // sit at (or very near) their own cited resting targets -- kidney ~10%,
+  // gut ~25% -- not pinned at some arbitrary/decorative value.
+  const kidneyOk = control.after.kidneyExtraction >= 0.09 && control.after.kidneyExtraction <= 0.20;
+  kidneyOk ? pass++ : fail++;
+  if (!kidneyOk) failures.push(`healthy control kidney extraction should sit near its 10% resting target, got ${control.after.kidneyExtraction.toFixed(3)}`);
+  console.log(`  ${kidneyOk ? "PASS" : "FAIL"}  ${"healthy control: kidney extraction near its own 10% resting target".padEnd(46)} kidneyExtraction = ${control.after.kidneyExtraction.toFixed(3)}`);
+
+  const svo2Ok = control.after.svO2Composite >= 60 && control.after.svO2Composite <= 85;
+  svo2Ok ? pass++ : fail++;
+  if (!svo2Ok) failures.push(`healthy control svO2Composite should sit in a normal 60-85% mixed-venous range, got ${control.after.svO2Composite.toFixed(1)}`);
+  console.log(`  ${svo2Ok ? "PASS" : "FAIL"}  ${"healthy control: svO2Composite in the normal 60-85% range".padEnd(46)} svO2Composite = ${control.after.svO2Composite.toFixed(1)}`);
+
+  // THE REAL TEACHING POINT, per this item's own "measure against the
+  // engine" instruction: two real, already-shipped shock scenarios can
+  // produce a near-identical whole-body svO2Composite while their
+  // PER-ORGAN extraction pattern is genuinely different -- something a
+  // single whole-body number cannot show. Cardiogenic shock (pump
+  // failure, low CO, but no strong afferent-arteriolar/angiotensin renal
+  // constriction this early) SPARES the kidney's own extraction reserve;
+  // a severe hemorrhagic bleed with strong alphaTone/angiotensin-driven
+  // vasoconstriction (AAA) does not -- MEASURED, not assumed.
+  const cardio = probe({ scen: "cardiogenicShock", settle: 2, run: 300 });
+  const aaa = probe({ scen: "abdominalAorticAneurysm", settle: 2, run: 1800 });
+
+  const kidneySpared = cardio.after.kidneyExtraction < 0.30;
+  const kidneyExhausted = aaa.after.kidneyExtraction >= 0.60;
+  const divergence = kidneySpared && kidneyExhausted;
+  divergence ? pass++ : fail++;
+  if (!divergence) failures.push(`cardiogenic shock should spare kidney extraction reserve (<0.30) while AAA's hemorrhagic shock exhausts it (>=0.60) -- distinct per-organ patterns; got cardio=${cardio.after.kidneyExtraction.toFixed(3)}, aaa=${aaa.after.kidneyExtraction.toFixed(3)}`);
+  console.log(`  ${divergence ? "PASS" : "FAIL"}  ${"cardiogenic vs AAA: kidney extraction diverges by SHOCK TYPE".padEnd(46)} cardiogenic=${cardio.after.kidneyExtraction.toFixed(3)} (spared), AAA=${aaa.after.kidneyExtraction.toFixed(3)} (exhausted)`);
+
+  // ...even though the single whole-body composite for the two is far
+  // closer together than the per-organ divergence above -- confirming the
+  // composite alone would NOT have shown this distinction.
+  const compositeClose = Math.abs(cardio.after.svO2Composite - aaa.after.svO2Composite) < 15;
+  compositeClose ? pass++ : fail++;
+  if (!compositeClose) failures.push(`the two shock scenarios' svO2Composite should be much closer together than their kidney-extraction gap (demonstrating the composite alone hides the per-organ story), got cardio=${cardio.after.svO2Composite.toFixed(1)}, aaa=${aaa.after.svO2Composite.toFixed(1)}`);
+  console.log(`  ${compositeClose ? "PASS" : "FAIL"}  ${"...while their whole-body svO2Composite stays much closer".padEnd(46)} cardiogenic=${cardio.after.svO2Composite.toFixed(1)}, AAA=${aaa.after.svO2Composite.toFixed(1)}`);
+
+  // Different organs have different amounts of extraction RESERVE: gut's
+  // resting target (25%) is 2.5x kidney's (10%), so at an IDENTICAL
+  // fractional perfusion deficit (same alphaTone-driven skin/gut DO2
+  // formula in neuro.js) gut reaches its own extraction ceiling while
+  // kidney (driven by a different, angiotensin-gated mechanism) may not --
+  // real, organ-specific reserve depth, not a copy-pasted number.
+  const gutMoreExhausted = aaa.after.gutExtraction > control.after.gutExtraction + 0.2;
+  gutMoreExhausted ? pass++ : fail++;
+  if (!gutMoreExhausted) failures.push(`AAA's severe shock should push gut extraction well above its own resting target, got control=${control.after.gutExtraction.toFixed(3)}, aaa=${aaa.after.gutExtraction.toFixed(3)}`);
+  console.log(`  ${gutMoreExhausted ? "PASS" : "FAIL"}  ${"AAA: gut extraction rises well above its own resting target".padEnd(46)} control=${control.after.gutExtraction.toFixed(3)}, AAA=${aaa.after.gutExtraction.toFixed(3)}`);
 }
 
 console.log("\n" + "=".repeat(74));
