@@ -6584,4 +6584,58 @@ necrotizingFasciitisCall: {cat: "medical", id: "INFX-001", pronouns: "he", title
     notes.push("There is no field antibiotic, and there is no field surgery — emergent debridement is the only definitive treatment for necrotizing fasciitis, and it does not exist in this box. Fluids will support his blood pressure, but they will not touch the pain or the tissue destruction driving it; both need a scalpel, not a bag of saline. The job here is recognizing it fast and getting him to a facility that can operate, not managing it on scene.");
     return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Necrotizing fasciitis — fulminant soft-tissue infection progressing to septic shock, no field cure, rapid transport for emergent surgical debridement"};},
 },
+
+// Dengue Fever (queue item 7, section 8's Infectious-disease backlog).
+// Second entry in the INFX-* prefix started by necrotizingFasciitisCall.
+// A travel-history-triggered presentation, the same framing precedent as
+// this session's own malaria condition — a returning traveler from a
+// dengue-endemic region, now several days into the illness and presenting
+// exactly at the defervescence/critical-phase transition this condition's
+// own comment describes.
+dengueFeverCall: {cat: "medical", id: "INFX-002", pronouns: "she", title: "Female, 24. Returned from Southeast Asia 5 days ago, fever finally breaking, now feels worse.",
+  limit: 1200, transport: 420,
+  bystanders: "Her roommate, pacing the hallway. \"She got back from Thailand five days ago and has had this awful fever since two days after she landed. Today the fever finally started coming down and I thought she was getting better, but she just looks worse. She said her stomach hurts and I saw blood when she was brushing her teeth.\"",
+  units: [{at: 320, level: "paramedic", name: "Medic 4"}],
+  dispatch: ["24F, returning traveler from Southeast Asia, days of high fever now defervescing.", "Roommate reports gum bleeding and abdominal pain."],
+  update: ["Roommate: \"Her legs, look at her legs, there's this rash and bruising that wasn't there this morning.\""],
+  impression: "On the couch under a blanket despite the room being warm, pale and sweaty, holding her abdomen. She's alert but slow to answer, wincing when you touch behind her eyes or move her joints. Faint pinpoint bruising is visible on both lower legs, and there's a thin line of blood at her gumline.",
+  imps: ["FEVR", "SHOK", "HOTN", "PMGT"],
+  condition: "dengueFever",
+  patient: {age: 24, gender: "female"},
+  clothing: {top: "short", bottom: "shorts", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "Roommate: \"High fever started about two days after she got back from Thailand, five days ago now. Terrible headache, pain behind her eyes, aching all over, she called it 'breakbone.' The fever was finally breaking this morning and I thought that meant she was over it.\"", kind: "pt",
+      evid: "A febrile illness beginning days after return from a dengue-endemic region (Southeast Asia), with severe headache, retro-orbital pain and myalgia/arthralgia — the classic 'breakbone fever' triad — matching the febrile phase of dengue, days 1-3 of a typical course (WHO 2009 Dengue guidelines).", find: "OPQRST (collateral): fever + severe headache/retro-orbital pain/myalgia beginning 2 days post-travel-return to Southeast Asia, now day 5, fever recently defervescing."}),
+    sample: () => ({say: "Roommate: \"No medications, no allergies she's told me about. She hasn't been able to eat much, mostly just sipping water. This is her first time back to Asia in years.\"", kind: "pt",
+      evid: "Travel history to a dengue-endemic region is the single most important epidemiologic clue for this presentation — without it, a defervescing fever with new bleeding and abdominal pain has a much wider, less specific differential.", find: "SAMPLE: no meds/allergies known, poor oral intake, recent travel to Southeast Asia (dengue-endemic region)."}),
+    skin: (s) => {
+      const p = s.patient;
+      const plt = p?.plateletCount ?? 250;
+      const bleeding = plt < 100;
+      return {say: bleeding
+        ? "Pale, sweaty. Faint pinpoint red-purple spots on both lower legs, and a thin line of blood along her gumline that wasn't wiped away."
+        : "Pale, sweaty, a few faint bruise-like marks on the shins.", kind: bleeding ? "warn" : "obs",
+        evid: bleeding ? "Petechiae and mucosal bleeding (gums) alongside a real, falling platelet count are the bleeding-tendency half of severe dengue — a genuine coagulopathy, not just a rash." : "",
+        find: `Skin: pale, diaphoretic${bleeding ? "; scattered petechiae bilateral lower legs, gingival bleeding" : "; mild bruising"}.`};
+    },
+    heart: (s, v) => {
+      const p = s.patient;
+      const leak = p?.capillaryLeak || 0;
+      const plt = p?.plateletCount ?? 250;
+      if (leak >= 0.15) return {say: `Rate ${v.hr}, pressure ${v.sbp}/${v.dbp} — narrowing pulse pressure. Her fever's coming down, but she looks worse than she did on approach, not better.`, kind: "crit",
+        evid: "A narrowing pulse pressure with a falling temperature, in a patient several days into a dengue-consistent illness, is the real, counterintuitive warning sign of dengue's critical phase (plasma leakage into the extravascular space) — the patient appears to be improving by temperature alone while actually decompensating.", find: `Heart: tachycardic, narrowing pulse pressure (${v.sbp}/${v.dbp}). Temperature trending down while perfusion trends the wrong way.`};
+      return {say: `Rate ${v.hr}, pressure ${v.sbp}/${v.dbp}.`, find: `Heart: tachycardic, BP ${v.sbp}/${v.dbp}.`,
+        evid: plt < 100 ? "Platelet count already below the WHO warning-sign threshold, even before the hemodynamics show it." : ""};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const fluidL = (s.given.saline || 0) * 0.5 + (s.given.plasmalyte || 0) * 0.5;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated severe dengue: unchecked plasma leakage into the extravascular space, on top of real thrombocytopenia, progressed to dengue shock syndrome.";
+    notes.push("The fever breaking is not the same as getting better. In dengue, defervescence (typically days 3-7 of illness) is exactly when the real, dangerous process — plasma leakage from increased capillary permeability, plus real thrombocytopenia — takes over. A patient who looks like she's improving by temperature alone can be entering the highest-risk window of the whole illness.");
+    if (fluidL > 0) notes.push("Cautious IV fluids are genuinely the right field-relevant move here, unlike several other toxidromes: dengue's plasma leakage responds to volume replacement the same way any other capillary-leak state does. Two real cautions are worth knowing, even if only one shows up on the monitor tonight: aggressive, repeated fluid dosing genuinely dilutes an already-low platelet count further (watch it happen on reassessment, not just in the textbook), and over-aggressive resuscitation can also cause harm once the leak eventually resolves (fluid overload) — the reason hospital management titrates carefully rather than simply running fluids wide open.");
+    else notes.push("No fluids given. This patient's own falling pulse pressure and rising heart rate, even as her fever comes down, are the real, measurable signature of ongoing plasma leakage — cautious fluid resuscitation is the one genuinely field-actionable intervention here.");
+    notes.push("There is no field antiviral for dengue. The job on scene is recognizing the real warning signs (bleeding, abdominal pain, a falling platelet count, narrowing pulse pressure as the fever breaks), supportive care, and prompt transport — not a cure.");
+    return {died, cause, notes, correct: s.pi === "FEVR" || s.pi === "SHOK", truth: "Dengue fever entering its critical (defervescence) phase — real plasma leakage and thrombocytopenia, no field antiviral, cautious fluids and transport"};},
+},
 };

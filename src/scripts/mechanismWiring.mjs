@@ -6078,6 +6078,90 @@ console.log("[COCAINE TOXICITY — queue item 7, Toxicology backlog]");
   console.log(`  ${metoOk ? "PASS" : "FAIL"}  ${"...metoprolol lowers hr but leaves coronary vasospasm untouched".padEnd(46)} hr ${untreated.after.hr.toFixed(1)} -> ${metoTreated.after.hr.toFixed(1)}, coronaryStenosis unchanged at ${metoTreated.after.coronaryStenosis.toFixed(3)}`);
 }
 
+// ===== DENGUE FEVER — queue item 7, Infectious-disease backlog =====
+// Two real, distinct mechanisms: (1) febrile phase — real fever via
+// metabolicHeatMultiplier (DECLINING, not held, the defervescence teaching
+// point) plus real breakbone myalgia/headache via intrinsicPain; (2) the
+// critical phase engaging AS the fever declines — real plasma leakage
+// (capillaryLeak -> metabolic.js's Starling equation) and real
+// thrombocytopenia (a re-imposed plateletCount ceiling, the same idiom
+// preeclampsia's own HELLP platelet ceiling already established).
+{
+  console.log("\n[DENGUE FEVER — queue item 7, Infectious-disease backlog]");
+  const untreated = probe({ scen: "dengueFeverCall", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  // Presence: real plasma leakage and real thrombocytopenia both fire.
+  const fires = untreated.after.capillaryLeak > 0.1
+    && untreated.after.plateletCount < 100
+    && untreated.after.intrinsicPain > 4;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`dengueFever should show capillaryLeak>0.1, plateletCount<100, intrinsicPain>4 by 900s, got leak=${untreated.after.capillaryLeak.toFixed(3)} plt=${untreated.after.plateletCount.toFixed(1)} pain=${untreated.after.intrinsicPain.toFixed(1)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"dengueFever -> real plasma leakage + thrombocytopenia + pain fire".padEnd(46)} leak=${untreated.after.capillaryLeak.toFixed(3)} plt=${untreated.after.plateletCount.toFixed(1)} pain=${untreated.after.intrinsicPain.toFixed(1)}`);
+
+  // Specificity: a condition-less control shows exactly zero of it.
+  const healthyOk = healthy.after.capillaryLeak === 0 && healthy.after.plateletCount === 250
+    && healthy.after.metabolicHeatMultiplier === 1;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show exactly zero capillaryLeak/thrombocytopenia and metabolicHeatMultiplier=1, got ${healthy.after.capillaryLeak}/${healthy.after.plateletCount}/${healthy.after.metabolicHeatMultiplier}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} leak=${healthy.after.capillaryLeak.toFixed(2)} plt=${healthy.after.plateletCount.toFixed(0)}`);
+
+  // The counterintuitive teaching point, asserted directly: fever DECLINES
+  // (metabolicHeatMultiplier trends down toward 1, unlike every other
+  // febrile condition in this file which HOLDS it up) while the critical
+  // phase (leak, thrombocytopenia) simultaneously WORSENS over the same
+  // window — the real "looks like she's getting better, isn't" signature.
+  // Compared against an EARLY probe (120s), not this same probe's own
+  // `before` snapshot: at settle=2 (the standard convention every probe()
+  // call in this suite uses), only a single 2-second tick has elapsed
+  // since patient construction, and stepPatient()'s own dt>0 gate means
+  // conditions.progress() has not actually run yet at that instant — the
+  // `before` snapshot is pre-condition, not "presenting." A real 120s
+  // early-state probe is the honest presenting-state comparison instead.
+  const early = probe({ scen: "dengueFeverCall", settle: 2, run: 120 });
+  const feverDeclines = untreated.after.metabolicHeatMultiplier < early.after.metabolicHeatMultiplier;
+  const criticalWorsens = untreated.after.capillaryLeak > early.after.capillaryLeak
+    && untreated.after.plateletCount < early.after.plateletCount;
+  const mirrorOk = feverDeclines && criticalWorsens;
+  mirrorOk ? pass++ : fail++;
+  if (!mirrorOk) failures.push(`dengueFever should show fever DECLINING while leak/thrombocytopenia WORSEN between 120s and 900s (the real defervescence teaching point), got heat ${early.after.metabolicHeatMultiplier.toFixed(3)}->${untreated.after.metabolicHeatMultiplier.toFixed(3)}, leak ${early.after.capillaryLeak.toFixed(3)}->${untreated.after.capillaryLeak.toFixed(3)}, plt ${early.after.plateletCount.toFixed(1)}->${untreated.after.plateletCount.toFixed(1)}`);
+  console.log(`  ${mirrorOk ? "PASS" : "FAIL"}  ${"fever declines WHILE plasma leak/thrombocytopenia worsen".padEnd(46)} heat ${early.after.metabolicHeatMultiplier.toFixed(2)}->${untreated.after.metabolicHeatMultiplier.toFixed(2)}, plt ${early.after.plateletCount.toFixed(0)}->${untreated.after.plateletCount.toFixed(0)}`);
+
+  // The distinguishing mechanism-category signature vs. a hemolysis
+  // mechanism (malaria's own real lesion — direct red-cell destruction):
+  // dengue's rbcMass must stay COMPLETELY intact (plasma leaks OUT,
+  // red cells are not destroyed) while hct still rises, because the
+  // hemoconcentration is coming entirely from the plasma-volume side, not
+  // from red-cell mass falling. A hemolysis mechanism would show the
+  // mirror image (rbcMass AND hct both falling together).
+  const rbcIntact = Math.abs(untreated.after.rbcMass - untreated.before.rbcMass) < 1;
+  rbcIntact ? pass++ : fail++;
+  if (!rbcIntact) failures.push(`dengueFever's plasma leakage should leave rbcMass completely unchanged (a plasma-side, not red-cell-side, lesion), got rbcMass ${untreated.before.rbcMass.toFixed(0)} -> ${untreated.after.rbcMass.toFixed(0)}`);
+  console.log(`  ${rbcIntact ? "PASS" : "FAIL"}  ${"...rbcMass stays intact (plasma-leak, NOT hemolysis)".padEnd(46)} rbcMass ${untreated.before.rbcMass.toFixed(0)} -> ${untreated.after.rbcMass.toFixed(0)} (hct ${untreated.after.hct.toFixed(3)}, control ${healthy.after.hct.toFixed(3)})`);
+
+  // Treatment: cautious IV fluids measurably improve hemodynamics through
+  // the SAME Starling/capillaryLeak-responsive mechanism preeclampsia/
+  // sepsis already demonstrate — a real, field-actionable intervention,
+  // unlike several toxidromes in this library that have none. Does NOT
+  // touch plateletCount (fluids don't fix thrombocytopenia) — asserted
+  // two-sided.
+  const treated = probe({ scen: "dengueFeverCall", settle: 2, run: 900, apply: ["saline"], reapply: 180 });
+  assertVersus("saline -> measurably higher plasma volume", treated, untreated, "plasmaVol", "up", 0.3);
+  assertVersus("saline -> measurably higher blood pressure", treated, untreated, "sbp", "up", 10);
+  // The real, honest fluid-overload caution, made concrete rather than
+  // left narrative-only: coagulation.js already has a general dilutional-
+  // coagulopathy term (plateletCount *= 1 - dilution*dt) that fires for
+  // ANY aggressive repeated fluid dosing, dengue included. Saline does NOT
+  // correct the underlying thrombocytopenia mechanism (it's a marrow-
+  // suppression/consumption process, not a volume problem) and repeated
+  // dosing measurably dilutes the count further — asserted as "not
+  // improved," the honest direction, not "unaffected."
+  const pltNotImproved = treated.after.plateletCount <= untreated.after.plateletCount + 5;
+  pltNotImproved ? pass++ : fail++;
+  if (!pltNotImproved) failures.push(`saline should NOT improve plateletCount (fluids treat volume, not thrombocytopenia — and repeated dosing genuinely dilutes it further via the existing dilutional-coagulopathy term), got untreated=${untreated.after.plateletCount.toFixed(1)}, treated=${treated.after.plateletCount.toFixed(1)}`);
+  console.log(`  ${pltNotImproved ? "PASS" : "FAIL"}  ${"...but does NOT correct thrombocytopenia (dilutes it further)".padEnd(46)} plt: untreated=${untreated.after.plateletCount.toFixed(0)}, saline-treated=${treated.after.plateletCount.toFixed(0)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {

@@ -9085,4 +9085,123 @@ export const CONDITIONS = {
     },
   },
 
+  // Dengue Fever (queue item 7, section 8's Infectious-disease backlog).
+  // WHO 2009 Dengue: Guidelines for Diagnosis, Treatment, Prevention and
+  // Control is the standard reference throughout this condition.
+  //
+  // LITERATURE FIRST. A mosquito-borne flavivirus. The classic FEBRILE
+  // PHASE (days 1-3): high fever, severe headache, retro-orbital pain,
+  // myalgia/arthralgia ("breakbone fever") — real, but not the teaching
+  // point this condition needs to carry, since it is clinically
+  // indistinguishable field-wise from a dozen other febrile illnesses.
+  // The real, distinct, counterintuitive lesson is SEVERE DENGUE (dengue
+  // hemorrhagic fever / dengue shock syndrome): as the fever BREAKS
+  // (defervescence, typically days 3-7), a real, separate, genuinely
+  // dangerous process takes over — increased microvascular permeability
+  // driving plasma LEAKAGE out of the intravascular space (NOT red-cell
+  // destruction — this is the mechanism-category distinction from
+  // malaria's hemolysis, a completely different lesion this engine
+  // represents through rbcMass/hct falling together, not through this),
+  // combined with real thrombocytopenia from marrow suppression and
+  // peripheral platelet destruction/consumption, producing a genuine
+  // bleeding tendency. Patients often look like they are getting better
+  // (fever settling) at the exact moment they are entering the highest-
+  // risk window — the single most-cited, most counterintuitive teaching
+  // point in dengue management, and the one this condition is built
+  // around.
+  //
+  // TIME COURSE, stated honestly. Real dengue's full natural history runs
+  // days (febrile phase days 1-3, critical phase days 3-7, recovery days
+  // 7-10) — no single EMS encounter can show that arc. Following this
+  // file's own established precedent for conditions whose real time
+  // course exceeds a call (`tricyclicOverdose`/`atropineOverdose` present
+  // already-symptomatic; `septicShock` presents past its own onset
+  // threshold), this condition presents the patient ALREADY AT the
+  // defervescence/critical-phase transition — the fever is measurably
+  // coming down (a real, direct, declining pat.metabolicHeatMultiplier,
+  // not a held ceiling — the mirror image of every other febrile
+  // condition in this file, which HOLDS its fever up) at the exact same
+  // moment the capillary-leak/thrombocytopenia mechanism is engaging —
+  // so a crew watching the monitor sees the counterintuitive real
+  // teaching point directly: temperature trending down while perfusion
+  // and platelets trend the wrong way, inside one realistic ~15-20 minute
+  // call.
+  dengueFever: {
+    initial: { age: 24, weight: 68, hr: 108, sbp: 102, rr: 20, glu: 100, pain: 6, temp: 38.4 },
+    progress(pat, dt) {
+      if (pat._dengueInit === undefined) {
+        pat._dengueInit = true;
+        pat._dengueElapsedMin = 0;
+        // Breakbone fever: severe headache, retro-orbital pain, myalgia/
+        // arthralgia — real, sustained pain via pat.intrinsicPain (queue
+        // item 20's already-real persistent-pain handle), not the acute
+        // colicky/sharp pain other conditions seed at this same field.
+        pat.intrinsicPain = Math.max(pat.intrinsicPain ?? 0, 7);
+      }
+      pat._dengueElapsedMin += dt;
+      const t = pat._dengueElapsedMin;
+
+      // --- FEBRILE PHASE, DECLINING (defervescence) ---
+      // Direct, declining assignment — deliberately NOT a Math.max
+      // ceiling the way septicShock/necrotizingFasciitis/etc. hold their
+      // fever UP. This condition owns metabolicHeatMultiplier exclusively
+      // (no other writer composes onto it here), so relaxing it DOWN
+      // toward normal, over a real ~8-minute time constant, is what lets
+      // the fever genuinely break during the call rather than being
+      // capped-but-static. Presenting residual multiplier (1.35) is a
+      // real, modest hypermetabolic fever tail; it decays toward 1.0
+      // (normal resting metabolic rate) as the febrile phase resolves.
+      pat.metabolicHeatMultiplier = 1 + 0.35 * Math.exp(-t / 8);
+
+      // --- CRITICAL PHASE: plasma leakage, engaging as fever declines ---
+      // pat.capillaryLeak is the SAME endothelial-permeability handle
+      // preeclampsia/sepsis/pancreatitis/burns already drive
+      // (metabolic.js's Starling equation is the real, already-verified
+      // consumer — see that file's own header comment). Ramped toward a
+      // 0.22 ceiling over ~10 minutes (dt*0.022/min) — the same order of
+      // magnitude septicShock/acutePancreatitis already use for a real,
+      // but not fulminant-burn-scale, permeability increase (WHO's own
+      // dengue criteria cite plasma leakage evidenced by a >=20% rise in
+      // hematocrit above baseline — a real, moderate, not catastrophic,
+      // leak). This is a Math.max ceiling (never decreases on its own),
+      // correctly asymmetric with the declining fever above: the fever
+      // breaking does NOT mean the leak is resolving — it means the
+      // dangerous window is opening, the whole point of this condition.
+      pat.capillaryLeak = Math.max(pat.capillaryLeak ?? 0, Math.min(0.22, 0.022 * t));
+
+      // --- THROMBOCYTOPENIA ---
+      // Real dengue-specific marrow suppression + peripheral platelet
+      // destruction/consumption — mechanistically distinct from the
+      // tissue-factor-driven CONSUMPTIVE coagulopathy septicShock/
+      // necrotizingFasciitis's shared cytokine cascade drives (this
+      // condition never sets pat.pathogenBurden/cytokineLoad at all), and
+      // distinct from envenomation's direct clotting-FACTOR consumption
+      // (factorII/V/VIII/X) — dengue's real lesion is specifically the
+      // PLATELET count, not the coagulation factor cascade. A re-imposed
+      // CEILING, not a one-shot write, the same idiom preeclampsia's own
+      // HELLP-pattern platelet ceiling already established: coagulation.js
+      // pulls plateletCount back toward 250 every tick
+      // (updateCoagulation's recovery term), so the ceiling must be
+      // re-asserted every tick to hold against that real, opposing pull.
+      // WHO's own warning-sign threshold is <100 x10^9/L; a presenting
+      // 150 (mild, pre-critical-phase reduction) falling to a real ~65
+      // by the end of a 20-minute call is a genuine, teachable warning-
+      // sign-crossing trajectory, short of the severe <20 DHF/DSS floor
+      // real cases can reach over their full multi-day course (correctly
+      // NOT reachable inside one call, per this condition's own honest
+      // time-course scoping above).
+      const pltCeil = Math.max(60, 150 - 4.5 * t);
+      if (pat.plateletCount > pltCeil) pat.plateletCount = pltCeil;
+
+      // Breakbone myalgia/headache persists through the critical phase —
+      // real, sustained, only slowly easing (patients do NOT feel
+      // dramatically better as the fever breaks; if anything they often
+      // feel worse, another real part of the same counterintuitive
+      // teaching point) — held near its presenting severity rather than
+      // decaying toward baseline the way an isolated febrile illness's
+      // pain would.
+      pat.intrinsicPain = Math.max(5, (pat.intrinsicPain ?? 7) - dt * 0.02);
+    },
+  },
+
 };
