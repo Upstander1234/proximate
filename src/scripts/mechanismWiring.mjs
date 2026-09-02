@@ -4419,6 +4419,31 @@ console.log("\n[INFLAMMATION CASCADE — queue item 46]");
   if (!controlCoagOk) failures.push(`condition-less control's factorII should stay near baseline (no tissue-factor term engaged), got ${control.after.factorII}`);
   console.log(`  ${controlCoagOk ? "PASS" : "FAIL"}  ${"...but a condition-less control's coagulation is untouched".padEnd(46)} factorII = ${control.after.factorII.toFixed(1)}`);
 
+  // QUEUE ITEM V2-5: cytokineLoad -> vasodilation (NO-mediated distributive
+  // shock), a real, additional consequence composed via Math.max the same
+  // way capillaryLeak/metabolicHeatMultiplier already compose. The real
+  // payoff: a condition that sets pathogenBurden but has NO dedicated
+  // pat.vasodilation writer of its own (infectiveEndocarditis) now shows a
+  // genuine, non-zero distributive contribution — a real gap this closes.
+  const ie900 = probe({ scen: "infectiveEndocarditis", settle: 2, run: 900 });
+  assertNonZero("infectiveEndocarditis -> real vasodilation via cytokineLoad (no dedicated writer of its own)", ie900, "vasodilation", 0.08);
+  // ...and a condition-less control still shows exactly zero (cytokineLoad
+  // itself is zero, so the ratchet contributes nothing).
+  const controlVasoOk = control.after.vasodilation === 0;
+  controlVasoOk ? pass++ : fail++;
+  if (!controlVasoOk) failures.push(`condition-less control's vasodilation should stay exactly 0, got ${control.after.vasodilation}`);
+  console.log(`  ${controlVasoOk ? "PASS" : "FAIL"}  ${"...but a condition-less control shows exactly zero".padEnd(46)} vasodilation = ${control.after.vasodilation}`);
+  // A condition with its OWN dedicated vasodilation ramp (pneumoniaSepsis)
+  // is completely unaffected by this new term — its measured value here
+  // must match what that condition's own ramp alone would produce, i.e.
+  // stay well ABOVE the cytokine-only contribution (0.3*cytokineLoad, which
+  // at this condition's own cytokineLoad~0.5 is ~0.15) — the Math.max
+  // never overrides an already-higher, condition-owned value.
+  const dedicatedUnaffected = untreatedSepsis.after.vasodilation > 0.3 * untreatedSepsis.after.cytokineLoad;
+  dedicatedUnaffected ? pass++ : fail++;
+  if (!dedicatedUnaffected) failures.push(`pneumoniaSepsis's own dedicated vasodilation ramp should exceed the cytokine-only floor, got vaso=${untreatedSepsis.after.vasodilation} vs floor=${(0.3 * untreatedSepsis.after.cytokineLoad).toFixed(3)}`);
+  console.log(`  ${dedicatedUnaffected ? "PASS" : "FAIL"}  ${"...a condition with its own dedicated ramp (pneumoniaSepsis) is untouched".padEnd(46)} vaso=${untreatedSepsis.after.vasodilation.toFixed(3)} > cytokine-only floor=${(0.3 * untreatedSepsis.after.cytokineLoad).toFixed(3)}`);
+
   // A LATER session migrated two more conditions onto pathogenBurden:
   // acutePancreatitis (pre-seeded cytokineLoad — an hours-old, partially
   // equilibrated SIRS process) and toxicInhalationChlorine (unseeded — a
