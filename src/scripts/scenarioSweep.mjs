@@ -94,6 +94,10 @@ const REQUIRED = [
   // perfusion, a live diagnostic signal feeding real skin/capRefill exam
   // findings, no injury accumulator.
   "skinDO2",
+  // pat.svO2Composite (neuro.js, queue item V2-2): a flow-weighted mixed
+  // venous saturation estimate built from each organ's own real extraction
+  // ratio, computed and published every tick for every patient.
+  "svO2Composite",
   // pat.cortisol (renal.js) predates this session but was never
   // behaviorally significant until this session wired it into
   // cardiovascular.js's cortisol-permissive vascular tone term — added
@@ -258,6 +262,7 @@ const NON_NEGATIVE = [
   "opioidDesens", "gabaDesens", "beta2Desens",
   "gutDO2", "gutO2Debt", "gutInjury",
   "skinDO2",
+  "svO2Composite",
   "cortisol",
   // Queue item 5's remaining dead-field (this session): all three are
   // real, always-non-negative quantities (insulin/glucagon secretion
