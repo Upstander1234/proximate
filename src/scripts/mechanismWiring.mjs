@@ -6554,6 +6554,49 @@ console.log("\n[PORTAL HYPERTENSION / CIRRHOSIS — queue item V2-13]");
   console.log(`  ${reserveReduced ? "PASS" : "FAIL"}  ${"...reduced hepatic reserve reuses real liverInjury/clearance".padEnd(46)} liverInjury: control ${healthy.after.liverInjury}, cirrhotic ${cirrhotic.after.liverInjury}`);
 }
 
+console.log("\n[PULMONARY CIRCULATION / RV-LV COUPLING — queue item V2-25]");
+{
+  // Confirms the mechanism V2-25 asked to verify: does rising pulmonary
+  // vascular resistance (PVR) genuinely reach the AUTHORITATIVE full-loop
+  // ODE solver and starve LV preload, or does it only move the lumped
+  // right-heart model's own cosmetic paSys/paDia/pvr vitals (whose own
+  // comment in cardiovascular.js explicitly disclaims feeding back into
+  // systemic preload)?
+  //
+  // Traced end to end before writing this: pat.pulmResistFactor (set by
+  // `pe`/`decompressionIllness`) drives updateRightHeart()'s pvrWood
+  // computation, which is smoothed (~15s tau, _fullRpulRatio) into
+  // buildParams()'s Rpul: 0.0045 * _fullRpulRatio * eScale — the REAL
+  // pulmonic-valve outflow resistance the RK4 solver integrates against.
+  // Higher Rpul -> lower RV stroke volume -> less blood delivered to the
+  // pulmonary venous/LA/LV chain -> lower LV EDV/SV, a genuine, mass-
+  // conserving RV/LV interdependence, not scripted.
+  //
+  // mutate holds pulmResistFactor at 4 (the real `pe` condition's own
+  // severity ceiling, conditions.js) from settle onward — the same "force
+  // the exact field the condition would set" idiom this suite already
+  // uses for portalPressure/liverInjury above, isolating this ONE variable
+  // from `pe`'s own concurrent shuntFraction/hr/rr writes so the
+  // measurement is attributable to PVR alone.
+  const control = probe({ scen: "abdPain", settle: 180, run: 1200 });
+  const pe = probe({ scen: "abdPain", settle: 180, run: 1200,
+    mutate: (p) => { p.pulmResistFactor = 4; } });
+
+  assertVersus("PVR (pulmResistFactor=4) -> real RV afterload rise (pvrWood)", pe, control, "pvrWood", "up", 2);
+  assertVersus("...-> RV output falls -> genuine LV preload starvation (edv)", pe, control, "edv", "down", 2);
+  assertVersus("...-> LV stroke volume falls (sv)", pe, control, "sv", "down", 1.5);
+
+  // Specificity: a condition-less control's own pulmResistFactor stays at
+  // its neutral default (1, patient.js) and pvrWood stays at its own
+  // resting value — the elevated afterload above is attributable to the
+  // forced PVR, not an artifact of every patient's own baseline solver
+  // noise.
+  const specific = control.after.pvrWood < 2;
+  specific ? pass++ : fail++;
+  if (!specific) failures.push(`a condition-less control's pvrWood should stay near its resting value (<2), got ${control.after.pvrWood}`);
+  console.log(`  ${specific ? "PASS" : "FAIL"}  ${"...healthy control's own pvrWood stays low (specificity)".padEnd(46)} pvrWood ${control.after.pvrWood}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {
