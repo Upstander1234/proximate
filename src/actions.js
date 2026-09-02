@@ -363,6 +363,19 @@ export const LIB=[
       // exclusive in practice and this is the opposite direction of finding
       // (hyperreflexia/clonus present, not absent/diminished).
       const clonus=s.patient?.serotoninClonus||0;
+      // Neuroleptic malignant syndrome (queue item 7, Toxicology backlog):
+      // real, sustained "lead-pipe" rigidity — a UNIFORM, constant increase
+      // in tone through the full range of passive motion, with no rhythmic
+      // beating and no relaxation between attempts. Checked BEFORE the
+      // serotonin-clonus branch: the two toxidromes are mutually exclusive in
+      // practice and this is the actual, teachable distinguishing exam
+      // finding between them (Caroff & Mann) — sustained rigidity, not
+      // intermittent/inducible clonus.
+      const rigidity=s.patient?.nmsRigidity||0;
+      if(rigidity>=0.7) return {say:"Rigid. Whole limb moves as one stiff unit through the full range, no give anywhere, no beating, doesn't relax when you stop pushing.",kind:"crit",
+        find:"Sustained, uniform lead-pipe rigidity — no clonus. Neuroleptic malignant syndrome.",evid:"Lead-pipe rigidity, sustained and uniform through passive range, with no clonus and no relaxation between passes — NMS, not serotonin toxicity."};
+      if(rigidity>=0.35) return {say:"Increased tone throughout, stiffer than normal, but no beating, no clonus.",kind:"warn",
+        find:"Early sustained rigidity, no clonus.",evid:"A uniform increase in resting tone with no clonus — early lead-pipe rigidity."};
       if(clonus>=0.7) return {say:"Sustained clonus at both ankles, worse than the wrists. Hyperreflexic throughout, more so in the legs than the arms.",kind:"crit",
         find:"Sustained inducible clonus, hyperreflexia — worse in the lower extremities. Serotonin syndrome.",evid:"Clonus and hyperreflexia, more pronounced in the legs than the arms — classic serotonin toxicity, not a dystonic reaction."};
       if(clonus>=0.35) return {say:"A few beats of clonus at the ankle. Reflexes brisk, legs more than arms.",kind:"warn",

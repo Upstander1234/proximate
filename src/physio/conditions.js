@@ -8294,6 +8294,123 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== NEUROLEPTIC MALIGNANT SYNDROME (queue item 7, Toxicology backlog) =====
+  // Built as a real, clinically distinct contrast to serotoninSyndrome
+  // (above), per Caroff & Mann's classic review ("Neuroleptic Malignant
+  // Syndrome," Med Clin North Am 1993) — the reference this project cites
+  // the same way Boyer & Shannon is cited for serotonin syndrome.
+  //
+  // TRIGGER: dopamine (D2) receptor antagonism — starting or increasing an
+  // antipsychotic dose, or abrupt dopaminergic-drug withdrawal (e.g. a
+  // Parkinson's patient stopping levodopa). This scenario is the former
+  // (a haloperidol dose increase), the mechanistic OPPOSITE trigger from
+  // serotonin syndrome's serotonergic drug interaction.
+  //
+  // THE REAL TETRAD, and why it does NOT reuse serotoninSyndrome's wiring
+  // as a copy-paste:
+  //   1. SEVERE MUSCLE RIGIDITY — sustained, uniform "lead-pipe" rigidity.
+  //      This is the actual, teachable distinguishing exam finding versus
+  //      serotonin syndrome's clonus/hyperreflexia: rigidity is a SUSTAINED
+  //      increase in tone through the whole range of passive motion, not an
+  //      intermittent, inducible neuromuscular hyperactivity. A new,
+  //      condition-owned pat.nmsRigidity (0-1) narrates this at the same
+  //      "reflexes" action serotoninClonus already uses (actions.js), but as
+  //      a mutually-exclusive, mechanistically distinct finding (checked
+  //      first, since it's the real distinguishing sign) — not the same
+  //      field renamed.
+  //   2. HYPERTHERMIA — often MORE severe/prolonged than serotonin syndrome,
+  //      since sustained rigidity is itself a real heat-generating process
+  //      (isometric muscle work), on top of the hypothalamic dysregulation
+  //      both toxidromes share. Reuses the SAME shared
+  //      metabolicHeatMultiplier handle several other toxidromes already
+  //      use (thermo.js derives the real coreTemp from this, not a direct
+  //      write) — but at a higher ceiling and driven by nmsRigidity, not
+  //      serotoninClonus, so the two conditions never share state.
+  //   3. AUTONOMIC INSTABILITY — tachycardia and labile blood pressure
+  //      through the same hrBase/baseSVR handles serotoninSyndrome already
+  //      established, at this condition's own numbers.
+  //   4. ALTERED MENTAL STATUS — through the same agitationBurden/
+  //      metabolicEncephalopathy handles, at this condition's own
+  //      coefficients — NMS more classically presents as stupor/mutism than
+  //      the agitated confusion of serotonin syndrome, so the agitation
+  //      ceiling here is lower and encephalopathy is weighted more heavily.
+  //
+  // TIME COURSE: the real, defining difference from serotonin syndrome.
+  // NMS develops over DAYS (Caroff & Mann: 1-3 days to peak severity in the
+  // majority of cases), not hours — presented already SEVERAL DAYS into
+  // rigidity/fever (initial severity seeded high, matching this file's
+  // "presenting already symptomatic" convention for toxidromes), with a
+  // deliberately SLOWER within-call ramp rate than serotoninSyndrome's own
+  // (half the rate) — most of the deterioration already happened before EMS
+  // was called; what a crew watches over 15 minutes is a small further
+  // slide, not the initial onset.
+  //
+  // TREATMENT: honestly limited, same "no field cure, recognize and
+  // transport" framing serotoninSyndrome/lithium/cyanide/envenomation all
+  // already establish. Benzodiazepines (midazolam) help agitation through
+  // the same already-verified anticonvulsant/sedationDepth -> agitation
+  // pathway. Active cooling (procedures.js coolingPower) partially offsets
+  // the hyperthermia, but — the real, distinct teaching point versus
+  // serotonin syndrome — rigidity ITSELF keeps generating heat the whole
+  // time, so cooling here is even more clearly partial. The real definitive
+  // treatment (dantrolene, a direct skeletal-muscle ryanodine-receptor
+  // antagonist; bromocriptine, a dopamine agonist) is NOT carried in any
+  // field EMS formulary and is not modeled — no field cure exists.
+  neurolepticMalignantSyndrome: {
+    initial: { age: 47, hr: 122, sbp: 168, dbp: 102, rr: 22, glu: 100, pain: 4,
+      temp: 39.3, nmsRigidity: 0.55 },
+    progress(pat, dt) {
+      if (pat._nmsRestSvr == null) pat._nmsRestSvr = pat.ageProfile.baseSVR();
+
+      // Sustained lead-pipe rigidity — condition-owned, narrated at the
+      // "reflexes" action. Ramps HALF as fast as serotoninSyndrome's own
+      // clonus (0.006/min vs 0.012/min): the real days-scale time course
+      // means most of the rise already happened off-scene; the field
+      // encounter shows a slow further slide, not the initial onset.
+      pat.nmsRigidity = clamp((pat.nmsRigidity ?? 0.55) + dt * 0.006, 0.5, 0.95);
+
+      // Autonomic instability: hyperthermia through the shared
+      // hypermetabolism handle. Ceiling of 2.0 sits ABOVE serotoninSyndrome's
+      // 1.9 — real NMS hyperthermia is often more severe/prolonged, since
+      // sustained isometric rigidity itself generates heat on top of the
+      // shared hypothalamic-dysregulation term every hypermetabolic
+      // toxidrome in this file already uses.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1,
+        Math.min(2.0, 1.5 + pat.nmsRigidity * 0.6));
+
+      // Tachycardia — direct rate handle, the same idiom serotoninSyndrome/
+      // excitedDelirium/thyroidStorm already use, at this condition's own
+      // numbers (a lower ceiling than serotoninSyndrome's 170 — NMS's
+      // autonomic instability is more classically LABILE than a pure
+      // sympathetic surge).
+      pat.hrBase = Math.min(160, Math.max(pat.hrBase ?? 122, 112) + dt * 0.7);
+
+      // BP lability — real vascular-tone lesion through pat.baseSVR, the
+      // same mechanism serotoninSyndrome/hypertensiveUrgency already
+      // established, targeted at a more modest multiple than
+      // serotoninSyndrome's own 1.7x — real NMS blood pressure swings
+      // between hyper- and hypotensive rather than sitting purely high.
+      const svrTarget = pat._nmsRestSvr * 1.4;
+      pat.baseSVR += (svrTarget - pat.baseSVR) * Math.min(1, dt / 4);
+
+      // Altered mental status: real agitation (composed with sedation
+      // automatically by neuro.js's updateCerebral, the same mechanism
+      // serotoninSyndrome/excitedDelirium already use) plus confusion
+      // through the shared toxic-encephalopathy handle. Agitation ceiling
+      // (0.55) is LOWER than serotoninSyndrome's 0.7 and encephalopathy is
+      // weighted more heavily — NMS more classically presents as stuporous/
+      // mute rigidity than agitated confusion.
+      pat.agitationBurden = Math.max(pat.agitationBurden || 0, 0.55);
+      pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0,
+        0.4 + pat.nmsRigidity * 0.4);
+
+      // No seizure-risk term: unlike serotonin syndrome, seizures are not
+      // part of the real, classic NMS tetrad (Caroff & Mann) — deliberately
+      // not added just to mirror serotoninSyndrome's own epilepticDrive
+      // line, since doing so would be an invented finding, not a cited one.
+    },
+  },
+
   // ===== IRON OVERDOSE (queue item 7, Toxicology) =====
   // Real, two-phase mechanism (Perrone & Hoffman, "Iron toxicity," UpToDate/
   // review literature; the classic pediatric-ingestion presentation). PHASE 1

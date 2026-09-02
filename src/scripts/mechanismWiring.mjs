@@ -5200,6 +5200,80 @@ console.log("[SEROTONIN SYNDROME — queue item 7, Toxicology backlog]");
   console.log(`  ${stillDrivingHeat ? "PASS" : "FAIL"}  ${"...but does NOT stop the underlying hypermetabolic drive".padEnd(46)} heat unchanged at ${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
 }
 
+console.log("[NMS — queue item 7, Toxicology backlog]");
+{
+  // Two-sided per lesson 6, mirroring the serotoninSyndrome section above:
+  // fires (real triad — sustained rigidity, hyperthermia, autonomic
+  // instability, altered mental status), specificity (a healthy control
+  // shows exactly zero of it), and the two required CONTRASTS against
+  // serotoninSyndrome at the same matched timepoint: (1) rigidity vs
+  // clonus are two genuinely separate fields, neither condition sets the
+  // other's; (2) NMS's slower, days-scale within-call ramp and hotter
+  // course are both measured directly against serotoninSyndrome at 900s,
+  // not just asserted against a fixed threshold — proving the two are not
+  // near-duplicates in the engine.
+  const untreated = probe({ scen: "neurolepticMalignantSyndrome", settle: 2, run: 900 });
+  const ss = probe({ scen: "serotoninSyndrome", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.nmsRigidity > 0.55
+    && untreated.after.metabolicHeatMultiplier > 1.7
+    && untreated.after.hr > healthy.after.hr + 15
+    && untreated.after.agitation > 0.4;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`neurolepticMalignantSyndrome should show nmsRigidity>0.55, metabolicHeatMultiplier>1.7, hr well above a healthy control, and agitation>0.4 by 900s, got rigidity=${untreated.after.nmsRigidity.toFixed(2)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)} hr=${untreated.after.hr.toFixed(1)} agitation=${untreated.after.agitation.toFixed(2)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"NMS -> real sustained-rigidity/hyperthermia/autonomic/mental-status tetrad fires".padEnd(46)} rigidity=${untreated.after.nmsRigidity.toFixed(2)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)} hr=${untreated.after.hr.toFixed(1)} agitation=${untreated.after.agitation.toFixed(2)}`);
+
+  const healthyOk = healthy.after.nmsRigidity === 0 && healthy.after.serotoninClonus === 0
+    && healthy.after.metabolicHeatMultiplier === 1 && healthy.after.agitation === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show exactly zero nmsRigidity/serotoninClonus/metabolicHeatMultiplier-elevation/agitation, got ${healthy.after.nmsRigidity}/${healthy.after.serotoninClonus}/${healthy.after.metabolicHeatMultiplier}/${healthy.after.agitation}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} rigidity=${healthy.after.nmsRigidity.toFixed(2)} heat=${healthy.after.metabolicHeatMultiplier.toFixed(2)}`);
+
+  // The real, distinguishing contrast: at the SAME 900s timepoint, NMS
+  // shows real, sustained rigidity with ZERO clonus, and serotoninSyndrome
+  // shows real clonus with ZERO rigidity — two genuinely separate fields,
+  // proving the "reflexes" branch this batch added is a real distinguishing
+  // mechanism, not a relabeled copy of the existing one.
+  const distinctFields = untreated.after.nmsRigidity > 0.5 && untreated.after.serotoninClonus === 0
+    && ss.after.serotoninClonus > 0.5 && ss.after.nmsRigidity === 0;
+  distinctFields ? pass++ : fail++;
+  if (!distinctFields) failures.push(`NMS should show real nmsRigidity with zero serotoninClonus, and serotoninSyndrome the reverse, got NMS rigidity=${untreated.after.nmsRigidity.toFixed(2)}/clonus=${untreated.after.serotoninClonus.toFixed(2)}, SS rigidity=${ss.after.nmsRigidity.toFixed(2)}/clonus=${ss.after.serotoninClonus.toFixed(2)}`);
+  console.log(`  ${distinctFields ? "PASS" : "FAIL"}  ${"...rigidity vs clonus are two genuinely separate fields (not a copy)".padEnd(46)} NMS rigidity=${untreated.after.nmsRigidity.toFixed(2)}/clonus=${untreated.after.serotoninClonus.toFixed(2)} SS rigidity=${ss.after.nmsRigidity.toFixed(2)}/clonus=${ss.after.serotoninClonus.toFixed(2)}`);
+
+  // The real slower-onset / hotter-course contrast at the SAME matched
+  // 900s timepoint, directly against serotoninSyndrome — not two isolated
+  // thresholds, a genuine head-to-head measurement.
+  const contrast = untreated.after.metabolicHeatMultiplier > ss.after.metabolicHeatMultiplier
+    && (untreated.after.nmsRigidity - 0.55) < (ss.after.serotoninClonus - 0.4);
+  contrast ? pass++ : fail++;
+  if (!contrast) failures.push(`at the same 900s timepoint, NMS should show a HOTTER course than serotoninSyndrome (higher metabolicHeatMultiplier) and a SLOWER within-call rise off its own presenting severity, got NMS heat=${untreated.after.metabolicHeatMultiplier.toFixed(3)} rigidityRise=${(untreated.after.nmsRigidity - 0.55).toFixed(3)} vs SS heat=${ss.after.metabolicHeatMultiplier.toFixed(3)} clonusRise=${(ss.after.serotoninClonus - 0.4).toFixed(3)}`);
+  console.log(`  ${contrast ? "PASS" : "FAIL"}  ${"...slower onset + hotter course than serotoninSyndrome at the same 900s".padEnd(46)} NMS heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)} rise=${(untreated.after.nmsRigidity - 0.55).toFixed(3)} | SS heat=${ss.after.metabolicHeatMultiplier.toFixed(2)} rise=${(ss.after.serotoninClonus - 0.4).toFixed(3)}`);
+
+  // Benzodiazepine treatment, the real two-sided shape: agitation falls
+  // measurably while the autonomic findings this condition drives directly
+  // are UNTOUCHED — sedation treats the behavior, not the underlying
+  // dopamine-blockade crisis, the same honest pair serotoninSyndrome's own
+  // section already establishes.
+  const midazolamTreated = probe({ scen: "neurolepticMalignantSyndrome", settle: 2, run: 900, apply: ["midazolam"], reapply: 140 });
+  assertVersus("midazolam -> measurably suppresses agitation (sedationDepth)", midazolamTreated, untreated, "agitation", "down", 0.2);
+  const heatUnchanged = Math.abs(midazolamTreated.after.metabolicHeatMultiplier - untreated.after.metabolicHeatMultiplier) < 0.01
+    && Math.abs(midazolamTreated.after.baseSVR - untreated.after.baseSVR) < 5;
+  heatUnchanged ? pass++ : fail++;
+  if (!heatUnchanged) failures.push(`midazolam should leave metabolicHeatMultiplier/baseSVR essentially unchanged, got heat ${untreated.after.metabolicHeatMultiplier.toFixed(3)}->${midazolamTreated.after.metabolicHeatMultiplier.toFixed(3)}, baseSVR ${untreated.after.baseSVR.toFixed(1)}->${midazolamTreated.after.baseSVR.toFixed(1)}`);
+  console.log(`  ${heatUnchanged ? "PASS" : "FAIL"}  ${"...but leaves the autonomic crisis (heat/baseSVR) untouched".padEnd(46)} heat ${untreated.after.metabolicHeatMultiplier.toFixed(2)} -> ${midazolamTreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+
+  // Active cooling: a real, partial hyperthermia response without
+  // reversing the underlying driver — even more clearly partial here than
+  // for serotoninSyndrome, since sustained rigidity keeps generating heat.
+  const coolTreated = probe({ scen: "neurolepticMalignantSyndrome", settle: 2, run: 900, apply: ["activeCooling"], reapply: 9000 });
+  assertVersus("active cooling -> measurably lowers coreTemp (partial response)", coolTreated, untreated, "coreTemp", "down", 0.3);
+  const stillDrivingHeat = Math.abs(coolTreated.after.metabolicHeatMultiplier - untreated.after.metabolicHeatMultiplier) < 0.01;
+  stillDrivingHeat ? pass++ : fail++;
+  if (!stillDrivingHeat) failures.push(`active cooling should NOT change metabolicHeatMultiplier itself (a partial response, not a cure), got ${untreated.after.metabolicHeatMultiplier.toFixed(3)} -> ${coolTreated.after.metabolicHeatMultiplier.toFixed(3)}`);
+  console.log(`  ${stillDrivingHeat ? "PASS" : "FAIL"}  ${"...but does NOT stop the underlying hypermetabolic drive (rigidity keeps generating heat)".padEnd(46)} heat unchanged at ${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+}
+
 console.log("[IRON OVERDOSE — queue item 7, Toxicology]");
 {
   // Two-sided: real, direct-corrosive GI hemorrhage fires (through the
