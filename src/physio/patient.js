@@ -889,6 +889,23 @@ export class Patient {
     this.strokeSide = b.strokeSide ?? null;       // "left" | "right" | null
     this.strokeWeakness = b.strokeWeakness ?? 0;  // 0-1, motor deficit severity
     this.strokeAphasia = b.strokeAphasia ?? false;
+    // Queue item V2-18: a real, private high-water-mark on strokeWeakness,
+    // updated every tick in neuro.js's own consciousness-derivation loop
+    // (the same place brainO2/consciousness already run every tick) --
+    // NOT read by anything except outcomeReport()'s reversibleFindings
+    // check. This is what lets outcomeReport distinguish TIA's own
+    // real, already-shipped decay-to-zero pattern (conditions.js's `tia`,
+    // pat._tiaT) from ischemicStroke/intracerebralHemorrhage's own
+    // deliberately PERSISTENT deficit (neither of which ever lowers
+    // strokeWeakness once set -- "then HOLD," per that condition's own
+    // comment): a deficit that peaked meaningfully and has since resolved
+    // back near zero is, in this engine, definitionally a TIA-pattern
+    // event, since nothing else in the condition library ever produces
+    // that trajectory. A structural stroke's own strokeWeakness never
+    // returns to baseline within a call, so it can never satisfy the
+    // "resolved" half of the outcomeReport check below and is correctly
+    // never reported as reversible.
+    this._maxStrokeWeakness = 0;
     // Floored at 0 (queue item 15): a real cerebral perfusion pressure
     // cannot go negative — at MAP<ICP the cerebral vessels simply collapse
     // and flow stops, it does not reverse. See neuro.js for the per-tick
