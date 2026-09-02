@@ -217,6 +217,11 @@ const REQUIRED = [
   // (metabolic.js) and pulls the DISPLAYED spo2 toward ~85% (patient.js's
   // vitals()), a distinct pulse-ox blind spot from cohb's falsely-normal one.
   "metHb",
+  // Queue item V2-9 (thirst, generalized): real osmolality+effective-
+  // circulating-volume-derived thirst drive (renal.js), a real,
+  // always-non-negative 0-1 quantity (patient.js constructor default 0)
+  // now consumed by actions.js's "askThirst" exam action.
+  "thirstDrive",
 ];
 
 // Fields that may never go negative.
@@ -313,6 +318,8 @@ const NON_NEGATIVE = [
   "hocmObstruction",
   // acquiredMethemoglobinemia (queue item V2-30): see REQUIRED list above.
   "metHb",
+  // Queue item V2-9: real, always-non-negative 0-1 thirst drive.
+  "thirstDrive",
 ];
 
 const results = [];

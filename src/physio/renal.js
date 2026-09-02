@@ -219,6 +219,39 @@ export function updateRenalEndocrine(pat, dt) {
     const adhRegulated = Math.max(0, 1.0 + osmoticDrive + volumeDrive);
     pat.adhs = Math.max(0, Math.min(6, (pat.adhAutonomous ?? 0) + adhCapacity * adhRegulated));
 
+    // --- THIRST (queue item V2-9) ---
+    // Real thirst has two real triggers, engaging at genuinely different
+    // sensitivities, the same two afferents that drive ADH secretion above
+    // (osmoreceptor + baroreceptor) but NOT the same threshold — thirst is
+    // the more conservative of the two systems physiologically:
+    //   * OSMOTIC: the dominant, more sensitive driver. Osmoreceptor-
+    //     mediated thirst engages at roughly a 1-2% rise in plasma
+    //     osmolality above the ~280-290 mOsm/kg setpoint (Robertson,
+    //     "Regulation of Arginine Vasopressin in the Syndrome of
+    //     Inappropriate Antidiuresis" — the same ~1% ADH-release threshold
+    //     already anchors osmoticDrive two lines above, and thirst's own
+    //     threshold is a close, slightly higher-set neighbor on the same
+    //     osmoreceptor). Modeled as a ramp from 0 at the setpoint to a full
+    //     drive at roughly 3% above it — deliberately gated to only the
+    //     RISING side (osm below setpoint should not produce negative
+    //     thirst), same clamp-at-zero idiom osmoticDrive's own consumer
+    //     already uses.
+    //   * HYPOVOLEMIC: baroreceptor-mediated, real but LESS sensitive and
+    //     engaging only at a larger volume deficit than osmotic thirst
+    //     does — clinically, roughly a 10-15% loss of effective circulating
+    //     volume before hypovolemic thirst becomes a significant drive
+    //     (Fitzsimons, "Angiotensin, thirst, and sodium appetite") —
+    //     reusing the SAME volumeDepletion fraction already computed above
+    //     for ADH's own (more sensitive, ~nothing-needed) volume drive,
+    //     just gated at a real, higher deadband before it contributes.
+    // The two combine rather than simply taking the max, since a patient
+    // who is both hyperosmolar AND volume-depleted (the common dehydration
+    // picture — DKA/HHS osmotic diuresis is the worked example item 43
+    // already built) is thirstier than either alone would predict.
+    const thirstOsmotic = Math.max(0, Math.min(1, (osm - osmSetpoint) / (osmSetpoint * 0.03)));
+    const thirstVolume = Math.max(0, Math.min(1, (volumeDepletion - 0.10) / 0.15));
+    pat.thirstDrive = Math.max(0, Math.min(1, thirstOsmotic * 0.7 + thirstVolume * 0.5));
+
     // Renal handling of water: retention when below the defended volume,
     // diuresis when above it. This closes the loop that RAAS/ADH were already
     // computing but never actuated. It is deliberately SLOW (hours) — renal

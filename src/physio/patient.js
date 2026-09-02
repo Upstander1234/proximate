@@ -631,6 +631,10 @@ export class Patient {
     // inert, matching every other drug-level field's own healthy default).
     this.li = b.li ?? 0.8;
     this.adhs = 1;
+    // Thirst drive (queue item V2-9), real-derived every tick by
+    // renal.js's updateRenalEndocrine from serum osmolality and effective
+    // circulating volume — 0 for a healthy, euvolemic, isotonic patient.
+    this.thirstDrive = 0;
     // Resting RAAS activity, not maximal. These were both 1 — full activation —
     // which every scenario then had to spend ~30 minutes of simulated time
     // unwinding before the patient reached his own baseline, and which no scene

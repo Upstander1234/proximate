@@ -359,6 +359,20 @@ export const LIB=[
         find:"DTRs absent — magnesium toxicity.",evid:"Absent deep tendon reflexes on a magnesium infusion — stop it and reassess before the next sign is respiratory depression."};
       if(tox>=0.25) return {say:"Diminished. Barely there on the patella.",kind:"warn",find:"DTRs diminished — early magnesium toxicity."};
       return {say:"Reflexes 2+, symmetric. No clonus.",find:"DTRs 2+ symmetric, no clonus."};}},
+  // Queue item V2-9 (thirst, generalized): pat.thirstDrive (renal.js) is a
+  // real, osmolality-plus-effective-circulating-volume-derived 0-1 signal
+  // that previously had no consumer anywhere — this is that consumer.
+  // Gated on consciousness first: an unresponsive patient cannot report
+  // thirst, the same "nothing to voice" framing the "loc" action above
+  // already uses for the same case.
+  {id:"askThirst",region:"head",tab:"assess",label:"Ask if thirsty",gerund:"Asking about thirst",cost:2,lvl:0,
+    run:(s,v)=>{
+      if(v._cons&&v._cons!=="awake") return {say:"No response.",find:"Cannot assess thirst — not responsive enough to ask."};
+      const thirst=s.patient?.thirstDrive??0;
+      if(thirst>=0.5) return {say:"\"I'm so thirsty. Can I have some water?\"",kind:"obs",
+        find:"Reports significant thirst.",evid:"Patient reports marked thirst — consistent with dehydration/hyperosmolar state."};
+      if(thirst>=0.15) return {say:"\"A little thirsty, I guess.\"",find:"Reports mild thirst."};
+      return {say:"\"No, not really.\"",find:"Denies thirst."};}},
 ];
 export const P=(id,region,tab,x={})=>{
   const multiSite=id==="iv"||id==="io"||id==="tq"; // can be applied to more than one limb at once
