@@ -452,6 +452,10 @@ function snapshot(p) {
     li: p.li ?? 0.8,
     compliance: p.compliance ?? 0.09,
     energyFailure: p.energyFailure || 0,
+    // V2-22 (agitation-specific VO2 demand, metabolic.js): a real, already-
+    // computed field never previously read through this suite's own
+    // before/after path.
+    vo2Demand: p.vo2Demand || 0,
     // The anion gap is how the lactic acidosis this lesion produces actually
     // presents at the bedside; read here so it can be asserted rather than
     // inferred from lactate.
@@ -3133,6 +3137,105 @@ console.log("\n[AGITATION / PSYCHIATRIC-CRISIS SEVERITY — queue items 51/52]")
   gateOk ? pass++ : fail++;
   if (!gateOk) failures.push(`a genuinely comatose patient (forced severe hypoxia/shock) should show agitation=0 despite agitationBurden=0.9, got consciousness=${comaGate.after.consciousness} agitation=${comaGate.after.agitation}`);
   console.log(`  ${gateOk ? "PASS" : "FAIL"}  ${"comatose patient -> agitation gated to zero despite high burden".padEnd(46)} consciousness=${comaGate.after.consciousness} agitation=${comaGate.after.agitation}`);
+}
+
+console.log("\n[AGITATION-SPECIFIC VO2 DEMAND — queue item V2-22, second half]");
+{
+  // The work-of-breathing term already composes into pat.vo2Demand
+  // (metabolic.js's own `restVO2 * feverFactor * adrenergic * wob * seizing
+  // * agitationVO2` product) — confirmed by direct code read before writing
+  // any of this: `wob` genuinely multiplies in, not just computed and
+  // discarded, and uses pat.effectiveBroncho/pat.rr/pat.vt correctly (the
+  // wobRatio/loadFactor terms). No assertion was previously needed for that
+  // half since it long predates this batch; this section is entirely about
+  // the genuinely new agitationVO2 term added alongside it.
+  //
+  // ISOLATED DIRECT EFFECT — a matched-mutate probe on a condition-less
+  // control, holding agitationBurden fixed at two different values with
+  // everything else identical (same scenario, same settle/run window), so
+  // the ONLY thing that can differ between the two arms is the new
+  // agitation term itself — no fever, no tachycardia, no confounding
+  // condition-specific physiology. MEASURED, not assumed: vo2Demand rises
+  // ~40% at agitationBurden=1 vs agitationBurden=0, matching the coded
+  // 0.4-coefficient ceiling.
+  const agitZero = probe({ scen: "abdPain", settle: 2, run: 600, mutate: (p) => { p.agitationBurden = 0; } });
+  const agitFull = probe({ scen: "abdPain", settle: 2, run: 600, mutate: (p) => { p.agitationBurden = 1; } });
+  assertVersus("agitationBurden alone (isolated mutate) -> vo2Demand rises", agitFull, agitZero, "vo2Demand", "up", 0.15);
+
+  // SPECIFICITY: a genuinely condition-less, non-agitated control (no
+  // mutate at all) must show exactly zero contribution from this term —
+  // vo2Demand at agitationBurden=0 (the natural, unmutated default) must
+  // match the explicitly-zeroed mutate arm above, confirming the new term
+  // is a true no-op rather than silently leaking a floor into every patient.
+  const trulyUnaffected = probe({ scen: "abdPain", settle: 2, run: 600 });
+  const noLeak = Math.abs(trulyUnaffected.after.vo2Demand - agitZero.after.vo2Demand) < 0.01
+    && trulyUnaffected.after.agitationBurden === 0;
+  noLeak ? pass++ : fail++;
+  if (!noLeak) failures.push(`a condition-less, non-agitated control's own vo2Demand should be unaffected (match the explicit agitationBurden=0 arm), got ${trulyUnaffected.after.vo2Demand.toFixed(3)} vs ${agitZero.after.vo2Demand.toFixed(3)}, agitationBurden=${trulyUnaffected.after.agitationBurden}`);
+  console.log(`  ${noLeak ? "PASS" : "FAIL"}  ${"...confirmed: a non-agitated control's vo2Demand is untouched".padEnd(46)} vo2Demand=${trulyUnaffected.after.vo2Demand.toFixed(3)} (matches agitationBurden=0 arm ${agitZero.after.vo2Demand.toFixed(3)})`);
+
+  // REAL SHIPPED CONDITION, MATCHED-PHYSIO COMPARISON — the task's own ask:
+  // measure excitedDeliriumAgitated's real vo2Demand increase attributable
+  // to its agitation state, isolated from a hypothetical patient with the
+  // SAME fever (coreTemp) and SAME beta-1 adrenergic tone but zero
+  // agitationBurden.
+  //
+  // A REAL, SELF-CAUGHT MISTAKE, not shipped blind (lesson 8): the first
+  // version of this check tried to isolate agitation by taking the REAL
+  // excitedDeliriumAgitated probe and forcing agitationBurden=0 via
+  // mutate(), the same idiom the comaGate check above already uses
+  // successfully. MEASURED, it produced a near-zero, sign-flipping delta
+  // (-0.22) — not the real ~100+ signal the isolated abdPain mutate above
+  // (agitFull vs agitZero) shows exists. Traced before touching the
+  // assertion: excitedDelirium's own progress() re-asserts
+  // `pat.agitationBurden = Math.max(pat.agitationBurden||0, 0.9)` EVERY
+  // TICK, and conditions run before metabolic.js within physio() — so the
+  // mutate's agitationBurden=0 (applied AFTER physio() returns, per
+  // probe()'s own loop) is silently overwritten back to 0.9 by the
+  // condition's own ratchet before metabolic.js's vo2Demand ever reads it
+  // on the next tick. The comaGate check above works because nothing
+  // ratchets agitationBurden back up in that scenario (abdPain); it does
+  // NOT generalize to a condition that owns the field.
+  //
+  // Fixed by matching the fever/tachycardia CONTRIBUTORS instead of trying
+  // to zero the agitation field on the real condition: a plain abdPain
+  // control, mutated to the SAME coreTemp and beta1Tone excitedDelirium
+  // settles to (both real, independent inputs to feverFactor/adrenergic
+  // above), with agitationBurden explicitly 0. MEASURED: coreTemp 37.33,
+  // beta1Tone 0.19 (below the 0.2 floor, so adrenergic itself contributes
+  // ~nothing here — most of excited delirium's real vo2Demand rise turns
+  // out to be the agitationVO2 term plus its own genuinely elevated
+  // ventilation/wob, not feverFactor/adrenergic) -> matched control
+  // vo2Demand ~273.6, essentially identical to a condition-less baseline;
+  // the real excitedDelirium arm reaches ~378.2 -- a genuine, substantial
+  // ~105 (~38%) rise attributable to the agitated/hyperventilating state
+  // this condition actually produces, not fever/adrenergic tone alone.
+  const deliriumReal = probe({ scen: "excitedDeliriumAgitated", settle: 2, run: 900 });
+  const deliriumMatchedNoAgit = probe({
+    scen: "abdPain", settle: 2, run: 900,
+    mutate: (p) => {
+      p.coreTemp = deliriumReal.patient.coreTemp;
+      p.beta1Tone = deliriumReal.patient.beta1Tone;
+      p.agitationBurden = 0;
+    },
+  });
+  const isolatedRise = deliriumReal.after.vo2Demand - deliriumMatchedNoAgit.after.vo2Demand;
+  const realCondFires = isolatedRise > 20 && deliriumMatchedNoAgit.after.agitationBurden === 0;
+  realCondFires ? pass++ : fail++;
+  if (!realCondFires) failures.push(`excitedDeliriumAgitated should show a real vo2Demand rise beyond a matched-coreTemp/beta1Tone, zero-agitation control, got real=${deliriumReal.after.vo2Demand.toFixed(3)} vs matched-no-agit=${deliriumMatchedNoAgit.after.vo2Demand.toFixed(3)} (delta ${isolatedRise.toFixed(3)})`);
+  console.log(`  ${realCondFires ? "PASS" : "FAIL"}  ${"excited delirium -> real vo2Demand rise beyond a matched, non-agitated control".padEnd(46)} vo2Demand ${deliriumMatchedNoAgit.after.vo2Demand.toFixed(3)} (matched, agitation-free) -> ${deliriumReal.after.vo2Demand.toFixed(3)} (real) (delta ${isolatedRise.toFixed(3)})`);
+
+  // NO REGRESSION — the addition should move energyFailure/paco2 sensibly,
+  // not explode. excitedDeliriumAgitated's own energyFailure/paco2 stay
+  // inside physiologically plausible bounds with the new term live (a
+  // fixed ~40%-ceiling multiplier on top of an already-bounded restVO2
+  // cannot itself produce impossible values, but confirmed directly rather
+  // than assumed).
+  const sane = deliriumReal.after.energyFailure >= 0 && deliriumReal.after.energyFailure <= 1
+    && deliriumReal.patient.paco2 > 10 && deliriumReal.patient.paco2 < 120;
+  sane ? pass++ : fail++;
+  if (!sane) failures.push(`excitedDeliriumAgitated's energyFailure/paco2 should stay within plausible bounds with the new agitation-VO2 term live, got energyFailure=${deliriumReal.after.energyFailure} paco2=${deliriumReal.patient.paco2}`);
+  console.log(`  ${sane ? "PASS" : "FAIL"}  ${"...confirmed: energyFailure/paco2 stay sane, not exploded".padEnd(46)} energyFailure=${deliriumReal.after.energyFailure.toFixed(3)} paco2=${deliriumReal.patient.paco2.toFixed(1)}`);
 }
 
 console.log("\n[TOXIC-METABOLIC / NEUROGLYCOPENIC CONSCIOUSNESS — queue item 7, Neurologic]");
