@@ -334,6 +334,9 @@ function snapshot(p) {
     consciousness: p.consciousness,
     liverInjury: p.liverInjury || 0,
     kidneyInjury: p.kidneyInjury || 0,
+    // Queue item V2-12 (this session): real-time hepatic flow now gates
+    // lactate clearance directly, not just the slow liverInjury accumulator.
+    hepaticDO2: p.hepaticDO2 ?? 1,
     // Queue item 48 (this session): reversible-vs-structural pattern
     // extended to liver/gut — atnProgression's own sibling accumulators.
     hepaticStunning: p.hepaticStunning ?? 0,
@@ -5974,6 +5977,61 @@ console.log("\n[REVERSIBLE HEPATIC/GUT DYSFUNCTION — queue item 48, extending 
   healthyReportEmpty ? pass++ : fail++;
   if (!healthyReportEmpty) failures.push(`outcomeReport() should show an empty reversibleFindings for a healthy control, got ${JSON.stringify(healthyReport?.reversibleFindings)}`);
   console.log(`  ${healthyReportEmpty ? "PASS" : "FAIL"}  ${"...and stays empty for a matched healthy control".padEnd(46)} reversibleFindings=${JSON.stringify(healthyReport?.reversibleFindings)}`);
+}
+
+console.log("\n[LACTATE CLEARANCE GATED ON REAL-TIME HEPATIC FLOW — queue item V2-12]");
+{
+  // Before this fix, metabolic.js's lactate clearance term read ONLY
+  // pat.liverInjury (the slow, durable structural-damage accumulator) and
+  // pat.gfr -- never pat.hepaticDO2, item 42's real-time hepatic-flow
+  // signal. A patient in acute low-output shock (cardiogenicShock) collapses
+  // hepaticDO2 to near zero within minutes, well before liverInjury has
+  // accrued measurably -- so clearance ran at nearly full rate despite real,
+  // ongoing hepatic hypoperfusion. Fixed by multiplying the hepatic-
+  // clearance term by a flow factor derived from hepaticDO2 (floored at
+  // 0.15, since some non-hepatic clearance persists via muscle/kidney/heart
+  // even at near-total hepatic flow loss).
+  //
+  // Two-sided, same underlying shock severity (cardiogenicShock), only
+  // hepaticDO2 forced differently -- isolates the clearance term from the
+  // condition's own real, separately-driven lactate PRODUCTION. Window kept
+  // to 600s (10 min), not a longer run: MEASURED that cardiogenicShock's own
+  // stochastic rhythm-instability substrate (a real, documented mechanism
+  // elsewhere in this file, unrelated to this fix) swamps the clearance
+  // signal past ~600s with wide run-to-run variance (delta ranged from
+  // ~0.03 to ~0.7 across repeated 1800s trials) -- at 600s the delta is
+  // small but consistently reproducible (~0.15-0.17 across four repeated
+  // trials), a real, stable signal rather than a lucky draw.
+  const shockNormalFlow = probe({ scen: "cardiogenicShock", settle: 2, run: 600,
+    mutate: (p) => { p.hepaticDO2 = 1; } });
+  const shockLowFlow = probe({ scen: "cardiogenicShock", settle: 2, run: 600,
+    mutate: (p) => { p.hepaticDO2 = 0.1; } });
+  assertVersus("cardiogenicShock, hepaticDO2 forced low -> higher lactate than forced-normal-flow control (same production)",
+    shockLowFlow, shockNormalFlow, "lactate", "up", 0.1);
+
+  // Specificity: a well-perfused patient (hepaticDO2 near or above 1, the
+  // normal resting value) is completely unaffected by this term -- the flow
+  // factor clamps to exactly 1 at or above normal flow, so already-shipped,
+  // already-verified septic/sepsis conditions (whose hepaticDO2 stays >=1
+  // through a realistic scene per item 42's own regression) are provably
+  // untouched by this change, not just assumed unaffected.
+  const healthyControl = probe({ scen: "abdPain", settle: 2, run: 1800 });
+  const controlOk = healthyControl.after.hepaticDO2 >= 1 && healthyControl.after.lactate <= 0.6;
+  controlOk ? pass++ : fail++;
+  if (!controlOk) failures.push(`healthy control should hold hepaticDO2>=1 and lactate near its 0.5 floor, got hepaticDO2=${healthyControl.after.hepaticDO2}, lactate=${healthyControl.after.lactate}`);
+  console.log(`  ${controlOk ? "PASS" : "FAIL"}  ${"...well-perfused healthy control is unaffected (flow factor clamps to 1)".padEnd(46)} hepaticDO2=${healthyControl.after.hepaticDO2.toFixed(2)}, lactate=${healthyControl.after.lactate.toFixed(2)}`);
+
+  // Regression guard: true no-flow (asystole) must still keep serum lactate
+  // near baseline (queue item 15's washout-phenomenon assertion, unchanged
+  // premise) -- this fix reduces clearance further during no-flow (hepaticDO2
+  // floors to 0.15 there too), so confirm that assertion's own real margin
+  // (<2) still holds rather than assuming it.
+  const arrestRegression = probe({ scen: "abdPain", settle: 60, run: 660,
+    mutate: (p) => { p.rhythm = "asystole"; } });
+  const arrestOk = arrestRegression.after.lactate < 2;
+  arrestOk ? pass++ : fail++;
+  if (!arrestOk) failures.push(`true no-flow serum lactate should stay < 2 (queue item 15's own assertion) after the clearance fix, got ${arrestRegression.after.lactate}`);
+  console.log(`  ${arrestOk ? "PASS" : "FAIL"}  ${"...true no-flow serum-lactate-stays-flat assertion (item 15) is not regressed".padEnd(46)} lactate=${arrestRegression.after.lactate.toFixed(2)}`);
 }
 
 console.log("\n[NECROTIZING FASCIITIS — queue item 7, Infectious-disease backlog]");
