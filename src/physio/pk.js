@@ -1898,8 +1898,33 @@ export function updateDrugs(pat, s, dt) {
           pat.assistedVent = { rr: v.rr, vt: deliveredVt, intensity };
         }
       }
-      if (dr.id === "cpr" || dr.id === "lucas") {
+      if (dr.id === "lucas") {
+        // Mechanical CPR (LUCAS-type) is real-world continuous and
+        // uninterrupted once applied — no freshness decay.
         pat.cprActive = Math.max(pat.cprActive, intensity);
+      } else if (dr.id === "cpr") {
+        // COMPRESSION FRESHNESS (queue item V2-29, redo). `intensity` above
+        // only tracks whether THIS administered dose's own onset/dur window
+        // (dur:150s) is still open — it says nothing about whether the crew
+        // is actually still compressing right now. A prior investigation
+        // measured this directly: continuous CPR, a realistic 10s-pause-
+        // per-120s rhythm-check pattern, and a poor-CCF 15s-pause-per-60s
+        // pattern all produced byte-identical cprActive/MAP/SBP
+        // trajectories, because the 150s dur window silently papers over
+        // any pause shorter than it. Real coronary/cerebral perfusion
+        // pressure collapses within seconds of compressions stopping and
+        // takes several compressions to rebuild once resumed (Berg et al.,
+        // Circulation 2001; Kern et al., Circulation 2002 — the evidence
+        // base behind AHA's "minimize interruptions" / compression-fraction
+        // teaching). Track the timestamp of the most recent manual CPR
+        // dose (not the tail of its own dur window) and decay a freshness
+        // term from it on a literature-anchored ~12s time constant, so a
+        // real pause is visible to the physiology even while the old
+        // dose's own buffer window is technically still "active."
+        pat._lastCprDoseAt = Math.max(pat._lastCprDoseAt ?? -Infinity, dr.time);
+        const sinceDose = Math.max(0, s.t - pat._lastCprDoseAt);
+        const freshness = Math.exp(-sinceDose / 12);
+        pat.cprActive = Math.max(pat.cprActive, intensity * freshness);
       }
       // Naloxone's blockade is accumulated in the antagonist pre-pass above, not
       // here — see the note there. Doing it here made reversal order-dependent.

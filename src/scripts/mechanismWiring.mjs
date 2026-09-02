@@ -637,8 +637,67 @@ console.log("\n[VENODILATION]");
 console.log("\n[CHEST COMPRESSIONS]");
 {
   // fbao progresses to arrest; compressions must register as a mechanical pump.
+  // reapply defaults to 140s here, which is the REGRESSION check named below:
+  // even with a large 140s gap between this probe's own re-dosing (a stand-in
+  // for "continuous compressions, checked only occasionally"), the freshness
+  // mechanism added for queue item V2-29 (redo) must still leave cprActive
+  // clearly nonzero at final read, not collapsed to ~0 by its own decay.
   const r = probe({ scen: "fbao", settle: 600, run: 900, apply: ["cpr"] });
   assertNonZero("CPR -> mechanical pump engaged", r, "cprActive", 0.1);
+}
+
+console.log("\n[CPR COMPRESSION FRESHNESS — queue item V2-29 (redo)]");
+{
+  // A prior attempt at this item found — and this fix closes — a real defect:
+  // pat.cprActive was driven purely by curve()'s own onset/dur window for the
+  // most recently administered "cpr" dose, so a rescuer pausing compressions
+  // (rhythm check, poor CCF) for anything shorter than that dose's own ~150s
+  // buffer was completely invisible to the physiology. Measured directly
+  // (throwaway probe, stripped before this entry was written): continuous
+  // compressions, a realistic 10s-pause-per-120s rhythm-check pattern, and a
+  // poor-CCF 15s-pause-per-60s pattern all produced BYTE-IDENTICAL
+  // cprActive/MAP/SBP trajectories under the old mechanism. Fixed with a
+  // literature-anchored (~12s, Berg et al. 2001 / Kern et al. 2002 CPP-decay
+  // time constant) freshness term keyed off the timestamp of the most recent
+  // manual "cpr" dose, not the tail of that dose's own onset/dur window —
+  // deliberately NOT applied to `lucas` (mechanical CPR), which is real-world
+  // continuous and uninterrupted (see pk.js's own comment at the fix site).
+  //
+  // Verified here as a genuine, real, two-sided compression-FRACTION effect,
+  // not a single before/after snapshot: three patterns run against the same
+  // arrest scenario, each re-dosing "cpr" every 10s EXCEPT during their own
+  // declared pause window, with the mean cprActive over the whole run
+  // compared — the real clinical teaching this item exists to demonstrate
+  // (compression fraction directly affects perfusion), now actually emergent
+  // rather than hidden by a stale buffer window.
+  function meanCprActive(pauseFn) {
+    const s = { scen: "fbao", t: 0, doses: [], given: {}, activePatientId: null };
+    for (let T = STEP; T <= 600; T += STEP) { s.t = T; physio(s); }
+    let sum = 0, n = 0;
+    for (let T = 602; T <= 1200; T += STEP) {
+      s.t = T;
+      const rel = T - 600;
+      if (!pauseFn(rel) && rel % 10 === 0) s.doses.push({ id: "cpr", at: T });
+      physio(s);
+      sum += activePatient(s).cprActive;
+      n++;
+    }
+    return sum / n;
+  }
+  const contMean = meanCprActive(() => false);
+  const realisticMean = meanCprActive(rel => (rel % 120) >= 110);
+  const poorCcfMean = meanCprActive(rel => (rel % 60) >= 45);
+  console.log(`  (measured) continuous=${contMean.toFixed(4)}  realistic-pauses=${realisticMean.toFixed(4)}  poor-CCF=${poorCcfMean.toFixed(4)}`);
+
+  const contVsRealistic = contMean - realisticMean >= 0.01;
+  pass += contVsRealistic ? 1 : 0; fail += contVsRealistic ? 0 : 1;
+  if (!contVsRealistic) failures.push(`CPR freshness: continuous (${contMean.toFixed(4)}) should exceed realistic-pause pattern (${realisticMean.toFixed(4)}) by >=0.01`);
+  console.log(`  ${contVsRealistic ? "PASS" : "FAIL"}  ${"continuous CPR sustains higher mean cprActive than a realistic rhythm-check pause pattern".padEnd(46)} ${contMean.toFixed(4)} vs ${realisticMean.toFixed(4)}`);
+
+  const realisticVsPoor = realisticMean - poorCcfMean >= 0.01;
+  pass += realisticVsPoor ? 1 : 0; fail += realisticVsPoor ? 0 : 1;
+  if (!realisticVsPoor) failures.push(`CPR freshness: realistic pattern (${realisticMean.toFixed(4)}) should exceed poor-CCF pattern (${poorCcfMean.toFixed(4)}) by >=0.01`);
+  console.log(`  ${realisticVsPoor ? "PASS" : "FAIL"}  ${"a realistic pause pattern sustains higher mean cprActive than a poor-CCF pause pattern".padEnd(46)} ${realisticMean.toFixed(4)} vs ${poorCcfMean.toFixed(4)}`);
 }
 
 console.log("\n[AIR TRAPPING]");
