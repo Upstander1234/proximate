@@ -4440,6 +4440,58 @@ console.log("\n[INFLAMMATION CASCADE — queue item 46]");
   console.log(`  ${chlorineLeakOk ? "PASS" : "FAIL"}  ${"...and its own capillaryLeak ceiling is NOT regressed".padEnd(46)} capillaryLeak = ${chlorine.after.capillaryLeak.toFixed(3)}`);
 }
 
+console.log("\n[ACUTE TRAUMATIC COAGULOPATHY — queue V2-17]");
+{
+  // A general, endothelial-injury-driven consumptive pathway (coagulation.js),
+  // deliberately SEPARATE from item 46's cytokineLoad-driven tissue-factor
+  // term above (which has a real, stated ~90-minute lag) and from the
+  // hemorrhage-volume consumption term. Gated on real structural injury
+  // (max of brainInjury/kidneyInjury/liverInjury/gutInjury/limbInjury) AND
+  // concurrent hypoperfusion (alphaTone past a resting deadband) — real
+  // major-trauma scenarios (motorcycle/fall, condition polytraumaMoto/
+  // polytraumaFall) set brainInjury directly at presentation, so this fires
+  // immediately at scene rather than waiting on the slower organ-injury
+  // accumulators queue items 42/74 built.
+  const moto5min = probe({ scen: "motorcycle", settle: 2, run: 300 });
+  assertMoved("polytrauma (motorcycle) -> early factor consumption (5 min)", moto5min, "factorII", "down", 0.1);
+
+  const moto = probe({ scen: "motorcycle", settle: 2, run: 900 });
+  assertMoved("...continues consuming factors over the call", moto, "factorII", "down", 1.5);
+  assertMoved("...and platelets", moto, "plateletCount", "down", 1);
+
+  const fall = probe({ scen: "fall", settle: 2, run: 900 });
+  assertMoved("polytraumaFall -> real factor consumption too", fall, "factorII", "down", 2);
+
+  // Specificity: a mild, isolated-extremity injury with no shock and no
+  // structural organ/limb injury (minorSprain) must NOT spuriously trigger
+  // this — confirming the mechanism is gated on real trauma severity, not
+  // on the mere presence of a `trauma`-category scenario.
+  const sprain = probe({ scen: "minorSprain", settle: 2, run: 900 });
+  const sprainOk = sprain.after.factorII >= 99.9;
+  sprainOk ? pass++ : fail++;
+  if (!sprainOk) failures.push(`minorSprain (mild trauma, no shock) should show essentially zero ATC consumption, got factorII=${sprain.after.factorII}`);
+  console.log(`  ${sprainOk ? "PASS" : "FAIL"}  ${"...but mild/minor trauma (minorSprain) does not fire".padEnd(46)} factorII = ${sprain.after.factorII.toFixed(2)}`);
+
+  // Regression guard: septicShock (cytokine pathway only — no structural
+  // organ/limb injury of any real magnitude, confirmed directly: kidneyInjury
+  // stays ~0.02 and alphaTone barely crosses the deadband within 900s, so
+  // atcSeverity is negligible) must be essentially UNAFFECTED by this new
+  // mechanism — its own factorII fall stays attributable to item 46's
+  // already-asserted cytokine term, not this one.
+  const sepsis = probe({ scen: "septicShock", settle: 2, run: 900 });
+  const sepsisAtcOk = sepsis.after.factorII >= 99.3;
+  sepsisAtcOk ? pass++ : fail++;
+  if (!sepsisAtcOk) failures.push(`septicShock's own cytokine-only factorII fall should be essentially unchanged by the new ATC mechanism (no real structural/limb injury present), got factorII=${sepsis.after.factorII}`);
+  console.log(`  ${sepsisAtcOk ? "PASS" : "FAIL"}  ${"...and septicShock (cytokine-only) is essentially unaffected".padEnd(46)} factorII = ${sepsis.after.factorII.toFixed(2)}`);
+
+  // A condition-less healthy control shows exactly zero.
+  const healthyControl = probe({ scen: "abdPain", settle: 2, run: 900 });
+  const healthyOk = healthyControl.after.factorII === 100 && healthyControl.after.plateletCount === 250;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`a condition-less healthy control should show exactly zero ATC consumption, got factorII=${healthyControl.after.factorII} plateletCount=${healthyControl.after.plateletCount}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...and a healthy control shows exactly zero".padEnd(46)} factorII = ${healthyControl.after.factorII.toFixed(2)}`);
+}
+
 console.log("\n[ACCIDENTAL HYPOTHERMIA — queue item 7]");
 {
   // Confirms three ALREADY-EXISTING, previously-unexercised generic engine

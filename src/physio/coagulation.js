@@ -40,6 +40,66 @@ export function updateCoagulation(pat, dt) {
       pat.plateletCount = Math.max(0, pat.plateletCount - tfConsumption * dt * 2.5);
     }
 
+    // QUEUE ITEM V2-17 — Acute Traumatic Coagulopathy (ATC): a general,
+    // endothelial-injury-driven consumptive pathway, deliberately SEPARATE
+    // from the cytokine/tissue-factor term just above (item 46 — a real,
+    // stated ~90-minute cytokine lag) and from the hemorrhage-volume
+    // consumption term at the top of this file (activeBleedRate-driven).
+    // Real mechanism (Brohi et al., J Trauma 2003; Frith et al., J Thromb
+    // Haemost 2010): severe tissue injury combined with hypoperfusion
+    // directly activates protein C via the thrombomodulin-thrombin complex
+    // on injured endothelium — this degrades factors Va/VIIIa and drives
+    // hyperfibrinolysis WITHIN MINUTES of injury, documented to precede
+    // both dilutional and hypothermic coagulopathy, and mechanistically
+    // distinct from sepsis-DIC (protein-C-driven anticoagulation from
+    // direct mechanical/toxic/burn endothelial injury, not a cytokine
+    // cascade activating tissue factor).
+    //
+    // Gated on real structural tissue injury already present, reusing the
+    // organ-injury fields queue items 42/74 built (kidneyInjury/
+    // liverInjury/gutInjury/limbInjury) PLUS pat.brainInjury — the one
+    // signal already-shipped major-trauma conditions (polytraumaFall,
+    // polytraumaMoto) set DIRECTLY at presentation as their own overall
+    // structural-injury-severity dial (0.4-0.5 at scene), rather than an
+    // accumulator that only builds over tens of minutes to hours the way
+    // kidneyInjury/liverInjury/gutInjury/limbInjury themselves do — this is
+    // what lets a polytrauma patient trigger ATC immediately at scene
+    // instead of waiting on those slower accumulators, matching the real
+    // "within minutes" clinical time course this mechanism is named for.
+    // Taking the MAX across all five (not a sum) means whichever structural
+    // lesion is most severe drives the term, not an unrealistic pile-up of
+    // several partially-injured organs.
+    //
+    // Hypoperfusion is the second real requirement, per Brohi's own model —
+    // tissue injury alone (an isolated closed fracture in a normotensive
+    // patient) does not produce ATC. Reused via pat.alphaTone, the SAME
+    // sympathetic-tone shock proxy item 42's gut/skin mechanisms already
+    // established (measured range: ~0.2-0.3 resting, ~0.6 at a genuinely
+    // near-terminal shock state — see neuro.js's own comment for the
+    // measurement) — deadbanded against resting tone so a compensated,
+    // non-shocked trauma patient contributes zero.
+    const atcInjury = Math.max(
+      pat.brainInjury || 0, pat.kidneyInjury || 0, pat.liverInjury || 0, pat.gutInjury || 0,
+      pat.limbInjury ? Math.max(pat.limbInjury.armL || 0, pat.limbInjury.armR || 0, pat.limbInjury.legL || 0, pat.limbInjury.legR || 0) : 0
+    );
+    const atcShock = Math.max(0, Math.min(1, (pat.alphaTone ?? 0) - 0.3));
+    const atcSeverity = Math.max(0, Math.min(1, atcInjury)) * atcShock;
+    if (atcSeverity > 0) {
+      // Rate deliberately FASTER than cytokineLoad's own 0.08 (item 46's
+      // comment) — ATC's whole clinical significance is that it precedes
+      // the cytokine cascade — but still slower than a directly bleeding
+      // wound's own consumption (activeBleedRate*0.5), matching that
+      // comment's own "meaningful but slower than mechanical bleeding"
+      // calibration philosophy.
+      const atcConsumption = 0.25 * atcSeverity;
+      pat.factorII   = Math.max(0, pat.factorII   - atcConsumption * dt);
+      pat.factorV    = Math.max(0, pat.factorV    - atcConsumption * dt);
+      pat.factorVIII = Math.max(0, pat.factorVIII - atcConsumption * dt);
+      pat.factorX    = Math.max(0, pat.factorX    - atcConsumption * dt);
+      pat.fibrinogen = Math.max(0, pat.fibrinogen - atcConsumption * dt * 0.03);
+      pat.plateletCount = Math.max(0, pat.plateletCount - atcConsumption * dt * 2.5);
+    }
+
     // Dilutional coagulopathy.
     //
     // WHAT WAS WRONG: this was driven by a plasma volume DEFICIT against
