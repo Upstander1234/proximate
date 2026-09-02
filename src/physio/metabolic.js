@@ -335,7 +335,32 @@ export function updateMetabolism(pat, dt) {
     const ischemicWashout = (pat.tissueLactate - pat.lactate) * Math.min(1, washoutRate * dt);
 
     pat.lactate += lactateProd * dt + ischemicWashout;
-    const clearance = 0.03 + (1 - pat.liverInjury * 0.5) * 0.02 + (pat.gfr > 30 ? 0.01 : 0);
+    // QUEUE ITEM V2-12 — hepatic clearance is now gated on REAL-TIME hepatic
+    // flow (pat.hepaticDO2, item 42), not only on accumulated structural
+    // liver injury. Before this fix, clearance read `pat.liverInjury` only —
+    // a slow accumulator that takes tens of minutes to move — so a patient
+    // in acute cardiogenic/obstructive shock with hepaticDO2 collapsed to
+    // near zero (real hepatic hypoperfusion, right now) still cleared
+    // lactate at nearly the full baseline rate, because the liver hadn't yet
+    // accrued measurable structural injury. That is the real "type A lactic
+    // acidosis" gap this item names: shock worsens serum lactate via BOTH
+    // increased production (already modeled above, sepsis/sympathetic) AND
+    // impaired clearance (previously NOT modeled in real time).
+    //
+    // Coefficient: hepatic lactate clearance capacity roughly halving at
+    // ~50% reduction in hepatic blood flow is a commonly cited
+    // approximation in the critical-care lactate literature (a rough
+    // clinical rule of thumb, not a single precise trial figure — stated
+    // honestly since a more precise number was not found). hepaticDO2 is
+    // already normalized to ~1 at rest (hepaticFlow * caO2/20, neuro.js), so
+    // a direct multiply on the hepatic-clearance term reproduces that
+    // roughly-linear halving relationship without inventing a new curve.
+    // Floored at 0.15 (not 0) because some lactate clearance persists via
+    // skeletal muscle/kidney/heart even with near-total hepatic flow loss —
+    // the 0.03 baseline term below already represents that non-hepatic
+    // route and is left untouched by this gate.
+    const hepaticFlowFactor = Math.max(0.15, Math.min(1, pat.hepaticDO2 ?? 1));
+    const clearance = 0.03 + (1 - pat.liverInjury * 0.5) * 0.02 * hepaticFlowFactor + (pat.gfr > 30 ? 0.01 : 0);
     pat.lactate = Math.max(0.5, pat.lactate - clearance * dt);
     // Tissue lactate clears too, once perfusion returns — otherwise a
     // patient who was briefly hypoperfused decades ago (in engine terms, one
