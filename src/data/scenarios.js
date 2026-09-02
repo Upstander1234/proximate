@@ -6386,6 +6386,47 @@ serotoninSyndrome: {cat: "medical", id: "TOX-014", pronouns: "she", title: "Fema
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Serotonin syndrome from an SSRI + tramadol interaction — clonus worse in the legs, hyperthermia, tachycardia, hypertension, agitation; no field antidote, benzodiazepines + cooling are the real interventions"};},
 },
 
+// Malaria (queue item 7, Infectious-disease backlog — INF-001). Real
+// prehospital-relevant trigger: recent travel to an endemic region plus a
+// febrile paroxysm. See conditions.js for the full mechanism/literature
+// writeup (the hemolysis mechanism, metabolic.js's updateHemolysis, is
+// genuinely new to this engine — see that file's own header comment).
+malaria: {cat: "medical", id: "INF-001", pronouns: "he", title: "Male, 29. Fever, chills, fatigue — back from Nigeria two weeks ago.",
+  limit: 900, transport: 480,
+  bystanders: "His roommate, worried. \"He got back from visiting family in Nigeria about two weeks ago. He's been saying he felt off the last couple days, but tonight he just started shaking uncontrollably, then burning up. He's never been sick like this before.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 6"}],
+  dispatch: ["29M, fever, chills, recent international travel.", "Roommate reports rigors then high fever, onset over the past two days.", "Conscious, uncomfortable."],
+  update: [],
+  impression: "Curled up on the couch under a blanket despite the room being warm, shivering, skin hot and dry to the touch, visibly exhausted.",
+  imps: ["FEVR", "SEPS", "ALOC"],
+  condition: "malaria",
+  patient: {age: 29, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "His roommate: \"No medications, no allergies he's ever mentioned. He got back from Lagos, Nigeria about two weeks ago, was there visiting family for a month. He mentioned feeling tired and achy the last day or two but shrugged it off as jet lag. Tonight he had this awful shaking chill, then he was burning up.\"", kind: "pt",
+      evid: "Recent travel to a malaria-endemic region (sub-Saharan Africa), combined with a rigor-then-fever paroxysm two weeks after return, is the real, textbook trigger pattern for falciparum malaria — travel history is the key clue, not the vitals alone.", find: "SAMPLE: no meds/allergies, returned from a month in Nigeria two weeks ago, onset of fatigue/malaise 1-2 days ago, rigors then high fever tonight."}),
+    opqrst: (s, v) => ({say: v._cons === "awake" ? "He says the shaking chills came on suddenly about an hour ago, then the fever hit right after. Says he's had headaches and body aches the last day or two." : "He's too exhausted to answer clearly.", kind: "pt",
+      find: "OPQRST: sudden rigor followed by high fever tonight, preceded by 1-2 days of malaise/headache/myalgia, no prior episodes.", evid: "The classic malarial paroxysm sequence — cold/rigor stage, then hot/fever stage — layered on a several-day febrile prodrome after travel."}),
+    // Reads live physiology (conditions.js/metabolic.js): the heart exam
+    // reports the real hr/sbp/temp this condition drives, not scripted
+    // numbers, and the reassessment reflects real hemolysis/fever if
+    // re-checked later in the call.
+    heart: (s, v) => {
+      const sev = s.patient?._malariaSeverity ?? 0;
+      return {say: `Rate ${v.hr}, sbp ${v.sbp}/${v.dbp ?? "?"}. Temp ${v.temp}. Skin hot, dry.${sev > 0.55 ? " Slow to respond, harder to keep his attention." : ""}`, kind: v.temp >= 39.5 ? "crit" : "obs",
+        find: `Heart: rate ${v.hr}, sbp ${v.sbp}, temp ${v.temp}.`,
+        evid: "A high, sustained fever with tachycardia in a patient with a confirmed endemic-region travel history is the real bedside picture of a malarial paroxysm — the travel history is what makes this diagnosable, not the vitals alone, which overlap with many other febrile illnesses."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Malaria, unrecognized, progressed to cerebral involvement and multi-organ dysfunction.";
+    notes.push("This is malaria, most likely P. falciparum given the sub-Saharan African travel history and the severity of the presentation. The real trigger to catch is the travel history plus the febrile paroxysm (rigor, then high fever) — vitals alone overlap with many febrile illnesses. P. falciparum classically cycles fever every 48-72 hours, but a patient calling 911 is almost always caught mid-paroxysm, which is what this call shows.");
+    notes.push("Two real mechanisms are driving this: (1) hemolytic anemia — parasitized red cells are destroyed IN the vascular space, a genuinely different process from bleeding, since the plasma itself is not lost, only the red cells suspended in it (WHO severe-malaria criteria define severe malarial anemia as Hb under 5 g/dL, though that level of anemia develops over days, not over this one call); (2) hypermetabolic fever from the febrile paroxysm itself. Severe, prolonged, untreated cases can progress to cerebral malaria (altered consciousness, seizures) and multi-organ dysfunction.");
+    notes.push("No field antimalarial exists on this unit — artesunate, quinine, and doxycycline are all hospital-pharmacy drugs, never carried in the field. The real field job is recognizing the travel-history-plus-fever pattern, treating supportively (active cooling for the fever, fluids for perfusion), and transporting promptly so a hospital lab can confirm the diagnosis and start real antimalarial therapy.");
+    return {died, cause, notes, correct: s.pi === "FEVR" || s.pi === "SEPS", truth: "Malaria (likely P. falciparum) after travel to a sub-Saharan African endemic region — rigor-then-fever paroxysm, real hemolytic anemia, no field antimalarial, recognize and transport"};},
+},
+
 // Neuroleptic malignant syndrome (queue item 7, Toxicology backlog —
 // TOX-015). A real, clinically distinct contrast to serotoninSyndrome
 // above: dopamine-antagonist trigger, sustained lead-pipe rigidity instead

@@ -154,6 +154,10 @@ const REQUIRED = [
   // published so scenarioSweep can confirm delivery stays sane while
   // energyFailure/lactate do the real work).
   "cytochromeBlock", "do2",
+  // Malaria (queue item 7, Infectious-disease backlog) — the real, new
+  // red-cell-DESTRUCTION rate (metabolic.js's updateHemolysis), distinct
+  // in kind from pat.activeBleedRate's whole-blood proportional loss.
+  "hemolysisRate",
   // Queue item 58: isolated cutaneous urticaria/pruritus, a real, 0-1
   // histamine-driven signal (allergicReactionMild/allergicReactionModerate)
   // that also feeds a small pat.vasodilation contribution and is reduced by
@@ -289,6 +293,10 @@ const NON_NEGATIVE = [
   // cyanidePoisoning (queue item 7): cytochromeBlock is a clamped 0-1 dial;
   // do2 is a physical oxygen-delivery rate (mL/min), never negative.
   "cytochromeBlock", "do2",
+  // Malaria (queue item 7): a real, always-non-negative destruction rate
+  // (percent of rbcMass per minute), clamped to zero for every patient
+  // without a hemolytic condition.
+  "hemolysisRate",
   // Queue item 58: real, always-non-negative 0-1 severity dial.
   "urticaria",
   // Queue item 61: real, always-non-negative 0-1 severity dial.

@@ -1030,6 +1030,11 @@ const SCEN_BODY_SYSTEM={
   cyanidePoisoning:"Toxicology",
   methemoglobinemia:"Toxicology",
   lithiumToxicity:"Toxicology",ironOverdose:"Toxicology",hydrocarbonAspiration:"Toxicology",serotoninSyndrome:"Toxicology",neurolepticMalignantSyndrome:"Toxicology",
+  // Malaria (queue item 7, Infectious-disease backlog) is the first
+  // scenario needing this category — a genuinely new bucket, not a
+  // reuse of an existing one, since no prior scenario in this map has
+  // been Infectious-disease-primary.
+  malaria:"Infectious Disease",
   boxJellyfishSting:"Toxicology",
   // --- Allergy / Immune ---
   anaph:"Allergy / Immune",allergicReactionModerateCall:"Allergy / Immune",
@@ -6124,7 +6129,7 @@ export default function App(){
           </div>
         </div>
         {(()=>{const byBody={}; Object.keys(SCEN).forEach(k=>{const sys=bodySystemOf(k); (byBody[sys]=byBody[sys]||[]).push(k);});
-          const order=["Cardiac","Respiratory","Trauma","Toxicology","Allergy / Immune","Obstetric / Gynecologic","Pediatric","Gastrointestinal","Neurologic","Endocrine / Metabolic","Electrolyte","Environmental","Other"];
+          const order=["Cardiac","Respiratory","Trauma","Toxicology","Infectious Disease","Allergy / Immune","Obstetric / Gynecologic","Pediatric","Gastrointestinal","Neurologic","Endocrine / Metabolic","Electrolyte","Environmental","Other"];
           // Same "you don't get to know which one" flavor as the top-level
           // Random button and the map pins, scoped to one body system —
           // "run cardiac calls" without hand-picking the specific one.
