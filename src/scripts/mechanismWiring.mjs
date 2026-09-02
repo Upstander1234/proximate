@@ -334,6 +334,7 @@ function snapshot(p) {
     adhAutonomous: p.adhAutonomous || 0,
     adhSecretionCapacity: p.adhSecretionCapacity ?? 1,
     adhs: p.adhs || 0,
+    thirstDrive: p.thirstDrive || 0,
     na: p.na ?? 140,
     hco3: p.hco3 ?? 24,
     glucose: p.glucose ?? 100,
@@ -5539,6 +5540,35 @@ console.log("\n[KETAMINE — indirect sympathomimetic + masked direct depression
   // and SBP falls relative to the reserve-intact patient, rather than rising.
   assertVersus("...unmasks direct myocardial depression -> SBP falls vs reserve-intact patient", lateShockDepleted, modShockIntact, "sbp", "down", 15);
   assertVersus("...same effect on HR: no indirect tachycardic support left", lateShockDepleted, modShockIntact, "hr", "down", 15);
+}
+
+console.log("\n[THIRST — queue item V2-9, generalized]");
+{
+  // Specificity: a healthy, euvolemic, isotonic control (run to the same
+  // 1800s window used below for DKA, so both checks share one control)
+  // should show essentially zero thirst drive throughout.
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 1800 });
+  const healthyLow = healthy.after.thirstDrive < 0.05;
+  healthyLow ? pass++ : fail++;
+  if (!healthyLow) failures.push(`healthy control thirstDrive expected <0.05, got ${healthy.after.thirstDrive.toFixed(4)}`);
+  console.log(`  ${healthyLow ? "PASS" : "FAIL"}  ${"healthy euvolemic control -> ~zero thirst drive".padEnd(46)} thirstDrive=${healthy.after.thirstDrive.toFixed(4)}`);
+
+  // Presence: diabeticKetoacidosisCall's real, glucose-driven osmotic
+  // diuresis (queue item 43 — a real mechanism, not a scripted drain rate)
+  // dehydrates the patient over the call, raising both serum osmolality
+  // and (via the resulting volume loss) effective circulating volume
+  // deficit — the two real triggers this thirst mechanism reads. Run long
+  // enough (untreated) for the osmotic-diuresis mechanism to produce a
+  // real, measurable deficit.
+  const dka = probe({ scen: "diabeticKetoacidosisCall", settle: 2, run: 1800 });
+  assertNonZero("untreated DKA's real osmotic diuresis -> real thirst drive", dka, "thirstDrive", 0.1);
+
+  // Two-sided: the same DKA patient, but with the osmotic driver
+  // (hyperglycemia) never having risen in the first place (a plain,
+  // condition-less control at the identical run length), should NOT
+  // develop the same thirst — confirms this isn't just "any long probe
+  // trends toward high thirst," it specifically tracks the real deficit.
+  assertVersus("...vs. a matched healthy control at the same run length", dka, healthy, "thirstDrive", "up", 0.1);
 }
 
 console.log("\n" + "=".repeat(74));
