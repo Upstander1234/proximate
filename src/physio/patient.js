@@ -495,6 +495,12 @@ export class Patient {
     // owned neuromuscular-hyperactivity severity narrated at the "reflexes"
     // action (actions.js); default 0 so every other patient is unaffected.
     this.serotoninClonus = b.serotoninClonus ?? 0;
+    // Neuroleptic malignant syndrome (queue item 7, Toxicology backlog) — a
+    // condition-owned SUSTAINED lead-pipe rigidity severity, mechanistically
+    // distinct from serotoninClonus's intermittent/inducible clonus, narrated
+    // at the same "reflexes" action (actions.js); default 0 so every other
+    // patient is unaffected.
+    this.nmsRigidity = b.nmsRigidity ?? 0;
     this.airway = b.airway ?? "clear";
     this.ptx = b.ptx ?? null;
     // Respiratory mechanics scale with body size: lung compliance tracks lung

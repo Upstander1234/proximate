@@ -186,6 +186,10 @@ const REQUIRED = [
   // owned neuromuscular-hyperactivity severity dial, narrated at the
   // "reflexes" action — same idiom as dystonia above.
   "serotoninClonus",
+  // Neuroleptic malignant syndrome (queue item 7, Toxicology backlog): the
+  // condition-owned sustained lead-pipe rigidity dial, narrated at the same
+  // "reflexes" action, mechanistically distinct from serotoninClonus above.
+  "nmsRigidity",
   // Queue item 56 (thermalBurn): scenario-authored TBSA fraction.
   "burnTbsaFraction",
   // Cardiac batch, valve-mechanism items (aorticStenosis/
@@ -300,6 +304,9 @@ const NON_NEGATIVE = [
   // Queue item 7 (serotoninSyndrome): real, always-non-negative 0-1
   // severity dial (0 baseline, 0.35-0.95 range).
   "serotoninClonus",
+  // Queue item 7 (neurolepticMalignantSyndrome): real, always-non-negative
+  // 0-1 severity dial (0 baseline, 0.5-0.95 range).
+  "nmsRigidity",
   // Queue item 56 (thermalBurn): scenario-authored TBSA fraction
   // (patient.js constructor default 0), the real lesion magnitude a burn
   // condition/scenario declares — drives capillaryLeak above ~20% TBSA

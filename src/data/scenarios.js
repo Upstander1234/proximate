@@ -6386,6 +6386,46 @@ serotoninSyndrome: {cat: "medical", id: "TOX-014", pronouns: "she", title: "Fema
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Serotonin syndrome from an SSRI + tramadol interaction — clonus worse in the legs, hyperthermia, tachycardia, hypertension, agitation; no field antidote, benzodiazepines + cooling are the real interventions"};},
 },
 
+// Neuroleptic malignant syndrome (queue item 7, Toxicology backlog —
+// TOX-015). A real, clinically distinct contrast to serotoninSyndrome
+// above: dopamine-antagonist trigger, sustained lead-pipe rigidity instead
+// of clonus, a days-scale (not hours-scale) time course, and often more
+// severe hyperthermia. See conditions.js for the full mechanism/literature
+// writeup.
+neurolepticMalignantSyndrome: {cat: "medical", id: "TOX-015", pronouns: "he", title: "Male, 47. Rigid and febrile, found by family, on a psych med recently increased.",
+  limit: 900, transport: 480,
+  bystanders: "His sister, badly shaken. \"He's been on haloperidol for years, they just raised his dose about three days ago after he had a rough stretch. Today I let myself in and he's just lying there, stiff as a board, burning up, barely talking. This isn't him.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 11"}],
+  dispatch: ["47M, altered mental status, found rigid.", "Sister reports a psychiatric medication dose increase three days ago.", "Conscious, minimally responsive."],
+  update: [],
+  impression: "Lying stiff on the couch, whole body rigid, sweating heavily, barely tracking, mouth working slowly but not forming words.",
+  imps: ["ODPO", "ALOC"],
+  condition: "neurolepticMalignantSyndrome",
+  patient: {age: 47, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "His sister: \"Haloperidol, for years, for his schizophrenia. His psychiatrist raised the dose three days ago. No other medications that I know of. He was fine until yesterday, then he started getting stiff and quiet, and today he's like this. Burning up since last night.\"", kind: "pt",
+      evid: "A chronic antipsychotic patient whose dose was increased days ago, developing rigidity and fever over the following days, is the classic neuroleptic malignant syndrome trigger and time course, not a sudden reaction.", find: "SAMPLE: chronic haloperidol, dose increased three days ago, progressive rigidity and fever over the last day."}),
+    opqrst: (s, v) => ({say: v._cons === "awake" ? "He's minimally responsive, mumbling, not forming clear words." : "He isn't answering questions.", kind: "pt",
+      find: "OPQRST: onset over three days following a haloperidol dose increase, progressive rigidity, fever, and decreasing responsiveness.", evid: "A slow, multi-day progression after a dopamine-antagonist dose increase, rather than a rapid hours-scale onset, matches neuroleptic malignant syndrome's real time course, distinct from serotonin syndrome's faster onset."}),
+    // Reads live physiology (conditions.js): the heart exam reports the real
+    // hr/sbp/temp this condition drives, not scripted numbers.
+    heart: (s, v) => {
+      const rigidity = s.patient?.nmsRigidity || 0;
+      return {say: `Rate ${v.hr}, sbp ${v.sbp}/${v.dbp ?? "?"}. Temp ${v.temp}. Diaphoretic.${rigidity >= 0.7 ? " His whole body is board stiff, doesn't relax with anything you do." : ""}`, kind: v.temp >= 39.5 ? "crit" : "obs",
+        find: `Heart: rate ${v.hr}, sbp ${v.sbp}, temp ${v.temp}. Diaphoretic.`,
+        evid: "Tachycardia, labile blood pressure, and severe fever on a patient recently started or increased on an antipsychotic, together with sustained rigidity, is the autonomic-instability limb of neuroleptic malignant syndrome."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Neuroleptic malignant syndrome, unmanaged, progressed to refractory hyperthermia and multi-organ failure.";
+    notes.push("This is neuroleptic malignant syndrome (Caroff & Mann): the classic tetrad of severe, sustained lead-pipe rigidity (check for uniform tone through the full range of passive motion, no clonus), hyperthermia, autonomic instability (tachycardia, labile blood pressure, diaphoresis), and altered mental status. It followed a real, classic trigger, a haloperidol dose increase, over a genuine multi-day time course rather than an hours-scale onset.");
+    notes.push("There is no field antidote. Dantrolene and bromocriptine, the real definitive treatments, are hospital-only agents not carried on this unit. The real field job is benzodiazepines for agitation and active cooling for the hyperthermia, and cooling here is even more clearly partial than for other hyperthermic toxidromes, because his rigidity is itself continuing to generate heat the whole time.");
+    notes.push("Check for clonus specifically. He does not have any. That sustained, uniform rigidity with no clonus, on a patient recently started or increased on an antipsychotic, is the real bedside sign that separates this from serotonin syndrome, not the fever or the tachycardia alone.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Neuroleptic malignant syndrome from a haloperidol dose increase, developing over days, sustained lead-pipe rigidity, hyperthermia, autonomic instability, altered mental status; no field antidote, benzodiazepines + cooling are the real interventions"};},
+},
+
 // Box jellyfish envenomation (queue item 7, Toxicology/Environmental —
 // ENV-015). Genuinely distinct from the already-shipped `envenomation`
 // (crotaline/pit-viper coagulopathy) — a cardiotoxic venom, not a
