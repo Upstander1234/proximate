@@ -8163,6 +8163,137 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== SEROTONIN SYNDROME (queue item 7, Toxicology backlog) =====
+  // Real mechanism, confirmed by grep before writing anything: no serotonin
+  // handle, no serotonergic-drug interaction mechanism, no dystonia-vs-
+  // serotonin-clonus distinction existed anywhere in this engine.
+  //
+  // CLINICAL PICTURE (Hunter Serotonin Toxicity Criteria — Boyer & Shannon,
+  // "The Serotonin Syndrome," NEJM 2005): a triad of (1) neuromuscular
+  // hyperactivity — clonus (spontaneous/inducible), hyperreflexia, tremor,
+  // classically MORE PRONOUNCED IN THE LOWER EXTREMITIES than the upper; (2)
+  // autonomic instability — hyperthermia (can exceed 41C in critical cases),
+  // tachycardia, diaphoresis, hypertension; (3) altered mental status —
+  // agitation, confusion. Severe cases progress to seizures, rhabdomyolysis,
+  // and death via hyperthermia-driven multi-organ failure. Triggered by a
+  // serotonergic drug combination/overdose — classic: an SSRI/SNRI plus a
+  // second serotonergic agent (tramadol, an MAOI), or a single large
+  // overdose of one strongly serotonergic drug.
+  //
+  // WIRED THROUGH EXISTING ENGINE MECHANISMS, no invented parallel
+  // pathways, per this queue item's own standing methodology:
+  //   - Hyperthermia: pat.metabolicHeatMultiplier, the SAME real
+  //     hypermetabolism handle excitedDelirium/thyroidStorm/organophosphate
+  //     Poisoning already drive — thermo.js's own heat-balance physics
+  //     produces the actual temperature, not a direct coreTemp write.
+  //   - Tachycardia: pat.hrBase, the same direct-rate handle excitedDelirium/
+  //     thyroidStorm already use for a sympathetically-driven tachycardia.
+  //   - Hypertension: pat.baseSVR, targeted at a real multiple of the
+  //     patient's own fixed anatomical reference (pat.ageProfile.baseSVR()),
+  //     the exact mechanism hypertensiveUrgency already established — a
+  //     genuine vascular-tone lesion, not a scripted sbp number.
+  //   - Altered mental status / agitation: pat.agitationBurden (the direct
+  //     handle neuro.js's updateCerebral composes into pat.agitation,
+  //     already reduced by real sedationDepth/antipsychoticEffect — the
+  //     exact mechanism excitedDelirium already uses) plus
+  //     pat.metabolicEncephalopathy for confusion.
+  //   - Seizure risk: pat.epilepticDrive, the same condition-owned
+  //     accumulator neuro.js composes by MAX across every seizure cause —
+  //     severe serotonin toxicity is a real, documented seizure risk.
+  //
+  // NEUROMUSCULAR HYPERACTIVITY — the honest, narration-only approach, per
+  // this project's own precedent for a finding this engine has no
+  // vitals-writing mechanism for (mydriasis/miosis elsewhere in this file
+  // carry the identical limitation). No general neuromuscular-hyperactivity
+  // handle exists — pat.dystonia (acute dystonic reaction) is a DIFFERENT,
+  // static D2-blockade muscle-rigidity mechanism and is deliberately NOT
+  // reused here, since serotonin-driven clonus is a genuinely different
+  // receptor mechanism (5-HT2A/5-HT1A hyperstimulation, not dopaminergic
+  // disinhibition) with a different real bedside picture (rhythmic,
+  // inducible clonus rather than sustained dystonic posturing). A new,
+  // condition-owned pat.serotoninClonus (0-1) severity field gates a real
+  // exam finding at the existing "reflexes" action (actions.js, region legR
+  // — deep tendon reflexes/clonus is already checked at the leg, so the
+  // lower-extremity finding lives exactly where the real exam is done) —
+  // narrated exam text, not a new vitals-writing mechanism, matching the
+  // honest approach mydriasis/miosis already established.
+  //
+  // TIME COURSE: real serotonin syndrome develops within HOURS of the
+  // causative dose/interaction (Boyer & Shannon 2005) — presented already
+  // partly symptomatic on scene (0.4 seed), matching every other toxidrome's
+  // "already symptomatic on arrival" framing in this file, ramping toward a
+  // severe ceiling over the field encounter as the drug interaction
+  // continues to act, not an instant step.
+  //
+  // TREATMENT: NO FIELD ANTIDOTE, stated honestly. Cyproheptadine (the real
+  // 5-HT2A antagonist definitive treatment) is an ORAL drug — not carried by
+  // any field EMS unit, the same "no field cure, recognize and transport"
+  // framing this file already establishes for lithium/cyanide/envenomation.
+  // Real field treatment works through TWO already-existing mechanisms, not
+  // invented ones: (1) benzodiazepines for agitation/seizure risk, reusing
+  // midazolam's existing anticonvulsant -> pat.epilepticDrive suppression AND
+  // its sedationDepth -> pat.agitation calming, exactly as excitedDelirium's
+  // own resolve() text already teaches ("sedation treats the behavior, not
+  // the underlying crisis" — the hyperthermia/tachycardia/baseSVR terms are
+  // completely untouched by a benzodiazepine dose, on purpose); (2) active
+  // cooling for hyperthermia, reusing the existing coolingPower mechanism
+  // (procedures.js) — thermo.js's real heat-balance equation means cooling
+  // only PARTIALLY offsets the ongoing metabolicHeatMultiplier-driven heat
+  // production, an honest clinical limitation, not a cure. Physical restraint
+  // has NO procedure/mechanism anywhere in this engine (confirmed by grep)
+  // and none is added here — restraining a patient does nothing to the
+  // underlying serotonergic crisis and, per real clinical teaching, ongoing
+  // struggle against restraint worsens hyperthermia from continued muscle
+  // activity; this condition's own scenario states that plainly rather than
+  // modeling restraint as if it were a treatment.
+  serotoninSyndrome: {
+    initial: { age: 34, hr: 128, sbp: 156, dbp: 96, rr: 24, glu: 100, pain: 3,
+      temp: 38.9, serotoninClonus: 0.4 },
+    progress(pat, dt) {
+      if (pat._5htRestSvr == null) pat._5htRestSvr = pat.ageProfile.baseSVR();
+
+      // Neuromuscular hyperactivity — condition-owned, narrated via the
+      // "reflexes" action (actions.js). Ramps toward a severe ceiling over
+      // the field encounter, matching the real hours-scale progression.
+      pat.serotoninClonus = clamp((pat.serotoninClonus ?? 0.4) + dt * 0.012, 0.35, 0.95);
+
+      // Autonomic instability: hyperthermia through the shared
+      // hypermetabolism handle (thermo.js derives the real coreTemp from
+      // this, not a direct write). Ceiling of 1.9 sits between
+      // excitedDelirium's 1.8 and thyroidStorm's 2.2 — a real, severe,
+      // life-threatening hypermetabolic state, matching the real clinical
+      // teaching that critical serotonin syndrome can exceed 41C.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1,
+        Math.min(1.9, 1.3 + pat.serotoninClonus * 0.7));
+
+      // Tachycardia — direct rate handle, the same idiom excitedDelirium/
+      // thyroidStorm already use for sympathetically-driven tachycardia.
+      pat.hrBase = Math.min(170, Math.max(pat.hrBase ?? 128, 118) + dt * 1.0);
+
+      // Hypertension — a real vascular-tone lesion through pat.baseSVR, the
+      // same mechanism hypertensiveUrgency already established, targeted at
+      // a moderate multiple (short of that condition's own more severe 3.0x)
+      // since hypertension is one of several autonomic findings here, not
+      // the dominant one.
+      const svrTarget = pat._5htRestSvr * 1.7;
+      pat.baseSVR += (svrTarget - pat.baseSVR) * Math.min(1, dt / 4);
+
+      // Altered mental status: real agitation (composed with sedation/
+      // antipsychotic treatment automatically by neuro.js's updateCerebral,
+      // exactly as excitedDelirium's own mechanism already works) plus
+      // confusion through the shared toxic-encephalopathy handle.
+      pat.agitationBurden = Math.max(pat.agitationBurden || 0, 0.7);
+      pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0,
+        0.3 + pat.serotoninClonus * 0.3);
+
+      // Severe cases progress to seizures — composes by MAX with every
+      // other seizure cause in neuro.js, gated on the clonus severity itself
+      // crossing into the genuinely severe range, not from the first tick.
+      pat.epilepticDrive = Math.max(pat.epilepticDrive || 0,
+        Math.max(0, pat.serotoninClonus - 0.65) / 0.35);
+    },
+  },
+
   // ===== IRON OVERDOSE (queue item 7, Toxicology) =====
   // Real, two-phase mechanism (Perrone & Hoffman, "Iron toxicity," UpToDate/
   // review literature; the classic pediatric-ingestion presentation). PHASE 1

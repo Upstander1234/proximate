@@ -6346,6 +6346,46 @@ hydrocarbonAspiration: {cat: "medical", id: "TOX-012", pronouns: "he", title: "M
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "SOBB", truth: "Pediatric hydrocarbon aspiration — direct surfactant disruption causing progressive chemical pneumonitis over hours, distinct from a gas-phase airway injury"};},
 },
 
+// Serotonin syndrome (queue item 7, Toxicology backlog — TOX-014). The
+// classic drug-combination trigger: an SSRI patient who added tramadol
+// (a real, well-documented serotonergic interaction — tramadol has its own
+// independent serotonin-reuptake-inhibition activity on top of its opioid
+// action) rather than a single massive overdose. See conditions.js for the
+// full mechanism/literature writeup.
+serotoninSyndrome: {cat: "medical", id: "TOX-014", pronouns: "she", title: "Female, 41. Agitated, shaking, burning up — back pain flared, took something new.",
+  limit: 900, transport: 480,
+  bystanders: "Her husband, pacing. \"She's been on Zoloft for years, fine on it. Her back's been killing her since Tuesday so her sister gave her some tramadol left over from a surgery. She took it a few times today. Now she's confused, shaking all over, and she's burning up.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["41F, altered mental status, tremor.", "Husband reports fever and agitation, onset over the last few hours.", "Conscious, distressed."],
+  update: [],
+  impression: "Restless and agitated on the couch, shivering despite being visibly sweaty and flushed, legs twitching rhythmically when they touch the floor.",
+  imps: ["ODPO", "ALOC", "SEIZ"],
+  condition: "serotoninSyndrome",
+  patient: {age: 41, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Her husband: \"Sertraline, every morning, for maybe three years. Her sister gave her tramadol for the back pain, she said she's taken four or five over today. Nothing else. This all started a few hours ago and it's just gotten worse.\"", kind: "pt",
+      evid: "A stable SSRI (sertraline) patient who added tramadol — a second, independently serotonergic drug — over the course of a day is the classic serotonin-syndrome trigger, not a single overdose.", find: "SAMPLE: chronic sertraline (SSRI), tramadol added today for back pain (several doses), symptom onset several hours ago and progressively worsening."}),
+    opqrst: (s, v) => ({say: v._cons === "awake" ? "She's talking but not making full sense, keeps repeating that she feels wrong and can't get comfortable." : "She isn't answering questions clearly.", kind: "pt",
+      find: "OPQRST: onset several hours after adding tramadol to her regular sertraline, progressively worsening confusion/agitation/tremor.", evid: "A progressively worsening picture over hours after starting a second serotonergic drug on top of a chronic SSRI, rather than an instant reaction, matches serotonin syndrome's real, hours-scale time course."}),
+    // Reads live physiology (conditions.js): the heart exam reports the real
+    // hr/sbp/temp this condition drives, not scripted numbers.
+    heart: (s, v) => {
+      const clonus = s.patient?.serotoninClonus || 0;
+      return {say: `Rate ${v.hr}, sbp ${v.sbp}/${v.dbp ?? "?"}. Temp ${v.temp}. Diaphoretic, flushed.${clonus >= 0.7 ? " Whole-body tremor, legs shaking more than her arms." : ""}`, kind: v.temp >= 39.5 ? "crit" : "obs",
+        find: `Heart: rate ${v.hr}, sbp ${v.sbp}, temp ${v.temp}. Diaphoretic.`,
+        evid: "Tachycardia, hypertension, fever, and diaphoresis together, on a patient who just added a second serotonergic drug to a chronic SSRI, is the autonomic-instability limb of serotonin syndrome — not a simple anxiety reaction."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Serotonin syndrome, unmanaged, progressed to refractory hyperthermia and multi-organ failure.";
+    notes.push("This is serotonin syndrome (Hunter Criteria — Boyer & Shannon, NEJM 2005): the triad of neuromuscular hyperactivity (clonus/hyperreflexia, worse in the legs than the arms — check deep tendon reflexes), autonomic instability (hyperthermia, tachycardia, hypertension, diaphoresis), and altered mental status (agitation, confusion). It followed a real, classic trigger: adding tramadol (independently serotonergic on top of its opioid action) to a chronic SSRI.");
+    notes.push("There is no field antidote — cyproheptadine, the real 5-HT2A-antagonist definitive treatment, is an oral drug and is not carried on this unit. The real field job is benzodiazepines for agitation and seizure risk, and active cooling for the hyperthermia — cooling only partially offsets the ongoing heat production, it does not reverse the underlying process. Restraining her does nothing for the serotonergic crisis itself, and fighting against a restraint only drives her temperature higher from continued muscle activity — it is not a treatment.");
+    notes.push("Naloxone does nothing here — this is not primarily an opioid toxidrome, even though tramadol has opioid activity; the serotonergic mechanism driving this presentation has nothing to do with opioid receptors.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Serotonin syndrome from an SSRI + tramadol interaction — clonus worse in the legs, hyperthermia, tachycardia, hypertension, agitation; no field antidote, benzodiazepines + cooling are the real interventions"};},
+},
+
 // Box jellyfish envenomation (queue item 7, Toxicology/Environmental —
 // ENV-015). Genuinely distinct from the already-shipped `envenomation`
 // (crotaline/pit-viper coagulopathy) — a cardiotoxic venom, not a

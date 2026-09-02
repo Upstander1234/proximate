@@ -182,6 +182,10 @@ const REQUIRED = [
   // pat.parasympathetic for control of it — see conditions.js's own comment
   // for the reset-trap this was built to avoid.
   "cholinergicVagalTone",
+  // Serotonin syndrome (queue item 7, Toxicology backlog): the condition-
+  // owned neuromuscular-hyperactivity severity dial, narrated at the
+  // "reflexes" action — same idiom as dystonia above.
+  "serotoninClonus",
   // Queue item 56 (thermalBurn): scenario-authored TBSA fraction.
   "burnTbsaFraction",
   // Cardiac batch, valve-mechanism items (aorticStenosis/
@@ -293,6 +297,9 @@ const NON_NEGATIVE = [
   // Queue item 67: real, always-non-negative 0-1 severity dial (0 baseline,
   // 0.35-0.85 for organophosphatePoisoning).
   "cholinergicVagalTone",
+  // Queue item 7 (serotoninSyndrome): real, always-non-negative 0-1
+  // severity dial (0 baseline, 0.35-0.95 range).
+  "serotoninClonus",
   // Queue item 56 (thermalBurn): scenario-authored TBSA fraction
   // (patient.js constructor default 0), the real lesion magnitude a burn
   // condition/scenario declares — drives capillaryLeak above ~20% TBSA

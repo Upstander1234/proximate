@@ -1029,7 +1029,7 @@ const SCEN_BODY_SYSTEM={
   carbonMonoxidePoisoning:"Toxicology",lidocaineOverdose:"Toxicology",tricyclicOverdose:"Toxicology",
   cyanidePoisoning:"Toxicology",
   methemoglobinemia:"Toxicology",
-  lithiumToxicity:"Toxicology",ironOverdose:"Toxicology",hydrocarbonAspiration:"Toxicology",
+  lithiumToxicity:"Toxicology",ironOverdose:"Toxicology",hydrocarbonAspiration:"Toxicology",serotoninSyndrome:"Toxicology",
   boxJellyfishSting:"Toxicology",
   // --- Allergy / Immune ---
   anaph:"Allergy / Immune",allergicReactionModerateCall:"Allergy / Immune",
