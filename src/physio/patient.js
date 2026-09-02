@@ -491,6 +491,10 @@ export class Patient {
     // first-line treatment for drug-induced dystonia, not a coincidence of
     // engine convenience.
     this.dystonia = b.dystonia ?? 0;
+    // Serotonin syndrome (queue item 7, Toxicology backlog) — a condition-
+    // owned neuromuscular-hyperactivity severity narrated at the "reflexes"
+    // action (actions.js); default 0 so every other patient is unaffected.
+    this.serotoninClonus = b.serotoninClonus ?? 0;
     this.airway = b.airway ?? "clear";
     this.ptx = b.ptx ?? null;
     // Respiratory mechanics scale with body size: lung compliance tracks lung

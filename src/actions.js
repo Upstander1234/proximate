@@ -355,6 +355,18 @@ export const LIB=[
     // own finding (e.g. severePreeclampsia's hyperreflexia/clonus) still wins
     // via probes.neuro, unchanged.
     run:(s)=>{const tox=s.patient?.magToxicity||0;
+      // Serotonin syndrome (queue item 7, Toxicology backlog): real
+      // neuromuscular hyperactivity, narrated only (no vitals-writing
+      // mechanism for clonus exists in this engine, the same honest
+      // approach mydriasis/miosis already use). Checked BEFORE the
+      // magnesium-toxicity branch below — the two conditions are mutually
+      // exclusive in practice and this is the opposite direction of finding
+      // (hyperreflexia/clonus present, not absent/diminished).
+      const clonus=s.patient?.serotoninClonus||0;
+      if(clonus>=0.7) return {say:"Sustained clonus at both ankles, worse than the wrists. Hyperreflexic throughout, more so in the legs than the arms.",kind:"crit",
+        find:"Sustained inducible clonus, hyperreflexia — worse in the lower extremities. Serotonin syndrome.",evid:"Clonus and hyperreflexia, more pronounced in the legs than the arms — classic serotonin toxicity, not a dystonic reaction."};
+      if(clonus>=0.35) return {say:"A few beats of clonus at the ankle. Reflexes brisk, legs more than arms.",kind:"warn",
+        find:"Inducible clonus and hyperreflexia, lower extremities more than upper.",evid:"Early clonus and hyperreflexia, lower extremities worse than upper."};
       if(tox>=0.6) return {say:"Nothing. No patellar reflex at all.",kind:"crit",
         find:"DTRs absent — magnesium toxicity.",evid:"Absent deep tendon reflexes on a magnesium infusion — stop it and reassess before the next sign is respiratory depression."};
       if(tox>=0.25) return {say:"Diminished. Barely there on the patella.",kind:"warn",find:"DTRs diminished — early magnesium toxicity."};

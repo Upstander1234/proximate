@@ -412,6 +412,9 @@ function snapshot(p) {
     // real diphenhydramine receptor target (pk.js "dystonia" fx prop), same
     // idiom as urticaria/angioedema above.
     dystonia: p.dystonia || 0,
+    // Serotonin syndrome (queue item 7, Toxicology backlog): the
+    // condition-owned neuromuscular-hyperactivity severity field.
+    serotoninClonus: p.serotoninClonus || 0,
     upperAirwayObstruction: p.upperAirwayObstruction || 0,
     vagalBlock: p.vagalBlock || 0,
     ph: p.ph ?? 7.4,
@@ -5072,6 +5075,77 @@ console.log("[LITHIUM TOXICITY — queue item 7, Toxicology]");
   // every other toxidrome's own "treats the effect, not the level" pair
   // in this suite -- stated honestly as a small, real effect, not a cure.
   assertVersus("isotonic saline -> genuinely lowers serum lithium (renal clearance)", treated, untreated, "li", "down", 0.005);
+}
+
+console.log("[SEROTONIN SYNDROME — queue item 7, Toxicology backlog]");
+{
+  // Two-sided per lesson 6: fires (real, hours-scale escalating triad —
+  // neuromuscular hyperactivity, autonomic instability, altered mental
+  // status), specificity (a healthy control shows exactly zero of it),
+  // a real escalating time course (severe seizure risk only crosses at a
+  // longer, past-typical-scene-time window — the honest "most patients
+  // stay compensated within a realistic call" shape this project has on
+  // record elsewhere, e.g. hyperkalemia/AAA), midazolam genuinely
+  // suppresses agitation through pat.agitation's own already-verified
+  // sedationDepth pathway WITHOUT moving the underlying autonomic
+  // findings (hyperthermia/tachycardia/hypertension all untouched — the
+  // real clinical teaching that sedation treats the behavior, not the
+  // crisis), and active cooling genuinely lowers coreTemp without
+  // reversing the underlying metabolicHeatMultiplier driver (a partial
+  // response, not a cure).
+  const untreated = probe({ scen: "serotoninSyndrome", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.serotoninClonus > 0.5
+    && untreated.after.metabolicHeatMultiplier > 1.5
+    && untreated.after.hr > healthy.after.hr + 20
+    && untreated.after.agitation > 0.5;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`serotoninSyndrome should show serotoninClonus>0.5, metabolicHeatMultiplier>1.5, hr well above a healthy control, and agitation>0.5 by 900s, got clonus=${untreated.after.serotoninClonus.toFixed(2)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)} hr=${untreated.after.hr.toFixed(1)} agitation=${untreated.after.agitation.toFixed(2)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"serotoninSyndrome -> real neuromuscular/autonomic/mental-status triad fires".padEnd(46)} clonus=${untreated.after.serotoninClonus.toFixed(2)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)} hr=${untreated.after.hr.toFixed(1)} agitation=${untreated.after.agitation.toFixed(2)}`);
+
+  const healthyOk = healthy.after.serotoninClonus === 0 && healthy.after.metabolicHeatMultiplier === 1
+    && healthy.after.agitation === 0 && healthy.after.epilepticDrive === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show exactly zero serotoninClonus/metabolicHeatMultiplier-elevation/agitation/epilepticDrive, got ${healthy.after.serotoninClonus}/${healthy.after.metabolicHeatMultiplier}/${healthy.after.agitation}/${healthy.after.epilepticDrive}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} clonus=${healthy.after.serotoninClonus.toFixed(2)} heat=${healthy.after.metabolicHeatMultiplier.toFixed(2)}`);
+
+  // Real, honest, hours-scale escalation: severe seizure risk (Hunter
+  // Criteria's own "severe cases progress to seizures") only crosses at a
+  // longer window than a typical field scene — measured, not asserted at
+  // an arbitrary threshold: serotoninClonus crosses the seizure-risk gate
+  // (0.65) only past ~25 minutes at this presenting severity, still
+  // absent at 900s (15 min, a realistic scene time).
+  const shortWindow = probe({ scen: "serotoninSyndrome", settle: 2, run: 900 });
+  const longWindow = probe({ scen: "serotoninSyndrome", settle: 2, run: 1800 });
+  const escalates = shortWindow.after.epilepticDrive === 0 && longWindow.after.epilepticDrive > 0.2;
+  escalates ? pass++ : fail++;
+  if (!escalates) failures.push(`serotoninSyndrome's seizure risk should stay 0 at 900s (compensated within a realistic scene time) and cross >0.2 by 1800s (severe, prolonged), got 900s=${shortWindow.after.epilepticDrive.toFixed(3)} 1800s=${longWindow.after.epilepticDrive.toFixed(3)}`);
+  console.log(`  ${escalates ? "PASS" : "FAIL"}  ${"...real escalating time course, not an instant step".padEnd(46)} 900s=${shortWindow.after.epilepticDrive.toFixed(3)} 1800s=${longWindow.after.epilepticDrive.toFixed(3)}`);
+
+  // Benzodiazepine treatment, the real two-sided shape: agitation falls
+  // measurably (through the already-verified sedationDepth pathway) while
+  // the autonomic findings this condition drives directly are UNTOUCHED —
+  // sedation treats the behavior, not the underlying serotonergic crisis.
+  const midazolamTreated = probe({ scen: "serotoninSyndrome", settle: 2, run: 900, apply: ["midazolam"], reapply: 140 });
+  assertVersus("midazolam -> measurably suppresses agitation (sedationDepth)", midazolamTreated, untreated, "agitation", "down", 0.3);
+  const heatUnchanged = Math.abs(midazolamTreated.after.metabolicHeatMultiplier - untreated.after.metabolicHeatMultiplier) < 0.01
+    && Math.abs(midazolamTreated.after.baseSVR - untreated.after.baseSVR) < 5;
+  heatUnchanged ? pass++ : fail++;
+  if (!heatUnchanged) failures.push(`midazolam should leave metabolicHeatMultiplier/baseSVR essentially unchanged, got heat ${untreated.after.metabolicHeatMultiplier.toFixed(3)}->${midazolamTreated.after.metabolicHeatMultiplier.toFixed(3)}, baseSVR ${untreated.after.baseSVR.toFixed(1)}->${midazolamTreated.after.baseSVR.toFixed(1)}`);
+  console.log(`  ${heatUnchanged ? "PASS" : "FAIL"}  ${"...but leaves the autonomic crisis (heat/baseSVR) untouched".padEnd(46)} heat ${untreated.after.metabolicHeatMultiplier.toFixed(2)} -> ${midazolamTreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+
+  // Active cooling: a real, partial hyperthermia response (cools the
+  // patient measurably) without reversing the underlying driver — the
+  // honest "cooling only PARTIALLY offsets ongoing heat production"
+  // limitation this queue item's own instruction asks to be stated
+  // plainly, not a cure.
+  const coolTreated = probe({ scen: "serotoninSyndrome", settle: 2, run: 900, apply: ["activeCooling"], reapply: 9000 });
+  assertVersus("active cooling -> measurably lowers coreTemp (partial response)", coolTreated, untreated, "coreTemp", "down", 0.3);
+  const stillDrivingHeat = Math.abs(coolTreated.after.metabolicHeatMultiplier - untreated.after.metabolicHeatMultiplier) < 0.01;
+  stillDrivingHeat ? pass++ : fail++;
+  if (!stillDrivingHeat) failures.push(`active cooling should NOT change metabolicHeatMultiplier itself (a partial response, not a cure), got ${untreated.after.metabolicHeatMultiplier.toFixed(3)} -> ${coolTreated.after.metabolicHeatMultiplier.toFixed(3)}`);
+  console.log(`  ${stillDrivingHeat ? "PASS" : "FAIL"}  ${"...but does NOT stop the underlying hypermetabolic drive".padEnd(46)} heat unchanged at ${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
 }
 
 console.log("[IRON OVERDOSE — queue item 7, Toxicology]");
