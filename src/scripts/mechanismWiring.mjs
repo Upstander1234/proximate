@@ -421,6 +421,7 @@ function snapshot(p) {
     // Serotonin syndrome (queue item 7, Toxicology backlog): the
     // condition-owned neuromuscular-hyperactivity severity field.
     serotoninClonus: p.serotoninClonus || 0,
+    nmsRigidity: p.nmsRigidity || 0,
     upperAirwayObstruction: p.upperAirwayObstruction || 0,
     vagalBlock: p.vagalBlock || 0,
     ph: p.ph ?? 7.4,
