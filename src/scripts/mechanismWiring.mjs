@@ -242,6 +242,12 @@ function snapshot(p) {
     // the raw patient — caught and fixed the same tick, not worked around.
     totalBloodVol: p.totalBloodVol || 0,
     hct: p.hct || 0,
+    // Queue item 7 (malaria) — real, already-live fields for the
+    // hemolysis-vs-hemorrhage two-sided contrast, never previously read
+    // through this suite's own snapshot() path.
+    rbcMass: p.rbcMass || 0,
+    hb: p.hb || 0,
+    hemolysisRate: p.hemolysisRate || 0,
     plateletCount: p.plateletCount ?? 250,
     hr: p.hr || 0,
     co: p.co || 0,
@@ -5272,6 +5278,79 @@ console.log("[NMS — queue item 7, Toxicology backlog]");
   stillDrivingHeat ? pass++ : fail++;
   if (!stillDrivingHeat) failures.push(`active cooling should NOT change metabolicHeatMultiplier itself (a partial response, not a cure), got ${untreated.after.metabolicHeatMultiplier.toFixed(3)} -> ${coolTreated.after.metabolicHeatMultiplier.toFixed(3)}`);
   console.log(`  ${stillDrivingHeat ? "PASS" : "FAIL"}  ${"...but does NOT stop the underlying hypermetabolic drive (rigidity keeps generating heat)".padEnd(46)} heat unchanged at ${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+}
+
+console.log("[MALARIA — queue item 7, Infectious-disease backlog]");
+{
+  // Two-sided per lesson 6: fires (real hemolysis + fever), specificity
+  // (a healthy control shows exactly zero hemolysisRate/heat elevation),
+  // the REAL DISTINGUISHING SIGNATURE this batch was built for — hb/hct
+  // fall while plasmaVol stays essentially flat, the opposite of
+  // hemorrhage's proportional whole-blood loss — and a real, escalating
+  // time course into cerebral involvement past a realistic scene time.
+  //
+  // Compared on the SAME underlying abdPain patient (age/weight/demographic
+  // matched) via mutate, not against the shipped `malaria` SCENARIO's own
+  // patient (a different age/sex/weight, matching the real dispatch's own
+  // demographic) — comparing plasmaVol across two DIFFERENT patients would
+  // be meaningless, since they start from different baseline blood volumes.
+  // This mirrors incarceratedHernia/intussusception's own "tested directly
+  // against a matched control" precedent immediately above in this file.
+  const untreated = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => CONDITIONS.malaria.progress(p, STEP / 60) });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.hemolysisRate > 0
+    && untreated.after.rbcMass < healthy.after.rbcMass - 10
+    && untreated.after.metabolicHeatMultiplier > 1.4;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`malaria should show real hemolysisRate, rbcMass measurably below a matched healthy control, and metabolicHeatMultiplier>1.4 by 900s, got hemolysisRate=${untreated.after.hemolysisRate.toFixed(3)} rbcMass=${untreated.after.rbcMass.toFixed(1)} (control ${healthy.after.rbcMass.toFixed(1)}) heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"malaria -> real hemolysis + fever fire".padEnd(46)} hemolysisRate=${untreated.after.hemolysisRate.toFixed(3)} rbcMass=${untreated.after.rbcMass.toFixed(1)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+
+  const healthyOk = healthy.after.hemolysisRate === 0 && healthy.after.metabolicHeatMultiplier === 1
+    && healthy.after.epilepticDrive === 0 && healthy.after.metabolicEncephalopathy === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show exactly zero hemolysisRate/metabolicHeatMultiplier-elevation/epilepticDrive/metabolicEncephalopathy, got ${healthy.after.hemolysisRate}/${healthy.after.metabolicHeatMultiplier}/${healthy.after.epilepticDrive}/${healthy.after.metabolicEncephalopathy}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} hemolysisRate=${healthy.after.hemolysisRate} heat=${healthy.after.metabolicHeatMultiplier}`);
+
+  // THE distinguishing two-sided signature this mechanism exists to
+  // demonstrate: hb/hct fall measurably below a matched healthy control
+  // (real red-cell loss) while plasmaVol stays essentially UNCHANGED
+  // relative to that same control (within 0.01 L — both patients drift by
+  // the same small baseline amount, queue item 75's own documented
+  // resting-drift characteristic, confirming malaria adds no additional
+  // plasma loss at all) — the opposite of hemorrhage, where BOTH rbcVol
+  // and plasmaVol fall together, proportionally.
+  const hbFalls = untreated.after.hb < healthy.after.hb - 0.1;
+  const hctFalls = untreated.after.hct < healthy.after.hct - 0.002;
+  const plasmaFlat = Math.abs(untreated.after.plasmaVol - healthy.after.plasmaVol) < 0.01;
+  const signature = hbFalls && hctFalls && plasmaFlat;
+  signature ? pass++ : fail++;
+  if (!signature) failures.push(`malaria's hemolysis signature should show hb/hct measurably below a matched control while plasmaVol stays essentially flat vs that same control, got hb=${untreated.after.hb.toFixed(2)} (ctrl ${healthy.after.hb.toFixed(2)}) hct=${untreated.after.hct.toFixed(4)} (ctrl ${healthy.after.hct.toFixed(4)}) plasmaVol delta=${(untreated.after.plasmaVol - healthy.after.plasmaVol).toFixed(4)}`);
+  console.log(`  ${signature ? "PASS" : "FAIL"}  ${"...hemolysis signature: hb/hct DOWN, plasmaVol FLAT (vs hemorrhage's proportional loss)".padEnd(46)} hb ${untreated.after.hb.toFixed(2)} vs ${healthy.after.hb.toFixed(2)} | hct ${untreated.after.hct.toFixed(4)} vs ${healthy.after.hct.toFixed(4)} | plasmaVol delta ${(untreated.after.plasmaVol - healthy.after.plasmaVol).toFixed(4)}`);
+
+  // Contrast control, confirming the above is genuinely mechanism-specific
+  // and not just "any patient's numbers drift a little": a real hemorrhage
+  // (activeBleedRate, updateHemorrhage) over the same window loses BOTH
+  // rbcVol/rbcMass AND plasmaVol together, proportionally — the opposite
+  // signature.
+  const bleedControl = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => { p.activeBleedRate = 0.05; } });
+  const bleedBothFall = bleedControl.after.rbcMass < healthy.after.rbcMass - 30
+    && bleedControl.after.plasmaVol < healthy.after.plasmaVol - 0.2;
+  bleedBothFall ? pass++ : fail++;
+  if (!bleedBothFall) failures.push(`hemorrhage control should show BOTH rbcMass and plasmaVol falling well below the healthy control (proportional loss), got rbcMass=${bleedControl.after.rbcMass.toFixed(1)} (ctrl ${healthy.after.rbcMass.toFixed(1)}) plasmaVol=${bleedControl.after.plasmaVol.toFixed(3)} (ctrl ${healthy.after.plasmaVol.toFixed(3)})`);
+  console.log(`  ${bleedBothFall ? "PASS" : "FAIL"}  ${"...hemorrhage control shows the OPPOSITE signature (both rbcMass AND plasmaVol fall)".padEnd(46)} rbcMass=${bleedControl.after.rbcMass.toFixed(1)} plasmaVol=${bleedControl.after.plasmaVol.toFixed(3)}`);
+
+  // Severe/cerebral progression — real, gated on accumulated severity, not
+  // present from the first tick, matching the same "compensated within a
+  // realistic scene time, escalates past it" shape serotoninSyndrome's own
+  // section already establishes.
+  const shortWindow = probe({ scen: "abdPain", settle: 2, run: 900, mutate: (p) => CONDITIONS.malaria.progress(p, STEP / 60) });
+  const longWindow = probe({ scen: "abdPain", settle: 2, run: 3600, mutate: (p) => CONDITIONS.malaria.progress(p, STEP / 60) });
+  const escalates = shortWindow.after.epilepticDrive === 0
+    && longWindow.after.epilepticDrive > 0.2 && longWindow.after.metabolicEncephalopathy > 0.2;
+  escalates ? pass++ : fail++;
+  if (!escalates) failures.push(`malaria's cerebral-involvement risk should stay 0 at 900s (compensated within a realistic scene time) and cross >0.2 by 3600s (severe, prolonged), got 900s=${shortWindow.after.epilepticDrive.toFixed(3)} 3600s epilepticDrive=${longWindow.after.epilepticDrive.toFixed(3)} metabolicEncephalopathy=${longWindow.after.metabolicEncephalopathy.toFixed(3)}`);
+  console.log(`  ${escalates ? "PASS" : "FAIL"}  ${"...severe/cerebral malaria escalates past a realistic scene time, not instant".padEnd(46)} 900s=${shortWindow.after.epilepticDrive.toFixed(3)} 3600s epilepticDrive=${longWindow.after.epilepticDrive.toFixed(3)} encephalopathy=${longWindow.after.metabolicEncephalopathy.toFixed(3)}`);
 }
 
 console.log("[IRON OVERDOSE — queue item 7, Toxicology]");

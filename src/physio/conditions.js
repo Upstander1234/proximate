@@ -8439,6 +8439,119 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== MALARIA (queue item 7, Infectious-disease backlog) =====
+  // P. falciparum severe malaria — the most clinically significant species
+  // and the real prehospital-relevant presentation. Real trigger: recent
+  // travel to (or residence in) an endemic region plus a febrile paroxysm —
+  // this scenario's own dispatch/history carries that, since a diagnosis
+  // this specific has to come from a real epidemiologic clue, not a vitals
+  // pattern alone (the same "a human diagnosis is load-bearing" posture
+  // acuteDystonicReaction's own comment already establishes for a different
+  // condition).
+  //
+  // TWO mechanisms wired through EXISTING engine handles, per this queue
+  // item's own standing methodology — no invented parallel pathways:
+  //
+  //   1. CYCLICAL/SUSTAINED FEVER — pat.metabolicHeatMultiplier, the SAME
+  //      hypermetabolism handle organophosphatePoisoning/excitedDelirium/
+  //      thyroidStorm/serotoninSyndrome/neurolepticMalignantSyndrome already
+  //      drive (see this file's own long precedent list above). Real P.
+  //      falciparum fever classically cycles every 48-72h (synchronized
+  //      schizont rupture) — but a presenting EMS patient is, almost by
+  //      definition, caught mid-paroxysm (that is why they called), and a
+  //      typical EMS encounter (minutes) is far shorter than one full 48-72h
+  //      cycle. Building a literal multi-day sinusoid would produce a
+  //      trajectory no player could ever observe complete one full period
+  //      of within a call — the same "no reason to simulate what a call
+  //      cannot show" reasoning cyanidePoisoning's own comment already
+  //      applies to its own delayed-phase limb. So fever here is modeled as
+  //      SUSTAINED for the duration of the encounter (the paroxysm the
+  //      patient presents in), matching the precedent every other
+  //      presenting-fever condition in this file already uses, rather than
+  //      a scripted multi-day sinusoid nothing in a single call could ever
+  //      verify.
+  //
+  //   2. HEMOLYTIC ANEMIA — pat.hemolysisRate (metabolic.js's
+  //      updateHemolysis), the genuinely NEW mechanism this batch built: RBC
+  //      destruction IN PLACE, distinct in kind from every existing
+  //      hemorrhage/bleeding condition in this engine, which loses whole
+  //      blood (red cells AND plasma) proportionally. Cited magnitude: WHO
+  //      severe-malaria criteria define severe malarial anemia as Hb < 5
+  //      g/dL, developing over DAYS at parasitemia >5% (WHO, "Severe
+  //      falciparum malaria," 2000/2015 guidelines) — real and large over
+  //      the real disease timescale, but honestly small within one EMS
+  //      encounter, exactly as this project's own precedent for a
+  //      days-scale process (thermalBurn's capillary leak, hepaticStunning)
+  //      already establishes: present, measurable, directionally correct,
+  //      not force-tuned to complete within one call.
+  //
+  //   3. CEREBRAL MALARIA / MULTI-ORGAN DYSFUNCTION — the real, severe
+  //      complication, reusing pat.metabolicEncephalopathy and
+  //      pat.epilepticDrive, the SAME condition-owned handles
+  //      neuro.js already composes by MAX across every metabolic/toxic
+  //      cause of altered consciousness and seizure risk (lithiumToxicity,
+  //      hyperammonemia, cyanidePoisoning, serotoninSyndrome all use the
+  //      identical pair). Gated on real, measured severity (this
+  //      condition's own pat._malariaSeverity accumulator, driven by how
+  //      long the parasitemia has gone untreated) — NOT present from the
+  //      first tick, matching the real clinical fact that most malaria
+  //      presentations are uncomplicated and cerebral involvement is the
+  //      minority, severe case.
+  //
+  // FIELD TREATMENT — honest and limited, per this file's own established
+  // posture for a disease this formulary cannot cure (lithiumToxicity,
+  // cyanidePoisoning, envenomation all state the identical limitation): NO
+  // field antimalarial exists in ANY real EMS formulary (artesunate/
+  // quinine/doxycycline are all hospital-pharmacy drugs, never carried on a
+  // unit) — confirmed by reading drugs.js, no such entry exists. The real
+  // field job is RECOGNITION (the travel-history-plus-fever pattern) and
+  // SUPPORTIVE CARE: active cooling genuinely, partially offsets the
+  // metabolicHeatMultiplier-driven fever through the same coolingPower
+  // mechanism serotoninSyndrome's own resolve() already teaches is
+  // partial, not curative; fluids support perfusion but do nothing to the
+  // underlying parasitemia or ongoing hemolysis, and are deliberately NOT
+  // wired to touch hemolysisRate — reusing saline's own generic fx.blood
+  // plasma-bolus mechanism, with no new coefficient needed, correctly
+  // treats volume status without pretending to treat the disease.
+  malaria: {
+    initial: { age: 29, hr: 128, sbp: 100, dbp: 62, rr: 26, glu: 90, pain: 2,
+      temp: 39.6, hemolysisRate: 0.18 },
+    progress(pat, dt) {
+      if (pat._malariaSeverity == null) pat._malariaSeverity = 0.25;
+      // Untreated parasitemia (and therefore severity) climbs slowly over
+      // the field encounter — real, continued schizont rupture, not an
+      // instant step. Ceiling of 1 reached only after a genuinely long,
+      // untreated window (this is a days-scale disease; a 900s-1800s call
+      // should only move this a modest amount, matching the honest
+      // "small and slow within one call" precedent named above).
+      pat._malariaSeverity = Math.min(1, pat._malariaSeverity + dt * 0.010);
+
+      // 1. Sustained hypermetabolic fever, real thermo.js heat-balance
+      // physics producing the actual coreTemp, not a direct write. Ceiling
+      // 1.6 — a real, severe febrile paroxysm, below serotoninSyndrome's
+      // 1.9/thyroidStorm's 2.2 (this is fever from cytokine/paroxysm
+      // response, not the more extreme sympathetic-storm hypermetabolism
+      // those toxidromes drive).
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1, 1.6);
+
+      // 2. Hemolysis — the genuinely new mechanism. hemolysisRate itself is
+      // held near its presenting value rather than ratcheted upward
+      // unboundedly; a slow rise with severity captures worsening
+      // parasitemia without inventing an unbounded runaway.
+      pat.hemolysisRate = Math.max(pat.hemolysisRate ?? 0.18, 0.18 + pat._malariaSeverity * 0.12);
+
+      // 3. Cerebral malaria / multi-organ dysfunction — gated on real,
+      // accumulated severity crossing into the genuinely severe range, the
+      // same "not from the first tick" pattern serotoninSyndrome's own
+      // seizure-risk gate already uses.
+      if (pat._malariaSeverity > 0.55) {
+        const frac = (pat._malariaSeverity - 0.55) / 0.45;
+        pat.metabolicEncephalopathy = Math.max(pat.metabolicEncephalopathy || 0, frac * 0.6);
+        pat.epilepticDrive = Math.max(pat.epilepticDrive || 0, frac * 0.5);
+      }
+    },
+  },
+
   // ===== NEUROLEPTIC MALIGNANT SYNDROME (queue item 7, Toxicology backlog) =====
   // Built as a real, clinically distinct contrast to serotoninSyndrome
   // (above), per Caroff & Mann's classic review ("Neuroleptic Malignant

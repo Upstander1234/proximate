@@ -8,7 +8,7 @@
 import { AgeProfile } from "./ageProfile.js";
 import { MAX_STEP, MAX_TICK } from "./constants.js";
 import { applyProcedures, updateDrugs } from "./pk.js";
-import { updateHemorrhage, updateFluidShifts, updateMetabolism } from "./metabolic.js";
+import { updateHemorrhage, updateHemolysis, updateFluidShifts, updateMetabolism } from "./metabolic.js";
 import { updateAutonomic, updateVenousReturn, updateCardiovascular, updateRhythm } from "./cardiovascular.js";
 import { updateVentilation, updateGasExchange } from "./respiratory.js";
 import { updateAcidBase } from "./acidbase.js";
@@ -204,6 +204,14 @@ export class Patient {
     // tcaNaBlock above): pk.js never RESETS this field; hydroxocobalamin's
     // fx.cytoBlock applies a one-time reduction to it per dose.
     this.cytochromeBlock = 0;
+    // Queue item 7 (malaria) — a real, condition-owned red-cell-DESTRUCTION
+    // rate (percent of rbcMass destroyed per minute), consumed by
+    // updateHemolysis (metabolic.js). Distinct in kind from
+    // pat.activeBleedRate (updateHemorrhage), which loses whole blood
+    // proportionally — this field loses ONLY red cells, plasma volume
+    // untouched, the real signature of hemolysis vs. hemorrhage. Defaulted
+    // to 0 (inert) so every existing patient/scenario is unaffected.
+    this.hemolysisRate = b.hemolysisRate ?? 0;
     // Whole-body oxygen DELIVERY (mL/min), published by metabolic.js every
     // tick. Defaulted here per lesson 2 so a pre-first-tick read is never
     // undefined — scenarioSweep tracks it as a REQUIRED field, and it is the
@@ -1064,6 +1072,13 @@ export class Patient {
         if (typeof this[k] === "number") { numericKeys.push(k); snapshot[k] = this[k]; }
       }
       updateHemorrhage(this, step);
+      // Queue item 7 (malaria) — pure red-cell destruction, genuinely
+      // distinct in kind from updateHemorrhage's proportional whole-blood
+      // loss above (see updateHemolysis's own header comment in
+      // metabolic.js). Run right after hemorrhage, before the hb/hct
+      // recompute below, so both mechanisms are reflected in this same
+      // substep's published hb/hct.
+      updateHemolysis(this, step);
       updateFluidShifts(this, step);
       // SINGLE SOURCE OF TRUTH for hemoglobin concentration. This identical
       // expression was previously recomputed inline in cardiovascular.js,

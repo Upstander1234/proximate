@@ -62,6 +62,55 @@ export function updateHemorrhage(pat, dt) {
     }
 }
 
+// Queue item 7 (standing condition-library workstream) — Malaria.
+// Genuinely NEW mechanism category: pure red-cell DESTRUCTION, distinct in
+// kind from every existing bleeding pathway. updateHemorrhage above (and
+// every wound/internal-bleed condition in this engine) removes whole blood
+// PROPORTIONALLY — rbcVol and plasmaVol both fall at the patient's own hct
+// ratio, because a wound loses whatever mixture of red cells and plasma is
+// actually flowing through it. Hemolysis is mechanistically the opposite:
+// P. falciparum ruptures parasitized (and, via splenic clearance of
+// rigidified/opsonized cells, a larger share of NON-parasitized) red cells
+// IN PLACE, inside the vascular space — the plasma itself is not lost, only
+// the cells suspended in it. That is why acute malarial anemia does not
+// produce hypovolemic shock the way an equivalent blood LOSS would: the
+// intravascular volume is refilled by the plasma that was never removed.
+//
+// pat.hemolysisRate (fraction of rbcMass destroyed per minute) is the one
+// thing a condition declares, the same "declare the lesion" idiom
+// cytochromeBlock/pathogenBurden already establish elsewhere in this
+// engine. rbcVol/rbcMass fall; totalBloodVol falls by exactly the same
+// amount (red cells are gone, so the space they occupied is gone too);
+// plasmaVol is UNTOUCHED — the real, distinguishing two-sided signature
+// versus updateHemorrhage's proportional loss.
+//
+// MAGNITUDE, cited not guessed: WHO severe-malaria criteria (WHO, "Severe
+// falciparum malaria," Trans R Soc Trop Med Hyg 2000/WHO 2015 guidelines)
+// define severe malarial anemia as Hb < 5 g/dL (Hct < 15%) — a real,
+// large fall from a normal ~13-15 g/dL, but one that is documented as
+// developing over DAYS in a heavy, sustained parasitemia (commonly cited
+// >5% parasitized erythrocytes / >250,000 parasites/uL is the threshold
+// associated with severe disease — WHO 2000). Within one ~15-30 minute EMS
+// encounter, the honest, measurable consequence is a SMALL fraction of
+// that total — the same "real, present, small and slow within one call"
+// precedent thermalBurn's/hepaticStunning's own comments already establish
+// for a process whose real timescale is hours-to-days, not minutes.
+export function updateHemolysis(pat, dt) {
+    const rate = pat.hemolysisRate || 0;
+    if (rate <= 0) return;
+    const rbcLoss = pat.rbcMass * rate * dt / 100; // rate is %/min of rbcMass
+    if (rbcLoss <= 0) return;
+    const hct = pat.totalBloodVol > 0 ? pat.rbcVol / pat.totalBloodVol : HCT_NORMAL;
+    const rbcVolLoss = hct > 0 ? Math.min(pat.rbcVol, rbcLoss / (NORMAL_HB * 10 / HCT_NORMAL)) : 0;
+    pat.rbcMass = Math.max(0, pat.rbcMass - rbcLoss);
+    pat.rbcVol = Math.max(0, pat.rbcVol - rbcVolLoss);
+    // The destroyed cells' own volume leaves the vascular space (they are
+    // gone, not converted to plasma), but nothing removes plasma — this is
+    // the one line that makes this mechanism genuinely different from
+    // updateHemorrhage's proportional loss above.
+    pat.totalBloodVol = Math.max(0, pat.totalBloodVol - rbcVolLoss);
+}
+
 export function updateFluidShifts(pat, dt) {
     // --- ENDOTHELIAL BARRIER INJURY -----------------------------------------
     // sigma and Kf were both hard constants, which meant no disease in the
