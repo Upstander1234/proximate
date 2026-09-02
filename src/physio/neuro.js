@@ -124,6 +124,25 @@ export function updateOrganInjury(pat, dt) {
     if (pat.hepaticO2Debt < 0.01) pat.liverInjury = Math.max(0, pat.liverInjury - 0.002 * dt);
     pat.liverInjury = Math.min(1, pat.liverInjury);
 
+    // HEPATIC ISCHEMIA-REPERFUSION STUNNING — queue item 48's own pattern,
+    // extended to liver. Real hepatology anchor: transient hepatic
+    // hypoperfusion (low-output shock, ischemia-reperfusion) produces
+    // "shock liver" / hypoxic hepatitis -- a real, often-DRAMATIC
+    // transaminase rise (ALT/AST commonly 10-100x normal within 24-48h)
+    // that is genuinely REVERSIBLE, normalizing over days to weeks IF
+    // perfusion is restored promptly (Henrion, "Hypoxic hepatitis," Liver
+    // Int 2012) -- mechanistically distinct from the slower, durable
+    // structural necrosis `pat.liverInjury` already models. Mirrors
+    // renal.js's `atnProgression`/`kidneyInjury` pair exactly: same
+    // ischemic threshold (hepaticDO2 < 0.5, the same "damage/dysfunction
+    // begins at roughly half of normal delivery" anchor brain/gut already
+    // use), same rise/decay rates (0.01/min rise, 0.005/min decay) so this
+    // is a real reuse of an already-calibrated pattern, not a freshly
+    // guessed number.
+    if (pat.hepaticDO2 < 0.5) pat.hepaticStunning = (pat.hepaticStunning ?? 0) + 0.01 * dt;
+    else pat.hepaticStunning = Math.max(0, (pat.hepaticStunning ?? 0) - 0.005 * dt);
+    pat.hepaticStunning = Math.min(1, pat.hepaticStunning);
+
     // SPLANCHNIC (GUT) OXYGEN DELIVERY vs DEMAND — queue item 42's third
     // per-organ slice. A genuinely NEW structural-injury field, not a
     // re-driven existing one (kidney/liver both already had an injury
@@ -183,6 +202,22 @@ export function updateOrganInjury(pat, dt) {
     pat.gutInjury = (pat.gutInjury ?? 0) + gutDeficit * 0.012 * dt;
     if (gutDeficit < 0.01) pat.gutInjury = Math.max(0, (pat.gutInjury ?? 0) - 0.005 * dt);
     pat.gutInjury = Math.max(0, Math.min(1, pat.gutInjury));
+
+    // MUCOSAL (villous) ISCHEMIA — queue item 48's pattern extended to
+    // gut. Real anchor: bowel ischemia has a well-documented EARLY,
+    // reversible phase — villous-tip mucosal injury (Chiu/Park grading,
+    // Chiu et al. Arch Surg 1970) that heals completely if perfusion is
+    // restored before it progresses to full-thickness (transmural)
+    // infarction, which is what `pat.gutInjury` above already models as
+    // the durable, structural endpoint. Reuses the SAME ischemic
+    // threshold and rise/decay rates as hepaticStunning/atnProgression
+    // above rather than a freshly invented number — mucosal cells are, if
+    // anything, MORE vulnerable than deeper bowel-wall layers (they sit
+    // at the villous tip, furthest from the submucosal plexus), so using
+    // the identical threshold is a conservative, not an arbitrary, choice.
+    if (pat.gutDO2 < 0.5) pat.gutMucosalStunning = (pat.gutMucosalStunning ?? 0) + 0.01 * dt;
+    else pat.gutMucosalStunning = Math.max(0, (pat.gutMucosalStunning ?? 0) - 0.005 * dt);
+    pat.gutMucosalStunning = Math.min(1, pat.gutMucosalStunning);
 
     // SKIN (CUTANEOUS) PERFUSION — queue item 42's fourth per-organ slice,
     // deliberately NOT a structural-injury accumulator like kidney/liver/

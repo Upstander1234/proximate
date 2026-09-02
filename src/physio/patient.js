@@ -929,6 +929,10 @@ export class Patient {
     // updateOrganInjury; pre-first-tick defaults only.
     this.hepaticDO2 = 1;
     this.hepaticO2Debt = 0;
+    // Transient, REVERSIBLE hepatocellular dysfunction (queue item 48,
+    // extending the atnProgression/kidneyInjury pattern to liver) --
+    // separate from the durable structural liverInjury accumulator above.
+    this.hepaticStunning = 0;
     // Splanchnic (gut) local oxygen delivery/demand + real structural
     // injury (queue item 42, third slice) -- a genuinely new field, not a
     // re-driven existing one; real values computed every tick by neuro.js's
@@ -936,6 +940,10 @@ export class Patient {
     this.gutDO2 = 1;
     this.gutO2Debt = 0;
     this.gutInjury = 0;
+    // Transient, REVERSIBLE mucosal (villous-tip) ischemia (queue item 48,
+    // same pattern) -- separate from the durable transmural gutInjury
+    // accumulator above.
+    this.gutMucosalStunning = 0;
     // Cutaneous (skin) perfusion (queue item 42, fourth slice) -- a live
     // signal only, deliberately no injury accumulator (see neuro.js's
     // comment); real values computed every tick by updateOrganInjury.

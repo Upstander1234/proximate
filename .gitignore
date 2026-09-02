@@ -26,3 +26,4 @@ tools/browser/screenshots/
 *.njsproj
 *.sln
 *.sw?
+.claude/worktrees/
