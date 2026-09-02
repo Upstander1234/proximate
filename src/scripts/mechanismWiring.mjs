@@ -334,6 +334,7 @@ function snapshot(p) {
     vagalSurge: p.vagalSurge || 0,
     strokeSide: p.strokeSide,
     strokeWeakness: p.strokeWeakness || 0,
+    maxStrokeWeakness: p._maxStrokeWeakness || 0,
     respMuscleFatigue: p.respMuscleFatigue || 0,
     vt: p.vt || 0,
     metabolicHeatMultiplier: p.metabolicHeatMultiplier ?? 1,
@@ -5985,6 +5986,57 @@ console.log("\n[REVERSIBLE HEPATIC/GUT DYSFUNCTION — queue item 48, extending 
   healthyReportEmpty ? pass++ : fail++;
   if (!healthyReportEmpty) failures.push(`outcomeReport() should show an empty reversibleFindings for a healthy control, got ${JSON.stringify(healthyReport?.reversibleFindings)}`);
   console.log(`  ${healthyReportEmpty ? "PASS" : "FAIL"}  ${"...and stays empty for a matched healthy control".padEnd(46)} reversibleFindings=${JSON.stringify(healthyReport?.reversibleFindings)}`);
+}
+
+console.log("\n[BRAIN: TIA-PATTERN REVERSIBLE DEFICIT — queue item V2-18]");
+{
+  // Audited whether brain deserves the same reversible-vs-structural pair
+  // kidney/liver/gut got (queue item 48's atnProgression/kidneyInjury
+  // pattern) and found it already exists, expressed as a real, already-
+  // shipped condition (tia) rather than a second accumulator on
+  // brainInjury -- see this suite's own comment two sections up (item 48)
+  // and physiology.js's own comment at the new reversible-array push for
+  // the full reasoning. This section wires that existing mechanism into
+  // outcomeReport()'s reversibleFindings array, the same real consumer
+  // kidney/liver/gut already use.
+  const tiaLate = probe({ scen: "transientIschemicAttack", settle: 2, run: 1500 });
+  const tiaResolved = tiaLate.after.strokeWeakness < 0.05 && tiaLate.after.maxStrokeWeakness > 0.3;
+  tiaResolved ? pass++ : fail++;
+  if (!tiaResolved) failures.push(`TIA at 25min should show strokeWeakness<0.05 with maxStrokeWeakness>0.3 (peaked, then resolved), got strokeWeakness=${tiaLate.after.strokeWeakness}, maxStrokeWeakness=${tiaLate.after.maxStrokeWeakness}`);
+  console.log(`  ${tiaResolved ? "PASS" : "FAIL"}  ${"TIA -> deficit peaks then genuinely resolves (not a ratchet)".padEnd(46)} strokeWeakness=${tiaLate.after.strokeWeakness.toFixed(3)}, maxStrokeWeakness=${tiaLate.after.maxStrokeWeakness.toFixed(3)}`);
+
+  const tiaReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1500, patient: tiaLate.patient });
+  const tiaReported = (tiaReport?.reversibleFindings || []).some((x) => x.includes("transient ischemic attack pattern"));
+  tiaReported ? pass++ : fail++;
+  if (!tiaReported) failures.push(`outcomeReport() should list the resolved-TIA finding in reversibleFindings once strokeWeakness has resolved, got ${JSON.stringify(tiaReport?.reversibleFindings)}`);
+  console.log(`  ${tiaReported ? "PASS" : "FAIL"}  ${"outcomeReport() reversibleFindings carries the resolved-TIA finding".padEnd(46)} reversibleFindings=${JSON.stringify(tiaReport?.reversibleFindings)}`);
+
+  // Two-sided: a real STRUCTURAL stroke (ischemicStroke's own "then HOLD"
+  // persistent deficit) must NOT be reported as reversible -- the whole
+  // point of this gate is telling the two apart, not flagging any focal
+  // deficit as reassuring.
+  const strokeLate = probe({ scen: "ischemicStrokeSudden", settle: 2, run: 1500 });
+  const strokeReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1500, patient: strokeLate.patient });
+  const strokeNotReported = !(strokeReport?.reversibleFindings || []).some((x) => x.includes("transient ischemic attack pattern"));
+  strokeNotReported ? pass++ : fail++;
+  if (!strokeNotReported) failures.push(`a structural (persistent) stroke should NOT be reported as a resolved TIA, got strokeWeakness=${strokeLate.after.strokeWeakness}, reversibleFindings=${JSON.stringify(strokeReport?.reversibleFindings)}`);
+  console.log(`  ${strokeNotReported ? "PASS" : "FAIL"}  ${"...but a REAL structural stroke's held deficit is NOT flagged reversible".padEnd(46)} strokeWeakness=${strokeLate.after.strokeWeakness.toFixed(3)}, reversibleFindings=${JSON.stringify(strokeReport?.reversibleFindings)}`);
+
+  // ...nor a still-ongoing TIA deficit, before it has actually resolved --
+  // the "resolved" half of the gate has to be real, not just "any TIA".
+  const tiaEarly2 = probe({ scen: "transientIschemicAttack", settle: 2, run: 300 });
+  const tiaEarlyReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 300, patient: tiaEarly2.patient });
+  const tiaEarlyNotReported = !(tiaEarlyReport?.reversibleFindings || []).some((x) => x.includes("transient ischemic attack pattern"));
+  tiaEarlyNotReported ? pass++ : fail++;
+  if (!tiaEarlyNotReported) failures.push(`a still-weak, not-yet-resolved TIA (5min in) should NOT yet be flagged reversible, got strokeWeakness=${tiaEarly2.after.strokeWeakness}, reversibleFindings=${JSON.stringify(tiaEarlyReport?.reversibleFindings)}`);
+  console.log(`  ${tiaEarlyNotReported ? "PASS" : "FAIL"}  ${"...nor a TIA deficit that hasn't resolved yet (5min in)".padEnd(46)} strokeWeakness=${tiaEarly2.after.strokeWeakness.toFixed(3)}, reversibleFindings=${JSON.stringify(tiaEarlyReport?.reversibleFindings)}`);
+
+  const healthyBrain = probe({ scen: "abdPain", settle: 2, run: 1500 });
+  const healthyBrainReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1500, patient: healthyBrain.patient });
+  const healthyBrainEmpty = (healthyBrainReport?.reversibleFindings || []).length === 0;
+  healthyBrainEmpty ? pass++ : fail++;
+  if (!healthyBrainEmpty) failures.push(`healthy control should show an empty reversibleFindings for the brain finding too, got ${JSON.stringify(healthyBrainReport?.reversibleFindings)}`);
+  console.log(`  ${healthyBrainEmpty ? "PASS" : "FAIL"}  ${"...and a matched healthy control stays empty".padEnd(46)} reversibleFindings=${JSON.stringify(healthyBrainReport?.reversibleFindings)}`);
 }
 
 console.log("\n[LACTATE CLEARANCE GATED ON REAL-TIME HEPATIC FLOW — queue item V2-12]");

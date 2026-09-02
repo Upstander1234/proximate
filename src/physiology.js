@@ -336,6 +336,32 @@ export const outcomeReport = (s) => {
     if ((pat.gutInjury ?? 0) < 0.5 && (pat.gutMucosalStunning ?? 0) > 0.02) {
       reversible.push("mucosal (villous) bowel ischemia from transient splanchnic hypoperfusion (likely reversible with restored perfusion, before transmural infarction)");
     }
+    // Queue item V2-18 (brain). A real "cerebral penumbra"-style reversible
+    // state distinct from pat.brainInjury (permanent structural damage) was
+    // investigated and found ALREADY TO EXIST, just unread -- the SAME
+    // reversible-vs-structural distinction atnProgression/kidneyInjury
+    // established, expressed here as a real, already-shipped condition
+    // (`tia`, conditions.js) rather than a second accumulator on brainInjury.
+    // `tia` reuses ischemicStroke's own pat.strokeWeakness/strokeAphasia
+    // handle but, unlike a structural stroke (which sets it once and holds
+    // it permanently -- "then HOLD," per that condition's own comment),
+    // decays it fully back to zero over ~20 minutes: real, transient,
+    // reversible cerebral ischemia (a TIA is exactly the clinical archetype
+    // of "penumbra without infarction" this item asked whether the engine
+    // needed a new mechanism for -- it already had one). pat._maxStrokeWeakness
+    // (patient.js, updated every tick in neuro.js) is the marker that lets
+    // this be told apart from a structural stroke: a deficit that peaked
+    // meaningfully (>0.3, well above noise) and has since resolved back
+    // near zero could only have come from tia's own decay mechanism, since
+    // no other condition in this library ever lowers strokeWeakness once
+    // set. brainInjury itself is deliberately NOT part of this gate --
+    // brainInjury only rises from real hypoxic-ischemic injury (neuro.js's
+    // updateOrganInjury) and is a completely separate signal from the focal
+    // strokeWeakness/strokeAphasia deficit tia drives, so a resolved TIA
+    // with brainInjury still at 0 correctly still reports here.
+    if ((pat.strokeWeakness ?? 0) < 0.05 && (pat._maxStrokeWeakness ?? 0) > 0.3) {
+      reversible.push("resolved focal neurologic deficit (transient ischemic attack pattern) -- no current deficit, but a real stroke-risk warning requiring urgent workup, not a reassurance");
+    }
 
     // GLOBAL OXYGEN-EXTRACTION RESERVE (queue item V2-2) — a real, DIFFERENT
     // signal from the injury lists above. Injury (irreversible/reversible)

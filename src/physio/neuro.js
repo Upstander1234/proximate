@@ -678,6 +678,14 @@ export function updateCerebral(pat, dt) {
     const brainO2 = pat.cpp * pat.caO2 * (1 - cytoBlockCns) / (mapRef * 20);
     const comaCpp = Math.min(30, 0.55 * mapRef);
 
+    // Queue item V2-18 (brain injury integration): a private high-water
+    // mark on strokeWeakness (patient.js's own comment on the field has the
+    // full reasoning) -- lets outcomeReport() distinguish a real, already-
+    // shipped TIA-pattern RESOLVED deficit from a structural stroke's own
+    // permanently-held one, reusing tia's existing decay mechanism rather
+    // than inventing a new one.
+    pat._maxStrokeWeakness = Math.max(pat._maxStrokeWeakness || 0, pat.strokeWeakness || 0);
+
     // AGITATION / PSYCHIATRIC-CRISIS SEVERITY (queue item 51). Real, general
     // 0-1 severity — found missing while implementing LA County TP 1209
     // (Behavioral/Psychiatric Crisis): that protocol's own core algorithm
