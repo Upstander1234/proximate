@@ -6671,17 +6671,20 @@ V2-30. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
    structure was deliberately NOT built — no real per-field consumer was
    identified, and building it would have been decorative (section 1).
 
-V2-31. **Global conservation and stability verification.** `scenarioSweep.mjs`
-   already checks NaN/negative/impossible-range and, per lesson 10b, was
-   deliberately extended once already to catch survivable-range violations
-   that simple bounds-checks missed. NOT yet built: an explicit MASS-
-   CONSERVATION test harness (water/Na/K/glucose/drug-amount/RBC-mass
-   in-vs-out-vs-stored, the source document's own explicit ask) — a new,
-   real verification tool, not a physiology mechanism; genuinely useful and
-   comparatively cheap to build relative to the rest of this queue block,
-   and would likely catch defects the existing suites structurally cannot
-   (per lesson 10's own "a passing sweep proves nothing about a path it
-   does not walk").
+V2-31. **DONE (2026-09-01) — see section 3's entry ("multi-agent parallel
+   batch"). `src/scripts/conservationAudit.mjs`** is a real, new,
+   reconstruction-free mass-conservation test harness (naMass/kMass/
+   totalBloodVol/rbcMass/plasmaVol/interstitialVol) — confirms a tracked
+   quantity does not drift with nothing perturbing it, using a tolerance
+   derived from the engine's own measured integration-noise floor rather
+   than a guessed constant. It already found a real, previously-unknown
+   defect on its first real run — filed as queue item 75 (see item 75's
+   own entry below): kMass/totalBloodVol/plasmaVol all drift steadily
+   (linear, non-asymptoting) for a completely inert, condition-less,
+   resting patient, meaning `patient.js`'s constructed initial state is
+   not a true fixed point of the coupled renal/fluid-shift ODE. Not
+   investigated or fixed when found — genuinely separate physiology-engine
+   work, correctly out of scope for a verification-tool task.
 
 V2-32. **A full physiology-engine dependency-graph document and multi-rate
    simulation frequency table**, per the source document's own explicit
