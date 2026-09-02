@@ -111,17 +111,17 @@ observable at the far end of the chain, not the field you just wrote.
 
 ## 2. Current state — a real strong-ion-difference acid-base model (queue item 44, CLOSED)
 
-**CURRENT VERIFICATION BASELINE (this session's consolidated full-suite pass,
-run after ~18 queue items closed via multiple parallel batches — the first
-time both full suites were run to completion since that work began; see
-section 3's topmost entries for the parallel-batch session and its wrap-up):**
+**CURRENT VERIFICATION BASELINE (this session's multi-agent parallel batch —
+7 V2/physiology-queue items shipped via isolated git worktrees, merged and
+verified to completion; see section 3's topmost entry for the full writeup
+and workflow notes):**
 
 | suite | result | notes |
 |---|---|---|
-| `mechanismWiring.mjs` | **533 passed, 5 failed** | every one of this session's own ~90+ new assertions (septic shock, envenomation, angioedema, urticaria/pruritus, acute dystonic reaction, cholinergic toxidrome, aortic stenosis, acute mitral regurgitation, infective endocarditis, lithium toxicity, iron overdose, hydrocarbon aspiration, box jellyfish, neonatal sepsis/pediatric DKA/incarcerated hernia/intussusception, decompression illness, tracheostomy state, endocrine pancreas, thermal burn/TBSA, nebulized epinephrine) PASSED. The 5 failures are all in sections this session never touched (`BVM -> ventUnloadFraction`/`workOfBreathing`/`vtPrev`, `reperfusion injury`, `croup -> paco2`) — the BVM trio was specifically investigated (bisected against the pre-session checkpoint via a throwaway worktree, with the suite's own `pinTraitsNeutral` idiom correctly applied): the SAME commit, re-run four times with no code changes, produced `ventUnloadFraction` values from 0 to 0.36 — genuinely stochastic (some patient-construction randomness beyond the six pinned traits), not a regression from any of today's work. `croup`'s paco2 margin is separately, already documented elsewhere in this file as a borderline assertion vulnerable to residual noise even with pinning. Two real bugs were found and fixed during this pass, unrelated to the 5 flaky failures: missing constructor defaults on the new valve-lesion fields (865 scenarioSweep failures at t=2s before the fix) and a missing `gutInjury` entry in mechanismWiring's snapshot (a crash, not a wrong value) — both fixed and confirmed. |
-| `scenarioSweep.mjs` | **173 scenarios, 15,958,560 checks, 0 failed** | clean, including every new scenario shipped this session. |
-| `npx eslint src` | clean on every file touched this session | same pre-existing `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else. |
-| `npx vite build` | clean | same pre-existing >500kB chunk-size warning |
+| `mechanismWiring.mjs` | **574 passed, 1 failed** | every one of this session's own new sections (blood viscosity/V2-15-16, methemoglobinemia/V2-30, ketamine/V2-26, thirst/V2-9, reversible hepatic/gut dysfunction/item 48, acute traumatic coagulopathy/V2-17, serotonin syndrome) PASSED, including the previously-flaky BVM and croup assertions, which also passed clean on this run. The single failure is the same already-long-documented, pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion, unrelated by content. |
+| `scenarioSweep.mjs` | **176 scenarios, 17,185,698 checks, 0 failed** | clean across the entire scenario library, including both new scenarios shipped this session (`methemoglobinemia`, `serotoninSyndrome`). |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else. |
+| `npx vite build` | clean (20.34s) | same pre-existing >500kB chunk-size warning |
 
 **`physiologyValidation.mjs` was NOT run this session** — stated honestly,
 not assumed clean; the two suites above are this session's real regression
@@ -321,6 +321,36 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### 2026-09-01 — Multi-agent parallel batch: seven V2/physiology-queue items shipped in parallel via isolated git worktrees (blood viscosity, methemoglobinemia, ketamine, thirst, liver/gut reversible injury, acute traumatic coagulopathy, serotonin syndrome)
+
+**Workflow, stated honestly since this was a real departure from the usual single-session batch.** Per explicit operator instruction to run several agents on the physiology queue in parallel, this session used `isolation: "worktree"` (a real git worktree per agent, each on its own branch) rather than the shared-directory model earlier large parallel pushes in this project's history used — worktree isolation genuinely eliminates the file-collision risk those earlier pushes hit, at the cost of real infrastructure friction this session had to work through:
+
+- **Disk space was the binding constraint, not CPU.** This machine had only ~1-2GB free at the start (a 222GB drive at ~98% full); the first worktree-creation attempt failed mid-copy ("No space left on device") on a large committed asset directory (`public/assets/cc0-library`'s sprite pack), consuming the failed attempt's own partial data before erroring. After the user freed some space, agents were run in waves of 1-3 at a time (not all at once), each merged into master and its worktree removed (`git worktree remove --force` + `git worktree prune`) immediately on completion to reclaim ~1.5-2GB per wave before starting the next.
+- **A D:-drive redirect via a directory junction was attempted and correctly blocked by the harness**: pointing `.claude/worktrees` at a junction resolving onto D: (which had ~300GB free) would have worked at the filesystem level (verified with a manual write-through-junction test) but the agent-spawning tool explicitly refuses to create a worktree through a symlinked `.claude/worktrees` path, as a real security policy against a repo-committed symlink redirecting worktree writes outside the repo boundary. Reverted; all worktrees stayed on C: for the rest of the session, managed via the merge-then-prune wave discipline above.
+- **A real `git add -A` mistake was caught and fixed on the spot**: one merge commit accidentally added an active worktree directory as an embedded git repo (git's own warning caught it immediately — `git rm --cached` fixed the index, `.claude/worktrees/` was added to `.gitignore` so it can never happen again). No data was lost; the fix was folded into the same merge commit via `--amend` before it could propagate.
+- **Two sub-agents self-delegated to grandchild agents** rather than doing the work directly (an emergent behavior of the `claude` subagent type on a large task, not something this session asked for) — one grandchild found its own worktree had been cleaned up out from under it mid-run (a race with the disk-constrained merge/prune cycle) and correctly refused to improvise outside its assigned isolation boundary, reporting back cleanly with zero work done and zero damage; that item (V2-17) was simply relaunched from scratch and completed normally on the retry. The other grandchild (serotonin syndrome) ran to completion normally.
+- **`mechanismWiring.mjs` merge conflicts were real but mechanical**: multiple agents each appended a new, independent assertion section near the end of the same file. Every conflict was resolved by keeping both sections (removing conflict markers, no logic changes) — confirmed safe by `node --check` after each resolution, and by the final full-suite run below showing every section's own assertions passing.
+
+**Seven items shipped, each with its own literature anchor, real engine measurement, and mechanismWiring.mjs assertions — summarized here; the full reasoning for each lives in the commit history and the agents' own code comments, which follow this project's usual citation discipline:**
+
+**1. Blood viscosity → vascular resistance (V2-15/16).** `cardiovascular.js`'s `updateFullLoopODE`/vascular-tone calculation gained a real hematocrit-driven viscosity multiplier on `pat.svr`, referenced to each patient's own age/sex-scaled normal hct (`pat.ageProfile.normalHct()`), not a flat 45%. Anchored on Guyton & Hall's relative-viscosity-vs-hematocrit teaching curve: roughly a doubling from a normal ~45% hct to a polycythemic ~60% (+15 points), roughly a third-to-half from 45% down to a moderately anemic ~20% (-25 points).
+
+A first pass used a pure exponential fit through the +15-point anchor. **A real, two-stage calibration failure was found and fixed, not glossed over.** The exponential was too steep at SMALL, clinically common hct deviations — caught by the regression suite itself, not guessed at: `crushSyndrome`'s own real hemoconcentration (third-spacing from the injury raises hct by only ~0.03-0.04 over its presenting baseline) pushed the exponential's SVR multiplier to ~1.15-1.20x, which raised diastolic pressure enough to measurably widen the delta-pressure margin the already-shipped compartment-syndrome mechanism (item 74, Phase 3) needs to overcome before tissue pressure can exceed it — the existing `mechanismWiring.mjs` time-course assertion (`csOccl>0.5` by 5h, `limbInjury>=0.5` by 10h) regressed from clean to `5h=0.369` (fail). Fixed by switching to a cubic form (near-linear and modest close to the reference hct, only steepening toward the anchor points at the extremes) that reproduces the SAME two literature anchors while giving a realistic few-point hemoconcentration only a modest nudge. **A first cubic pass (linear slope 1.5) still left a residual gap** — MEASURED: `csOccl@5h` recovered to 0.594 (passing) but `limbInjury@10h` was still short at 0.429 (needed ≥0.5), because compartment occlusion accrues over hours, so even a ~5% sustained SVR nudge compounds into a real delay over that long a window. The linear slope was lowered further (1.5→1.0, cubic coefficients re-solved against the same two anchors) so a realistic hemoconcentration now moves SVR under 4%. Re-verified: `limbInjury@10h` reached 0.520, clearing the threshold; the full `mechanismWiring.mjs` suite subsequently ran clean on this section and on compartment syndrome. Direct measurements: healthy control hct≈0.456→svr≈1115-1130 (baseline, inert); forced polycythemia (hct 0.60) → svr≈1685 (+~490-570 over control); forced anemia (hct 0.20) → svr≈642 (-~470-490 under control).
+
+**2. Clinical monitoring (V2-30).** Investigated first: the CO-poisoning pulse-ox blind spot (`pat.cohb`) and the ETCO2-vs-PaCO2 gradient (`pat.alveolarDeadSpaceFrac`, already PE-vs-hypoventilation-distinguishing) were both confirmed already real — not rebuilt. The one genuine gap found and filled: methemoglobinemia's classic pulse-ox floor artifact (SpO2 pulled toward ~85% regardless of true saturation, the mirror-image of CO's falsely-normal artifact). New `pat.metHb` field (patient.js), discounted in `pat.caO2` (metabolic.js, the same authoritative site `cohb` uses) and pulling displayed SpO2 toward ~85% in `vitals()`. New condition `acquiredMethemoglobinemia` (a benzocaine topical-anesthetic exposure, the real most-common EMS-relevant trigger — Guay 2009; Barker/Watcha 1989) and new scenario `methemoglobinemia` (TOX-013). Measured: presenting metHb=0.28 → caO2=14.7, displayed SpO2=89 (stuck low, not tracking true desaturation); a condition-less control shows zero contamination; high-flow O2 leaves metHb completely unchanged (no methylene blue in this formulary — an honest, stated limitation, not glossed over).
+
+**3. Ketamine's real dual cardiovascular mechanism (V2-26).** Previously a single guessed `myocardialDepression` coefficient (flagged as such in this document's own "also open, lower priority" note). Rebuilt as real NMDA-antagonist pharmacology: an INDIRECT sympathomimetic component (`indirectSympathomimetic:true`, drugs.js) that scales ketamine's alpha/beta1 receptor terms by `pat.adrenalReserve` — the SAME depletable catecholamine-reserve signal `cardiovascular.js` already drains under sustained sympathetic drive for every patient, no new state added — plus a DIRECT, unconditional `myocardialDepression:0.25` term that is ordinarily masked by the indirect pressor support and only becomes hemodynamically dominant once that reserve is exhausted (the real, documented reason ketamine causes hypotension specifically in prolonged/decompensated shock, per Domino's and White's classic anesthesia reviews). Measured: healthy/intact-reserve patient, ketamine raises hr 93.9→114.2 and sbp 125.8→155.3 (the common, correct case, preserved); a real moderate-shock condition (`septicShock`) with reserve intact shows the same rise (hr 136.4→160.2, sbp 92.0→103.4); the SAME condition with `adrenalReserve` forced near-exhausted shows the masking genuinely disabled (indirect alpha/beta1 drug terms both <0.05) and the unmasked direct depression reversing the sign — sbp falls to 79.7 and hr to 135.3 relative to the reserve-intact arm, the real teaching point.
+
+**4. A real thirst-drive signal (V2-9).** `renal.js` gained `pat.thirstDrive`, combining an osmotic trigger (dominant, engaging ~3% above the ~290 mOsm/kg setpoint — real osmoreceptor sensitivity) and a less-sensitive hypovolemic trigger (engaging past ~10% effective-volume deficit — real baroreceptor-mediated thirst). Wired to a new `askThirst` exam action (actions.js) as its real consumer — the same "history-taking finding gated on a real physiologic signal" pattern several existing actions already use. Measured: a healthy euvolemic control holds thirstDrive at 0; `diabeticKetoacidosisCall`'s own real, glucose-driven osmotic diuresis (queue item 43, not a scripted drain) produces thirstDrive=0.7 by 1800s untreated, a real, substantial, correctly-specific finding.
+
+**5. Reversible-vs-structural injury extended to liver and gut (item 48).** Kidney's `atnProgression`/`kidneyInjury` pair (a real, already-shipped reversible-transient-dysfunction-vs-durable-structural-injury distinction) is now mirrored for liver (`pat.hepaticStunning`, anchored on real hepatic ischemia-reperfusion "shock liver"/hypoxic hepatitis — Henrion, *Liver Int* 2012) and gut (`pat.gutMucosalStunning`, anchored on the real early reversible villous-tip mucosal ischemia phase preceding irreversible transmural infarction — Chiu/Park grading). Both rise only while their organ's already-real DO2 signal (queue item 42) sits below a real ischemic threshold, and decay fully once perfusion recovers — confirmed genuinely reversible, not a ratchet, by forcing `_restCo` (the hepatic-flow reference) high for a window then restoring it: `hepaticStunning` rose to 0.100 while forced-low, then fully decayed to 0.000 once restored. `outcomeReport()`'s `reversibleFindings` array (physiology.js) now carries real, distinct clinical language for both, alongside kidney's existing entry — confirmed to stay empty for a healthy control and to correctly exclude a genuinely-structural case (forced `liverInjury=0.9`) from the reversible list. Measured: `cardiogenicShock` shows real hepaticStunning=0.185 while liverInjury stays at 0.092 (well under its own 0.5 structural threshold); `abdominalAorticAneurysm` shows the same pattern for gut (gutMucosalStunning=0.102, gutInjury=0.016).
+
+**6. Acute traumatic coagulopathy (V2-17).** A real, non-cytokine-mediated coagulation-consumption pathway (`coagulation.js`), citing Brohi et al. 2003 / Frith et al. 2010: severe tissue injury plus hypoperfusion directly activates protein C and drives early coagulopathy in trauma, independent of and faster than item 46's existing ~90-minute cytokine-driven pathway, and distinct from DIC. Confirmed genuinely absent before building (`traumaCoag`/`acuteTraumaticCoagulopathy`/`proteinC` all grep-empty). Gated on real structural injury severity (`max` of `brainInjury`/`kidneyInjury`/`liverInjury`/`gutInjury`/per-limb `limbInjury`) composed with a hypoperfusion signal (`alphaTone` past a resting deadband, the same shock-proxy convention item 42's gut/skin slices already use) — `polytraumaFall`/`polytraumaMoto` both set `brainInjury` directly at presentation, giving this pathway genuine minutes-scale onset, matching the real clinical timescale. Measured: `motorcycle` scenario shows factorII 100.0→99.2 by 5 minutes, continuing to 97.5 over the call, with real platelet consumption too (250.0→248.5); `polytraumaFall` shows factorII 100.0→96.1; `minorSprain` (mild trauma, no real structural injury) shows exactly zero; `septicShock` (cytokine pathway only, no structural injury) shows factorII=99.67, attributable entirely to the pre-existing item-46 pathway, confirming this new pathway is genuinely inert for it.
+
+**7. Serotonin Syndrome, a new condition (queue item 7's standing workstream, section 8's Toxicology backlog).** Built per the Hunter Serotonin Toxicity Criteria (Boyer & Shannon, *NEJM* 2005): neuromuscular hyperactivity (clonus/hyperreflexia, worse in the lower extremities — narrated at the `reflexes` exam action via a new, condition-owned `pat.serotoninClonus` field, matching this engine's established narration-only precedent for findings with no direct hemodynamic mechanism, e.g. mydriasis/miosis elsewhere), autonomic instability (hyperthermia via the shared `metabolicHeatMultiplier` handle several other toxidromes already use; tachycardia/hypertension via `hrBase`/`baseSVR`), and altered mental status (`agitationBurden` + `metabolicEncephalopathy`), with severe/prolonged cases able to engage real seizure risk via `epilepticDrive`. No engine plumbing was invented — every consequence routes through an already-real, already-verified mechanism. Treatment is honestly partial: midazolam treats agitation/seizure risk through its existing `anticonvulsant`/`sedationDepth` mechanisms; active cooling partially treats the hyperthermia; no field antidote exists (cyproheptadine is oral, not carried) and no restraint mechanism exists in this engine to model the real "physical restraint worsens hyperthermia" teaching point, so none was fabricated. New scenario `serotoninSyndrome` (TOX-014, an SSRI patient who added tramadol). Measured (untreated, 900s): clonus=0.58, metabolicHeatMultiplier=1.71, hr=135.9 (vs. a control's 96.5), agitationBurden=0.7, epilepticDrive stays 0 within a realistic ~15-minute scene but reaches 0.31 by 1800s (severe/prolonged escalation, genuinely time-gated, not instant); midazolam drops agitation 0.7→0.028 while leaving the autonomic crisis (heat multiplier, baseSVR) untouched, the honest, correct treatment boundary; active cooling drops coreTemp 37.40→36.49 without touching the underlying `metabolicHeatMultiplier` driver — a real, partial response, not a cure.
+
+**Final consolidated verification, run to completion after every agent's work was merged.** `node --check` and `npx eslint` clean on every touched file throughout (zero new findings beyond the project's own pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`). **`mechanismWiring.mjs`: 574 passed, 1 failed** — the single failure is the same already-long-documented, pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion (unrelated by content to anything this session touched); every one of this session's own new sections (blood viscosity, methemoglobinemia, ketamine, thirst, reversible hepatic/gut dysfunction, acute traumatic coagulopathy, serotonin syndrome, plus the previously-flaky BVM and croup assertions) passed cleanly on this run. **`scenarioSweep.mjs`: 176 scenarios, 17,185,698 checks, 0 failed** — clean across the entire scenario library, including the two new scenarios (`methemoglobinemia`, `serotoninSyndrome`). `npx vite build`: clean (20.34s, same pre-existing >500kB chunk-size warning). All throwaway probe scripts across every agent and every merge were stripped before their respective commits.
 
 ### 2026-09-01 — Hypertrophic Obstructive Cardiomyopathy (HOCM), queue item 7's standing condition-library workstream
 
@@ -6425,14 +6455,13 @@ V2-8. **RAAS, generalized and made explicit.** Angiotensin II/aldosterone/
    done carefully to preserve every existing consumer (single-writer
    discipline, section 5's own "identify authoritative owner" rule).
 
-V2-9. **ADH and thirst, generalized.** `adhAutonomous`/
-   `adhSecretionCapacity`/`adhRenalResponsiveness` already exist and are
-   real (SIADH/DI both reuse them, queue item 25's earlier work). A real
-   THIRST signal (osmolality + effective arterial volume → a drive that
-   could plausibly gate a "patient reports thirst" narrative/exam finding)
-   does not yet exist as a distinct output — a small, cheap addition once a
-   real consumer (a new exam action, or dialogue-system integration per the
-   F0 workstream) is identified.
+V2-9. **DONE (2026-09-01) — see section 3's newest entry.** A real
+   `pat.thirstDrive` (renal.js), combining a dominant osmotic trigger (~3%
+   above the ~290 mOsm/kg setpoint) and a less-sensitive hypovolemic
+   trigger (~10%+ effective-volume deficit), wired to a new `askThirst`
+   exam action (actions.js) as its real consumer. Measured on DKA's real
+   osmotic diuresis (thirstDrive=0.7 by 1800s untreated vs. 0 for a healthy
+   control).
 
 V2-10. **Nephron segment-level modeling — explicitly NOT the full proposal,
    per queue item 43's own closed finding.** Item 43 already built and
@@ -6479,27 +6508,20 @@ V2-14. **Hepatic drug clearance — already substantially real.**
    assuming further work is needed — likely just a wiring check, not new
    mechanism.
 
-V2-15. **Hematology and RBC physiology, generalized.** `pat.dpg` (2,3-DPG)
-   already exists and already right-shifts the O2 curve for chronic anemia/
-   COPD (queue item 5's earlier fix). NOT yet built: an explicit blood
-   viscosity term feeding vascular resistance (polycythemia → higher
-   viscosity → higher resistance/lower microvascular flow; severe anemia →
-   lower viscosity but lower CaO2) — a real, citable mechanism, not yet
-   wired anywhere in `cardiovascular.js`.
+V2-15/16. **DONE (2026-09-01) — see section 3's newest entry.** A real
+   hematocrit-driven viscosity multiplier on `pat.svr` (cardiovascular.js),
+   anchored on Guyton & Hall (~2.0x at hct+15 points, ~0.35x at hct-25
+   points), via a cubic form that keeps small, realistic hct deviations
+   modest (a two-stage recalibration — a real crush-syndrome/compartment-
+   syndrome interaction was found and fixed by the regression suite itself,
+   full trace in section 3).
 
-V2-16. **Blood rheology (viscosity → vascular resistance) — see V2-15,
-   same item, listed separately per the source document's own numbering.**
-   Do these two together in one batch.
-
-V2-17. **Endothelium-coagulation coupling.** `coagulation.js` already has
-   real tissue-factor-driven consumptive coagulopathy tied to
-   `cytokineLoad` (item 46's inflammation-cascade work) and to direct
-   hemorrhage-consumption. NOT yet built: a general endothelial-injury
-   (independent of cytokines — e.g. mechanical/toxic/burn injury) →
-   tissue-factor → platelet-adhesion → microthrombi pathway feeding BACK
-   into per-organ perfusion (a genuine closed loop: coagulation worsening
-   microvascular flow, which worsens organ injury, which worsens
-   inflammation). This is real, new, moderately large mechanism work.
+V2-17. **DONE (2026-09-01) — see section 3's newest entry.** A real,
+   non-cytokine-mediated acute traumatic coagulopathy pathway
+   (coagulation.js, Brohi et al. 2003), gated on real structural injury
+   severity composed with a hypoperfusion signal — genuine minutes-scale
+   onset in major trauma, confirmed inert for minor trauma and for
+   cytokine-only sepsis.
 
 V2-18. **Organ injury integration, generalized.** Item 48 already built the
    reversible-vs-structural distinction for kidney (`atnProgression` vs.
@@ -6565,18 +6587,17 @@ V2-25. **Pulmonary circulation and RV coupling.** Real RV/LV
    dilation/failure in the authoritative solver needs a direct check, not
    an assumption either way.
 
-V2-26. **Receptor-level pharmacology integration — already substantially
-   real.** `drugs.js`'s `receptors` object architecture (alpha1/beta1/
-   beta2/muscarinic/vagalBlock/calciumChannel/etc.) already exists and is
-   the exact substrate queue item 45 confirmed and extended (receptor
-   desensitization/tolerance). Audit for any receptor class named in the
-   source doc's own list (`opioidMu`/`opioidKappa`/`opioidDelta`/
-   `dopamine`/`histamineH1`/`histamineH2`/`serotonin`/`GABA`/`NMDA`) that
-   has NO real consumer yet — likely histamine/serotonin/NMDA are the
-   genuine gaps (ketamine's dissociative mechanism could plausibly use a
-   real NMDA-antagonism term instead of an asserted-not-identified
-   `myocardialDepression` coefficient, per section 6's own "also open,
-   lower priority" note).
+V2-26. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed, see
+   section 3's newest entry; the rest of the item remains open.** Ketamine's
+   cardiovascular mechanism is now a real dual NMDA-antagonist effect
+   (indirect sympathomimetic, scaled by the existing `pat.adrenalReserve`
+   signal, plus a direct, ordinarily-masked myocardial depression term) —
+   the previously-asserted-not-identified `myocardialDepression` coefficient
+   this item's own text used to flag is now real. `drugs.js`'s `receptors`
+   object architecture (alpha1/beta1/beta2/muscarinic/vagalBlock/
+   calciumChannel/etc.) remains the substrate for the rest of this item —
+   still genuinely open: histamineH1/H2, serotonin, and NMDA receptor
+   classes beyond ketamine's own use have no real consumer yet.
 
 V2-27. **Chronic adaptation and remodeling.** Some already exists
    (chronic anemia's 2,3-DPG shift; COPD's baseline compliance/resistance
@@ -6608,16 +6629,17 @@ V2-29. **CPR physiology as a distinct mechanical state**, separate from an
    mechanics (see item 12's own findings on assisted-ventilation
    intrathoracic effects) — confirm, then extend rather than rebuild.
 
-V2-30. **Clinical measurement and monitoring physiology.** A real
-   pulse-oximetry blind spot already exists for CO poisoning
-   (`pat.cohb`/`pat.caO2`, a real "SpO2 reads falsely normal" mechanism,
-   see the Respiratory-category note above). NOT yet built: a general
-   `pat.monitoring = {pulseOxAccuracy, pulseOxBias, cooximetryAvailable,
-   abgAvailable}` structure, and ETCO2 as its own derived quantity distinct
-   from PaCO2 (needed for the real PE-vs-hypoventilation ETCO2/PaCO2-
-   gradient teaching point the source document names explicitly) — real,
-   moderate scope, a natural pairing with V2-29 (CPR) since ETCO2-during-
-   CPR is one of its own named target behaviors.
+V2-30. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
+   Investigated first: CO poisoning's pulse-ox blind spot (`pat.cohb`) and
+   ETCO2 as a real quantity distinct from PaCO2 (with a real, already-
+   PE-vs-hypoventilation-distinguishing gradient) were both confirmed
+   ALREADY REAL — not built this pass. The one genuine gap found and
+   filled: methemoglobinemia's classic pulse-ox floor artifact (new
+   `pat.metHb`, a new `acquiredMethemoglobinemia` condition and
+   `methemoglobinemia` scenario). A general `pat.monitoring =
+   {pulseOxAccuracy, pulseOxBias, cooximetryAvailable, abgAvailable}`
+   structure was deliberately NOT built — no real per-field consumer was
+   identified, and building it would have been decorative (section 1).
 
 V2-31. **Global conservation and stability verification.** `scenarioSweep.mjs`
    already checks NaN/negative/impossible-range and, per lesson 10b, was
@@ -9319,7 +9341,11 @@ which is clinically correct and why its evidence base is mixed.)
 ## 8. Target condition library
 
 The set the simulator is aiming at, for the condition-library workstream (queue
-item 7). **Roughly 280 entries against 161 currently implemented** (+1 this
+item 7). **Roughly 280 entries against 182 currently implemented, direct
+count as of this session's multi-agent batch (2026-09-01) — see this
+section's own closing paragraph below the "already implemented" list for
+the full reconciliation note.** Running tally as of the PRIOR session (161)
+follows below for historical trace, not the current total: (+1 this
 session from `cyanidePoisoning`, queue item 7's own suggested "carbon monoxide
 and cyanide toxicity" batch, its second half — see section 3's newest entry;
 +1 from a real backfill gap, `diabetesT2`, found by the same direct-count
@@ -9348,7 +9374,9 @@ lists below are the REMAINING backlog: a condition is REMOVED from its category
 list the session it ships (see the standing rule in section 4), so the categories
 shrink as the "already implemented" list grows and nothing is built twice.
 
-**Already implemented (158)** — for these the job is step (b) review and deepening,
+**Already implemented (182, direct count — see this list's own closing
+paragraph below for why the enumerated names below undercount that)** — for
+these the job is step (b) review and deepening,
 not a build from nothing. Several are thinner than the engine can support:
 
 `aorticDissection`, `chf`, `ami`, `acs`, `stableAngina`, `unstableAngina`, `nstemi`,
@@ -9427,15 +9455,23 @@ session's condition-library batch, `carbonMonoxidePoisoning` (queue item 7,
 Toxicology); and, from THIS session, `tricyclicOverdose` (queue item 7,
 Toxicology — see section 3's newest entry); and, from the MOST RECENT
 session, `cyanidePoisoning` (queue item 7, Toxicology — see section 3's
-newest entry) — 161 conditions implemented in total now, confirmed by direct
-count against the tree (`Object.keys(CONDITIONS).length`), not the running
-tally alone (lesson 16). That is TWO more than the 159 this paragraph's own
-158+1 arithmetic would predict: `diabetesT2` is a real, already-shipped
-condition this list had silently fallen behind on (the same backfill-gap
-shape `diltiazemOverdose`/`metoprololOverdose`/`toxicInhalationChlorine`/
-`atropineOverdose` were two sessions ago), found by the same direct-count
-check while updating this paragraph for cyanidePoisoning, not built this
-session and not otherwise touched.
+newest entry); and, from THIS session's multi-agent parallel batch,
+`hocmObstructive` (HOCM, shipped between the last count and this one — see
+its own section 3 entry immediately below this session's newest one),
+`acquiredMethemoglobinemia` (queue item V2-30) and `serotoninSyndrome`
+(queue item 7, Toxicology) — **182 conditions implemented in total now,
+confirmed by direct count against the tree**
+(`Object.keys(CONDITIONS).length`), not the running tally alone (lesson
+16). That is MORE than this paragraph's own name-by-name arithmetic would
+predict — the gap between a maintained running list and the real tree has
+recurred repeatedly across sessions (see the `diabetesT2`/
+`diltiazemOverdose`/etc. backfills above), and this session's direct count
+confirms it has widened further rather than closed. A full name-by-name
+reconciliation of this list against `Object.keys(CONDITIONS)` is genuinely
+overdue but was not attempted this session (large, separate audit work,
+out of scope for a parallel physiology batch) — treat the 182 figure as
+the trustworthy total and this list's own enumerated names as an
+incomplete, but not misleading, subset of it.
 
 Note that some entries below overlap these at finer grain — it separates the AV
 blocks and shock states that are presently collapsed or absent. That granularity
@@ -9618,7 +9654,7 @@ discipline. See queue item 28 for the original fuller reasoning.)*
 Acetaminophen Overdose ·
 Aspirin Toxicity · Beta Blocker Overdose ·
 Calcium Channel Blocker Overdose · Organophosphate Poisoning · Cocaine Toxicity ·
-Methamphetamine Toxicity · Serotonin Syndrome · Neuroleptic Malignant Syndrome ·
+Methamphetamine Toxicity · Neuroleptic Malignant Syndrome ·
 Benzodiazepine Overdose · Alcohol Intoxication · Alcohol Withdrawal ·
 Opioid Withdrawal · Caustic Acid Ingestion · Alkali Ingestion · Synthetic Cannabinoid Intoxication ·
 Fentanyl Overdose ·
