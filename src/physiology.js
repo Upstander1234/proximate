@@ -323,6 +323,19 @@ export const outcomeReport = (s) => {
     if ((pat.kidneyInjury ?? 0) < 0.5 && (pat.atnProgression ?? 0) > 0.02) {
       reversible.push("acute tubular dysfunction from transient renal hypoperfusion (likely reversible with supportive care)");
     }
+    // EXTENDED (queue item 48, same session) to liver and gut, the item's
+    // own explicitly-named "still open" candidates -- both use the exact
+    // same reversible-accumulator pattern as atnProgression above (see
+    // neuro.js's hepaticStunning/gutMucosalStunning comments), so the same
+    // 0.02 deadband threshold (a real deadband, not a fitted number) and
+    // "below the structural threshold" gate is reused rather than
+    // reinvented per organ.
+    if ((pat.liverInjury ?? 0) < 0.5 && (pat.hepaticStunning ?? 0) > 0.02) {
+      reversible.push("acute hepatocellular dysfunction (shock liver) from transient hepatic hypoperfusion (likely reversible if perfusion is restored)");
+    }
+    if ((pat.gutInjury ?? 0) < 0.5 && (pat.gutMucosalStunning ?? 0) > 0.02) {
+      reversible.push("mucosal (villous) bowel ischemia from transient splanchnic hypoperfusion (likely reversible with restored perfusion, before transmural infarction)");
+    }
 
     const mech = pat.deathMechanism ? MECHANISM_TREATABILITY[pat.deathMechanism] : null;
 

@@ -79,6 +79,10 @@ const REQUIRED = [
   // delivery/demand, now the real driver of liverInjury accrual instead of
   // a whole-body lactate threshold.
   "hepaticDO2", "hepaticO2Debt",
+  // Queue item 48 (this session): reversible-vs-structural pattern
+  // extended to liver/gut -- transient dysfunction, distinct from the
+  // durable liverInjury/gutInjury structural accumulators.
+  "hepaticStunning", "gutMucosalStunning",
   // Queue item 45b (this session): within-encounter receptor
   // desensitization/tolerance for opioid, benzodiazepine, and beta-2
   // agonist dosing.
@@ -233,6 +237,7 @@ const NON_NEGATIVE = [
   "baroreflexGain", "metabolicRate", "painSensitivity", "vascularReactivity",
   "renalReserve", "pulmonaryReserve",
   "renalDO2", "renalO2Debt", "hepaticDO2", "hepaticO2Debt",
+  "hepaticStunning", "gutMucosalStunning",
   "opioidDesens", "gabaDesens", "beta2Desens",
   "gutDO2", "gutO2Debt", "gutInjury",
   "skinDO2",

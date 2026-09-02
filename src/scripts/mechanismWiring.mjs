@@ -19,7 +19,7 @@
 // suites.
 //
 // Run:  node src/scripts/mechanismWiring.mjs
-import { physio, activePatient } from "../physiology.js";
+import { physio, activePatient, outcomeReport } from "../physiology.js";
 import { Patient } from "../physio/patient.js";
 import { updateVenousReturn } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
@@ -323,6 +323,11 @@ function snapshot(p) {
     consciousness: p.consciousness,
     liverInjury: p.liverInjury || 0,
     kidneyInjury: p.kidneyInjury || 0,
+    // Queue item 48 (this session): reversible-vs-structural pattern
+    // extended to liver/gut — atnProgression's own sibling accumulators.
+    hepaticStunning: p.hepaticStunning ?? 0,
+    gutMucosalStunning: p.gutMucosalStunning ?? 0,
+    atnProgression: p.atnProgression ?? 0,
     kExcretion: p.kExcretion ?? 1,
     autonomicNeuropathy: p.autonomicNeuropathy || 0,
     coronaryStenosis: p.coronaryStenosis || 0,
@@ -5474,6 +5479,94 @@ console.log("\n[BLOOD VISCOSITY -> VASCULAR RESISTANCE — V2 physiology queue i
   hctNearNormal ? pass++ : fail++;
   if (!hctNearNormal) failures.push(`healthy control hct expected near 0.45, got ${healthy.after.hct.toFixed(3)}`);
   console.log(`  ${hctNearNormal ? "PASS" : "FAIL"}  ${"...a healthy control sits at its own normal hct (mechanism inert at rest)".padEnd(46)} hct=${healthy.after.hct.toFixed(3)}, svr=${healthy.after.svr.toFixed(1)}`);
+}
+
+console.log("\n[REVERSIBLE HEPATIC/GUT DYSFUNCTION — queue item 48, extending kidney's atnProgression/kidneyInjury pattern]");
+{
+  // LIVER: cardiogenicShock is a real, already-shipped low-output condition
+  // (see neuro.js's hepaticStunning comment / item 42's own writeup) whose
+  // hepaticDO2 collapses well below the ischemic 0.5 threshold within
+  // minutes, while liverInjury (the slow, durable accumulator) stays under
+  // its own 0.5 structural threshold across a realistic scene time.
+  const shockLiver = probe({ scen: "cardiogenicShock", settle: 2, run: 1200 });
+  const liverFires = shockLiver.after.hepaticStunning > 0.02 && shockLiver.after.liverInjury < 0.5;
+  liverFires ? pass++ : fail++;
+  if (!liverFires) failures.push(`cardiogenicShock should show hepaticStunning>0.02 with liverInjury still <0.5 by 1200s, got hepaticStunning=${shockLiver.after.hepaticStunning}, liverInjury=${shockLiver.after.liverInjury}`);
+  console.log(`  ${liverFires ? "PASS" : "FAIL"}  ${"cardiogenicShock -> real reversible hepatic stunning, still short of structural injury".padEnd(46)} hepaticStunning=${shockLiver.after.hepaticStunning.toFixed(3)}, liverInjury=${shockLiver.after.liverInjury.toFixed(3)}`);
+
+  // Specificity: a healthy, condition-less control shows exactly zero.
+  const healthyLiver = probe({ scen: "abdPain", settle: 2, run: 1200 });
+  const liverSpecific = healthyLiver.after.hepaticStunning === 0;
+  liverSpecific ? pass++ : fail++;
+  if (!liverSpecific) failures.push(`healthy control should show hepaticStunning=0, got ${healthyLiver.after.hepaticStunning}`);
+  console.log(`  ${liverSpecific ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} hepaticStunning=${healthyLiver.after.hepaticStunning}`);
+
+  // Reversibility: the actual point of this field, distinct from the
+  // durable liverInjury accumulator — forcing a real ischemic deficit for
+  // a while, then removing it, must let hepaticStunning genuinely decay
+  // back toward zero, not just stop rising. Built as a raw settle/run loop
+  // (not probe()'s single mutate) since the mutate must apply only for
+  // PART of the run.
+  {
+    // hepaticDO2 is fully recomputed from co/_restCo/caO2 at the top of
+    // every updateOrganInjury call, so overriding it directly between ticks
+    // has no effect (it's overwritten before the check that reads it runs
+    // again). _restCo is a resting reference set once at construction and
+    // never touched elsewhere -- inflating it drives hepaticFlow (co/
+    // _restCo) toward zero, a real, persistent way to force low hepaticDO2.
+    const s = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+    for (let T = STEP; T <= 2; T += STEP) { s.t = T; physio(s); pinTraitsNeutral(activePatient(s)); }
+    const restCoOrig = activePatient(s)._restCo;
+    activePatient(s)._restCo = restCoOrig * 20;
+    for (let T = 2 + STEP; T <= 600; T += STEP) { s.t = T; physio(s); }
+    const midStun = activePatient(s).hepaticStunning;
+    activePatient(s)._restCo = restCoOrig;
+    for (let T = 600 + STEP; T <= 2400; T += STEP) { s.t = T; physio(s); }
+    const endStun = activePatient(s).hepaticStunning;
+    const reversed = midStun > 0.09 && endStun < midStun * 0.5;
+    reversed ? pass++ : fail++;
+    if (!reversed) failures.push(`hepaticStunning should rise while hepaticDO2 is forced low then decay once it recovers, got mid=${midStun}, end=${endStun}`);
+    console.log(`  ${reversed ? "PASS" : "FAIL"}  ${"hepaticStunning genuinely REVERSES once perfusion is restored (not a ratchet)".padEnd(46)} mid=${midStun.toFixed(3)}, end=${endStun.toFixed(3)}`);
+  }
+
+  // GUT: the same near-terminal AAA reference already used to calibrate
+  // item 42's gut/skin slices — genuinely catastrophic, untreated shock,
+  // gutInjury (the transmural accumulator) still under its own 0.5
+  // structural threshold at 30 min.
+  const aaaGut = probe({ scen: "abdominalAorticAneurysm", settle: 2, run: 1800 });
+  const gutFires = aaaGut.after.gutMucosalStunning > 0.02 && aaaGut.after.gutInjury < 0.5;
+  gutFires ? pass++ : fail++;
+  if (!gutFires) failures.push(`abdominalAorticAneurysm should show gutMucosalStunning>0.02 with gutInjury still <0.5 by 1800s, got gutMucosalStunning=${aaaGut.after.gutMucosalStunning}, gutInjury=${aaaGut.after.gutInjury}`);
+  console.log(`  ${gutFires ? "PASS" : "FAIL"}  ${"abdominalAorticAneurysm -> real reversible mucosal ischemia, still short of transmural injury".padEnd(46)} gutMucosalStunning=${aaaGut.after.gutMucosalStunning.toFixed(3)}, gutInjury=${aaaGut.after.gutInjury.toFixed(3)}`);
+
+  const healthyGut = probe({ scen: "abdPain", settle: 2, run: 1800 });
+  const gutSpecific = healthyGut.after.gutMucosalStunning === 0;
+  gutSpecific ? pass++ : fail++;
+  if (!gutSpecific) failures.push(`healthy control should show gutMucosalStunning=0, got ${healthyGut.after.gutMucosalStunning}`);
+  console.log(`  ${gutSpecific ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} gutMucosalStunning=${healthyGut.after.gutMucosalStunning}`);
+
+  // The real consumer: outcomeReport()'s reversibleFindings array actually
+  // carries the new liver/gut findings, and stays silent for a healthy
+  // patient — the same data-layer verification item 48's own kidney slice
+  // used, per outcomeReport()'s own header comment ("deliberately
+  // UI-agnostic... belongs in the module that owns the mechanism").
+  const shockLiverReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1200, patient: shockLiver.patient });
+  const liverReported = (shockLiverReport?.reversibleFindings || []).some((x) => x.includes("hepatocellular dysfunction"));
+  liverReported ? pass++ : fail++;
+  if (!liverReported) failures.push(`outcomeReport() should list the shock-liver finding in reversibleFindings, got ${JSON.stringify(shockLiverReport?.reversibleFindings)}`);
+  console.log(`  ${liverReported ? "PASS" : "FAIL"}  ${"outcomeReport() reversibleFindings carries the real hepatic finding".padEnd(46)} reversibleFindings=${JSON.stringify(shockLiverReport?.reversibleFindings)}`);
+
+  const aaaGutReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1800, patient: aaaGut.patient });
+  const gutReported = (aaaGutReport?.reversibleFindings || []).some((x) => x.includes("mucosal (villous) bowel ischemia"));
+  gutReported ? pass++ : fail++;
+  if (!gutReported) failures.push(`outcomeReport() should list the mucosal-ischemia finding in reversibleFindings, got ${JSON.stringify(aaaGutReport?.reversibleFindings)}`);
+  console.log(`  ${gutReported ? "PASS" : "FAIL"}  ${"outcomeReport() reversibleFindings carries the real gut finding".padEnd(46)} reversibleFindings=${JSON.stringify(aaaGutReport?.reversibleFindings)}`);
+
+  const healthyReport = outcomeReport({ phase: "scene", onSceneAt: 0, t: 1200, patient: healthyLiver.patient });
+  const healthyReportEmpty = (healthyReport?.reversibleFindings || []).length === 0;
+  healthyReportEmpty ? pass++ : fail++;
+  if (!healthyReportEmpty) failures.push(`outcomeReport() should show an empty reversibleFindings for a healthy control, got ${JSON.stringify(healthyReport?.reversibleFindings)}`);
+  console.log(`  ${healthyReportEmpty ? "PASS" : "FAIL"}  ${"...and stays empty for a matched healthy control".padEnd(46)} reversibleFindings=${JSON.stringify(healthyReport?.reversibleFindings)}`);
 }
 
 console.log("\n" + "=".repeat(74));
