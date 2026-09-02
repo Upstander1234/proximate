@@ -9161,6 +9161,37 @@ plausible but not fitted to trial data.
     confound (indistinguishable from a non-cardiac apnea patient) was found
     only on a fifth check that should have been the first.
 
+75. **NEW, filed 2026-09-01 — a real, measured, unexplained drift in
+    "conserved" quantities for a completely resting, condition-less,
+    dose-less patient, found by the new `conservationAudit.mjs` tool
+    (queue item V2-31, see section 3's newest entry).** `pat.kMass` rises
+    and `pat.totalBloodVol`/`pat.plasmaVol` both fall STEADILY (confirmed
+    via a point-by-point diagnostic sweep, not just start/end — the drift
+    rate is essentially linear from t=60s to t=1800s, with no sign of
+    settling toward a steady state) for a plain `abdPain`/`chestPainM`
+    patient with NO condition, NO dose, NOTHING happening — measured
+    ~3.5-3.7% kMass rise and ~2.2-2.9% totalBloodVol fall over 15 minutes,
+    ~6.9% plasmaVol fall over 30 minutes. `pat.naMass` and `pat.rbcMass` are
+    comparatively much closer to stable (~0.5-0.7% and ~0% respectively over
+    the same window) — this is NOT a uniform "everything drifts a little"
+    numerical-noise artifact, since some quantities are clean and others are
+    not. This means `patient.js`'s constructed initial state is not a true
+    fixed point of the coupled renal/fluid-shift ODE for at least SOME
+    tracked quantities, and since every scenario in the game starts from
+    this same initial state, a "healthy, untouched" patient genuinely
+    drifts hemodynamically over a realistic call length with no story
+    reason for it — a real, if likely modest-magnitude, hyper-realism gap.
+    NOT investigated or fixed when found (out of scope for a verification-
+    tool task, per section 4's own batch-size discipline). Worth checking
+    first against `metabolic.js`'s own Starling/lymphatic-return term
+    (already fixed once for a related but reportedly-different imbalance,
+    per queue item 49's history — confirm whether this is a genuine
+    regression of that fix, a different term entirely, or an interaction
+    with `renal.js`'s renin/RAAS resting-state calibration) and
+    `renal.js`'s own K+/Na+ handling comments (several of which already
+    document "TECHNICAL DEBT" around the macula-densa/volume-limb
+    approximations) before assuming a brand-new mechanism is needed.
+
 ---
 
 ## 7. Hard-won lessons
