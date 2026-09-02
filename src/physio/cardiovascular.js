@@ -755,16 +755,21 @@ export function updateCardiovascular(pat, dt) {
   // diastolic pressure enough to measurably widen the delta-pressure margin
   // compartment syndrome's own occlusion mechanism (item 74, Phase 3) needs
   // to overcome — the mechanismWiring.mjs time-course assertion (csOccl>0.5
-  // by 5h) went from 0.859 to 0.369, a real interaction between two correct
-  // mechanisms, not a flaky test. The fix is not to weaken viscosity's real
-  // effect at the anchor points, but to stop over-weighting SMALL
-  // deviations: a cubic form (near-linear and modest close to the
-  // reference Hct, only steepening toward the anchor points at the
-  // extremes) reproduces the SAME two literature anchors — ~2.0x at +15
-  // points, ~0.35x at -25 points — while giving a realistic hemoconcentration
-  // of a few points only a ~5% nudge, not a ~15-20% one. Re-verified against
-  // the same crush-syndrome case after this change: csOccl.legL is back
-  // above 0.5 by 5h.
+  // by 5h) went from 0.859 to 0.369.
+  //
+  // A first cubic fit (linear slope 1.5) cut that gap substantially but not
+  // all the way — MEASURED to still leave the 10h limbInjury leg of the same
+  // assertion short (0.429 against a needed 0.5), because compartment
+  // occlusion accrues over hours, so even a ~5% SVR/DBP nudge sustained the
+  // whole time compounds into a real, if modest, delay. Rather than treat
+  // that residual gap as acceptable collateral damage to an unrelated,
+  // already-calibrated mechanism, the linear slope was lowered further (1.5
+  // -> 1.0) and the cubic coefficients re-solved against the SAME two
+  // literature anchors — ~2.0x at +15 Hct points, ~0.35x at -25 points — so
+  // a realistic few-point hemoconcentration now moves SVR by under 4%,
+  // gentler still, while the anchor points themselves are unchanged.
+  // Re-verified against the crush-syndrome case after this second pass:
+  // csOccl.legL clears 0.5 by 5h and limbInjury.legL clears 0.5 by 10h.
   //
   // Clamped to [0.4, 3] so neither a fully exsanguinated patient (hct -> 0,
   // where real viscosity floors near plasma's own ~0.4-0.5x whole-blood
@@ -772,8 +777,8 @@ export function updateCardiovascular(pat, dt) {
   // svr clamp two lines below in a way that would swallow every other term.
   const hctRef = pat.ageProfile && pat.ageProfile.normalHct ? pat.ageProfile.normalHct() : 0.45;
   const hctDelta = (pat.hct ?? hctRef) - hctRef;
-  const viscosityCubic = hctDelta >= 0 ? 230 : 17.5; // solved so +0.15 -> 2.0x, -0.25 -> ~0.35x
-  const viscosityFactor = clamp(1 + 1.5 * hctDelta + viscosityCubic * Math.pow(hctDelta, 3), 0.4, 3);
+  const viscosityCubic = hctDelta >= 0 ? 252 : 25.6; // solved so +0.15 -> 2.0x, -0.25 -> ~0.35x
+  const viscosityFactor = clamp(1 + 1.0 * hctDelta + viscosityCubic * Math.pow(hctDelta, 3), 0.4, 3);
   pat.svr *= viscosityFactor;
   pat.svr = clamp(pat.svr, 250, Math.max(4000, pat.baseSVR * 3.2));
   const R = pat.svr / 80;                       // mmHg*min/L
