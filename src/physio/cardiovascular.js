@@ -733,6 +733,48 @@ export function updateCardiovascular(pat, dt) {
                         // fractions near 0.85 drove SVR into the model's global
                         // 4000 clamp, which is above any published figure.
                         / Math.max(0.15, 1 - clamp(pat.aorticOcclusion || 0, 0, 0.9));
+  // BLOOD VISCOSITY -> VASCULAR RESISTANCE (V2-15/16 of the V2 physiology
+  // queue). Poiseuille's law makes resistance directly proportional to
+  // viscosity, and whole-blood viscosity is dominated by hematocrit through
+  // RBC-RBC crowding — a real, supralinear relationship (steep above ~50%
+  // Hct, clinical "sludging"), not a flat one. Anchored on Guyton & Hall's
+  // own relative-viscosity-vs-Hct teaching curve: roughly a DOUBLING from a
+  // normal ~45% Hct to a polycythemic ~60% (a +15-point rise), and roughly
+  // a THIRD-TO-HALF from 45% down to a moderately anemic ~20% (a -25-point
+  // fall). Referenced to THIS patient's own age/sex-scaled normal Hct, not
+  // a flat 45%, so a pediatric or elderly-female patient's own reference
+  // point is respected.
+  //
+  // A pure exponential fit through the +15-point anchor (tried first,
+  // MEASURED and found wrong) is too steep at SMALL, clinically common Hct
+  // deviations — the ones this engine actually produces most often, not the
+  // extreme anchor points. Caught by the regression suite itself, not
+  // guessed at: crushSyndrome's own real hemoconcentration (third-spacing
+  // from the injury raises hct by only ~0.03 over its presenting baseline)
+  // pushed the exponential's SVR multiplier to ~1.15-1.20x, which raised
+  // diastolic pressure enough to measurably widen the delta-pressure margin
+  // compartment syndrome's own occlusion mechanism (item 74, Phase 3) needs
+  // to overcome — the mechanismWiring.mjs time-course assertion (csOccl>0.5
+  // by 5h) went from 0.859 to 0.369, a real interaction between two correct
+  // mechanisms, not a flaky test. The fix is not to weaken viscosity's real
+  // effect at the anchor points, but to stop over-weighting SMALL
+  // deviations: a cubic form (near-linear and modest close to the
+  // reference Hct, only steepening toward the anchor points at the
+  // extremes) reproduces the SAME two literature anchors — ~2.0x at +15
+  // points, ~0.35x at -25 points — while giving a realistic hemoconcentration
+  // of a few points only a ~5% nudge, not a ~15-20% one. Re-verified against
+  // the same crush-syndrome case after this change: csOccl.legL is back
+  // above 0.5 by 5h.
+  //
+  // Clamped to [0.4, 3] so neither a fully exsanguinated patient (hct -> 0,
+  // where real viscosity floors near plasma's own ~0.4-0.5x whole-blood
+  // value, not zero) nor an extreme polycythemic outlier can blow past the
+  // svr clamp two lines below in a way that would swallow every other term.
+  const hctRef = pat.ageProfile && pat.ageProfile.normalHct ? pat.ageProfile.normalHct() : 0.45;
+  const hctDelta = (pat.hct ?? hctRef) - hctRef;
+  const viscosityCubic = hctDelta >= 0 ? 230 : 17.5; // solved so +0.15 -> 2.0x, -0.25 -> ~0.35x
+  const viscosityFactor = clamp(1 + 1.5 * hctDelta + viscosityCubic * Math.pow(hctDelta, 3), 0.4, 3);
+  pat.svr *= viscosityFactor;
   pat.svr = clamp(pat.svr, 250, Math.max(4000, pat.baseSVR * 3.2));
   const R = pat.svr / 80;                       // mmHg*min/L
 
@@ -1948,6 +1990,74 @@ function updateValves(pat, dt) {
   const aiTau = aiTarget > (pat.aorticRegurgFrac ?? 0) ? 1.0 * S : 15 * S;
   pat.aorticRegurgFrac = clamp(approach(pat.aorticRegurgFrac ?? 0, aiTarget, dt, aiTau), 0, 0.9);
   pat.aorticStenosisSeverity = rf.aorticStenosis ? clamp(rf.aorticStenosisSeverity ?? 0.5, 0, 0.9) : 0;
+
+  // ---- HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY (queue item 7 / section 8's
+  // Cardiac backlog) — a DYNAMIC left-ventricular-outflow-tract obstruction,
+  // deliberately built as a separate field composed into aorticStenosisSeverity
+  // (Math.max, same "isolate my own contribution" idiom several other
+  // condition-composition sites in this file already use) rather than
+  // reusing pat.riskFactors.aorticStenosis directly — mechanistically the
+  // consequence is identical (added resistance in series with LV ejection,
+  // the exact PV-loop effect eaEff already models), but the CAUSE and the
+  // clinically-load-bearing difference is that HOCM's obstruction is NOT
+  // fixed the way a calcified aortic valve is: real LVOT gradient varies
+  // beat-to-beat with loading conditions (2020 ACC/AHA HCM guideline; Maron
+  // & Maron, Lancet 2013) — it worsens with a SMALLER, EMPTIER ventricle
+  // (systolic anterior motion of the mitral valve brings the septum and
+  // valve closer together as the chamber empties), with HIGHER
+  // contractility (a more vigorous systolic ejection accentuates SAM), and
+  // with LOWER afterload (a vasodilated patient's LV empties faster and
+  // more completely, worsening the same geometry) — the textbook, often
+  // paradoxical clinical teaching: nitrates, diuretics, and inotropes all
+  // WORSEN this lesion, and volume/pure-alpha vasoconstriction (raising
+  // preload and afterload, NOT contractility) is the correct field response.
+  //
+  // pat.riskFactors.hocmSeverity is the STRUCTURAL septal-hypertrophy
+  // magnitude (0-1, scenario-authored, static for the encounter — septal
+  // thickness does not change over a single call, same reasoning
+  // aorticStenosis's own comment gives for its own static severity). The
+  // DYNAMIC multiplier below is recomputed every tick from three real,
+  // already-live inputs (no new state needed):
+  //  - preloadFactor: LVEDV relative to a normal-adult reference (120 mL,
+  //    body-scaled) — a smaller chamber (dehydration, tachycardia cutting
+  //    diastolic filling time, venodilator preload loss) raises it.
+  //  - contractFactor: pat.contractility relative to its own 1.0 resting
+  //    reference — a hyperdynamic/catecholamine-driven ventricle raises it.
+  //  - afterloadFactor: pat.svr relative to the patient's own baseSVR
+  //    reference — vasodilation (nitrates, sepsis, anaphylaxis) raises it.
+  // All three read LAST TICK's value (updateValves runs before
+  // updateContractility/SVR are recomputed this tick, the same one-tick lag
+  // the MR annular-dilation term above already accepts) — same
+  // stale-body-scale guard as that term, since a pediatric patient's
+  // carried-over adult-reference EDV comparison would otherwise be wrong on
+  // the first few ticks.
+  if (rf.hocm) {
+    const hocmSev = clamp(rf.hocmSeverity ?? 0.6, 0, 1);
+    const edvRef = 120 * bodyScale;
+    const edvNow = (pat._edvScale === bodyScale && pat.edv > 0) ? pat.edv : edvRef;
+    // <1 when well-filled (protective), >1 when underfilled (aggravating).
+    const preloadFactor = clamp(edvRef / Math.max(20 * bodyScale, edvNow), 0.5, 2.2);
+    const contractFactor = clamp(pat.contractility ?? 1, 0.4, 2.5);
+    const svrRef = pat.baseSVR || 900;
+    // <1 when afterload is elevated (protective), >1 when vasodilated (aggravating).
+    const afterloadFactor = clamp(svrRef / Math.max(150, pat.svr || svrRef), 0.5, 2.5);
+    // MEASURED (throwaway probe, stripped — see conditions.js's hocmObstructive
+    // comment for the numbers): a resting, euvolemic, normotensive HOCM
+    // patient's own compensated resting gradient should land sub-obstructive
+    // (the real ACC/AHA obstructive-HCM threshold is a RESTING gradient of
+    // >=30 mmHg — many HOCM patients are non-obstructive at rest and only
+    // become gradient-positive with provocation), while the same patient
+    // dehydrated/vasodilated/tachycardic lands solidly into the range that
+    // produces measurable hemodynamic collapse. 0.30 is the scale coefficient
+    // that lands both cases at their measured, cited targets (re-measured
+    // this session against this suite's own probe() harness — see
+    // mechanismWiring.mjs's HOCM section for the actual numbers).
+    const dynamicMult = clamp(0.4 * preloadFactor + 0.35 * contractFactor + 0.25 * afterloadFactor, 0.35, 3);
+    pat.hocmObstruction = clamp(hocmSev * dynamicMult * 0.30, 0, 0.9);
+  } else {
+    pat.hocmObstruction = 0;
+  }
+  pat.aorticStenosisSeverity = Math.max(pat.aorticStenosisSeverity, pat.hocmObstruction);
 
   // ---- STRUCTURAL-ONLY regurgitation, for the authoritative solver ---------
   // The full-loop ODE (queue item 41) consumes THESE, not the composite

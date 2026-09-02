@@ -206,6 +206,11 @@ const REQUIRED = [
   // before writing this. Given a genuine second/third real writer now,
   // worth closing the gap per lesson 2 rather than leaving them unchecked.
   "shuntFraction", "pulmResistFactor",
+  // hocm (queue item 7, Cardiac): the dynamic LVOT-obstruction contribution
+  // updateValves (cardiovascular.js) computes every tick from live
+  // preload/contractility/afterload and composes into aorticStenosisSeverity
+  // via Math.max — clamped [0,0.9], always 0 when hocm is not active.
+  "hocmObstruction",
 ];
 
 // Fields that may never go negative.
@@ -295,6 +300,11 @@ const NON_NEGATIVE = [
   // before writing this. Given a genuine second/third real writer now,
   // worth closing the gap per lesson 2 rather than leaving them unchecked.
   "shuntFraction", "pulmResistFactor",
+  // hocm (queue item 7, Cardiac): the dynamic LVOT-obstruction contribution
+  // updateValves (cardiovascular.js) computes every tick from live
+  // preload/contractility/afterload and composes into aorticStenosisSeverity
+  // via Math.max — clamped [0,0.9], always 0 when hocm is not active.
+  "hocmObstruction",
 ];
 
 const results = [];

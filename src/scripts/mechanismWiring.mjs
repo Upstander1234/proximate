@@ -178,6 +178,12 @@ function snapshot(p) {
     edv: p.edv ?? 0,
     mitralRegurgFrac: p.mitralRegurgFrac ?? 0,
     aorticRegurgFrac: p.aorticRegurgFrac ?? 0,
+    // HOCM (queue item 7, section 8 Cardiac backlog): the DYNAMIC LVOT
+    // obstruction term, composed into the already-tracked aortic-stenosis
+    // resistance-in-series handle.
+    aorticStenosisSeverity: p.aorticStenosisSeverity ?? 0,
+    hocmObstruction: p.hocmObstruction ?? 0,
+    co: p.co ?? 0,
     regurgVolPerBeat: p._fullRegurgVol ?? 0,
     contractility: p.contractility ?? 1,
     takotsuboStun: p.takotsuboStun ?? 0,
@@ -4859,6 +4865,62 @@ console.log("[AORTIC STENOSIS — queue item 7, condition-library workstream]");
   console.log(`  ${hazard ? "PASS" : "FAIL"}  ${"...and nitro is a real, disproportionate hazard here".padEnd(46)} sbp drop ${(asDropPct*100).toFixed(0)}% (AS) vs ${(healthyDropPct*100).toFixed(0)}% (control)`);
 }
 
+console.log("[HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY — queue item 7, dynamic LVOTO]");
+{
+  // Deliberately different in KIND from aorticStenosis's own fixed-orifice
+  // severity: pat.hocmObstruction (cardiovascular.js) is recomputed every
+  // tick from live preload (edv)/contractility/afterload (svr), then
+  // composed into the SAME aorticStenosisSeverity/eaEff term via Math.max —
+  // so this section asserts the DYNAMIC part specifically: presence at
+  // rest (sub-obstructive, per the ACC/AHA >=30mmHg "obstructive" resting
+  // threshold), a real WORSENING under the classic dangerous intervention
+  // (nitro, which drops both preload and afterload at once), and a real
+  // IMPROVEMENT under the correct field response (a pure-alpha pressor,
+  // which raises afterload without adding contractility).
+  const rest = probe({ scen: "hocmObstructive", settle: 180, run: 180 });
+  const healthy = probe({ scen: "abdPain", settle: 180, run: 180 });
+
+  const fires = rest.after.hocmObstruction > 0.1 && rest.after.aorticStenosisSeverity > 0.1;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`hocmObstructive should show real, present hocmObstruction/aorticStenosisSeverity at rest, got ${rest.after.hocmObstruction}/${rest.after.aorticStenosisSeverity}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"hocmObstructive -> real resting LVOT obstruction fires".padEnd(46)} hocmObstruction = ${rest.after.hocmObstruction.toFixed(3)}`);
+
+  const healthyOk = healthy.after.hocmObstruction === 0 && healthy.after.aorticStenosisSeverity === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero hocmObstruction/aorticStenosisSeverity, got ${healthy.after.hocmObstruction}/${healthy.after.aorticStenosisSeverity}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} hocmObstruction = ${healthy.after.hocmObstruction}`);
+
+  const restingSubObstructive = rest.after.hocmObstruction < 0.3;
+  restingSubObstructive ? pass++ : fail++;
+  if (!restingSubObstructive) failures.push(`resting, euvolemic HOCM should be sub-obstructive (<0.3, real HOCM patients are frequently non-obstructive at rest per the guideline's own >=30mmHg threshold), got ${rest.after.hocmObstruction}`);
+  console.log(`  ${restingSubObstructive ? "PASS" : "FAIL"}  ${"...and stays sub-obstructive at rest, not maximal".padEnd(46)} hocmObstruction = ${rest.after.hocmObstruction.toFixed(3)} (<0.3)`);
+
+  // The dangerous, real-world case this condition exists to teach against:
+  // nitro (preload AND afterload loss) genuinely WORSENS the dynamic
+  // gradient — a real, emergent vicious cycle (worse obstruction -> lower
+  // forward flow -> reflex tachycardia -> higher contractility ->
+  // obstruction worsens further), not a scripted deterioration.
+  const nitroTreated = probe({ scen: "hocmObstructive", settle: 180, run: 300, apply: ["nitro"], reapply: 99999 });
+  assertVersus("nitro WORSENS the dynamic LVOT gradient", nitroTreated, rest, "hocmObstruction", "up", 0.03);
+
+  // The correct field response — a pure alpha agent (raises afterload,
+  // adds no contractility) — genuinely IMPROVES the gradient, the real,
+  // teachable "opposite of ordinary cardiogenic shock" lesson.
+  const phenylTreated = probe({ scen: "hocmObstructive", settle: 180, run: 300, apply: ["phenylephrine"], reapply: 99999 });
+  assertVersus("phenylephrine RELIEVES the dynamic LVOT gradient", phenylTreated, rest, "hocmObstruction", "down", 0.03);
+
+  // Two-sided confirmation the mechanism reaches a real hemodynamic
+  // observable, not just its own internal field: cardiac output under the
+  // SAME nitro dose is measurably lower for the HOCM patient than for a
+  // matched healthy control given the identical dose.
+  const healthyNitro = probe({ scen: "abdPain", settle: 180, run: 300, apply: ["nitro"], reapply: 99999 });
+  const coGap = healthyNitro.after.co - nitroTreated.after.co;
+  const coGapOk = coGap > 0.3;
+  coGapOk ? pass++ : fail++;
+  if (!coGapOk) failures.push(`HOCM+nitro should show measurably lower co than a matched healthy control given the same dose, got ${nitroTreated.after.co} vs ${healthyNitro.after.co}`);
+  console.log(`  ${coGapOk ? "PASS" : "FAIL"}  ${"...and nitro's co penalty reaches a real observable".padEnd(46)} co ${healthyNitro.after.co.toFixed(2)} (control+nitro) vs ${nitroTreated.after.co.toFixed(2)} (HOCM+nitro)`);
+}
+
 console.log("[MITRAL REGURGITATION, ACUTE (papillary muscle rupture) — queue item 7]");
 {
   // Same batch, DIFFERENT mechanism on purpose (a backward leak subtracted
@@ -5343,6 +5405,34 @@ console.log("[DECOMPRESSION ILLNESS — queue item 59]");
   const treated = probe({ scen: "abdPain", settle: 2, run: 1200, mutate: dci, apply: ["o2nrb"], reapply: 400 });
   assertVersus("...high-flow O2 (o2nrb) genuinely reverses the shunt (denitrogenation)", treated, untreated, "shuntFraction", "down", 0.1);
   assertVersus("...and reverses the pulmonary-vascular-resistance rise", treated, untreated, "pulmResistFactor", "down", 0.5);
+}
+
+console.log("\n[BLOOD VISCOSITY -> VASCULAR RESISTANCE — V2 physiology queue items 15/16]");
+{
+  // Real, held-every-tick hematocrit overrides (the mutate() idiom every
+  // other substrate-imposing probe in this suite already uses) rather than
+  // a synthetic condition, since this mechanism reads pat.hct directly and
+  // has no condition-level producer of its own — hct is normally an
+  // emergent consequence of hemorrhage/transfusion, not a disease.
+  const healthy = probe({ scen: "abdPain", settle: 180, run: 480 });
+  const poly = probe({
+    scen: "abdPain", settle: 180, run: 480,
+    mutate: (p) => { p.rbcVol = p.totalBloodVol * 0.60; p.plasmaVol = p.totalBloodVol - p.rbcVol; },
+  });
+  const anemic = probe({
+    scen: "abdPain", settle: 180, run: 480,
+    mutate: (p) => { p.rbcVol = p.totalBloodVol * 0.20; p.plasmaVol = p.totalBloodVol - p.rbcVol; },
+  });
+  assertVersus("polycythemia (hct ~0.60) -> vascular resistance rises", poly, healthy, "svr", "up", 200);
+  assertVersus("anemia (hct ~0.20) -> vascular resistance falls", anemic, healthy, "svr", "down", 200);
+  // Specificity: a healthy, unmutated control sits at its own normal
+  // resting hct, where viscosityFactor evaluates to ~1.0 — confirming the
+  // multiplier is inert at baseline, not just that the two extremes above
+  // happen to diverge from each other.
+  const hctNearNormal = Math.abs(healthy.after.hct - 0.45) < 0.08;
+  hctNearNormal ? pass++ : fail++;
+  if (!hctNearNormal) failures.push(`healthy control hct expected near 0.45, got ${healthy.after.hct.toFixed(3)}`);
+  console.log(`  ${hctNearNormal ? "PASS" : "FAIL"}  ${"...a healthy control sits at its own normal hct (mechanism inert at rest)".padEnd(46)} hct=${healthy.after.hct.toFixed(3)}, svr=${healthy.after.svr.toFixed(1)}`);
 }
 
 console.log("\n" + "=".repeat(74));

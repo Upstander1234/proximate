@@ -1931,7 +1931,12 @@ aorticStenosis: {cat: "medical", id: "CARD-048", pronouns: "he", title: "Male, 7
   dispatch: ["78M. Chest tightness and nearly passed out while doing yard work.", "Conscious, sitting on the ground now.", "Known 'heart murmur' per neighbor."],
   update: ["Neighbor: \"He said his chest felt tight and everything went gray right before he grabbed the fence.\""],
   impression: "Sitting against the fence where he caught himself, pale and diaphoretic, breathing carefully. Alert but clearly shaken.",
-  imps: ["CPMI", "SYNC", "SHOK"],
+  // "SYNC" is not a real PI code (gear.js has no such key — confirmed by
+  // direct grep against the registry, lesson 16) so choosing this entry
+  // would have thrown when the impression picker read PI[k].n; the closest
+  // real code for "near-syncope" is ALOC. Same crash class the ANXY fix
+  // (gear.js's own comment) documents for a different scenario batch.
+  imps: ["CPMI", "ALOC", "SHOK"],
   condition: "aorticStenosis",
   patient: {age: 78, gender: "male"},
   clothing: {top: "short", bottom: "pants", shoes: true},
@@ -2015,6 +2020,43 @@ infectiveEndocarditis: {cat: "medical", id: "CARD-050", pronouns: "he", title: "
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated infective endocarditis — ongoing bacteremia and a septic embolic event, with nothing done to support perfusion or expedite transport for source-control and valve evaluation.";
     notes.push("A week of unexplained fever plus a new heart murmur plus a sudden new focal neuro deficit is the classic infective endocarditis triad — days-old bacteremia seeding a heart valve, followed by a piece of the infected vegetation breaking off as a septic embolus. There is no field antibiotic or definitive treatment here; the job is recognizing the pattern (especially in a patient with IV drug use risk), supporting perfusion, and getting him to a facility that can treat both the infection and, likely, the valve itself.");
     return {died, cause, notes, correct: s.pi === "SEPS", truth: "Infective endocarditis (IV-drug-use risk) with fever/bacteremia and a septic embolic stroke"};},
+},
+
+hocmObstructive: {cat: "medical", id: "CARD-051", pronouns: "he", title: "Male, 34. Chest tightness during a pickup basketball game.",
+  limit: 1300, transport: 480,
+  bystanders: "A teammate who knows he has a heart condition ('some kind of thick heart muscle thing') and made him sit down and called it in.",
+  units: [{at: 380, level: "emt", name: "BLS 14"}],
+  dispatch: ["34M. Chest tightness and lightheadedness during a basketball game.", "Known history of hypertrophic cardiomyopathy per teammate.", "Sitting on the sideline, conscious."],
+  update: ["Teammate: \"He gets checked by a cardiologist every year for this, he's never gone down like this before!\""],
+  impression: "Sitting on the bleachers, sweaty from the game, one hand on his chest, breathing carefully. Alert, anxious, tries to wave you off as \"just needing a minute.\"",
+  // "SYNC" is not a real PI code (gear.js has no such key — confirmed by
+  // direct grep against the registry, lesson 16); the closest real code
+  // for "near-syncope" is ALOC, same fix already applied to aorticStenosis
+  // above for the identical typo/defect.
+  imps: ["CPMI", "ALOC", "SHOK"],
+  condition: "hocmObstructive",
+  patient: {age: 34, gender: "male"},
+  clothing: {top: "short", bottom: "shorts", shoes: true},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"It just got tight in my chest and everything went a little gray, so I sat down. I have HCM, hypertrophic cardiomyopathy, my heart muscle is thick — my cardiologist has told me a hundred times to stop the second I feel like this."', kind: "pt",
+      evid: "Exertional chest tightness with near-syncope in a young patient with a KNOWN diagnosis of hypertrophic cardiomyopathy is the textbook presentation of dynamic left-ventricular outflow obstruction worsening under exercise — a fixed-orifice-adjacent physiology that gets WORSE, not better, with the usual chest-pain toolkit.", find: "OPQRST: exertional chest tightness and near-syncope, known HCM diagnosis, stopped activity as instructed."}),
+    sample: () => ({say: "Teammate: \"He takes a beta blocker for it, I know that much. Otherwise he's in great shape, plays every week.\"", kind: "pt",
+      evid: "A beta blocker is the correct standing outpatient therapy for obstructive HCM (it reduces contractility, which relaxes the dynamic outflow obstruction) — this patient is already on the right medication, which makes today's decompensation a real acute-on-chronic event worth taking seriously, not routine.", find: "SAMPLE: HCM diagnosis, takes a beta blocker daily, otherwise healthy, active."}),
+    heart: (s, v) => ({say: `Rate ${v.hr}, blood pressure ${v.sbp}/${v.dbp}, with a harsh systolic murmur that gets LOUDER when he stands or you have him do a quick Valsalva, and softer when he squats back down.`, kind: "crit",
+      evid: "A murmur that intensifies with standing/Valsalva (both REDUCE venous return/preload) and softens with squatting (which INCREASES preload and afterload together) is the specific bedside maneuver that distinguishes HOCM's dynamic outflow murmur from a fixed aortic stenosis murmur, which does the opposite.", find: `Heart: harsh systolic murmur, dynamic with position/Valsalva, rate ${v.hr}, BP ${v.sbp}/${v.dbp}.`}),
+    skin: () => ({say: "Diaphoretic from exertion, otherwise warm.", find: "Skin diaphoretic (exertional), warm."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const gaveNitro = s.given.nitro || s.given.nitroOwn;
+    const gaveVolume = s.given.saline || s.given.plasmalyte;
+    const gavePhenyl = s.given.phenylephrine;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Dynamic left-ventricular outflow obstruction from hypertrophic cardiomyopathy, worsened rather than relieved along the way.";
+    if (gaveNitro) notes.push("Nitroglycerin was given. In HOCM this is genuinely dangerous, not just unhelpful: dropping preload AND afterload both make the dynamic outflow obstruction WORSE, the exact opposite of ordinary anginal chest pain, and this patient has no compensatory reserve to fall back on the way a typical chest-pain patient does.");
+    if (gaveVolume || gavePhenyl) notes.push("The right field instinct here runs backwards from ordinary shock: volume (raising preload) and a pure alpha agent like phenylephrine (raising afterload without adding contractility) both RELIEVE dynamic outflow obstruction in HOCM — avoid inotropes, diuretics, and vasodilators, which all worsen it.");
+    else if (!died) notes.push("Nitro was correctly withheld. A young patient with known HCM and an exertional near-syncope presentation calls for the opposite toolkit from ordinary cardiac chest pain: support preload, avoid vasodilation, and get him transported.");
+    notes.push("The core recognition here is a KNOWN HCM diagnosis plus exertional chest tightness/near-syncope plus a position-dynamic murmur — this is a young-athlete sudden-cardiac-death risk presentation, and it decompensates from the exact treatments that help an ordinary cardiac chest-pain patient.");
+    return {died, cause, notes, correct: s.pi === "CPMI", truth: "Hypertrophic obstructive cardiomyopathy — dynamic LVOT obstruction worsened by preload/afterload loss during exertion"};},
 },
 
 asthmaAttack: {cat: "medical", id: "RESP-023", pronouns: "she", title: "Female, 54. Wheezing, cleaning with chemicals.",

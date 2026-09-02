@@ -322,6 +322,108 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-01 — Hypertrophic Obstructive Cardiomyopathy (HOCM), queue item 7's standing condition-library workstream
+
+Confirmed genuinely unbuilt before writing anything (lesson 16): grepped
+`Object.keys(CONDITIONS)` against the real tree (179 conditions existed at
+the time) and `riskFactors.hocm` across every file — no matches anywhere,
+matching section 8's own flag that HOCM needed a "dynamic LVOTO" mechanism
+the engine lacked.
+
+**Mechanism** (`cardiovascular.js`'s `updateValves()`): a new
+`pat.hocmObstruction` term, recomputed every tick from three ALREADY-LIVE
+signals — preload (`pat.edv`), contractility (`pat.contractility`), and
+afterload (`pat.svr`) — rather than a fixed severity. It is composed via
+`Math.max` into the SAME `pat.aorticStenosisSeverity` → `eaEff`
+resistance-in-series channel `aorticStenosis` already drives (built for
+queue item 41), not a new parallel afterload mechanism. `preloadFactor`
+rises as the ventricle empties (SAM brings the septum and mitral valve
+closer together as loading falls), `contractFactor` rises with
+catecholamine-driven hyperdynamic ejection, `afterloadFactor` rises with
+vasodilation — all three the real, named, often-paradoxical HOCM teaching
+points (2020 ACC/AHA HCM guideline; Maron & Maron, Lancet 2013). A
+structural `pat.riskFactors.hocmSeverity` (0-1, static for the encounter,
+same reasoning `aorticStenosis`'s own static severity uses) gates it.
+`patient.js` got the matching constructor default (`hocmObstruction = 0`).
+
+**Numbers, measured not guessed**: a throwaway probe script (stripped
+before this entry was written) run against the real engine (settle 180s,
+matched `abdPain` healthy control, same idiom `aorticStenosis`'s own probe
+used) drove the scale coefficient (0.30) and the three factor weights
+(0.4/0.35/0.25) until a resting, euvolemic HOCM patient landed
+sub-obstructive — the real, cited ACC/AHA distinction that most HOCM
+patients are NOT gradient-positive at rest (Maron et al., NEJM
+2003;348:295) — while the same patient given nitro (which drops both
+preload and afterload) landed measurably worse. Final measured values, now
+also mechanismWiring.mjs's own asserted numbers: resting `hocmObstruction`
+0.213 (sub-obstructive, <0.3); nitro moves it to 0.300 (a real, emergent
+WORSENING, not scripted) with `co` falling to 3.20 L/min against a matched
+healthy-control-on-the-same-dose 4.19 L/min; phenylephrine (pure alpha,
+adds no contractility — the actual correct field pressor here, unlike an
+inotrope) moves it to 0.156 (a real IMPROVEMENT). A healthy control shows
+`hocmObstruction` and the `aorticStenosisSeverity` it composes into at
+exactly 0, confirming the gate gives zero contamination of every other
+condition's PV-loop.
+
+**Condition + scenario**: `hocmObstructive` (`conditions.js`) declares only
+the structural lesion (`riskFactors.hocm = true`, `hocmSeverity = 0.65`) —
+the dynamic gradient is entirely emergent, nothing here writes a
+hemodynamic number directly. New scenario `hocmObstructive` (CARD-051,
+`scenarios.js`): a 34-year-old with known HCM, exertional chest tightness
+mid-basketball-game, deliberately written to invite the same
+nitroglycerin-for-chest-pain reflex `aorticStenosis`'s own scenario
+exploits — the real, most dangerous field error this condition exists to
+teach against — with a position-dynamic murmur (louder with Valsalva/
+standing, softer with squatting) as the bedside finding distinguishing it
+from fixed AS.
+
+**A real collision, found and fixed mid-session**: a second agent was
+independently working the exact same queue item concurrently. Its own
+`hocm` condition/scenario (same `riskFactors.hocm`/`hocmSeverity` contract,
+but a different key and a colliding scenario id, CARD-051, with this
+entry's own scenario) appeared in the working tree partway through this
+work, confirmed real (not a misread) by the Edit tool's own "file modified
+on disk since you last read it" warning and by `git diff` showing content
+neither session had written moments earlier. Both agents were stopped by
+the coordinating session; the duplicate `hocm` condition, its scenario, and
+a duplicate mechanismWiring.mjs assertion section referencing it were
+removed, keeping this entry's instrumented, already-measured
+`hocmObstructive` version. A separate, unrelated, genuinely correct fix
+from that same window survived and was kept: `aorticStenosis`'s own
+`imps: ["CPMI", "SYNC", "SHOK"]` used "SYNC", not a real PI code (`gear.js`
+has no such key) — fixed to "ALOC" on both `aorticStenosis` and this
+entry's `hocmObstructive`, the same crash class the `ANXY` fix elsewhere in
+this document already documents.
+
+**Verification, run to completion in the background per lesson 14/17**
+(this container's single CPU core meant several earlier attempts this
+session were killed — traced to genuinely orphaned `node
+mechanismWiring.mjs` processes from earlier, believed-dead attempts still
+running and contending for the one core, the same failure class already on
+record elsewhere in this document; killing every stray process and
+re-running once cleanly resolved it). `node --check` and `npx eslint`
+clean on all six touched files
+(`cardiovascular.js`/`patient.js`/`conditions.js`/`scenarios.js`/
+`mechanismWiring.mjs`/`scenarioSweep.mjs`). `npx vite build`: clean (18.49s,
+same pre-existing >500kB chunk-size warning). **`mechanismWiring.mjs`: 542
+passed, 2 failed** — both failures are the same already-documented,
+pre-existing, unrelated flakes this document has carried across sessions
+(croup's compensatory-tachypnea margin; the tracheostomy vt-bypass
+assertion); all 6 of this entry's own new HOCM assertions passed clean (the
+numbers quoted above). **`scenarioSweep.mjs`: 174 scenarios (up from 173),
+16,207,406 checks, 0 failed** — `hocmObstructive`'s own diagnostic row
+(pH 7.40-7.47, no impossible values, 0.0000 L mass drift) is clean.
+`hocmObstruction` was added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE
+lists. The throwaway probe script (`src/scripts/_tmp_hocmProbe.mjs`) and a
+truncated-suite copy used mid-session to work around the CPU contention
+above (`src/scripts/_tmp_mwTruncated.mjs`) were both stripped before this
+entry was written — confirmed via a directory listing showing no `_tmp_*`
+files remain under `src/scripts/`.
+
+Not verified: manual in-app playthrough of the new `hocmObstructive`
+scenario (CARD-051) was not run this session — only the physiology engine
+and the automated suites above were exercised directly.
+
 ### SESSION WRAP-UP — large parallel physiology-queue push, consolidated regression pass complete
 
 This session closed roughly 15 numbered queue items (14 explicitly marked
@@ -6209,6 +6311,334 @@ item-7 discipline (literature review, wiring through existing handles,
 measurement, two-sided assertions — not guessed at under time pressure in
 an unrelated batch).
 
+**V2 PHYSIOLOGY ENGINE — HYPER-REALISM IMPLEMENTATION QUEUE (operator-supplied
+spec, filed 2026-09-01).** A full architectural specification for "Physiology
+Engine V2" was supplied, whose stated objective is hyper-realism: the engine
+should increasingly produce clinical phenomena (shock, respiratory failure,
+sepsis, obstructive shock from PE, etc.) as EMERGENT consequences of shared,
+connected physiology, rather than as scripted per-condition vital-sign writes.
+The full document is long (deepen-and-connect existing systems; new modules
+for oxygen transport, microcirculation, cellular metabolism, hepatic/nephron/
+endocrine/hematology/pulmonary-compartment/respiratory-muscle/endothelial/
+tissue physiology; a 23-step update pipeline; a structured `pat.oxygen`/
+`pat.micro`/`pat.cellular`/`pat.endothelium`/`pat.respiratoryMuscles`/
+`pat.renal` state architecture; single-writer-per-quantity discipline;
+multi-rate/multi-timescale integration; conservation and stability
+invariants; a large verification framework) — it is NOT reproduced here in
+full; treat the raw operator message earlier in this project's history as the
+authoritative source text if a future session needs the full rationale for
+any one item below. This queue block is the REQUIRED, concrete task list a
+future session should work top to bottom, same discipline as the rest of
+section 6: one item at a time, `item 7`-style literature-anchored mechanism
+work, not stat writes; every new field needs a real consumer; every new
+mechanism needs a two-sided `mechanismWiring.mjs` assertion and, where it
+introduces a new per-tick patient field, an entry in `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists (lesson 2). Given the scale, expect this to
+span many sessions — do not attempt to build all 32 in one batch. Tier 1
+items (1-7 below) are the recommended starting point per the source
+document's own priority matrix.
+
+V2-1. **Oxygen transport as a dedicated authoritative subsystem.** A real
+   Hb-O2 dissociation curve with dynamic P50 (pH/PaCO2/temp/2,3-DPG-adjusted,
+   not the fixed P50 this engine currently has no explicit curve for at all —
+   confirm against `respiratory.js`/`metabolic.js` before assuming a gap).
+   `CaO2`/`CvO2`/`DO2`/`VO2`/`SvO2` as a coherent, single-writer set (today
+   several of these are computed ad hoc per-module — `metabolic.js`'s
+   `actualVO2`, item 42's per-organ `caO2` reads — not owned by one
+   subsystem). A `pat.cytochromeBlock`-style utilization-vs-delivery split
+   already exists (built for `cyanidePoisoning`, queue item 7) — this item is
+   about generalizing and centralizing the REST of the oxygen-transport math
+   around it, not rebuilding what's already real.
+
+V2-2. **Per-organ oxygen extraction, generalized.** Item 42 already built
+   real per-organ DO2/O2Debt for kidney, liver, gut, skin, and skeletal
+   muscle (see its own closed entry above) — this item is the remaining
+   piece: a real, per-organ EXTRACTION RATIO (not just delivery vs. a flat
+   demand-of-1), so brain/heart/kidney/liver/muscle/GI/skin each have their
+   own resting extraction target (roughly 35%/60%/10%/25%/25%/25%/10% per
+   the source doc, stated as calibration targets not fixed constants) and a
+   real SvO2 emerges from the composite, rather than only a binary
+   delivery-vs-demand debt signal per organ.
+
+V2-3. **Organ perfusion and autoregulation, generalized.** Cerebral
+   autoregulation (MAP/PaCO2/PaO2/ICP → CBF) and coronary flow
+   (diastolic-time/resistance/demand/stenosis → supply) both already exist
+   in `neuro.js`/`cardiovascular.js` in real form. Renal autoregulation
+   exists via `renalPerf`. This item is auditing whether skin/muscle/GI need
+   their own explicit autoregulation CURVES (not just an alphaTone-scaled
+   flow fraction, which item 42 already gives them) — likely lower priority
+   than V2-1/V2-2, since the alphaTone-based approximation is a defensible
+   simplification already in place.
+
+V2-4. **Microcirculation as its own layer, between macro-circulation and
+   organ metabolism.** Today organ flow is `deltaP/Resistance`-style,
+   computed inline per organ. A dedicated `physio/microcirculation.js`
+   (per the source doc's own suggested module list) would centralize
+   capillary-level flow, filtration coefficient (`Kf`), and reflection
+   coefficient (`sigma`) — `metabolic.js`'s `updateFluidShifts` already
+   computes a real Starling equation with a leak-sensitive sigma (see queue
+   item 5's `ivProtein`/`isProtein` investigation above) — this item is
+   about whether that logic should be extracted into its own module as
+   organ perfusion work continues to grow, not new physiology per se.
+
+V2-5. **Endothelial physiology as an explicit state.** `pat.capillaryLeak`
+   is real and has a real resolution mechanism (queue item 49's endothelial-
+   repair decay). What's NOT explicit: endothelial `integrity`/`activation`/
+   `permeability`/nitric-oxide/endothelin/tissue-factor as SEPARATE tracked
+   quantities rather than one collapsed `capillaryLeak` scalar. Item 46
+   (inflammation cascade) already drives capillaryLeak from `cytokineLoad`
+   for `pneumoniaSepsis` — extending this to a real multi-field endothelium
+   state is a natural next step of that same work, not a new one from
+   scratch.
+
+V2-6. **Pulmonary V/Q compartments — replace the single global
+   `shuntFraction` with real ventilation/perfusion-mismatch populations**
+   (normal/low-V/Q/high-V/Q/shunt/dead-space), per the source document's own
+   explicit ask. Today `respiratory.js` uses one lumped `shuntFraction` and
+   a separate `deadSpaceFraction` — real enough for most conditions, but a
+   genuine V/Q-compartment model would let PE (perfusion loss → dead space)
+   and pneumonia (ventilation loss → shunt/low-V/Q) be mechanistically
+   distinguished rather than both just moving one or the other flat
+   fraction. Large, high-blast-radius change — needs its own dedicated
+   batch with full-suite re-verification, not a quick add.
+
+V2-7. **Respiratory muscle mechanics and fatigue, plus dynamic
+   hyperinflation/intrinsic PEEP.** `pat.respMuscleFatigue` already exists
+   and already drives real deterioration (see queue item 33's body-size-
+   reference fix above). Intrinsic PEEP was investigated in depth (queue
+   item 12, RE-INVESTIGATED entry) and found structurally capped by
+   `deliveryFactor` regardless of bagging rate — a real, documented,
+   unresolved limitation. This item is the source document's own explicit
+   ask for a `pat.respiratoryMuscles` structured state (strength/fatigue/
+   work/oxygenConsumption/reserve) generalizing what's already partially
+   built — read item 12's own entry FIRST before attempting a fix, since it
+   already identifies the specific mechanism (delivery-factor derating) any
+   new work here would need to address, not just re-discover.
+
+V2-8. **RAAS, generalized and made explicit.** Angiotensin II/aldosterone/
+   renin already exist and already drive real SVR/aldosterone/renal-Na
+   effects (see item 14's earlier RAAS fix, referenced by item 43). This
+   item is auditing whether `pat.renal = {gfr,rpf,renin,angiotensinII,
+   aldosterone,adh,nephron}` should become a single structured object per
+   the source doc's own suggested shape, rather than scattered top-level
+   `pat.*` fields — a refactor-for-clarity, not new mechanism, and should be
+   done carefully to preserve every existing consumer (single-writer
+   discipline, section 5's own "identify authoritative owner" rule).
+
+V2-9. **ADH and thirst, generalized.** `adhAutonomous`/
+   `adhSecretionCapacity`/`adhRenalResponsiveness` already exist and are
+   real (SIADH/DI both reuse them, queue item 25's earlier work). A real
+   THIRST signal (osmolality + effective arterial volume → a drive that
+   could plausibly gate a "patient reports thirst" narrative/exam finding)
+   does not yet exist as a distinct output — a small, cheap addition once a
+   real consumer (a new exam action, or dialogue-system integration per the
+   F0 workstream) is identified.
+
+V2-10. **Nephron segment-level modeling — explicitly NOT the full proposal,
+   per queue item 43's own closed finding.** Item 43 already built and
+   shipped the highest-value slice (glucose-driven osmotic diuresis) WITHOUT
+   the full glomerulus→PCT→loop→DCT→collecting-duct chain, and documented
+   that the full chain remains large, structural, unattempted work. This
+   item is that remaining chain — read item 43's entry in full before
+   starting, since it already scoped what's real and what's not (e.g. no
+   diuretic drug exists in this formulary at all, a real prerequisite gap
+   for a loop-diuretic mechanism).
+
+V2-11. **Cellular energetics, generalized.** `pat.atp`/`pat.energyFailure`/
+   `pat.cytochromeBlock` already exist and are real, verified mechanisms
+   (metabolic.js, plus cyanidePoisoning's utilization-block work). This item
+   is formalizing them into the source doc's own `pat.cellular = {atp, adp,
+   oxidativeCapacity, oxygenUtilization, lactateProduction,
+   lactateClearance, metabolicStress}` shape — again, a structuring/
+   consolidation task more than new physiology, since the individual pieces
+   already exist and are already verified.
+
+V2-12. **Lactate production/clearance as an explicit two-term balance.**
+   `pat.lactate` already exists and is already driven correctly by multiple
+   real sources (sepsis, ischemia, sympathetic tone — confirmed in several
+   already-shipped conditions' own verification). This item is auditing
+   whether production and CLEARANCE should be split into two separately
+   inspectable terms (hepatic-flow-gated clearance already exists implicitly
+   via item 42's hepaticDO2 work — check whether it already reads through to
+   lactate clearance before assuming a gap).
+
+V2-13. **Hepatic physiology, generalized beyond drug clearance.**
+   `organClearanceFactor()` (pk.js) and item 42's `hepaticDO2`/
+   `hepaticO2Debt`/`liverInjury` are real and verified. NOT yet built: a
+   structured `pat.liver` object (albumin synthesis, clotting-factor
+   synthesis, bilirubin, ammonia clearance, glycogen/gluconeogenesis) as a
+   coherent whole — `pat.hyperammonemia`-style conditions already exist
+   per-symptom; a real portal-pressure/portal-flow model for cirrhosis
+   (ascites via portal hypertension → splanchnic vasodilation → RAAS/ADH) is
+   genuinely new, large mechanism work, not yet attempted.
+
+V2-14. **Hepatic drug clearance — already substantially real.**
+   `organClearanceFactor()` already ties clearance to `co/_restCo`
+   (hepatic-flow proxy) and hepatocellular integrity. Confirm this is fully
+   consistent with item 42's newer, more precise `hepaticDO2` signal before
+   assuming further work is needed — likely just a wiring check, not new
+   mechanism.
+
+V2-15. **Hematology and RBC physiology, generalized.** `pat.dpg` (2,3-DPG)
+   already exists and already right-shifts the O2 curve for chronic anemia/
+   COPD (queue item 5's earlier fix). NOT yet built: an explicit blood
+   viscosity term feeding vascular resistance (polycythemia → higher
+   viscosity → higher resistance/lower microvascular flow; severe anemia →
+   lower viscosity but lower CaO2) — a real, citable mechanism, not yet
+   wired anywhere in `cardiovascular.js`.
+
+V2-16. **Blood rheology (viscosity → vascular resistance) — see V2-15,
+   same item, listed separately per the source document's own numbering.**
+   Do these two together in one batch.
+
+V2-17. **Endothelium-coagulation coupling.** `coagulation.js` already has
+   real tissue-factor-driven consumptive coagulopathy tied to
+   `cytokineLoad` (item 46's inflammation-cascade work) and to direct
+   hemorrhage-consumption. NOT yet built: a general endothelial-injury
+   (independent of cytokines — e.g. mechanical/toxic/burn injury) →
+   tissue-factor → platelet-adhesion → microthrombi pathway feeding BACK
+   into per-organ perfusion (a genuine closed loop: coagulation worsening
+   microvascular flow, which worsens organ injury, which worsens
+   inflammation). This is real, new, moderately large mechanism work.
+
+V2-18. **Organ injury integration, generalized.** Item 48 already built the
+   reversible-vs-structural distinction for kidney (`atnProgression` vs.
+   `kidneyInjury`) and found the debrief/`outcomeReport()` consumer chain is
+   itself disconnected from the app (a real, separate, still-open front-end
+   gap — see item 48's own entry). This item is extending the reversible/
+   structural pattern to liver/gut per item 48's own "still open" note —
+   read that entry first.
+
+V2-19. **Cerebral perfusion and oxygenation — already substantially real.**
+   `neuro.js` already computes real CPP/CBF/brainO2/consciousness-state
+   derivation (the neuro/endocrine batch, item 42's brain-adjacent work).
+   Audit against the source document's own itemization before assuming a
+   gap — likely mostly done; confirm rather than rebuild.
+
+V2-20. **Advanced acid-base mass balance — CLOSED, per section 2's own
+   header ("a real strong-ion-difference acid-base model, queue item 44,
+   CLOSED").** No further work needed under this item; retained here only
+   because the source document names it explicitly — verify against section
+   2/3 before assuming otherwise.
+
+V2-21. **Fluid, Starling, and lymphatic physiology.** Starling's equation
+   already exists in real form (`metabolic.js`'s `updateFluidShifts`, with a
+   leak-sensitive sigma). NOT yet built: an explicit lymphatic return/
+   capacity term (`lymphaticFlow`/`lymphaticCapacity`/
+   `lymphaticObstruction`) — today interstitial fluid that accumulates has
+   no modeled lymphatic drainage pathway back out, a real, citable, missing
+   mechanism for how real edema eventually stabilizes rather than
+   accumulating indefinitely.
+
+V2-22. **Metabolic demand, expanded.** `metabolic.js`'s `restVO2` and
+   `vo2Demand` already compose basal metabolism, thermoregulation
+   (shivering), and some activity-driven terms. NOT yet built: an explicit
+   work-of-breathing O2-cost term feeding BACK into demand (respiratory
+   muscle fatigue's own O2 consumption, per V2-7) and a seizure/agitation-
+   specific demand spike distinct from the generic sympathetic-tone-driven
+   rise already present.
+
+V2-23. **Multi-timescale physiology — largely already true by
+   construction** (renal/RAAS/inflammation already relax on genuinely
+   different, real time constants — see item 46's 90-minute cytokine tau,
+   item 49's 36-hour endothelial-repair tau). This item is about making the
+   update PIPELINE's ordering explicit (see the source doc's 23-step
+   pipeline) rather than new physiology — a documentation/architecture
+   task, worth doing once several of the above are further along, not
+   before.
+
+V2-24. **Advanced cardiovascular coupling.** Queue item 41 already closed
+   valvular regurgitation in the authoritative full-loop solver (a real,
+   large piece of exactly this ask) and left three explicit sub-items open
+   (ischemic-MR consumption by the solver, a shipped scenario declaring
+   valve disease, AV dyssynchrony/pacemaker syndrome) — read item 41's own
+   entry in full before starting here; this item is that same remaining
+   work, not a new one.
+
+V2-25. **Pulmonary circulation and RV coupling.** Real RV/LV
+   interdependence (PVR → RV afterload → RV output → LV preload, the
+   mechanism that should make PE cause obstructive shock) is explicitly
+   named in the source document as a target emergent behavior. Confirm
+   against `cardiovascular_ode_full.js` how much of this already exists
+   before assuming a gap — the `pe` condition already drives
+   `shuntFraction`/`pulmResistFactor`; whether that reaches genuine RV
+   dilation/failure in the authoritative solver needs a direct check, not
+   an assumption either way.
+
+V2-26. **Receptor-level pharmacology integration — already substantially
+   real.** `drugs.js`'s `receptors` object architecture (alpha1/beta1/
+   beta2/muscarinic/vagalBlock/calciumChannel/etc.) already exists and is
+   the exact substrate queue item 45 confirmed and extended (receptor
+   desensitization/tolerance). Audit for any receptor class named in the
+   source doc's own list (`opioidMu`/`opioidKappa`/`opioidDelta`/
+   `dopamine`/`histamineH1`/`histamineH2`/`serotonin`/`GABA`/`NMDA`) that
+   has NO real consumer yet — likely histamine/serotonin/NMDA are the
+   genuine gaps (ketamine's dissociative mechanism could plausibly use a
+   real NMDA-antagonism term instead of an asserted-not-identified
+   `myocardialDepression` coefficient, per section 6's own "also open,
+   lower priority" note).
+
+V2-27. **Chronic adaptation and remodeling.** Some already exists
+   (chronic anemia's 2,3-DPG shift; COPD's baseline compliance/resistance
+   scaling). NOT yet built: genuinely slow-timescale state variables for LV
+   hypertrophy, vascular stiffness, nephron loss, coronary atherosclerosis
+   progression — each would need `developmentRate`/`regressionRate`/
+   bounds, per the source doc's own template, and a real long-duration
+   (days-to-weeks) test harness this project does not currently have (the
+   existing suites run single-call-length scenarios, not multi-day
+   progressions) — large, new infrastructure work, not just a condition.
+
+V2-28. **Pregnancy and fetal integration.** `updateObstetric` already
+   models real gestational blood-volume/CO/SVR/aortocaval-compression
+   changes (Supine Hypotensive Syndrome, item 8/9's postpartum-hemorrhage
+   work). A genuine FETAL compartment (fetal HR, fetal oxygenation,
+   placental/umbilical flow, fetal Hb) does not yet exist as tracked state
+   — real, citable, moderately large new mechanism work; the source doc's
+   own explicit ask that placental failure should affect fetal DO2 rather
+   than directly scripting fetal distress is the correct design target once
+   this is attempted.
+
+V2-29. **CPR physiology as a distinct mechanical state**, separate from an
+   ordinary cardiac-output state — compression fraction/depth/rate driving
+   real coronary and cerebral perfusion pressure, real ETCO2 reflecting
+   pulmonary blood flow, ventilation-during-CPR affecting intrathoracic
+   pressure/venous return. Today CPR's effect on physiology should be
+   checked against the tree before assuming a gap — this may already be
+   partially real via existing intrathoracic-pressure/venous-return
+   mechanics (see item 12's own findings on assisted-ventilation
+   intrathoracic effects) — confirm, then extend rather than rebuild.
+
+V2-30. **Clinical measurement and monitoring physiology.** A real
+   pulse-oximetry blind spot already exists for CO poisoning
+   (`pat.cohb`/`pat.caO2`, a real "SpO2 reads falsely normal" mechanism,
+   see the Respiratory-category note above). NOT yet built: a general
+   `pat.monitoring = {pulseOxAccuracy, pulseOxBias, cooximetryAvailable,
+   abgAvailable}` structure, and ETCO2 as its own derived quantity distinct
+   from PaCO2 (needed for the real PE-vs-hypoventilation ETCO2/PaCO2-
+   gradient teaching point the source document names explicitly) — real,
+   moderate scope, a natural pairing with V2-29 (CPR) since ETCO2-during-
+   CPR is one of its own named target behaviors.
+
+V2-31. **Global conservation and stability verification.** `scenarioSweep.mjs`
+   already checks NaN/negative/impossible-range and, per lesson 10b, was
+   deliberately extended once already to catch survivable-range violations
+   that simple bounds-checks missed. NOT yet built: an explicit MASS-
+   CONSERVATION test harness (water/Na/K/glucose/drug-amount/RBC-mass
+   in-vs-out-vs-stored, the source document's own explicit ask) — a new,
+   real verification tool, not a physiology mechanism; genuinely useful and
+   comparatively cheap to build relative to the rest of this queue block,
+   and would likely catch defects the existing suites structurally cannot
+   (per lesson 10's own "a passing sweep proves nothing about a path it
+   does not walk").
+
+V2-32. **A full physiology-engine dependency-graph document and multi-rate
+   simulation frequency table**, per the source document's own explicit
+   ask (which per-tick vs. per-substep vs. per-minute cadence each
+   subsystem should run at). This is documentation/architecture work best
+   done AFTER several of the above land, not before — attempting it now
+   would describe a system that doesn't exist yet in the shape being
+   documented.
+
 5. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
    `duodote`'s dead `fx:{hr:20}`, `catecholamineReserve`, and
    `baroreflexHistory` are already fixed/removed. Still open:
@@ -6369,9 +6799,10 @@ an unrelated batch).
    but never wired to a condition; IE was scoped down to fever/bacteremia + valve
    involvement + one timed embolic event rather than the full vegetation-growth
    composite, which remains open. `sickSinusSyndrome` was confirmed already built
-   by an earlier session (no duplicate work done). HOCM (dynamic LVOTO) and
-   Mitral Valve Disease's chronic/stenotic forms remain the real, still-open
-   backlog — see section 3's newest entries for full writeups. That earlier batch is still the reference for how far this
+   by an earlier session (no duplicate work done). HOCM shipped 2026-09-01 (see
+   section 3's newest entry) — Mitral Valve Disease's chronic/stenotic forms
+   remain the real, still-open backlog — see section 3's newest entries for
+   full writeups. That earlier batch is still the reference for how far this
    loop can go in one session when several conditions share underlying
    machinery (the avNodalDisease axis alone underpins four of them). Still
    explicitly DEFERRED with real technical reasons, not guessed at: HOCM
@@ -9017,14 +9448,17 @@ rest ischemia without necrosis; subendocardial infarct (limitable); the evolving
 NSTE-ACS that can be prevented; and the completed transmural STEMI.
 
 ### Cardiac
-Hypertrophic Obstructive Cardiomyopathy ·
 Mitral Valve Disease (chronic/stenotic forms) · Pacemaker Failure · Pacemaker Syndrome
 
 *(Infective Endocarditis shipped this session in scoped form (fever/bacteremia
 + valve involvement + one timed embolic event) — the full vegetation-growth
 composite remains open, see section 3. Aortic Stenosis and acute Mitral
 Regurgitation both shipped this session — see section 3's newest entries.
-Mitral Valve Disease's chronic/degenerative forms remain unbuilt.)*
+Hypertrophic Obstructive Cardiomyopathy shipped 2026-09-01 (see section 3's
+newest entry) — a real dynamic LVOTO mechanism now exists (composed into the
+already-built aorticStenosisSeverity/eaEff channel), closing the gap
+takotsubo's own entry had flagged. Mitral Valve Disease's chronic/degenerative
+forms remain unbuilt.)*
 
 *(This category shrank from 22 entries to 6, then to the 6 above, across two
 cardiac-conditions batches — see section 3 for the full writeup of both.
@@ -9045,9 +9479,11 @@ content-only follow-up whenever one is wanted — not physiology-engine work.
 **Infective Endocarditis** shipped this session in scoped form (see section 3)
 — the full vegetation-growth composite (size/growth over time, skin findings,
 right-sided pulmonary emboli) remains its own future batch. **Hypertrophic
-Obstructive Cardiomyopathy** needs a dynamic-LVOTO (variable outflow
-obstruction) mechanism the engine still lacks — the same gap takotsubo's own
-entry flagged as its own batch, still unbuilt. **Aortic Stenosis and acute
+Obstructive Cardiomyopathy shipped 2026-09-01** (see section 3's newest
+entry) — the dynamic-LVOTO mechanism the engine previously lacked (the same
+gap takotsubo's own entry flagged) now exists, composed into the already-built
+aorticStenosisSeverity/eaEff resistance-in-series channel rather than a
+parallel one. **Aortic Stenosis and acute
 Mitral Regurgitation both shipped this session** (see section 3) — the
 valve-resistance-in-series/regurgitant-fraction mechanisms they needed turned
 out to already exist (built for queue item 41, never wired to a condition).

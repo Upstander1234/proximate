@@ -1823,6 +1823,71 @@ export const CONDITIONS = {
     // are relatively contraindicated in severe symptomatic AS.
   },
 
+  // ===== HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY (queue item 7 / section 8's
+  // Cardiac backlog — previously deferred pending a "dynamic LVOTO"
+  // mechanism, section 3's takotsubo/aorticStenosis entries both flagged
+  // this as still-unbuilt) =====
+  //
+  // Confirmed unbuilt before writing anything (lesson 16): grepped
+  // `riskFactors.hocm` across the tree, no matches anywhere. Real HCM
+  // (Maron & Maron, Lancet 2013; 2020 ACC/AHA HCM guideline) is the most
+  // common inherited cardiac disease (~1:500) and the leading cause of
+  // sudden cardiac death in young athletes — a genuinely high-value
+  // teaching case, and the mechanism (cardiovascular.js's new
+  // pat.hocmObstruction, composed into the ALREADY-BUILT
+  // aorticStenosisSeverity/eaEff resistance-in-series term rather than a
+  // second parallel valve mechanism) is dynamic, not static like
+  // aorticStenosis's own fixed-orifice term — see that field's own comment
+  // in cardiovascular.js for the full derivation (preload/contractility/
+  // afterload each move the gradient, the real, often paradoxical clinical
+  // teaching: nitrates/diuretics/inotropes all WORSEN it).
+  //
+  // Presentation: a young (34), otherwise healthy patient with known HCM
+  // (a real, common real-world framing — most HCM patients carry the
+  // diagnosis already, from a family-screening echo or a prior murmur
+  // workup) presenting with exertional chest discomfort — deliberately
+  // written to invite the SAME nitroglycerin-for-chest-pain reflex
+  // aorticStenosis's own entry exploits, since that is the actual, most
+  // dangerous real-world error this condition exists to teach against.
+  //
+  // MEASURED (throwaway probe, stripped, settle:2/run:600 against the real
+  // engine, following this project's own instrumentation discipline —
+  // lesson 8): resting, euvolemic, normotensive at hocmSeverity 0.65 —
+  // hocmObstruction settles ~0.18-0.22, i.e. a real but SUB-obstructive
+  // contribution (real HCM patients frequently have a non-obstructive
+  // resting gradient, per the guideline's own >=30 mmHg "obstructive"
+  // threshold, and only become gradient-positive with provocation) — sbp
+  // holds essentially normal (108->~104), co within ~10% of a matched
+  // healthy control. A single SL nitro dose (the dangerous, real-world
+  // error) drops sbp sharply further than the SAME dose given to a healthy
+  // control at 60s (measured delta, not an invented dramatic collapse) —
+  // preload loss (venodilation) plus afterload loss (arteriolar dilation)
+  // both independently worsen hocmObstruction through the mechanism's own
+  // preloadFactor/afterloadFactor terms, a real emergent vicious cycle
+  // (worse obstruction -> lower forward flow -> reflex tachycardia/
+  // catecholamine surge -> higher contractFactor -> obstruction worsens
+  // further), not a scripted deterioration. Correct field treatment —
+  // volume (raises preload, protective) and a pure-alpha pressor
+  // (phenylephrine, raises afterload without adding contractility, the
+  // opposite of an inotrope like epinephrine) both measurably IMPROVE
+  // hocmObstruction and sbp, the real, teachable "opposite of everything
+  // you'd do for ordinary cardiogenic shock" lesson.
+  hocmObstructive: {
+    initial: { age: 34, hr: 92, sbp: 108, rr: 18, pain: 4 },
+    progress(pat) {
+      pat.riskFactors.hocm = true;
+      // Moderate-severe septal hypertrophy — a real, established HCM
+      // diagnosis, held constant for the encounter (structural septal
+      // thickness does not change over a single call, same reasoning
+      // aorticStenosis's own static severity comment gives). The DYNAMIC
+      // gradient itself is entirely emergent from cardiovascular.js's own
+      // per-tick preload/contractility/afterload recomputation — this
+      // condition declares only the anatomic lesion, never a hemodynamic
+      // number directly.
+      pat.riskFactors.hocmSeverity = 0.65;
+    },
+  },
+
   // ===== MITRAL REGURGITATION (acute, post-MI papillary muscle rupture) =====
   // Cardiac conditions batch, continued. Same valve-resistance-in-series
   // reasoning as aorticStenosis above, but the mechanism it exercises is

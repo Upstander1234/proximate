@@ -764,6 +764,7 @@ export class Patient {
     this.aorticRegurgFrac = 0;
     this.mitralRegurgStructural = 0;
     this.aorticRegurgStructural = 0;
+    this.hocmObstruction = 0;      // dynamic LVOT obstruction from HOCM (queue item 7); composes into aorticStenosisSeverity
 
     // Myocardial energetics: coronary O2 supply vs demand -> ATP -> contractility.
     this.atp = 1.0;                // myocardial high-energy phosphate reserve (0..1)
