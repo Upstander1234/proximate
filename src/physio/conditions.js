@@ -8352,4 +8352,49 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== ACQUIRED METHEMOGLOBINEMIA (queue item V2-30, clinical measurement
+  // and monitoring physiology) =====
+  // A benzocaine topical-anesthetic exposure — the single most common
+  // EMS-relevant trigger (Guay, Anesth Analg 2009): "caine" local
+  // anesthetic sprays used for awake nasal intubation / endoscopy /
+  // dental procedures are a well-documented cause of acute
+  // methemoglobinemia, since benzocaine directly oxidizes ferrous (Fe2+)
+  // hemoglobin to the ferric (Fe3+) methemoglobin form, which cannot bind
+  // O2. Chosen over dapsone/nitrite triggers because it needs no new drug
+  // entity — the exposure is pre-hospital (already administered before
+  // EMS arrival, e.g. by an ED/dental provider), matching this project's
+  // own "presents already symptomatic" convention for a toxidrome whose
+  // causative dose is not something the crew themselves gives.
+  //
+  // THE REAL, DISTINCT TEACHING POINT from carbonMonoxidePoisoning
+  // immediately above (same file, same category, deliberately contrasted):
+  // CO pulls the pulse-ox reading falsely HIGH (toward 100%, masking a real
+  // deficit). Methemoglobin does the OPPOSITE — its absorption spectrum
+  // sits between reduced and oxygenated Hb, so a standard two-wavelength
+  // pulse oximeter reads a value that is falsely LOW but STUCK near ~85%,
+  // essentially independent of the patient's true oxygen-carrying status
+  // once metHb is significant (Barker, Anesthesiology 1989; Watcha, Anesth
+  // Analg 1989) — wired directly in patient.js's vitals() (see that file's
+  // own comment at the metHb constructor field). Genuinely does NOT respond
+  // to supplemental O2 the way ordinary hypoxemia does: pat.metHb has no
+  // FiO2-dependent clearance term (unlike cohb's real, oxygen-competitive
+  // displacement) — real methemoglobin reduction depends on NADH-
+  // methemoglobin reductase (a slow, hours-scale endogenous process) or
+  // methylene blue (the real antidote, NOT carried in this formulary, the
+  // same honest "no field cure" posture already established for
+  // hydroxocobalamin-adjacent and crotaline-envenomation cases). High-flow
+  // O2 is still the correct FIELD action (it maximizes what dissolved-O2
+  // and remaining functional Hb can deliver, per pat.caO2's own 0.003*pao2
+  // term) even though it will not move the stuck pulse-ox number or fully
+  // correct caO2 — the scenario's own resolve() states this honestly.
+  //
+  // Presenting severity 0.28 (28% metHb) — inside the real, well-documented
+  // symptomatic-but-not-immediately-lethal 20-45% band (cyanosis unresponsive
+  // to O2, tachycardia, mild dyspnea; >70% is lethal per the same
+  // literature) — a real, moderate, teachable severity, not the mild <15%
+  // tier that is often asymptomatic.
+  acquiredMethemoglobinemia: {
+    initial: { age: 58, hr: 108, sbp: 132, dbp: 82, rr: 20, glu: 96, pain: 1, metHb: 0.28 },
+  },
+
 };

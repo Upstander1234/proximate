@@ -409,6 +409,24 @@ export class Patient {
     // real, FiO2-dependent first-order rate (high-flow O2 competitively
     // displaces CO from Hb).
     this.cohb = b.cohb ?? 0;
+    // METHEMOGLOBIN FRACTION (0-1) — the ferric (Fe3+) form of hemoglobin,
+    // which cannot bind O2 (a second, mechanistically distinct pulse-ox
+    // blind spot from cohb above — queue item V2-30). Real causes: topical/
+    // local anesthetic overdose (benzocaine spray, most common EMS-relevant
+    // trigger — Guay, Anesth Analg 2009), dapsone, nitrites/nitrates. Read
+    // by metabolic.js (reduces pat.caO2, same authoritative oxygen-content
+    // site cohb already discounts) and by patient.js's own vitals(): unlike
+    // cohb (which pulls the DISPLAYED reading falsely toward 100%),
+    // methemoglobin's absorption spectrum sits between reduced and
+    // oxygenated Hb, so a standard two-wavelength pulse oximeter reads a
+    // value that plateaus near ~85% REGARDLESS of true SaO2 as metHb rises
+    // (Barker, Anesthesiology 1989; Watcha, Anesth Analg 1989) — a falsely
+    // LOW-but-STUCK reading, the mirror-image teaching point from CO's
+    // falsely-normal one. No first-order clearance term exists here (unlike
+    // cohb's FiO2-dependent decay) — real methemoglobin reduction depends on
+    // NADH-methemoglobin reductase (slow, hours) or methylene blue (not
+    // modeled, no such drug in this formulary), not oxygen delivery.
+    this.metHb = b.metHb ?? 0;
     this.broncho = b.bronch ?? 0;
     this.edema = b.edema ?? 0;
     // Isolated cutaneous urticaria/pruritus (queue item 58) — 0-1 severity of
@@ -1107,7 +1125,20 @@ export class Patient {
     // this engine (organ DO2 signals, brainO2, etc.) reads caO2, not this
     // display value, so they see the real deficit regardless of what the
     // pulse ox shows.
-    const spo2 = Math.min(100, Math.max(0, Math.round(filter("spo2", this.sao2 + (this.cohb || 0) * 100, 1))));
+    // METHEMOGLOBIN PULSE-OX FLOOR ARTIFACT (queue item V2-30): as metHb
+    // rises, the two-wavelength pulse ox reading is pulled toward ~85%
+    // regardless of true saturation — the opposite direction from CO's
+    // falsely-normal-high artifact above, so this term is applied AFTER the
+    // cohb term, on the cohb-inflated value (a patient can carry both
+    // simultaneously in principle; metHb's spectral effect dominates the
+    // display once it is present, matching the real, larger swing in
+    // absorbance ratio methemoglobin produces).
+    const metHbFrac = Math.min(0.9, this.metHb || 0);
+    const spo2Raw = this.sao2 + (this.cohb || 0) * 100;
+    const spo2Displayed = metHbFrac > 0
+      ? spo2Raw * (1 - Math.min(1, metHbFrac * 2.5)) + 85 * Math.min(1, metHbFrac * 2.5)
+      : spo2Raw;
+    const spo2 = Math.min(100, Math.max(0, Math.round(filter("spo2", spo2Displayed, 1))));
     const rr   = Math.round(filter("rr", this.rr, 1));
     // End-tidal CO2 is arterial CO2 diluted by alveolar dead space (see
     // respiratory.js). The gradient is therefore a measurement, not a constant.

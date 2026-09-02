@@ -172,7 +172,13 @@ export function updateMetabolism(pat, dt) {
     // energyFailure below) — see conditions.js's carbonMonoxidePoisoning for
     // the full reasoning.
     const cohbFrac = Math.min(0.95, pat.cohb || 0);
-    pat.caO2 = 1.34 * hb * (1 - cohbFrac) * pat.sao2 / 100 + 0.003 * pat.pao2;
+    // METHEMOGLOBIN (queue item V2-30): the ferric fraction of Hb, like the
+    // CO-bound fraction above, is simply unavailable to carry O2 — a second,
+    // separate functional-anemia mechanism composing with cohb rather than
+    // replacing it (a real patient could in principle carry both, though no
+    // shipped condition does).
+    const metHbFrac = Math.min(0.9, pat.metHb || 0);
+    pat.caO2 = 1.34 * hb * (1 - cohbFrac - metHbFrac) * pat.sao2 / 100 + 0.003 * pat.pao2;
     const do2 = pat.co * pat.caO2 * 10;
     // PUBLISHED (queue item 7, cyanidePoisoning). This was a local only, which
     // left mechanismWiring.mjs's own snapshot reading a `p.do2` nothing ever

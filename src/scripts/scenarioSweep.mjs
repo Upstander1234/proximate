@@ -211,6 +211,12 @@ const REQUIRED = [
   // preload/contractility/afterload and composes into aorticStenosisSeverity
   // via Math.max — clamped [0,0.9], always 0 when hocm is not active.
   "hocmObstruction",
+  // acquiredMethemoglobinemia (queue item V2-30, clinical measurement/
+  // monitoring physiology): methemoglobin fraction, real always-non-negative
+  // 0-1 quantity (patient.js constructor default 0) — reduces caO2
+  // (metabolic.js) and pulls the DISPLAYED spo2 toward ~85% (patient.js's
+  // vitals()), a distinct pulse-ox blind spot from cohb's falsely-normal one.
+  "metHb",
 ];
 
 // Fields that may never go negative.
@@ -305,6 +311,8 @@ const NON_NEGATIVE = [
   // preload/contractility/afterload and composes into aorticStenosisSeverity
   // via Math.max — clamped [0,0.9], always 0 when hocm is not active.
   "hocmObstruction",
+  // acquiredMethemoglobinemia (queue item V2-30): see REQUIRED list above.
+  "metHb",
 ];
 
 const results = [];

@@ -1028,6 +1028,7 @@ const SCEN_BODY_SYSTEM={
   rocuroniumOverdose:"Toxicology",diltiazemOverdose:"Toxicology",metoprololOverdose:"Toxicology",atropineOverdose:"Toxicology",
   carbonMonoxidePoisoning:"Toxicology",lidocaineOverdose:"Toxicology",tricyclicOverdose:"Toxicology",
   cyanidePoisoning:"Toxicology",
+  methemoglobinemia:"Toxicology",
   lithiumToxicity:"Toxicology",ironOverdose:"Toxicology",hydrocarbonAspiration:"Toxicology",
   boxJellyfishSting:"Toxicology",
   // --- Allergy / Immune ---

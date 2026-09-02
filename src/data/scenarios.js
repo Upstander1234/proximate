@@ -5366,6 +5366,51 @@ cyanidePoisoning: {cat: "medical", id: "TOX-008", pronouns: "he", title: "Male, 
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Cyanide poisoning — histotoxic hypoxia from cytochrome c oxidase inhibition, presenting as coma and severe lactic acidosis with a normal SpO2; hydroxocobalamin is the field antidote"};},
 },
 
+// Acquired methemoglobinemia (queue item V2-30 — clinical measurement and
+// monitoring physiology). A benzocaine topical-anesthetic exposure during an
+// attempted awake nasal intubation at a skilled-nursing facility, the real,
+// well-documented most-common EMS-relevant trigger for this toxidrome (Guay,
+// Anesth Analg 2009). Deliberately paired with carbonMonoxidePoisoning
+// (TOX-005) as the OPPOSITE pulse-ox artifact — CO reads falsely NORMAL, this
+// reads falsely LOW-but-STUCK near 85% — the actual monitoring/measurement
+// teaching point queue item V2-30 is scoped to close.
+methemoglobinemia: {cat: "medical", id: "TOX-013", pronouns: "she", title: "Female, 58. Cyanotic after a failed intubation attempt, SpO2 stuck at 85.",
+  limit: 900, transport: 540,
+  bystanders: "The facility nurse, holding the chart. \"We had the traveling ENT doc try an awake nasal scope on her this morning, sprayed a bunch of that numbing spray up her nose first. Ten minutes later she went blue around the lips. We put her on oxygen right away but the number on the monitor hasn't moved at all.\"",
+  units: [{at: 300, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["58F at a skilled-nursing facility, cyanosis after a procedure, oxygen not helping."],
+  update: ["Facility staff confirm no prior cardiac or respiratory history, and lungs sound clear on their own exam."],
+  impression: "Awake, anxious, visibly cyanotic around the lips and fingertips despite a non-rebreather already in place. Lungs clear. The monitor reads 85 percent and will not climb no matter how much oxygen goes on.",
+  imps: ["ODPO", "ALOC"],
+  condition: "acquiredMethemoglobinemia",
+  patient: {age: 58, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Nurse: \"No heart or lung history that I know of. She got a benzocaine spray to the back of the throat and nose about twenty minutes ago for the procedure, then went blue.\"", kind: "pt",
+      evid: "Cyanosis with a normal chest exam, beginning shortly after a topical benzocaine exposure, is the classic trigger history for methemoglobinemia — benzocaine directly oxidizes hemoglobin's iron from the ferrous to the ferric form, which cannot carry oxygen.",
+      find: "SAMPLE (collateral): no prior cardiopulmonary disease. Topical benzocaine spray ~20 min prior, cyanosis followed shortly after."}),
+    opqrst: () => ({say: "\"I feel short of breath, but it's not like anything hurts.\"", kind: "pt",
+      find: "OPQRST: dyspnea without pain, onset shortly after the procedure."}),
+    // MEASURED, not scripted: reads the real, live displayed spo2 — the
+    // whole point is that this number is genuinely stuck, not narrated as
+    // stuck, and a treated vs. untreated re-check shows it staying put.
+    skin: (s, v) => ({say: `Visible cyanosis of the lips and fingertips, a slightly grayish-blue color that doesn't look like ordinary hypoxic cyanosis. Saturation reads ${v.spo2} percent and hasn't moved since the oxygen went on.`, kind: "obs",
+      find: `Skin: cyanotic, ${v.spo2}% SpO2, unresponsive to supplemental O2.`,
+      evid: "This is the tell. Ordinary hypoxic cyanosis climbs with FiO2. A reading pinned near 85 percent that will not budge, in a patient with a completely clear chest exam, points at a hemoglobin problem the pulse oximeter cannot correctly read, not a lung problem."}),
+    lungs: () => ({say: "Clear and equal bilaterally, good air movement.", kind: "obs",
+      find: "Lungs: clear bilaterally.",
+      evid: "A clear chest exam in a visibly cyanotic, hypoxia-reading patient argues against a primary respiratory cause — the lesion is upstream of the lungs, in the hemoglobin itself."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Acquired methemoglobinemia from topical benzocaine, with a real oxygen-carrying deficit unrecognized because the pulse oximeter reading was trusted at face value.";
+    notes.push("This is acquired methemoglobinemia. Benzocaine oxidizes the iron in hemoglobin from its normal ferrous (Fe2+) state to the ferric (Fe3+) methemoglobin state, and methemoglobin cannot bind oxygen at all — a real, if partial, functional anemia.");
+    notes.push("The monitor is not lying the way it does with carbon monoxide poisoning, where the reading is falsely NORMAL. Here it is doing the opposite: methemoglobin's absorbance sits between reduced and oxygenated hemoglobin, so a standard two-wavelength pulse oximeter reads a value that gets stuck near 85 percent, low but not falling, almost independent of how much oxygen you give.");
+    notes.push("High-flow oxygen is still the correct field action — it maximizes what the remaining, unaffected hemoglobin and dissolved oxygen can deliver — but it will not move the number on the monitor and it will not fix the underlying lesion. The real antidote is methylene blue, which is not carried on this unit; recognition and prompt transport for the definitive treatment is the field job here.");
+    notes.push("If you ever see a cyanotic, dyspneic patient whose SpO2 will not respond to oxygen despite a clear chest exam, think methemoglobinemia and ask about a recent topical anesthetic, dapsone, or nitrite exposure.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Acquired methemoglobinemia from topical benzocaine — a real oxygen-carrying deficit under a pulse-ox reading stuck near 85%, unresponsive to supplemental oxygen"};},
+},
+
 // Organophosphate (cholinergic) poisoning (queue item 67 — found while
 // implementing TP 1240/1240-P's HAZMAT nerve-agent algorithm, whose own
 // SEVERE tier already had real signals but whose MILD/MODERATE tier had

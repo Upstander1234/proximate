@@ -352,6 +352,7 @@ function snapshot(p) {
     // patient field) so the "reads normal, isn't" trap can be asserted
     // directly against the real, player-facing number.
     cohb: p.cohb || 0,
+    metHb: p.metHb || 0,
     caO2: p.caO2 ?? 20,
     spo2Displayed: p.vitals().spo2,
     // Inflammation cascade (queue item 46): the source variable, the
@@ -4265,6 +4266,46 @@ console.log("\n[CARBON MONOXIDE POISONING — queue item 7, Toxicology]");
   const untreated = probe({ scen: "carbonMonoxidePoisoning", settle: 60, run: 960 });
   assertVersus("high-flow O2 lowers cohb (real FiO2-dependent clearance)", treated, untreated, "cohb", "down", 0.01);
   assertVersus("...and raises caO2 (real oxygen-content recovery)", treated, untreated, "caO2", "up", 1.0);
+}
+
+console.log("\n[ACQUIRED METHEMOGLOBINEMIA — queue item V2-30, clinical measurement/monitoring physiology]");
+{
+  // THE ACTUAL TEACHING POINT, the mirror image of carbonMonoxidePoisoning's
+  // own section immediately above: real metHb lowers caO2 (a genuine oxygen-
+  // content deficit — every organ DO2 signal in this engine derives from it)
+  // while the DISPLAYED pulse-ox reading is pulled toward ~85%, LOW but STUCK,
+  // not falsely reassuring. Two-sided: both the deficit AND the specific
+  // "stuck near 85%, not free-falling toward true severity" artifact are
+  // asserted, since either half alone (a low caO2, or a spo2 near 85) could
+  // pass by accident.
+  const met = probe({ scen: "methemoglobinemia", settle: 900 });
+  const presentOk = met.after.metHb > 0.2 && met.after.caO2 < 16 &&
+    met.after.spo2Displayed >= 80 && met.after.spo2Displayed <= 92;
+  presentOk ? pass++ : fail++;
+  if (!presentOk) failures.push(`acquiredMethemoglobinemia should present with a real metHb+caO2 deficit under a falsely-LOW-but-STUCK-near-85 displayed spo2 by 900s, got metHb=${met.after.metHb} caO2=${met.after.caO2} spo2=${met.after.spo2Displayed}`);
+  console.log(`  ${presentOk ? "PASS" : "FAIL"}  ${"presents: real caO2 deficit under stuck-near-85 spo2".padEnd(46)} metHb=${met.after.metHb.toFixed(2)} caO2=${met.after.caO2.toFixed(1)} spo2(displayed)=${met.after.spo2Displayed}`);
+
+  // Specificity: a condition-less patient shows none of it — no metHb, caO2
+  // at its normal healthy value, spo2 reading a genuinely normal ~98, not 85.
+  const control = probe({ scen: "abdPain", settle: 900 });
+  const specOk = control.after.metHb === 0 && control.after.caO2 > 18 && control.after.spo2Displayed >= 96;
+  specOk ? pass++ : fail++;
+  if (!specOk) failures.push(`a condition-less control should show zero metHb, normal caO2, and normal spo2, got metHb=${control.after.metHb} caO2=${control.after.caO2} spo2=${control.after.spo2Displayed}`);
+  console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...confirmed: condition-less control shows none of it".padEnd(46)} metHb=${control.after.metHb.toFixed(2)} caO2=${control.after.caO2.toFixed(1)} spo2=${control.after.spo2Displayed}`);
+
+  // The real, honest "does NOT respond to O2" finding — genuinely distinct
+  // from carbonMonoxidePoisoning's own oxygen-responsive treatment assertion
+  // immediately above. pat.metHb has no FiO2-dependent clearance term (no
+  // methylene blue exists in this formulary), so high-flow O2 leaves metHb
+  // itself completely unchanged — asserted two-sided (equal, not just "not
+  // worse") so a future session cannot silently paper over this by giving
+  // O2 a decorative metHb-lowering effect it does not really have.
+  const treated = probe({ scen: "methemoglobinemia", settle: 60, run: 960, apply: ["o2nrb"], reapply: 500 });
+  const untreated = probe({ scen: "methemoglobinemia", settle: 60, run: 960 });
+  const o2Ok = Math.abs(treated.after.metHb - untreated.after.metHb) < 0.01;
+  o2Ok ? pass++ : fail++;
+  if (!o2Ok) failures.push(`high-flow O2 should NOT change metHb (no field antidote modeled), got treated=${treated.after.metHb} untreated=${untreated.after.metHb}`);
+  console.log(`  ${o2Ok ? "PASS" : "FAIL"}  ${"...honest limitation: O2 does NOT lower metHb (no antidote)".padEnd(46)} treated=${treated.after.metHb.toFixed(3)} untreated=${untreated.after.metHb.toFixed(3)}`);
 }
 
 console.log("\n[INFLAMMATION CASCADE — queue item 46]");
