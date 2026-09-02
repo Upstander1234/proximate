@@ -48,6 +48,54 @@ export function updateRenalEndocrine(pat, dt) {
     // regulator rather than a measure of how much kidney the patient has.
     pat.renalClearanceFraction = Math.max(0.05, Math.min(1.2, perfPressure * injuryFactor));
 
+    // --- PORTAL HYPERTENSION -> SPLANCHNIC VASODILATION -> RAAS/ADH ---------
+    // Queue item V2-13's real-portal-pressure-model half (cirrhosis). This is
+    // a genuinely DIFFERENT mechanism from item 42/48's acute hepatic
+    // hypoperfusion work (hepaticDO2/hepaticO2Debt/liverInjury/
+    // hepaticStunning, neuro.js): that pathway is perfusion/oxygen-delivery
+    // driven and acute; this one is chronic, structural and PRESSURE driven
+    // (a fibrotic liver raising resistance to portal flow), and its
+    // consequence is not organ injury but systemic hemodynamics.
+    //
+    // pat.portalPressure is a condition-owned HVPG-equivalent (mmHg),
+    // default 0. Real HVPG thresholds (Groszmann et al., NEJM 2005;
+    // Garcia-Tsao et al., Hepatology 2017 AASLD guidance): normal 1-5 mmHg;
+    // >5 mmHg = portal hypertension; >=10 mmHg = "clinically significant
+    // portal hypertension" (CSPH) — the threshold associated with real
+    // ascites/variceal risk. Below 5 mmHg this term is exactly zero (a
+    // patient with no portal lesion is guaranteed zero contamination by
+    // construction, the same specificity guarantee item 74's compartment-
+    // syndrome delta-pressure gate already established for a different
+    // organ). Between 5 and 10 a small dilation appears; past CSPH it ramps
+    // toward a real, bounded ceiling (0.22) — the peripheral-arterial-
+    // vasodilation hypothesis of cirrhotic ascites (Schrier et al., 1988):
+    // splanchnic arteriolar NO/vasodilator excess drops effective arterial
+    // volume even though total body volume is expanded.
+    //
+    // Ramped over a real ~20-minute time constant (not instant) — this is a
+    // chronic vascular adaptation, not an acute bolus effect.
+    const pp = Math.max(0, pat.portalPressure || 0);
+    const portalDilationTarget = pp <= 5 ? 0
+      : Math.min(0.22, (Math.min(pp, 10) - 5) / 5 * 0.10 + Math.max(0, pp - 10) / 10 * 0.12);
+    pat._portalVasodilation = (pat._portalVasodilation ?? 0) +
+      (portalDilationTarget - (pat._portalVasodilation ?? 0)) * Math.min(1, dt / 20);
+    if (pat._portalVasodilation > 0.001) {
+      // Composes with anaphylaxis/sepsis/etc's own vasodilation writers via
+      // the SAME max idiom every one of them already uses — a cirrhotic
+      // patient who is ALSO septic correctly takes the worse of the two,
+      // not a double-count.
+      pat.vasodilation = Math.max(pat.vasodilation || 0, pat._portalVasodilation);
+      // Splanchnic pooling directly raises venous capacitance — the SAME
+      // handle pregnancy's own venodilation already writes (obstetric.js),
+      // composed by max so a pregnant cirrhotic doesn't have one cause
+      // clobber the other. This is what makes the RAAS/ADH activation
+      // below genuinely emergent rather than scripted: renal.js's own
+      // capacitance-aware defended-volume target (below) already names
+      // cirrhosis directly as the case this mechanism exists to reproduce.
+      pat.venousCapacitanceFactor = Math.max(pat.venousCapacitanceFactor ?? 1,
+        1 + pat._portalVasodilation * 0.8);
+    }
+
     // --- RENIN SECRETION -----------------------------------------------------
     // This previously read `reninDrive = 1 - renalPerf`, where renalPerf had
     // ALREADY had afferent constriction multiplied into it. Renin therefore

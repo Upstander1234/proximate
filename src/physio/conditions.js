@@ -333,6 +333,46 @@ export const CONDITIONS = {
     },
   },
 
+  // Cirrhosis (chronic liver disease with portal hypertension) — queue item
+  // V2-13's real portal-pressure/portal-flow half. Genuinely distinct from
+  // items 42/48's acute hepatic hypoperfusion work (hepaticDO2/
+  // hepaticO2Debt/hepaticStunning) — this is a CHRONIC, STRUCTURAL,
+  // pressure-driven process (a fibrotic liver raising resistance to portal
+  // flow), not a perfusion/oxygen-delivery one, and it drives SYSTEMIC
+  // hemodynamics (splanchnic vasodilation -> underfilled effective
+  // arterial volume -> real RAAS/ADH activation -> real fluid retention),
+  // not organ injury per se.
+  //
+  // Follows the SAME "chronic disease sets a baseline the acute physiology
+  // then acts on" pattern chronicKidneyDisease/copd already establish, two
+  // entries above: reduced hepatic reserve/clearance reuses the
+  // ALREADY-REAL organClearanceFactor()/pat.liverInjury mechanism (pk.js)
+  // directly — no new drug-clearance code — and the portal-hypertension
+  // limb is wired through renal.js's own new pat.portalPressure mechanism
+  // (see that file's own comment for the full RAAS/ADH derivation).
+  //
+  // HVPG thresholds (Groszmann et al., NEJM 2005; Garcia-Tsao et al.,
+  // Hepatology 2017 AASLD practice guidance): normal 1-5 mmHg; >5 mmHg =
+  // portal hypertension; >=10 mmHg = "clinically significant portal
+  // hypertension" (CSPH), the real threshold associated with ascites/
+  // variceal risk. 12 mmHg (this condition's baseline) sits just past
+  // CSPH — a real, compensated-but-decompensating cirrhotic (Child-Pugh B
+  // territory), not an end-stage/Child-Pugh-C presentation.
+  cirrhosis: {
+    initial: { riskFactors: { cirrhosis: true }, age: 56 },
+    progress(pat) {
+      // Chronic and structural — reassert every tick so neither
+      // neuro.js's own liverInjury recovery-when-well-perfused term nor
+      // anything else can silently heal a chronic disease, the same
+      // idiom chronicKidneyDisease's own kidneyInjury reassertion uses.
+      // 0.30 -> organClearanceFactor's hepatocyte term = 1-0.30*0.7=0.79,
+      // a real but partial (not end-stage) fall in hepatic drug
+      // clearance/synthetic reserve.
+      pat.liverInjury = Math.max(pat.liverInjury ?? 0, 0.30);
+      pat.portalPressure = Math.max(pat.portalPressure ?? 0, 12);
+    },
+  },
+
   // Hyperkalemia from missed dialysis. Section 8 target library — the
   // Electrolyte category's bare "Hyperkalemia" and the Renal/Genitourinary
   // category's "Hyperkalemia from Missed Dialysis" are the SAME underlying

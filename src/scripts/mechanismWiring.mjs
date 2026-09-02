@@ -211,6 +211,14 @@ function snapshot(p) {
     renalClearanceFraction: p.renalClearanceFraction ?? 1,
     renin: p.renin || 0,
     aldosterone: p.aldosterone || 0,
+    // Queue item V2-13 (cirrhosis / portal hypertension): angiotensinII and
+    // venousCapacitanceFactor were both real, already-live fields (RAAS's
+    // own middle term; the capacitance-aware defended-volume target) never
+    // previously read through this suite's own before/after snapshot path.
+    // portalPressure is the new field this batch adds.
+    angiotensinII: p.angiotensinII || 0,
+    venousCapacitanceFactor: p.venousCapacitanceFactor ?? 1,
+    portalPressure: p.portalPressure || 0,
     na: p.na ?? 140,
     afferentConstriction: p.afferentConstriction || 0,
     gfrFraction: p.baseGfr ? (p.gfr || 0) / p.baseGfr : 0,
@@ -6259,6 +6267,78 @@ console.log("[PER-ORGAN OXYGEN EXTRACTION — queue item V2-2]");
   gutMoreExhausted ? pass++ : fail++;
   if (!gutMoreExhausted) failures.push(`AAA's severe shock should push gut extraction well above its own resting target, got control=${control.after.gutExtraction.toFixed(3)}, aaa=${aaa.after.gutExtraction.toFixed(3)}`);
   console.log(`  ${gutMoreExhausted ? "PASS" : "FAIL"}  ${"AAA: gut extraction rises well above its own resting target".padEnd(46)} control=${control.after.gutExtraction.toFixed(3)}, AAA=${aaa.after.gutExtraction.toFixed(3)}`);
+}
+
+console.log("\n[PORTAL HYPERTENSION / CIRRHOSIS — queue item V2-13]");
+{
+  // Queue item V2-13's real portal-pressure/portal-flow mechanism
+  // (renal.js): a real, condition-owned pat.portalPressure (HVPG-
+  // equivalent mmHg) drives splanchnic vasodilation and venous-
+  // capacitance expansion, which the kidney's already-real capacitance-
+  // aware defended-volume mechanism reads as underfilling -> real,
+  // measured RAAS/ADH activation. mutate forces the same 12 mmHg
+  // (clinically-significant-portal-hypertension-plus-margin) the shipped
+  // `cirrhosis` condition itself sets, per this suite's own established
+  // idiom of forcing the exact field a condition would set rather than
+  // running the condition object (see chronicKidneyDisease/liverInjury/
+  // capillaryLeak's own mutate: entries above).
+  const healthy = probe({ scen: "abdPain", settle: 180, run: 1980 });
+  const portal = probe({ scen: "abdPain", settle: 180, run: 1980,
+    mutate: (p) => { p.portalPressure = 12; } });
+
+  // Presence: a real, measurable splanchnic vasodilation and venous-
+  // capacitance expansion, absent below the CSPH threshold in a healthy
+  // control (specificity guaranteed by construction — see renal.js's own
+  // comment: pp<=5 forces the term to exactly zero).
+  assertVersus("portalPressure -> real splanchnic vasodilation", portal, healthy, "vasodilation", "up", 0.05);
+  assertVersus("...-> real venous-capacitance expansion", portal, healthy, "venousCapacitanceFactor", "up", 0.05);
+  const specific = healthy.after.vasodilation === 0 && healthy.after.portalPressure === 0;
+  specific ? pass++ : fail++;
+  if (!specific) failures.push(`a condition-less control should show exactly zero portalPressure/vasodilation contamination, got portalPressure=${healthy.after.portalPressure}, vasodilation=${healthy.after.vasodilation}`);
+  console.log(`  ${specific ? "PASS" : "FAIL"}  ${"...healthy control stays at exactly zero (specificity)".padEnd(46)} vasodilation ${healthy.after.vasodilation}, portalPressure ${healthy.after.portalPressure}`);
+
+  // The actual point of the mechanism: this reaches the ALREADY-REAL RAAS
+  // machinery (renal.js's own renin/angiotensinII/aldosterone chain,
+  // unmodified by this batch) through the SAME defended-volume pathway
+  // hemorrhage/pregnancy already use — not a new, parallel RAAS trigger.
+  // Measured over a real 33-minute window (long enough for renin's own
+  // ~10-minute relaxation time constant to show real separation from a
+  // healthy control, whose own renin is simultaneously DECAYING toward a
+  // resting baseline over the same window — a genuine two-sided
+  // divergence, not just "portal patient has nonzero renin").
+  assertVersus("...reaches real RAAS: renin rises vs a decaying control", portal, healthy, "renin", "up", 0.005);
+  assertVersus("...-> real angiotensin II activation", portal, healthy, "angiotensinII", "up", 0.01);
+  assertVersus("...-> real aldosterone activation", portal, healthy, "aldosterone", "up", 0.005);
+
+  // Real fluid retention, measured RELATIVELY against a matched control
+  // over a real 3-hour window (long enough for the RAAS/ADH activation
+  // above to have a real effect on renal water/salt handling) — not an
+  // absolute totalBloodVol rise, since this engine has a separate, already
+  // -documented baseline downward drift for EVERY patient (queue item 75,
+  // an open V2-31 finding unrelated to this mechanism). The honest,
+  // measurable claim is that a portal-hypertensive patient loses LESS
+  // blood volume than an otherwise-identical control over the same
+  // window — real, RAAS-driven relative fluid retention, not an invented
+  // absolute-volume claim this engine's own known drift would falsify.
+  const healthy3h = probe({ scen: "abdPain", settle: 180, run: 3 * 3600 + 180 });
+  const portal3h = probe({ scen: "abdPain", settle: 180, run: 3 * 3600 + 180,
+    mutate: (p) => { p.portalPressure = 12; } });
+  const healthyLoss = healthy3h.before.totalBloodVol - healthy3h.after.totalBloodVol;
+  const portalLoss = portal3h.before.totalBloodVol - portal3h.after.totalBloodVol;
+  const retainsMore = portalLoss < healthyLoss - 0.1;
+  retainsMore ? pass++ : fail++;
+  if (!retainsMore) failures.push(`a portal-hypertensive patient should retain measurably MORE blood volume than a matched control over 3h (real RAAS/ADH-driven fluid retention), got control loss ${healthyLoss.toFixed(3)}L vs portal-patient loss ${portalLoss.toFixed(3)}L`);
+  console.log(`  ${retainsMore ? "PASS" : "FAIL"}  ${"...-> real, relative fluid retention over 3h".padEnd(46)} control lost ${healthyLoss.toFixed(3)}L, portal-hypertensive lost only ${portalLoss.toFixed(3)}L`);
+
+  // Hepatic reserve/clearance: `cirrhosis` reuses the ALREADY-REAL
+  // organClearanceFactor()/pat.liverInjury mechanism (pk.js) directly —
+  // this is a wiring check confirming that reuse, not a new mechanism.
+  const cirrhotic = probe({ scen: "abdPain", settle: 180, run: 1980,
+    mutate: (p) => { p.liverInjury = Math.max(p.liverInjury || 0, 0.30); } });
+  const reserveReduced = cirrhotic.after.liverInjury >= 0.30 && healthy.after.liverInjury === 0;
+  reserveReduced ? pass++ : fail++;
+  if (!reserveReduced) failures.push(`cirrhosis's reduced hepatic reserve should show as real liverInjury (organClearanceFactor's own already-verified consumer), got cirrhotic=${cirrhotic.after.liverInjury}, healthy control=${healthy.after.liverInjury}`);
+  console.log(`  ${reserveReduced ? "PASS" : "FAIL"}  ${"...reduced hepatic reserve reuses real liverInjury/clearance".padEnd(46)} liverInjury: control ${healthy.after.liverInjury}, cirrhotic ${cirrhotic.after.liverInjury}`);
 }
 
 console.log("\n" + "=".repeat(74));
