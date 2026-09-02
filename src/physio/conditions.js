@@ -8528,4 +8528,186 @@ export const CONDITIONS = {
     initial: { age: 58, hr: 108, sbp: 132, dbp: 82, rr: 20, glu: 96, pain: 1, metHb: 0.28 },
   },
 
+  // ===== NECROTIZING FASCIITIS =====
+  // Queue item 7's standing condition-library workstream, section 8's
+  // Infectious-disease backlog. Confirmed genuinely unbuilt before writing
+  // anything (lesson 16): grepped Object.keys(CONDITIONS) and
+  // "necrotizingFasciitis"/"necFasc" across every file — no matches
+  // anywhere.
+  //
+  // REAL CLINICAL PICTURE (Stevens & Bryant, NEJM 2017; Wong et al., J Bone
+  // Joint Surg 2003 — the LRINEC-era literature this teaching point comes
+  // from): a rapidly progressive soft-tissue infection, classically
+  // following a minor wound/laceration (sometimes no identifiable portal),
+  // causing PAIN OUT OF PROPORTION to visible findings (the single most
+  // cited early teaching point — the exam looks like cellulitis, the pain
+  // does not), rapid systemic toxicity (fever, tachycardia, hypotension)
+  // and progressive tissue destruction. Untreated mortality is very high;
+  // the only definitive treatment is emergent surgical debridement, wholly
+  // outside prehospital scope. The real field job is EARLY RECOGNITION
+  // (the disproportionate-pain teaching point) and RAPID TRANSPORT — there
+  // is no field cure, matching this project's own established honesty for
+  // esophagealVaricealHemorrhage/envenomation.
+  //
+  // MECHANISM — reuses the SAME shared inflammation cascade
+  // pneumoniaSepsis/septicShock already build on (inflammation.js's
+  // pat.pathogenBurden -> pat.cytokineLoad, item 46's work), not a
+  // duplicate. The distinguishing features are the SOURCE (a local wound,
+  // via wounds:) and the SPEED, not a different cascade. Checked before
+  // building: pat.intrinsicPain (queue item 20's real, non-dead handle,
+  // already used this way by envenomation/appendicitis for a local-injury
+  // pain signal distinct from systemic vitals) is exactly the right
+  // mechanism for "severe pain, modest exam findings" — a real, severe,
+  // LOCAL pain signal held independent of the systemic cascade.
+  //
+  // Also checked (per explicit instruction) whether coagulation.js's new
+  // acute-traumatic-coagulopathy pathway (queue item V2-17, gated on real
+  // STRUCTURAL injury severity — brainInjury/kidneyInjury/liverInjury/
+  // gutInjury/limbInjury composed with hypoperfusion) is a real consumer
+  // here. It is NOT: ATC's own Brohi/Frith mechanism is specifically
+  // endothelial injury from mechanical/traumatic tissue disruption plus
+  // hypoperfusion, and none of its five structural-injury fields has a
+  // real writer for "soft-tissue bacterial destruction" — limbInjury
+  // specifically is a vascular-occlusion/ischemia mechanism (compartment
+  // syndrome/tourniquet time, per that field's own header), a genuinely
+  // different lesion from infective necrosis. Forcing this condition to
+  // write one of those fields just to light up ATC would be the same
+  // mechanism-category error the ATC comment itself warns against for
+  // limbInjury. Septic coagulopathy IS still real here, through the
+  // EXISTING cytokineLoad-driven consumptive pathway (coagulation.js's
+  // tissue-factor term, already a generic consumer of cytokineLoad) — no
+  // new coagulation work needed.
+  //
+  // SPEED — the real, citable distinction from pneumoniaSepsis (a days-old
+  // presentation) and from septicShock (hours-old, its own myocardial-
+  // depression gate measured not opening until ~93 minutes untreated,
+  // per that condition's own comment): untreated necrotizing fasciitis can
+  // progress from local infection to severe sepsis/septic shock within
+  // 24-72 hours (Stevens & Bryant, ibid), dramatically faster than ordinary
+  // cellulitis or the days-long pneumonia-sepsis course, and — the part
+  // that matters for a single EMS encounter — the deterioration is fast
+  // enough to be genuinely OBSERVABLE within one field encounter, unlike
+  // septicShock's own honest admission that its full arc needs longer than
+  // a realistic call. Modeled as a pathogenBurden climb roughly an order of
+  // magnitude faster than septicShock's own dt*0.0006 (see below), and a
+  // lower cytokineLoad myocardial-depression gate (0.4 vs septicShock's
+  // 0.45) so the decompensation point this item's own methodology asks for
+  // is actually reachable inside a realistic call, not deferred past it.
+  //
+  // TIME COURSE: presents already hours into a fulminant course (not the
+  // days septicShock/pneumoniaSepsis's own comments cite for their more
+  // established pictures) — pathogenBurden seeded at 0.45 (below
+  // septicShock's 0.5, since the wound itself may be only hours old) but
+  // cytokineLoad pre-seeded higher relative to that starting burden (0.35,
+  // versus septicShock's 0.3 off a 0.5 burden) since a fulminant local
+  // infection drives a disproportionately fast local cytokine response
+  // even before systemic burden fully catches up — then both climb far
+  // faster than either of those two conditions' own untreated course.
+  //
+  // TREATMENT — through the SAME mechanisms septicShock's own treatment
+  // response already demonstrates: crystalloid (saline/plasmalyte) expands
+  // stressed volume through the identical Starling-equation path every
+  // capillary-leak condition uses, genuinely raising cardiac
+  // output/blood pressure. The disproportionate LOCAL pain does NOT
+  // resolve with fluids — nothing in pk.js's fluid fx touches
+  // pat.intrinsicPain, and this condition's own progress() holds it at a
+  // severe floor regardless of treatment — the actual clinical point: this
+  // needs surgery, not resuscitation, to fix. No field surgical or
+  // antibiotic intervention exists in this formulary, and none is
+  // fabricated — the honest "recognize and transport fast" framing already
+  // established for envenomation/esophagealVaricealHemorrhage.
+  necrotizingFasciitis: {
+    initial: {
+      age: 58, weight: 88, hr: 118, sbp: 96, dbp: 60, rr: 22, glu: 148, pain: 9,
+      temp: 38.9,
+    },
+    // A real body-map location, per wounds.js's convention (several other
+    // conditions already use this — polytraumaFall/traumaPregnant). Deliberately
+    // a MODEST-looking wound (laceration/minor — the wounds.js default
+    // desc, "Shallow cut, clean edges, minor ooze") — the classic teaching
+    // point is that the visible wound looks unimpressive relative to the
+    // severity of the pain and the systemic toxicity; a dramatic-looking
+    // wound would undercut the actual lesson.
+    wounds: {
+      legL: { type: "laceration", severity: "minor",
+        note: "A small, days-old laceration below the knee — clean edges, minor ooze, nothing dramatic to look at. The skin above and below it is dusky and tight, though, and he screams when you touch skin two inches away from the wound itself that looks completely normal." },
+    },
+    progress(pat, dt) {
+      if (pat._necFascInit === undefined) {
+        pat._necFascInit = true;
+        // Hours into a fulminant course, not days (pneumoniaSepsis) or the
+        // "several hours" septicShock presents at — a real, moderate
+        // starting burden that the FAST climb below (not a higher seed)
+        // is what produces this condition's own distinguishing speed.
+        pat.pathogenBurden = Math.max(pat.pathogenBurden || 0, 0.5);
+        // Cytokine response disproportionately ahead of systemic burden —
+        // a fulminant local process drives local/regional cytokine release
+        // fast, before whole-body burden has fully caught up. See
+        // septicShock's own comment for the general "seed cytokineLoad too,
+        // not just pathogenBurden, for an already-established process"
+        // reasoning; this condition's own ratio (0.4 off a 0.5 burden) is
+        // deliberately front-loaded relative to that precedent (0.3 off
+        // 0.5) for exactly this reason — the local process has already
+        // driven a real cytokine response ahead of systemic burden fully
+        // equilibrating.
+        pat.cytokineLoad = Math.max(pat.cytokineLoad || 0, 0.4);
+        // The SAME dead-flag septicShock's own comment found and wired
+        // (cardiovascular.js SVR x0.45 / venous compliance x1.6,
+        // metabolic.js +lactate) — necrotizing fasciitis reaching septic
+        // shock IS this same distributive-shock physiology, not a
+        // different one; reusing the flag rather than re-deriving an
+        // equivalent SVR multiplier by hand.
+        pat.riskFactors.sepsis = true;
+      }
+      // Fever, direct and immediate — same metabolicHeatMultiplier handle
+      // septicShock/statusEpilepticus/the inflammation cascade all use.
+      // Slightly higher than septicShock's 1.3: a fulminant local process
+      // with this much tissue destruction runs a genuinely higher
+      // hypermetabolic rate than uncomplicated urosepsis.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1, 1.4);
+      // Distributive vasodilation, the same handle every septic/anaphylactic
+      // condition in this file uses, at a rate faster than septicShock's
+      // dt*0.01 (hours to ceiling) but far short of anaph's dt*0.12
+      // (seconds-to-minutes) — real septic vasoplegia developing over tens
+      // of minutes to an hour, not a single ambulance transport's opening
+      // minutes and not a mediator-release event.
+      pat.vasodilation = clamp((pat.vasodilation || 0) + dt * 0.03, 0, 0.6);
+      // Compensatory tachypnea, real qSOFA/SIRS component.
+      pat.rrBase = clamp((pat.rrBase ?? 22) + dt * 0.15, 18, 36);
+      // Ongoing, untreated tissue destruction and bacterial proliferation —
+      // roughly an order of magnitude faster than septicShock's own
+      // dt*0.0006 climb, the real, cited "hours not days" distinction this
+      // condition exists to teach. No field intervention (no antibiotic,
+      // no debridement) slows this — only rapid transport to definitive
+      // surgical care actually changes the trajectory, which this call
+      // cannot show.
+      pat.pathogenBurden = clamp((pat.pathogenBurden || 0.5) + dt * 0.012, 0.5, 0.97);
+      // Sepsis-induced myocardial depression, the SAME reversible handle
+      // pneumoniaSepsis/septicShock already use (Vieillard-Baron, Intensive
+      // Care Med 2018). Gated LOWER than septicShock's 0.45 (0.4) — given
+      // this condition's own faster pathogenBurden/cytokineLoad climb, the
+      // gate needs to be reachable inside a realistic ~20-30 minute call,
+      // not deferred past it the way septicShock's own comment documents
+      // (measured not to open until ~93 minutes there).
+      if (pat.cytokineLoad > 0.4) {
+        pat.contractilityFactor = clamp((pat.contractilityFactor ?? 1) - dt * 0.012, 0.55, 1);
+      }
+      // The actual teaching point: severe, DISPROPORTIONATE local pain,
+      // held near ceiling and unmoved by anything except tissue destruction
+      // itself worsening slightly over time — this is what "pain out of
+      // proportion to exam findings" looks like as a real, held signal
+      // rather than a one-time seed. Nothing in pk.js's fluid/analgesic fx
+      // reduces pat.intrinsicPain toward baseline the way it would for an
+      // ordinary wound's pain component — opioid analgesia (a real,
+      // separate mechanism, drugPain in pk.js) can blunt the DISPLAYED
+      // pain, but this condition's own intrinsicPain floor keeps
+      // re-asserting every tick, the same "ceiling/floor re-imposed every
+      // tick against a real opposing pull" idiom envenomation's own
+      // coagulation-factor ceilings already established — fluids
+      // specifically have no pain-related fx at all, so they cannot touch
+      // this by construction, not just by omission.
+      pat.intrinsicPain = clamp((pat.intrinsicPain ?? 9) + dt * 0.004, 8.5, 10);
+    },
+  },
+
 };

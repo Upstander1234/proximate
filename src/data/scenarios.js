@@ -6425,4 +6425,39 @@ boxJellyfishSting: {cat: "medical", id: "ENV-015", pronouns: "he", title: "Male,
     notes.push("Australian box jellyfish antivenom exists, but it is a hospital-administered product and is not carried on this unit — the field job is vinegar decontamination, supportive care, and monitoring for the real cardiotoxic arrhythmia risk on the monitor, with prompt transport.");
     return {died, cause, notes, correct: s.pi === "ENVN", truth: "Box jellyfish (cardiotoxic) envenomation — real risk of a lethal arrhythmia; vinegar deactivates unfired nematocysts, no field antivenom is carried"};},
 },
+
+// Necrotizing fasciitis (queue item 7, section 8's Infectious-disease
+// backlog). No existing Infectious-disease-adjacent scenario prefix
+// exists in this file (grep-confirmed before picking one) — a new INFX
+// prefix is started here.
+necrotizingFasciitisCall: {cat: "medical", id: "INFX-001", pronouns: "he", title: "Male, 58. Diabetic, worsening leg pain for two days, now confused and hot.",
+  limit: 1200, transport: 420,
+  bystanders: "His daughter, on the phone with dispatch until you arrive. \"He cut his leg on a fence two days ago, it was nothing. Today he can't even stand me touching it and he's talking strange.\"",
+  units: [{at: 320, level: "paramedic", name: "Medic 7"}],
+  dispatch: ["58M diabetic, worsening leg pain two days after a minor laceration.", "Daughter reports fever and new confusion this morning."],
+  update: ["Daughter: \"It's spreading. This morning the skin above his knee looks bruised and it wasn't like that an hour ago.\""],
+  impression: "On the couch, flushed and sweating, breathing fast. He answers slowly, drifting off mid-sentence. His left lower leg has a small, unremarkable-looking laceration below the knee, but he screams when you touch skin two inches away from it, well outside where the wound itself would explain it.",
+  imps: ["SEPS", "FEVR", "SHOK", "HOTN", "ALOC"],
+  condition: "necrotizingFasciitis",
+  patient: {age: 58, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "Daughter: \"Two days ago, a fence, just a scratch. Yesterday he said his leg hurt more than it looked like it should. This morning he could barely let me near it, and now he's talking strange.\"", kind: "pt",
+      evid: "Pain that has grown rapidly, disproportionately, and far beyond what a minor laceration would explain — over only two days — is the single most cited early teaching point for necrotizing fasciitis: pain out of proportion to visible findings.", find: "Hx (collateral): minor leg laceration 2 days ago, rapidly worsening disproportionate pain, new confusion this morning."}),
+    sample: () => ({say: "Daughter: \"He's diabetic, takes metformin and insulin. No allergies. He hasn't been eating much the last day, said he felt too sick.\"", kind: "pt",
+      evid: "Diabetes is the single most common comorbidity in real necrotizing fasciitis — impaired local tissue immunity lets a minor wound become a fulminant deep soft-tissue infection.", find: "SAMPLE: diabetic (metformin, insulin), NKDA, poor oral intake x1 day."}),
+    skin: (s, v) => ({say: `Hot and flushed, sweating. ${v.sbp < 100 ? "Cap refill is actually fairly brisk despite how low that pressure is." : "Cap refill brisk."} The leg itself looks far less alarming than the pain would suggest — a small, clean laceration, some dusky discoloration spreading above and below it.`, kind: "crit",
+      evid: "Warm, flushed, vasodilated skin with a disproportionately unimpressive local wound and severe, spreading pain is the exact combination this condition exists to teach — the exam does not match the pain, and that mismatch IS the diagnosis.", find: "Skin: hot, flushed, diaphoretic; small laceration legL with early dusky discoloration spreading beyond the wound margin; pain grossly out of proportion to visible findings."}),
+    heart: (s, v) => ({say: `Fast and bounding. Pressure reads ${v.sbp}/${v.dbp}.`, find: `Heart: tachycardic, bounding pulses. BP ${v.sbp}/${v.dbp}.`}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const fluidL = (s.given.saline || 0) * 0.5 + (s.given.plasmalyte || 0) * 0.5;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated necrotizing fasciitis: the tissue destruction and the septic cascade it drives outrun what field resuscitation alone can hold back, and nothing here can stop the process itself — only surgery can.";
+    notes.push("Pain grossly out of proportion to a small, unremarkable-looking wound, in a diabetic patient, progressing over hours to days into fever and confusion, is the pattern to recognize: necrotizing fasciitis, a true surgical emergency that a field exam alone can miss if the wound itself is judged on looks.");
+    if (fluidL >= 1) notes.push("Aggressive crystalloid was the right first move for the septic-shock physiology this is now driving — early fluid resuscitation genuinely helps the hemodynamics here, the same way it does in any other septic-shock picture.");
+    else notes.push("No meaningful fluid resuscitation given. This patient is septic on top of the local infection, and needed volume as a first move.");
+    notes.push("There is no field antibiotic, and there is no field surgery — emergent debridement is the only definitive treatment for necrotizing fasciitis, and it does not exist in this box. Fluids will support his blood pressure, but they will not touch the pain or the tissue destruction driving it; both need a scalpel, not a bag of saline. The job here is recognizing it fast and getting him to a facility that can operate, not managing it on scene.");
+    return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Necrotizing fasciitis — fulminant soft-tissue infection progressing to septic shock, no field cure, rapid transport for emergent surgical debridement"};},
+},
 };

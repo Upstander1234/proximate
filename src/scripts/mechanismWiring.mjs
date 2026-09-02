@@ -5790,6 +5790,72 @@ console.log("\n[REVERSIBLE HEPATIC/GUT DYSFUNCTION — queue item 48, extending 
   console.log(`  ${healthyReportEmpty ? "PASS" : "FAIL"}  ${"...and stays empty for a matched healthy control".padEnd(46)} reversibleFindings=${JSON.stringify(healthyReport?.reversibleFindings)}`);
 }
 
+console.log("\n[NECROTIZING FASCIITIS — queue item 7, Infectious-disease backlog]");
+{
+  // Reuses the SAME shared inflammation cascade septicShock/pneumoniaSepsis
+  // already build on (inflammation.js), not a duplicate mechanism. Two-sided
+  // per lesson 6: fires vs a matched healthy control, is genuinely FASTER
+  // than septicShock's own already-documented course (this condition's real
+  // distinguishing feature — "hours not days"), a real, disproportionate
+  // local pain signal present from the start, fluids genuinely help the
+  // hemodynamics through the shared Starling path, and — the actual
+  // clinical point — fluids do NOT touch the disproportionate local pain.
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 1200 });
+  const necFasc = probe({ scen: "necrotizingFasciitisCall", settle: 2, run: 1200 });
+  const septic = probe({ scen: "septicShock", settle: 2, run: 1200 });
+
+  assertVersus("necFasc -> SVR collapse (riskFactors.sepsis wired)", necFasc, healthy, "svr", "down", 200);
+
+  // The real, cited distinction: at the same 1200s (20 min) timepoint,
+  // necFasc's own myocardial-depression gate (cytokineLoad>0.4) has already
+  // opened, while septicShock's own gate (cytokineLoad>0.45) is measured
+  // (that condition's own comment) not to open until ~93 minutes untreated
+  // — so at 1200s septicShock's contractilityFactor is still exactly 1.
+  const fasterThanSeptic = necFasc.after.contractilityFactor < 0.9 && septic.after.contractilityFactor >= 0.999;
+  fasterThanSeptic ? pass++ : fail++;
+  if (!fasterThanSeptic) failures.push(`necrotizingFasciitis should show real myocardial depression by 1200s while septicShock's own slower gate has not yet opened, got necFasc contractilityFactor=${necFasc.after.contractilityFactor.toFixed(3)}, septicShock contractilityFactor=${septic.after.contractilityFactor.toFixed(3)}`);
+  console.log(`  ${fasterThanSeptic ? "PASS" : "FAIL"}  ${"...progresses FASTER than septicShock's own documented course".padEnd(46)} contractilityFactor: necFasc=${necFasc.after.contractilityFactor.toFixed(3)} vs septicShock=${septic.after.contractilityFactor.toFixed(3)}`);
+
+  // Same real teaching point on the raw hemodynamics: necFasc's sbp has
+  // fallen further than septicShock's own by the same 1200s timepoint,
+  // even though both conditions reuse the identical riskFactors.sepsis
+  // mechanism — the extra fall is necFasc's own faster pathogenBurden
+  // climb plus its already-open contractility gate.
+  assertVersus("...sbp has collapsed further than septicShock's own at the same timepoint", necFasc, septic, "sbp", "down", 5);
+
+  const specific = healthy.after.cytokineLoad === 0 && healthy.after.pathogenBurden === 0;
+  specific ? pass++ : fail++;
+  if (!specific) failures.push(`healthy control (abdPain) should show zero cytokineLoad/pathogenBurden, got ${healthy.after.cytokineLoad}/${healthy.after.pathogenBurden}`);
+  console.log(`  ${specific ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} cytokineLoad=${healthy.after.cytokineLoad}, pathogenBurden=${healthy.after.pathogenBurden}`);
+
+  // The disproportionate local pain: severe from the start (well within
+  // the first few minutes on scene), not a slow ramp.
+  const earlyPain = probe({ scen: "necrotizingFasciitisCall", settle: 2, run: 300 });
+  const painSevereEarly = earlyPain.after.intrinsicPain >= 9;
+  painSevereEarly ? pass++ : fail++;
+  if (!painSevereEarly) failures.push(`necrotizingFasciitis should show severe intrinsicPain (>=9) within the first 5 minutes, got ${earlyPain.after.intrinsicPain}`);
+  console.log(`  ${painSevereEarly ? "PASS" : "FAIL"}  ${"...severe, disproportionate local pain present from the start".padEnd(46)} intrinsicPain=${earlyPain.after.intrinsicPain.toFixed(1)}`);
+
+  // Treatment: fluids genuinely raise co/sbp through the SAME generic
+  // Starling-equation path every capillary-leak condition already uses
+  // (metabolic.js) — the honest, real fluid response septicShock's own
+  // assertion already demonstrates, now for this condition too.
+  const fluidTreated = probe({ scen: "necrotizingFasciitisCall", settle: 2, run: 900, apply: ["saline"], reapply: 240 });
+  const untreated900 = probe({ scen: "necrotizingFasciitisCall", settle: 2, run: 900 });
+  assertVersus("...fluids raise co through the shared Starling path", fluidTreated, untreated900, "co", "up", 0.5);
+  assertVersus("...fluids raise sbp through the same path", fluidTreated, untreated900, "sbp", "up", 5);
+
+  // The actual clinical point: the disproportionate LOCAL pain does NOT
+  // resolve with fluids — nothing in pk.js's fluid fx touches
+  // pat.intrinsicPain, so a fluid-treated and an untreated patient show
+  // essentially the SAME severe pain at the same timepoint. This needs
+  // surgery, not resuscitation, to actually fix.
+  const painUnmoved = Math.abs(fluidTreated.after.intrinsicPain - untreated900.after.intrinsicPain) < 0.3;
+  painUnmoved ? pass++ : fail++;
+  if (!painUnmoved) failures.push(`fluids should NOT meaningfully change intrinsicPain (needs surgery, not resuscitation), got untreated=${untreated900.after.intrinsicPain.toFixed(1)}, treated=${fluidTreated.after.intrinsicPain.toFixed(1)}`);
+  console.log(`  ${painUnmoved ? "PASS" : "FAIL"}  ${"...but the disproportionate pain does NOT resolve with fluids".padEnd(46)} intrinsicPain: untreated=${untreated900.after.intrinsicPain.toFixed(1)}, fluid-treated=${fluidTreated.after.intrinsicPain.toFixed(1)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {
