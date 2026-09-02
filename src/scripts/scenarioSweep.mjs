@@ -238,6 +238,11 @@ const REQUIRED = [
   // always-non-negative 0-1 quantity (patient.js constructor default 0)
   // now consumed by actions.js's "askThirst" exam action.
   "thirstDrive",
+  // Queue item V2-13 (cirrhosis / portal hypertension): a real, always-
+  // non-negative HVPG-equivalent mmHg quantity (patient.js constructor
+  // default 0), driving real splanchnic vasodilation and RAAS/ADH
+  // activation via renal.js.
+  "portalPressure",
 ];
 
 // Fields that may never go negative.
@@ -347,6 +352,8 @@ const NON_NEGATIVE = [
   "metHb",
   // Queue item V2-9: real, always-non-negative 0-1 thirst drive.
   "thirstDrive",
+  // Queue item V2-13: real, always-non-negative HVPG-equivalent mmHg.
+  "portalPressure",
 ];
 
 const results = [];

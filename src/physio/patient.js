@@ -951,6 +951,12 @@ export class Patient {
     // extending the atnProgression/kidneyInjury pattern to liver) --
     // separate from the durable structural liverInjury accumulator above.
     this.hepaticStunning = 0;
+    // Portal pressure (HVPG-equivalent, mmHg) -- queue item V2-13's real
+    // cirrhotic-portal-hypertension mechanism (renal.js). Default 0 (no
+    // gradient above hepatic-vein baseline, i.e. no portal lesion) -- a
+    // condition-owned field, only cirrhosis sets it above 0 today.
+    this.portalPressure = 0;
+    this._portalVasodilation = 0;
     // Splanchnic (gut) local oxygen delivery/demand + real structural
     // injury (queue item 42, third slice) -- a genuinely new field, not a
     // re-driven existing one; real values computed every tick by neuro.js's
