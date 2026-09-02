@@ -1,4 +1,48 @@
 // End-organ injury accrual (kidney/brain/liver) and cerebral perfusion / consciousness.
+//
+// QUEUE ITEM V2-4 (microcirculation as its own layer / physio/microcirculation.js)
+// AUDITED, NO EXTRACTION DONE — a real, considered judgment call, not a
+// skip. The source document's own suggestion was to pull the Starling
+// equation (metabolic.js's updateFluidShifts) and per-organ perfusion
+// (this function) into a dedicated physio/microcirculation.js module, as a
+// pure, zero-behavior-change refactor. Investigated by actually reading
+// both functions end to end before deciding, per lesson 16.
+//
+// Both are already real, correct, heavily-verified mechanisms (see this
+// project's own CLAUDE.md queue item 42 for the per-organ work and item
+// 5's ivProtein/isProtein note for the Starling equation) — this was never
+// a question of whether the physiology is right, only whether relocating
+// it is worth the risk.
+//
+// Finding: this function is NOT a clean set of independent per-organ
+// snippets that happen to sit in one file. Kidney/brain/liver/gut/skin/
+// muscle sections here are woven together and interdependent within one
+// function body — they share local variables computed once at the top
+// (mapRefB, cppNow, restCo, cytoBlockInj), brain's own reperfusion-injury
+// term reads pat._rosc and pat.brainInjury together with the SAME
+// consciousness-adjacent state updateCerebral (elsewhere in this file)
+// also touches, and several sections explicitly cross-reference each
+// other's calibration in their own comments (gut's ischemic deadband cites
+// brain's; hepaticStunning/gutMucosalStunning explicitly reuse gut/liver's
+// own already-calibrated rise/decay rates). Splitting this into a new
+// module would mean either moving the WHOLE function (dragging brain/
+// consciousness logic that has nothing to do with "microcirculation" per
+// the source doc's own framing) or picking apart a single function's
+// tightly-coupled sections into two files — real risk of an import-order
+// bug, a stale shared-variable reference, or a subtle scoping slip, for a
+// change this project's own full-suite regression pass (mechanismWiring.mjs
+// ~400+ assertions, scenarioSweep.mjs ~160 scenarios) takes real minutes to
+// even confirm didn't break anything, on ALREADY-shipped, already-verified
+// conditions. No other queue item depends on this file boundary — V2-4 is
+// its own suggestion, not a blocker for anything else in the queue.
+//
+// Conclusion, per section 4's own discipline ("favor NOT touching working
+// code without a real, concrete reason"): the benefit here is purely
+// cosmetic/architectural, the risk is real and non-trivial, and nothing is
+// currently blocked by the current file organization. Deliberately NOT
+// extracted. Revisit only if a future session identifies a REAL blocker
+// (e.g. a new mechanism that genuinely needs microcirculation logic
+// decoupled from cerebral injury to be built cleanly), not preemptively.
 export function updateOrganInjury(pat, dt) {
     // Kidney injury now reads pat.renalO2Debt (renal.js, queue item 42) --
     // a LOCAL renal delivery-vs-demand signal built from the kidney's own
