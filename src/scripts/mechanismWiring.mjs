@@ -5930,6 +5930,75 @@ console.log("\n[NECROTIZING FASCIITIS — queue item 7, Infectious-disease backl
   console.log(`  ${painUnmoved ? "PASS" : "FAIL"}  ${"...but the disproportionate pain does NOT resolve with fluids".padEnd(46)} intrinsicPain: untreated=${untreated900.after.intrinsicPain.toFixed(1)}, fluid-treated=${fluidTreated.after.intrinsicPain.toFixed(1)}`);
 }
 
+console.log("[COCAINE TOXICITY — queue item 7, Toxicology backlog]");
+{
+  // Two-sided per lesson 6: fires (severe sympathomimetic tachycardia/
+  // hypertension/agitation/hyperthermia plus real coronary vasospasm),
+  // specificity (a matched healthy control shows zero of the condition-
+  // owned findings), an already-symptomatic-on-arrival time course (unlike
+  // several toxidromes in this library, cocaine's peak effect is within
+  // minutes — the vasospasm should already be substantial by 5 minutes,
+  // not still ramping from zero), midazolam genuinely reduces the
+  // tachycardia/hypertension/agitation (a real, DIFFERENT finding from
+  // excitedDelirium's own more medication-refractory catecholamine storm),
+  // and metoprolol's own beta1-receptor tachycardia response is confirmed
+  // NOT to touch the coronary-vasospasm/hypertension mechanism at all — the
+  // honest, only-partially-modeled "unopposed alpha" limitation this
+  // condition's own comment states plainly.
+  const untreated = probe({ scen: "cocaineToxicity", settle: 2, run: 900 });
+  const healthy = probe({ scen: "abdPain", settle: 2, run: 900 });
+
+  const fires = untreated.after.hr > healthy.after.hr + 40
+    && untreated.after.sbp > healthy.after.sbp + 15
+    && untreated.after.agitationBurden > 0.5
+    && untreated.after.coronaryStenosis > 0.2
+    && untreated.after.metabolicHeatMultiplier > 1.3;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`cocaineToxicity should show severe tachycardia/hypertension vs a healthy control, agitationBurden>0.5, coronaryStenosis>0.2, and metabolicHeatMultiplier>1.3 by 900s, got hr=${untreated.after.hr.toFixed(1)} sbp=${untreated.after.sbp.toFixed(1)} agitationBurden=${untreated.after.agitationBurden.toFixed(2)} coronaryStenosis=${untreated.after.coronaryStenosis.toFixed(3)} heat=${untreated.after.metabolicHeatMultiplier.toFixed(2)}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"cocaineToxicity -> real sympathomimetic + coronary vasospasm fires".padEnd(46)} hr=${untreated.after.hr.toFixed(1)} sbp=${untreated.after.sbp.toFixed(1)} coronaryStenosis=${untreated.after.coronaryStenosis.toFixed(3)}`);
+
+  const healthyOk = healthy.after.agitationBurden === 0 && healthy.after.coronaryStenosis === 0
+    && healthy.after.metabolicHeatMultiplier === 1;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show exactly zero agitationBurden/coronaryStenosis and metabolicHeatMultiplier=1, got ${healthy.after.agitationBurden}/${healthy.after.coronaryStenosis}/${healthy.after.metabolicHeatMultiplier}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} agitationBurden=${healthy.after.agitationBurden.toFixed(2)} coronaryStenosis=${healthy.after.coronaryStenosis.toFixed(3)}`);
+
+  // Already symptomatic on arrival — a real, fast time course, unlike the
+  // multi-hour ramps this library uses for several other toxidromes.
+  const early = probe({ scen: "cocaineToxicity", settle: 2, run: 300 });
+  const alreadySevere = early.after.hr > 140 && early.after.coronaryStenosis > 0.2;
+  alreadySevere ? pass++ : fail++;
+  if (!alreadySevere) failures.push(`cocaineToxicity should already be severely tachycardic (hr>140) with real coronary vasospasm (coronaryStenosis>0.2) by 300s (5 min), matching cocaine's real rapid peak effect, got hr=${early.after.hr.toFixed(1)} coronaryStenosis=${early.after.coronaryStenosis.toFixed(3)}`);
+  console.log(`  ${alreadySevere ? "PASS" : "FAIL"}  ${"...already substantially symptomatic within 5 minutes".padEnd(46)} hr=${early.after.hr.toFixed(1)} coronaryStenosis=${early.after.coronaryStenosis.toFixed(3)}`);
+
+  // Benzodiazepine treatment — the real two-sided teaching point of this
+  // condition: unlike several other toxidromes in this library, this one
+  // has a genuinely effective field treatment. Midazolam should measurably
+  // lower hr, sbp AND agitationBurden together (a real, different finding
+  // from excitedDelirium's own precedent, where sedation calms behavior
+  // without moving the underlying crisis fields at all).
+  const midazolamTreated = probe({ scen: "cocaineToxicity", settle: 2, run: 900, apply: ["midazolam"], reapply: 140 });
+  assertVersus("midazolam -> measurably lowers heart rate", midazolamTreated, untreated, "hr", "down", 5);
+  assertVersus("midazolam -> measurably lowers blood pressure", midazolamTreated, untreated, "sbp", "down", 10);
+  assertVersus("midazolam -> measurably reduces agitationBurden", midazolamTreated, untreated, "agitationBurden", "down", 0.1);
+
+  // The real, honest "unopposed alpha" limitation, confirmed rather than
+  // assumed: metoprolol's own beta1 receptor term (drugs.js) lowers heart
+  // rate through a completely unrelated mechanism (direct chronotropic
+  // blockade), but does NOT touch this condition's own coronaryStenosis/
+  // baseSVR terms — neither reads the other, so the real field hazard
+  // ("unopposed alpha" worsening vasospasm/hypertension) is honestly only
+  // partially represented here, stated in this condition's own comment.
+  const metoTreated = probe({ scen: "cocaineToxicity", settle: 2, run: 900, apply: ["metoprolol"], reapply: 2400 });
+  const metoLowersHr = (untreated.after.hr - metoTreated.after.hr) > 5;
+  const metoLeavesVasospasm = Math.abs(metoTreated.after.coronaryStenosis - untreated.after.coronaryStenosis) < 0.01
+    && Math.abs(metoTreated.after.baseSVR - untreated.after.baseSVR) < 5;
+  const metoOk = metoLowersHr && metoLeavesVasospasm;
+  metoOk ? pass++ : fail++;
+  if (!metoOk) failures.push(`metoprolol should lower hr via its own unrelated beta1 mechanism while leaving coronaryStenosis/baseSVR essentially untouched (the honest, only-partially-modeled "unopposed alpha" limitation), got hr ${untreated.after.hr.toFixed(1)}->${metoTreated.after.hr.toFixed(1)}, coronaryStenosis ${untreated.after.coronaryStenosis.toFixed(3)}->${metoTreated.after.coronaryStenosis.toFixed(3)}, baseSVR ${untreated.after.baseSVR.toFixed(0)}->${metoTreated.after.baseSVR.toFixed(0)}`);
+  console.log(`  ${metoOk ? "PASS" : "FAIL"}  ${"...metoprolol lowers hr but leaves coronary vasospasm untouched".padEnd(46)} hr ${untreated.after.hr.toFixed(1)} -> ${metoTreated.after.hr.toFixed(1)}, coronaryStenosis unchanged at ${metoTreated.after.coronaryStenosis.toFixed(3)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {

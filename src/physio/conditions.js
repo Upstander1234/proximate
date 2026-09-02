@@ -8294,6 +8294,151 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== COCAINE TOXICITY (queue item 7, Toxicology backlog — TOX-016) =====
+  // MECHANISM: cocaine blocks presynaptic reuptake of norepinephrine/
+  // dopamine/serotonin at the synaptic cleft (NET/DAT/SERT inhibition) —
+  // the same mechanism CATEGORY (a catecholamine-reuptake-inhibition
+  // pathway) as V2-26's recently-built ketamine indirect-sympathomimetic
+  // effect, but a genuinely DIFFERENT cause: ketamine's indirect
+  // sympathomimetic term is NMDA-antagonist-driven catecholamine RELEASE,
+  // gated by the patient's own depletable pat.adrenalReserve (drugs.js's
+  // indirectSympathomimetic, pk.js). Cocaine's action is reuptake
+  // BLOCKADE at the synapse, which potentiates whatever endogenous release
+  // is already occurring rather than depending on adrenal medullary
+  // output — so this condition does NOT gate on adrenalReserve, and
+  // drives hrBase/baseSVR/agitationBurden directly, the same
+  // "condition declares severity, engine composes it" idiom
+  // excitedDelirium/serotoninSyndrome already use for a catecholamine-
+  // excess toxidrome.
+  //
+  // REAL PRESENTATION (Lange & Hillis, "Cardiovascular Complications of
+  // Cocaine Use," NEJM 2001; Richards et al., "Treatment of cocaine
+  // cardiovascular toxicity: a systematic review," Clin Toxicol 2016):
+  // severe tachycardia and hypertension (combined alpha/beta-adrenergic
+  // potentiation), psychomotor agitation, hyperthermia (increased
+  // psychomotor/muscular activity plus a direct hypothalamic
+  // thermoregulatory effect), and — the real, teachable complication —
+  // coronary VASOSPASM from direct alpha-adrenergic-mediated coronary
+  // vasoconstriction, causing cocaine-associated chest pain/myocardial
+  // ischemia even in young patients with angiographically normal
+  // coronary arteries.
+  //
+  // Cocaine's peak effect is within minutes of use regardless of route —
+  // presented already symptomatic on scene, the same "already
+  // symptomatic on arrival" framing atropineOverdose/tricyclicOverdose/
+  // organophosphatePoisoning all use, not an instant step from a normal
+  // baseline.
+  //
+  // CORONARY VASOSPASM, reusing the EXISTING coronary supply/demand
+  // mechanism (cardiovascular.js: reserve = 1-pat.coronaryStenosis caps
+  // maximal coronary flow, feeding pat.myoO2Balance/pat.atp) rather than
+  // inventing a parallel ischemia pathway. This is a real, TRANSIENT,
+  // reversible rise in coronary resistance from alpha-adrenergic
+  // vasoconstriction — mechanistically distinct from ACS's fixed
+  // atherosclerotic thrombus (which also drives coronaryStenosis for that
+  // condition), but the shared variable is the correct reuse point: both
+  // a structural plaque and a vasospasm reduce the SAME coronary flow
+  // reserve, just via different causes. Deliberately kept modest (peak
+  // ~0.35 at full expression) — real coronary vasospasm in a young
+  // patient with otherwise normal arteries produces genuine but usually
+  // SUBCRITICAL ischemia (chest pain, ECG changes, a troponin leak in
+  // severe cases), not the near-total occlusion a completed STEMI
+  // thrombus produces (acs's own 0.53-0.6 range) — pushing this higher
+  // would be the exact mechanism-category error queue item 19 already
+  // warns against widening the survivable band for. RECOMPUTED FRESH
+  // every tick from pat._cocSpasm (the same "live, fully reversible,
+  // condition-owned quantity" idiom compartment syndrome's own
+  // pat.compartmentOcclusion already established) rather than a one-way
+  // ratchet, so it genuinely relaxes as expression falls (e.g. under
+  // benzodiazepine treatment) instead of leaving a permanent high-water
+  // mark. Chest pain (pat.intrinsicPain) is real largely independent of
+  // whether the vasospasm is severe enough to actually drop pat.atp —
+  // matching the real clinical picture that cocaine-associated chest pain
+  // is common with or without objective infarction.
+  //
+  // BETA-BLOCKER RELATIVE CONTRAINDICATION ("unopposed alpha") — the real
+  // field teaching point that a pure beta-blocker removes the beta-2-
+  // mediated vasodilation partially offsetting cocaine's alpha-mediated
+  // vasoconstriction, worsening coronary vasospasm/hypertension.
+  // DELIBERATELY NOT modeled as a drugs.js hold() this batch — building
+  // the condition itself was the priority, and neither metoprolol's own
+  // beta1/beta2 receptor terms nor this condition's coronaryStenosis/
+  // baseSVR terms read each other today, so metoprolol is honestly INERT
+  // here rather than actively worsening it — the real hazard is only
+  // partially represented (this condition does not get artificially
+  // WORSE by a beta-blocker, but a future session wiring metoprolol's
+  // beta2 blockade into a genuine "removes protective vasodilation" term
+  // on coronaryStenosis would close the gap for real). Flagged, not
+  // silently glossed over.
+  //
+  // BENZODIAZEPINES ARE REAL, FIRST-LINE FIELD TREATMENT — unlike several
+  // of this project's other toxidromes (no effective field treatment),
+  // this one genuinely responds: central GABA-A-mediated sympatholysis
+  // measurably reduces cocaine's autonomic hyperactivity (ACEP clinical
+  // policy; Richards 2016). This is a real, DIFFERENT finding from
+  // excitedDelirium's own more medication-refractory catecholamine storm
+  // (that condition's own comment documents midazolam calming BEHAVIOR
+  // — pat.agitation — without touching the underlying crisis fields at
+  // all) — cocaine toxicity's autonomic findings themselves genuinely
+  // improve with benzodiazepines, not just the behavioral expression of
+  // them. Reuses pat.sedationDepth (pk.js, midazolam/etomidate's real
+  // GABA-A mechanism, queue item 47 — the SAME field neuro.js's own
+  // agitation composition already reads) to scale down how much of this
+  // condition's own catecholamine-excess severity reaches hrBase/
+  // baseSVR/coronaryStenosis/agitationBurden — a second, real consumer of
+  // an already-verified drug-effect field, not a new mechanism.
+  cocaineToxicity: {
+    initial: { age: 29, hr: 138, sbp: 172, dbp: 104, rr: 26, glu: 100, pain: 6 },
+    progress(pat, dt) {
+      // Benzo-responsive severity scale: at a standard midazolam dose's own
+      // measured sedationDepth (~0.5-0.6, per that field's own comment),
+      // this leaves roughly 55-65% of cocaine's catecholamine drive
+      // expressed — real, substantial, but not a cure, matching Richards
+      // 2016's own "benzodiazepines reduce but do not normalize" finding.
+      const sed = Math.min(1, pat.sedationDepth || 0);
+      const expressed = 1 - sed * 0.6;
+
+      // Tachycardia — direct hrBase ramp, ceiling scaled by expression.
+      const hrTarget = 110 + 70 * expressed;
+      pat.hrBase = pat.hrBase + (hrTarget - pat.hrBase) * Math.min(1, dt / 4);
+
+      // Hypertension — relative to the patient's own fixed anatomic
+      // reference, the same idiom hypertensiveUrgency/Emergency/
+      // serotoninSyndrome already established.
+      if (pat._cocRestSvr == null) pat._cocRestSvr = pat.ageProfile.baseSVR();
+      const svrTarget = pat._cocRestSvr * (1 + 1.1 * expressed);
+      pat.baseSVR += (svrTarget - pat.baseSVR) * Math.min(1, dt / 4);
+
+      // Hyperthermia — real, from increased psychomotor activity plus a
+      // direct hypothalamic effect, through the same shared
+      // metabolicHeatMultiplier handle every other hypermetabolic
+      // toxidrome in this library uses.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1,
+        1 + 0.55 * expressed);
+
+      // Agitation — direct handle, LIVE (not a one-way ratchet, unlike
+      // several other toxidromes' own agitationBurden writes): cocaine
+      // toxicity's agitation genuinely tracks the same benzo-responsive
+      // catecholamine drive as its hemodynamics, so it should fall with
+      // treatment the same way hrBase/baseSVR do, not lock in at its own
+      // pre-treatment high-water mark.
+      pat.agitationBurden = 0.75 * expressed;
+
+      // Coronary vasospasm — a live, fully reversible term (not a ratchet),
+      // relaxing toward its own target over a few minutes (real vasospasm
+      // is not instantaneous, but it is fast — seconds to a couple of
+      // minutes, distinct from ACS's own much slower thrombus-propagation
+      // timescale).
+      const spasmTarget = 0.35 * expressed;
+      pat._cocSpasm = (pat._cocSpasm ?? 0) + (spasmTarget - (pat._cocSpasm ?? 0)) * Math.min(1, dt / 3);
+      pat.coronaryStenosis = pat._cocSpasm;
+
+      // Chest pain — real and present largely independent of whether the
+      // vasospasm is severe enough to measurably drop atp.
+      pat.intrinsicPain = Math.max(pat.intrinsicPain || 0, 5 + 3 * expressed);
+    },
+  },
+
   // ===== NEUROLEPTIC MALIGNANT SYNDROME (queue item 7, Toxicology backlog) =====
   // Built as a real, clinically distinct contrast to serotoninSyndrome
   // (above), per Caroff & Mann's classic review ("Neuroleptic Malignant

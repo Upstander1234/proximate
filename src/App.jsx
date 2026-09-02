@@ -1027,7 +1027,7 @@ const SCEN_BODY_SYSTEM={
   // the same category.
   rocuroniumOverdose:"Toxicology",diltiazemOverdose:"Toxicology",metoprololOverdose:"Toxicology",atropineOverdose:"Toxicology",
   carbonMonoxidePoisoning:"Toxicology",lidocaineOverdose:"Toxicology",tricyclicOverdose:"Toxicology",
-  cyanidePoisoning:"Toxicology",
+  cyanidePoisoning:"Toxicology",cocaineToxicity:"Toxicology",
   methemoglobinemia:"Toxicology",
   lithiumToxicity:"Toxicology",ironOverdose:"Toxicology",hydrocarbonAspiration:"Toxicology",serotoninSyndrome:"Toxicology",neurolepticMalignantSyndrome:"Toxicology",
   boxJellyfishSting:"Toxicology",

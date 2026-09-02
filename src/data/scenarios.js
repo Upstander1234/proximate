@@ -5313,6 +5313,49 @@ tricyclicOverdose: {cat: "medical", id: "TOX-007", pronouns: "she", title: "Fema
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "DYSR", truth: "Tricyclic antidepressant overdose — sodium-channel blockade with QRS widening, anticholinergic toxidrome, and a real risk of sudden seizure/arrhythmia; sodium bicarbonate is the field antidote-equivalent"};},
 },
 
+// Cocaine toxicity (queue item 7, Toxicology backlog — TOX-016). A young
+// patient with a sympathomimetic toxidrome and real cocaine-associated
+// chest pain from coronary vasospasm — see conditions.js's cocaineToxicity
+// comment for the full mechanism/literature writeup. Deliberately written
+// so the nitro/beta-blocker reflex a "chest pain" presentation invites is
+// the real, teachable field trap: the actual first-line treatment here is
+// benzodiazepines, not the cardiac-chest-pain protocol reflex.
+cocaineToxicity: {cat: "medical", id: "TOX-016", pronouns: "he", title: "Male, 29. Agitated, sweating, chest pain — bar bathroom, friends worried.",
+  limit: 900, transport: 480,
+  bystanders: "His friend, sweating himself, talking fast. \"We were at the bar, he went to the bathroom and came back all wound up, saying his chest hurts and his heart's racing. He's done this before but never looked this bad. I think he did a bunch of coke tonight.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["29M, chest pain, agitated.", "Bystander reports recent cocaine use.", "Conscious, diaphoretic."],
+  update: [],
+  impression: "Pacing then sitting then pacing again, sweating heavily, picking at his shirt, jaw clenched, pupils wide.",
+  imps: ["ODPO", "CPMI", "ALOC"],
+  condition: "cocaineToxicity",
+  patient: {age: 29, gender: "male"},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Friend: \"He's used before, recreationally, never like this. Tonight he did a lot more than usual. No other meds, no allergies that I know of. He said his chest started hurting maybe twenty minutes ago.\"", kind: "pt",
+      evid: "Recent, heavy cocaine use with chest pain onset within the last half hour matches cocaine's own rapid peak effect and its real, documented coronary-vasospasm chest-pain complication.", find: "SAMPLE (collateral): recent heavy cocaine use, chest pain onset ~20 minutes prior, no other reported substances."}),
+    opqrst: (s, v) => ({say: v._cons === "awake" ? "\"It's tight, right here, and my heart won't slow down.\" He can't sit still long enough to finish a sentence." : "He isn't answering clearly.", kind: "pt",
+      find: "OPQRST: substernal chest tightness, onset ~20 min after heavy cocaine use, associated palpitations and agitation.", evid: "Chest pain this soon after cocaine use, in a young patient with no prior cardiac history, is the real cocaine-associated-chest-pain presentation — coronary vasospasm on otherwise normal arteries, not necessarily atherosclerotic ACS."}),
+    // Reads live physiology (conditions.js/cardiovascular.js): the heart
+    // exam reports the real hr/sbp/dbp this condition drives, and the real,
+    // condition-owned coronary vasospasm term rather than a scripted line.
+    heart: (s, v) => {
+      const spasm = s.patient?.coronaryStenosis || 0;
+      return {say: `Rate ${v.hr}, pressure ${v.sbp}/${v.dbp ?? "?"}. Diaphoretic, tremulous.${spasm > 0.2 ? " He keeps grabbing at his chest, says it's getting worse." : ""}`, kind: v.hr > 150 || v.sbp > 190 ? "crit" : "obs",
+        find: `Heart: rate ${v.hr}, sbp ${v.sbp}/${v.dbp ?? "?"}.`,
+        evid: "Severe tachycardia and hypertension together with real chest pain, in a young cocaine-intoxicated patient, is the combined sympathomimetic-toxicity-plus-coronary-vasospasm picture — treat the toxidrome, not a presumed atherosclerotic MI."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Cocaine toxicity, unmanaged, progressed to malignant hypertension and coronary vasospasm severe enough to cause myocardial ischemia.";
+    notes.push("This is cocaine toxicity: a potent sympathomimetic from blocked presynaptic reuptake of norepinephrine, dopamine, and serotonin. Severe tachycardia, severe hypertension, agitation, and hyperthermia are the core presentation. His chest pain is real and comes from coronary VASOSPASM — direct alpha-adrenergic-mediated coronary vasoconstriction that causes ischemia even in young patients with completely normal coronary arteries (Lange & Hillis, NEJM 2001).");
+    notes.push("BENZODIAZEPINES ARE FIRST-LINE HERE, not the cardiac-chest-pain reflex. Midazolam genuinely reduces the sympathetic drive underneath this presentation, through the same central GABA-A mechanism that treats agitation elsewhere — a real, measurable improvement in the heart rate and blood pressure, not just a calmer-looking patient.");
+    notes.push("Beta-blockers (metoprolol) are RELATIVELY CONTRAINDICATED in cocaine toxicity — the real 'unopposed alpha' phenomenon. Pure beta-blockade removes the beta-2-mediated vasodilation that partially offsets cocaine's alpha-mediated vasoconstriction, and can worsen coronary vasospasm and hypertension rather than helping. Treat the underlying sympathomimetic crisis with a benzodiazepine, not a beta-blocker reflex borrowed from an ordinary cardiac chest-pain call.");
+    notes.push("Nitroglycerin can have a role for the chest pain itself in some protocols, but it does not treat the underlying catecholamine excess the way a benzodiazepine does — recognizing this as a toxidrome, not a straightforward ACS, is the actual field skill being tested here.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "CPMI", truth: "Cocaine toxicity — severe sympathomimetic tachycardia/hypertension/agitation/hyperthermia with real coronary-vasospasm chest pain; benzodiazepines are first-line, beta-blockers are relatively contraindicated (unopposed alpha)"};},
+},
+
 // Cyanide poisoning (queue item 7, Toxicology — TOX-008). An INDUSTRIAL
 // exposure, deliberately not a house fire — see conditions.js's own
 // cyanidePoisoning comment for the full reasoning (a clean, isolated
