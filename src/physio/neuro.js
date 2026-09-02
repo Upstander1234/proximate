@@ -161,6 +161,35 @@ export function updateOrganInjury(pat, dt) {
     // first thing to give under an acute sympathetic surge) — deliberately
     // a DIFFERENT, faster-onset driver from kidney's, not the same formula
     // copy-pasted, because the two beds genuinely behave differently.
+    //
+    // QUEUE ITEM V2-3 (organ perfusion/autoregulation, generalized) asked
+    // whether gut/skin/muscle need their own explicit PRESSURE-dependent
+    // autoregulation CURVE the way `renalPerf` (renal.js, a flat-above-a-
+    // ~60mmHg-MAP-knee curve) and neuro.js's own cerebral-autoregulation
+    // term already have. Investigated, not guessed: the answer is no, and
+    // building one would make this LESS physiologically accurate, not
+    // more. Kidney, brain and heart all have strong, well-documented
+    // INTRINSIC (myogenic + metabolic) autoregulation that defends local
+    // flow against changing perfusion PRESSURE almost independent of
+    // systemic sympathetic tone — which is exactly why those three organs
+    // get a pressure-vs-flow curve with a knee. Skin, skeletal muscle and
+    // the splanchnic bed have comparatively WEAK intrinsic autoregulation
+    // and are instead physiologically dominated by EXTRINSIC alpha-
+    // adrenergic sympathetic control (Guyton & Hall, Textbook of Medical
+    // Physiology, ch. "Local and Humoral Control of Blood Flow by the
+    // Tissues" / "Nervous Regulation of the Circulation") — the very
+    // mechanism that makes them the first beds sacrificed in shock. An
+    // alphaTone-driven flow fraction is therefore not a placeholder for a
+    // missing curve; it is the correct mechanism CATEGORY for these three
+    // beds specifically. Confirmed the extremes are sane rather than
+    // assumed: at rest (alphaTone~0.2-0.3, a healthy patient) gutPerf/
+    // skinDO2/muscleFactor all sit comfortably above their own ischemic
+    // deadbands; in this engine's own near-terminal shock ceiling
+    // (alphaTone~0.6-0.7, measured against abdominalAorticAneurysm — see
+    // this file's own gutPerf/muscleFactor calibration comments below) all
+    // three cross into real ischemia with margin, and none produces a
+    // discontinuity or an unbounded value at either end (all clamped to
+    // [0.05,1]). No code change — this comment closes V2-3's audit.
     // Coefficient CALIBRATED AGAINST MEASURED ENGINE RANGES, not the
     // theoretical alphaTone clamp ceiling (0-3) -- the same "calibrate
     // against the instrument you have" discipline this document's own

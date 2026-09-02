@@ -6420,7 +6420,21 @@ V2-2. **Per-organ oxygen extraction, generalized.** Item 42 already built
    real SvO2 emerges from the composite, rather than only a binary
    delivery-vs-demand debt signal per organ.
 
-V2-3. **Organ perfusion and autoregulation, generalized.** Cerebral
+V2-3. **CLOSED (this session) — audited, no engine-mechanism change
+   needed.** Confirmed by reading `renalPerf` (renal.js,
+   a real pressure-vs-flow curve with a knee at ~60 mmHg MAP) against
+   neuro.js's own alphaTone-driven gutPerf/skinDO2/muscleFactor: the
+   alphaTone-scaled flow-fraction model is the physiologically CORRECT
+   mechanism category for skin/muscle/GI specifically, not a placeholder
+   for a missing pressure-curve — those three beds have weak intrinsic
+   (myogenic) autoregulation and are dominated by extrinsic sympathetic
+   tone in real physiology (Guyton & Hall), which is exactly why they are
+   the first beds sacrificed in shock. Building a renal/cerebral-style
+   pressure curve for them would be LESS accurate, not more. A documenting
+   comment was added at the gutPerf calculation (neuro.js) recording this
+   finding, including confirmation the extremes (healthy rest vs. this
+   engine's own near-terminal shock ceiling) stay sane and bounded.
+   Original filing, kept for context: Cerebral
    autoregulation (MAP/PaCO2/PaO2/ICP → CBF) and coronary flow
    (diastolic-time/resistance/demand/stenosis → supply) both already exist
    in `neuro.js`/`cardiovascular.js` in real form. Renal autoregulation
