@@ -200,6 +200,26 @@ export function buildParams(overrides = {}) {
     // value) and so DOUBLED the venous return driving gradient, MSFP-RAP, to
     // 10.5 mmHg against a documented 3.5-7 — over-filling the ventricle from
     // upstream rather than through any defect in ventricular compliance.
+    // V2-24 RE-INVESTIGATION (a later session): before retrying the already-
+    // documented-failed "attenuate atrial kick for AV-dissociated rhythms"
+    // approach, checked whether a genuinely different mechanism exists for
+    // pacemaker syndrome's real hemodynamic problem — per the task's own
+    // suggestion, that's retrograde VA conduction / cannon A-waves (atrial
+    // contraction against a closed AV valve) plus neurohormonal reflex
+    // effects, not simply "less atrial kick." A cannon-A-wave signal (a real,
+    // distinct, purely DIAGNOSTIC finding — periodic CVP/JVD spikes for
+    // AV-dissociated rhythms) is a genuinely different, lower-risk angle,
+    // since it would not touch ventricular filling/stroke volume at all and
+    // so could not reproduce the documented "LA-pressure-backup compensation
+    // nets MORE filling" failure mode. It was NOT built this session: pat.cvp
+    // is read by several other consumers (renal perfusion pressure, the jvd
+    // exam finding, shock-state logic) that were not individually re-verified
+    // against a new periodic-spike term, and a diagnostic sign alone does not
+    // address the actual hemodynamic compromise (hypotension from lost AV
+    // synchrony) this sub-item is asking for — building it without measuring
+    // both would ship an unverified partial fix. Deferred, not attempted, for
+    // a future session with room to validate both halves. See queue item
+    // V2-24 (item 41(c)).
     EmaxLA: 0.18, EminLA: 0.15, V0LA: 8, atrialPhaseFrac: 0.86,
     EmaxRA: 0.14, EminRA: 0.10, V0RA: 10,
 

@@ -2106,6 +2106,27 @@ function updateValves(pat, dt) {
   // before and keep feeding the lumped model exactly as before; they simply do
   // not yet reach the authoritative solver. Wiring them in, with a real
   // controlled calibration, is filed as its own queue item.
+  // V2-24 RE-INVESTIGATION (a later session): re-checked whether a genuinely
+  // different angle exists for the ischemic-MR piece above before touching
+  // anything, per the standing instruction not to retry a documented failure
+  // blind. Two candidate angles were considered, neither was shipped:
+  //   (1) "a much smaller, more conservative coefficient" — ruled out as NOT
+  //       actually a different angle from what was already tried: the batch
+  //       above already re-tuned BOTH threshold (atp<0.35) and gain (0.6) and
+  //       still hit the emergent unload->raise-atp->reduce-ischemic-term loop.
+  //       The failure mode is a single-forward-run identifiability problem,
+  //       not a magnitude problem — a smaller coefficient shrinks the loop's
+  //       amplitude but does not remove it, and "smaller" is exactly the kind
+  //       of guessed-to-make-a-test-pass number section 4 forbids without a
+  //       real controlled A/B to anchor it against.
+  //   (2) "gate on a much higher, clearly-severe-wall-motion threshold" —
+  //       also not a new angle: it is the same re-tuned-threshold attempt
+  //       already tried and documented as insufficient above, restated.
+  // A real fix needs the controlled A/B against the ischemic family this
+  // comment (and the block above) already calls for — an isolated coefficient
+  // change inside an unrelated batch, verified only by a forward run, is
+  // exactly the shape of "attempt" that already failed twice on this
+  // sub-item. Deferred again, honestly, not attempted. See queue item V2-24.
   const mrStructuralTarget = rf.mitralRegurg ? clamp(rf.mitralRegurgSeverity ?? 0.35, 0, 0.9) : 0;
   let arStructuralTarget = rf.aorticRegurg ? clamp(rf.aorticRegurgSeverity ?? 0.35, 0, 0.9) : 0;
   if (rf.aorticDissection) arStructuralTarget = Math.max(arStructuralTarget, 0.5);
