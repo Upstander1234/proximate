@@ -1086,6 +1086,7 @@ const SCEN_BODY_SYSTEM={
   // No "Infectious disease" Sandbox section exists — same reasoning as
   // above, "Other" rather than inventing a section for one scenario.
   necrotizingFasciitisCall:"Other",
+  dengueFeverCall:"Other",
 };
 const bodySystemOf=(k)=>SCEN_BODY_SYSTEM[k]||"Other";
 // F17 step 7: scenarios whose resolve() reward path is reachable at Layperson
