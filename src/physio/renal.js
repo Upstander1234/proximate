@@ -1,5 +1,32 @@
 // Renal & endocrine system: GFR, RAAS, ADH, electrolytes.
 // Reads pat.map (from cardiovascular), pat.k, pat.transcellularKShift (from pk.js / metabolic.js)
+//
+// QUEUE ITEM V2-8 (RAAS, generalized and made explicit) -- investigated,
+// deliberately NOT restructured. The item asks whether pat.renin/
+// angiotensinII/aldosterone/adhs/gfr should become one structured
+// pat.renal = {gfr,rpf,renin,angiotensinII,aldosterone,adh,nephron} object
+// instead of scattered top-level fields, per the source doc's own
+// suggested shape. Audited every reader across the tree before deciding:
+// besides this file's own internal self-consumption (renin -> angiotensinII
+// -> aldosterone/afferentConstriction, all here), the only external readers
+// are metabolic.js's hepatic-clearance term (pat.gfr, one line) and, more
+// importantly, mechanismWiring.mjs's own already-verified assertions,
+// which read these fields DIRECTLY as p.renin/p.aldosterone/p.angiotensinII/
+// p.adhs/p.gfr -- not p.renal.renin. A full restructure would need every
+// one of those call sites (plus renalValidation.mjs/physiologyValidation.mjs,
+// which do the same) updated in lockstep with zero margin for a missed
+// site, for a change that alters no observable behavior -- a real,
+// high-blast-radius rename for a purely cosmetic reorganization, exactly
+// the kind of change section 4's own discipline warns against attempting
+// without a genuine new mechanism behind it. No consumer anywhere in the
+// tree -- including this session's own cirrhosis/portal-hypertension work
+// a few lines below, which reads/writes these same top-level fields
+// directly -- would benefit from a structured pat.renal object either; per
+// section 1's "no decorative fields" rule, an additive pat.renal mirror
+// with no real reader was also declined rather than built just to exist.
+// Conclusion: no change. If a future session identifies an actual new
+// consumer that wants structured access (not just an existing one that
+// could be renamed), that is the point to build pat.renal for real.
 export function updateRenalEndocrine(pat, dt) {
     // RENAL PERFUSION PRESSURE — the afferent-arteriolar input, before any
     // angiotensin-mediated constriction is applied to it. Kept as its own named
