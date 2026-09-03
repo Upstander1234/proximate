@@ -662,6 +662,16 @@ export class Patient {
     this.renin = 0.05;
     this.aldosterone = 0.05;
     this.cortisol = 1;
+    // NEPHRON SEGMENT-LEVEL MODELING (queue item V2-10, scoped slice,
+    // renal.js's updateRenalEndocrine) -- proximal-tubule (SGLT/glucose-
+    // sensitive) vs distal (aldosterone-driven) reabsorption efficiency.
+    // Defaulted to 1 (full capacity, no lesion) so every constructed
+    // patient's segmentReabsorptionEff is exactly 1 before the first tick
+    // -- matching the real, computed at-rest value the mechanism itself
+    // produces, so nothing reads undefined on tick zero.
+    this.proximalReabsorptionEff = 1;
+    this.distalReabsorptionEff = 1;
+    this.segmentReabsorptionEff = 1;
     // ENDOCRINE PANCREAS (queue item 5's remaining dead-field, this
     // session). pat.insulin/pat.glucagon were set here and never read or
     // written again — glucose regulation ran entirely through direct
