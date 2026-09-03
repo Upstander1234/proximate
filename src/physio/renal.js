@@ -336,14 +336,78 @@ export function updateRenalEndocrine(pat, dt) {
     const thirstVolume = Math.max(0, Math.min(1, (volumeDepletion - 0.10) / 0.15));
     pat.thirstDrive = Math.max(0, Math.min(1, thirstOsmotic * 0.7 + thirstVolume * 0.5));
 
+    // Filtered glucose above the real renal (proximal-tubule Tm-glucose)
+    // threshold — hoisted ahead of both its real consumers (the segment
+    // split immediately below, and the osmotic-diuresis plasmaVol drain
+    // further down) rather than computed twice under two names.
+    const GLUCOSE_RENAL_THRESHOLD = 180; // mg/dL
+    const glucoseExcess = Math.max(0, (pat.glucose ?? 100) - GLUCOSE_RENAL_THRESHOLD);
+
     // Renal handling of water: retention when below the defended volume,
     // diuresis when above it. This closes the loop that RAAS/ADH were already
     // computing but never actuated. It is deliberately SLOW (hours) — renal
     // volume compensation cannot mask an acute hemorrhage, it only sets where
     // body water settles over time.
+    // --- NEPHRON SEGMENT-LEVEL MODELING, scoped slice (queue item V2-10) ---
+    // The volume controller below has always been a single lumped signal
+    // ("drive"), with no route for a PROXIMAL-tubule lesion (glucosuria,
+    // and in real medicine SGLT2 inhibitors -- not carried in this
+    // formulary) to be distinguished from a DISTAL, aldosterone-driven
+    // one. Per queue item 43's own closed finding, the full segment chain
+    // (glomerulus -> PCT -> loop -> DCT -> collecting duct) is genuinely
+    // large, structural work and is NOT attempted here -- this is the
+    // narrowest real, useful slice: an explicit two-segment split of
+    // reabsorption EFFICIENCY, sized against the real ~65-70% proximal /
+    // ~30-35% distal filtered-Na split, so a proximal-specific lesion and
+    // a distal-specific one are mechanistically distinguishable instead of
+    // both moving one shared number.
+    //
+    // PROXIMAL (~67% of filtered load, real anchor: Boron & Boulpaep,
+    // Medical Physiology): reabsorption here is largely ALDOSTERONE-
+    // INDEPENDENT and driven by glomerulotubular balance and cotransport
+    // mechanisms -- among them SGLT2-mediated Na/glucose cotransport, the
+    // exact mechanism a real SGLT2-inhibitor drug or severe hyperglycemia
+    // (already modeled via item 43's osmotic-diuresis work, glucoseExcess
+    // above) competitively saturates. Reuses the SAME glucoseExcess/
+    // GLUCOSE_RENAL_THRESHOLD signal osmoticDiuresis already computes --
+    // this is the real hook: glucose spilling past Tm-glucose impairs
+    // proximal Na/water reabsorption SPECIFICALLY, not the whole nephron.
+    // Normalized to exactly 1.0 (full capacity) for a euglycemic patient.
+    const PROXIMAL_FRACTION = 0.67;
+    const DISTAL_FRACTION = 1 - PROXIMAL_FRACTION;
+    pat.proximalReabsorptionEff = Math.max(0.1, 1 - Math.min(0.9, glucoseExcess / 400));
+
+    // DISTAL (~33% of filtered load): fine-tuned by aldosterone, which is
+    // where RAAS activation actually exerts its effect -- previously a
+    // real, computed field (pat.aldosterone, above) that had NO consumer
+    // for sodium/volume handling at all (it only fed potassium excretion
+    // below), a genuine "written, never read for its own real purpose"
+    // gap. Baseline (aldosterone ~0 at rest, per this file's own RAAS
+    // comment above -- renin/angiotensinII decay toward zero at normal
+    // perfusion) is normalized to exactly 1.0, matching the proximal
+    // segment's own baseline, so a resting, euvolemic, non-hyperglycemic
+    // patient's total segmentEfficiency below is EXACTLY 1.0 -- no change
+    // to any already-calibrated healthy trajectory. Full RAAS activation
+    // (aldosterone approaching the ~1 this engine's own reninDrive ceiling
+    // produces, per the RAAS comment above) ADDS real, bounded extra
+    // distal retention capacity on top of that baseline -- the actual,
+    // now-real consequence of aldosterone this engine previously lacked.
+    pat.distalReabsorptionEff = 1 + Math.min(0.5, (pat.aldosterone || 0) * 0.4);
+
+    // Composite: at baseline (proximal=1, distal=1) this is exactly 1 --
+    // by construction, not a fudge factor, so nothing about a healthy
+    // patient's volume trajectory changes. A hyperglycemic patient's
+    // proximal loss is only ever PARTIALLY offset by even a maximally
+    // activated distal arm (0.67*0.1 min vs 0.33*1.5 max), which is the
+    // real, citable teaching point this slice exists for: RAAS/aldosterone
+    // activation cannot "fix" a glucose-driven proximal osmotic leak,
+    // because the two act on different nephron segments.
+    pat.segmentReabsorptionEff = PROXIMAL_FRACTION * pat.proximalReabsorptionEff +
+      DISTAL_FRACTION * pat.distalReabsorptionEff;
+
     if (pat.targetBloodVol > 0) {
       const tau = 240;                                  // minutes
-      const drive = renalPerf * injuryFactor;           // a failing kidney regulates poorly
+      const drive = renalPerf * injuryFactor * pat.segmentReabsorptionEff; // a failing kidney regulates poorly; segment lesions further modulate
 
       // --- PRESSURE NATRIURESIS (Guyton renal-body fluid feedback) ---
       // LONG-TERM arterial pressure is set by the kidney, not the baroreflex.
@@ -430,8 +494,6 @@ export function updateRenalEndocrine(pat, dt) {
     // old 0.035 L/min at glu~850 (excess 670) implies ~0.0000522/mg/dL —
     // both landing in the same order of magnitude, so 0.00006 sits inside
     // that measured range rather than inventing a third number.
-    const GLUCOSE_RENAL_THRESHOLD = 180; // mg/dL
-    const glucoseExcess = Math.max(0, (pat.glucose ?? 100) - GLUCOSE_RENAL_THRESHOLD);
     const osmoticDiuresis = glucoseExcess * 0.00006 * renalPerf * injuryFactor * dt;
     if (osmoticDiuresis > 0) {
       pat.plasmaVol = Math.max(0.1, pat.plasmaVol - osmoticDiuresis);

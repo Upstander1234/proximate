@@ -256,6 +256,12 @@ function snapshot(p) {
     // the raw patient — caught and fixed the same tick, not worked around.
     totalBloodVol: p.totalBloodVol || 0,
     hct: p.hct || 0,
+    // Queue item V2-10 (nephron segment-level modeling, scoped slice):
+    // proximal (SGLT/glucose-sensitive) vs distal (aldosterone-driven)
+    // reabsorption efficiency, and their composite.
+    proximalReabsorptionEff: p.proximalReabsorptionEff ?? 1,
+    distalReabsorptionEff: p.distalReabsorptionEff ?? 1,
+    segmentReabsorptionEff: p.segmentReabsorptionEff ?? 1,
     // Queue item 7 (malaria) — real, already-live fields for the
     // hemolysis-vs-hemorrhage two-sided contrast, never previously read
     // through this suite's own snapshot() path.
@@ -6843,6 +6849,86 @@ console.log("\n[THE \"100% OXYGEN TEST\" — V2-6, scoped slice]");
   healthyResponsive ? pass++ : fail++;
   if (!healthyResponsive) failures.push(`a condition-less control should read O2-responsive (ΔPaO2>=150), got ${healthy.after.o2TestDelta}`);
   console.log(`  ${healthyResponsive ? "PASS" : "FAIL"}  ${"...a healthy control reads responsive too (specificity)".padEnd(46)} ΔPaO2 ${healthy.after.o2TestDelta.toFixed(1)} mmHg`);
+}
+
+console.log("\n[NEPHRON SEGMENT-LEVEL MODELING, scoped slice — queue item V2-10]");
+{
+  // Real conservation check: a healthy, euglycemic, resting patient's
+  // composite segmentReabsorptionEff must land at exactly 1 (by
+  // construction — proximal baseline 1, distal baseline 1, 0.67+0.33=1),
+  // confirming this batch's own addition changes NOTHING about an
+  // already-calibrated healthy patient's volume trajectory.
+  const control = probe({ scen: "abdPain", settle: 180, run: 600 });
+  const baselineOk = Math.abs(control.after.segmentReabsorptionEff - 1) < 0.03;
+  baselineOk ? pass++ : fail++;
+  if (!baselineOk) failures.push(`a healthy, resting, euglycemic control's segmentReabsorptionEff should sit within 0.03 of exactly 1 (no regression to the pre-existing volume-controller calibration), got ${control.after.segmentReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${baselineOk ? "PASS" : "FAIL"}  ${"healthy control -> segmentReabsorptionEff ~1 (conservation)".padEnd(46)} proximal ${control.after.proximalReabsorptionEff.toFixed(3)}, distal ${control.after.distalReabsorptionEff.toFixed(3)}, composite ${control.after.segmentReabsorptionEff.toFixed(3)}`);
+
+  // PROXIMAL-specific lesion: forcing glucose past the real renal
+  // threshold (~180 mg/dL) impairs proximalReabsorptionEff -- the same
+  // SGLT-mediated competitive mechanism item 43's own osmotic-diuresis
+  // work already reuses (glucoseExcess) -- while distalReabsorptionEff
+  // (aldosterone-driven) stays at its own unaffected baseline, confirming
+  // the two segments are genuinely mechanistically SEPARATE, not one
+  // shared number under two names.
+  const hyperglycemic = probe({ scen: "abdPain", settle: 180, run: 600,
+    mutate: (p) => { p.glucose = 550; } });
+  const proximalImpaired = hyperglycemic.after.proximalReabsorptionEff < 0.85;
+  proximalImpaired ? pass++ : fail++;
+  if (!proximalImpaired) failures.push(`glucose=550 (past the renal threshold) should measurably impair proximalReabsorptionEff (<0.85), got ${hyperglycemic.after.proximalReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${proximalImpaired ? "PASS" : "FAIL"}  ${"glucose 550 -> proximal reabsorption impaired specifically".padEnd(46)} proximal ${hyperglycemic.after.proximalReabsorptionEff.toFixed(3)} vs control ${control.after.proximalReabsorptionEff.toFixed(3)}`);
+  const distalUnaffectedByGlucose = Math.abs(hyperglycemic.after.distalReabsorptionEff - control.after.distalReabsorptionEff) < 0.05;
+  distalUnaffectedByGlucose ? pass++ : fail++;
+  if (!distalUnaffectedByGlucose) failures.push(`glucose=550 should NOT move distalReabsorptionEff (a proximal-specific lesion, aldosterone-independent), got hyperglycemic distal=${hyperglycemic.after.distalReabsorptionEff.toFixed(4)} vs control ${control.after.distalReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${distalUnaffectedByGlucose ? "PASS" : "FAIL"}  ${"...distal (aldosterone) segment stays untouched by glucose".padEnd(46)} distal ${hyperglycemic.after.distalReabsorptionEff.toFixed(3)} vs control ${control.after.distalReabsorptionEff.toFixed(3)}`);
+
+  // DISTAL-specific effect: forcing aldosterone to a real, RAAS-activated
+  // level (this engine's own reninDrive ceiling produces aldosterone
+  // approaching ~1, per renal.js's own RAAS comment) raises
+  // distalReabsorptionEff while leaving proximalReabsorptionEff
+  // completely untouched (aldosterone-independent by construction) --
+  // the real, now-actually-wired consequence of pat.aldosterone, which
+  // previously computed a real value every tick with NO consumer for
+  // sodium/volume handling at all (only potassium excretion read it).
+  const raasActivated = probe({ scen: "abdPain", settle: 180, run: 600,
+    mutate: (p) => { p.aldosterone = 1.0; } });
+  const distalBoosted = raasActivated.after.distalReabsorptionEff > control.after.distalReabsorptionEff + 0.2;
+  distalBoosted ? pass++ : fail++;
+  if (!distalBoosted) failures.push(`aldosterone=1.0 (full RAAS activation) should measurably raise distalReabsorptionEff vs a resting control, got raas=${raasActivated.after.distalReabsorptionEff.toFixed(4)} vs control=${control.after.distalReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${distalBoosted ? "PASS" : "FAIL"}  ${"aldosterone=1.0 -> distal reabsorption boosted specifically".padEnd(46)} distal ${raasActivated.after.distalReabsorptionEff.toFixed(3)} vs control ${control.after.distalReabsorptionEff.toFixed(3)}`);
+  const proximalUnaffectedByAldo = Math.abs(raasActivated.after.proximalReabsorptionEff - control.after.proximalReabsorptionEff) < 0.02;
+  proximalUnaffectedByAldo ? pass++ : fail++;
+  if (!proximalUnaffectedByAldo) failures.push(`aldosterone=1.0 should NOT move proximalReabsorptionEff (a distal-specific effect), got raas proximal=${raasActivated.after.proximalReabsorptionEff.toFixed(4)} vs control ${control.after.proximalReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${proximalUnaffectedByAldo ? "PASS" : "FAIL"}  ${"...proximal segment stays untouched by aldosterone".padEnd(46)} proximal ${raasActivated.after.proximalReabsorptionEff.toFixed(3)} vs control ${control.after.proximalReabsorptionEff.toFixed(3)}`);
+
+  // The real teaching point: RAAS/aldosterone activation CANNOT rescue a
+  // glucose-driven proximal osmotic leak, because the two act on
+  // different nephron segments -- even a maximally-activated distal arm
+  // only offsets a fraction of a severe proximal impairment.
+  const both = probe({ scen: "abdPain", settle: 180, run: 600,
+    mutate: (p) => { p.glucose = 550; p.aldosterone = 1.0; } });
+  const stillImpaired = both.after.segmentReabsorptionEff < 0.85;
+  stillImpaired ? pass++ : fail++;
+  if (!stillImpaired) failures.push(`full RAAS activation (aldosterone=1.0) alongside glucose=550 should still leave segmentReabsorptionEff measurably impaired (<0.85) -- RAAS cannot rescue a proximal lesion from a different segment -- got ${both.after.segmentReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${stillImpaired ? "PASS" : "FAIL"}  ${"RAAS activation cannot rescue a proximal glucose leak".padEnd(46)} composite ${both.after.segmentReabsorptionEff.toFixed(3)} (proximal ${both.after.proximalReabsorptionEff.toFixed(3)}, distal ${both.after.distalReabsorptionEff.toFixed(3)})`);
+
+  // Re-verification: item 43's own DKA osmotic-diuresis mechanism
+  // (glucose-driven plasmaVol depletion) still works correctly with this
+  // batch's segment-efficiency term added alongside it -- the direct
+  // plasmaVol drain (osmoticDiuresis, still a flat subtraction, UNCHANGED
+  // by this batch) and the new proximalReabsorptionEff signal are two
+  // independent, non-conflicting consequences of the SAME glucoseExcess
+  // input, not one replacing the other.
+  const dkaUntreated = probe({ scen: "diabeticKetoacidosisCall", settle: 180, run: 1800 });
+  const dkaHealthy = probe({ scen: "abdPain", settle: 180, run: 1800 });
+  const dkaStillDehydrates = (dkaUntreated.before.plasmaVol - dkaUntreated.after.plasmaVol) > 0.15;
+  dkaStillDehydrates ? pass++ : fail++;
+  if (!dkaStillDehydrates) failures.push(`diabeticKetoacidosisCall's own osmotic-diuresis plasmaVol drain (item 43) should still be real (>0.15L lost over 1800s) with the new segment-efficiency term added alongside it, got ${(dkaUntreated.before.plasmaVol - dkaUntreated.after.plasmaVol).toFixed(3)}L`);
+  console.log(`  ${dkaStillDehydrates ? "PASS" : "FAIL"}  ${"DKA's own osmotic-diuresis mechanism (item 43) unbroken".padEnd(46)} plasmaVol lost ${(dkaUntreated.before.plasmaVol - dkaUntreated.after.plasmaVol).toFixed(3)}L over 1800s`);
+  const dkaProximalImpaired = dkaUntreated.after.proximalReabsorptionEff < dkaHealthy.after.proximalReabsorptionEff - 0.1;
+  dkaProximalImpaired ? pass++ : fail++;
+  if (!dkaProximalImpaired) failures.push(`DKA's own real glucose elevation should also show up as an impaired proximalReabsorptionEff vs a healthy control, got dka=${dkaUntreated.after.proximalReabsorptionEff.toFixed(4)} vs healthy=${dkaHealthy.after.proximalReabsorptionEff.toFixed(4)}`);
+  console.log(`  ${dkaProximalImpaired ? "PASS" : "FAIL"}  ${"...and DKA's own hyperglycemia shows as proximal impairment".padEnd(46)} dka proximal ${dkaUntreated.after.proximalReabsorptionEff.toFixed(3)} vs healthy ${dkaHealthy.after.proximalReabsorptionEff.toFixed(3)}`);
 }
 
 console.log("\n" + "=".repeat(74));

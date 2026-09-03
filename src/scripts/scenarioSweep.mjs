@@ -252,6 +252,13 @@ const REQUIRED = [
   // coefficient (cardiovascular.js's splanchnic autotransfusion
   // mobilization), narrowed by renal.js's portal-hypertension mechanism.
   "splanchnicFrac",
+  // Queue item V2-10 (nephron segment-level modeling, scoped slice):
+  // proximal (SGLT/glucose-sensitive) vs distal (aldosterone-driven)
+  // reabsorption efficiency, patient.js constructor default 1 (full
+  // capacity) so every patient reads a real number from tick zero.
+  "proximalReabsorptionEff",
+  "distalReabsorptionEff",
+  "segmentReabsorptionEff",
 ];
 
 // Fields that may never go negative.
@@ -367,6 +374,12 @@ const NON_NEGATIVE = [
   // Queue item 5's dead-code sweep: splanchnicFrac is a bounded, always
   // non-negative venoconstrictor-reserve coefficient.
   "splanchnicFrac",
+  // Queue item V2-10: real, always-non-negative reabsorption-efficiency
+  // fractions (proximal floors at 0.1, distal floors at 1, composite is
+  // their weighted sum -- never negative).
+  "proximalReabsorptionEff",
+  "distalReabsorptionEff",
+  "segmentReabsorptionEff",
 ];
 
 const results = [];
