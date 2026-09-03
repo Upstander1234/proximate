@@ -817,6 +817,13 @@ export class Patient {
     // (865 "field is undefined" failures at t=2s across every scenario)
     // after being added to that suite's REQUIRED list without one.
     this.aorticStenosisSeverity = 0;
+    // Mitral stenosis (queue item 7's chronic/degenerative valve batch):
+    // set from riskFactors.mitralStenosis/mitralStenosisSeverity by
+    // updateValves (cardiovascular.js), consumed both by the lumped EDV
+    // filling term (edv *= 1 - mitralStenosisSeverity*0.55) and by the
+    // full-loop ODE's Rmv stenR() term. Given the same undefined-on-first-
+    // tick default as its siblings above, for the same reason.
+    this.mitralStenosisSeverity = 0;
     this.mitralRegurgFrac = 0;
     this.aorticRegurgFrac = 0;
     this.mitralRegurgStructural = 0;

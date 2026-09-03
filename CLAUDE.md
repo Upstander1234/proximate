@@ -430,6 +430,95 @@ isolation, and node --check/eslint confirm no syntax/lint regression across
 the merge, but a full `mechanismWiring.mjs`/`scenarioSweep.mjs` run against
 the fully-merged tree is the natural next verification step before treating
 this wave as fully closed.
+### 2026-09-03 — Mitral Stenosis (chronic/rheumatic), queue item 7's standing condition-library workstream — the last remaining piece of the queue-41 valve-mechanism family, and a real engine bug found and fixed along the way
+
+Confirmed genuinely unbuilt before touching anything (lesson 16): grepped
+`mitralStenosis`/`riskFactors.mitralStenosis` across the whole tree — the
+underlying MECHANISM already existed, built for queue item 41 and left
+unconsumed exactly like `aorticStenosisSeverity` was before that condition
+shipped: `cardiovascular.js`'s `updateValves` already sets
+`pat.mitralStenosisSeverity` from `riskFactors.mitralStenosis`, consumed by
+both the lumped model's EDV filling term (`edv *= 1 -
+mitralStenosisSeverity*0.55`) and the authoritative full-loop ODE solver's
+`Rmv = p.Rmv * stenR(p.mitralStenosisSeverity)` — but no condition had ever
+set the risk factor. Real mitral stenosis (StatPearls; ACC/AHA 2020 valve
+guideline; almost always rheumatic in origin) is an INFLOW obstruction —
+the opposite hemodynamic signature from aortic stenosis's OUTFLOW cap:
+elevated left atrial pressure (pulmonary venous congestion, real AFib
+risk from a chronically stretched LA) and a genuinely REDUCED LV
+preload/EDV, with the key teaching point that tachycardia (especially
+new-onset AFib, this disease's own classic decompensation trigger) WORSENS
+output rather than compensating for it, since diastole is the only phase
+the stenotic valve can pass blood through at all and shrinks
+disproportionately as rate rises.
+
+**A real, previously-undiscovered engine defect was found and fixed before
+this could ship, not glossed over.** A first measurement (direct
+instantiation via `physio()`/`activePatient()`, not reconstructed, per
+lesson 8) showed the already-wired mechanism was nearly INERT in the
+authoritative full-loop ODE solver: at `mitralStenosisSeverity=0.65` (a
+real moderate-severe presentation), EDV barely moved from a matched
+healthy control (116-120 mL either way), even under forced tachycardia.
+Traced to ground: the shared `stenR` severity->resistance mapping
+(`cardiovascular_ode_full.js`, `1+sev*6`) is real and effective for the
+AORTIC (outflow) valve — a modest resistance bump directly caps ejection
+against downstream pressure — but is the wrong shape for the MITRAL
+(inflow) valve: diastole is long relative to the mitral valve's tiny base
+resistance, so a 5-7x bump barely dents filling, and the left atrium
+simply rises in pressure to compensate (itself real physiology, but
+leaving LV EDV nearly unchanged at rest, the opposite of the intended
+signature). Fixed with a separate, steeper `mvStenR` mapping specific to
+the mitral valve (quadratic in severity — `1+sev^2*100` — closer to the
+real Gorlin-formula orifice-area relationship than a linear term, MEASURED
+against candidate coefficients rather than guessed), leaving the shared
+`stenR`/aortic-stenosis calibration completely untouched.
+
+**MEASURED, not guessed, against the real engine (matched abdPain healthy
+control, same age 71, settle 300s/run 600s):** resting edv 96.5 mL vs.
+control 118.6 mL (18.6% reduction), co 4.67 vs 5.98 L/min (21.9%
+reduction) — a real, substantial reduced-filling signature, the opposite
+direction from aortic stenosis's own preserved-preload picture (confirmed
+directly: mitralStenosis's edv is meaningfully lower than aorticStenosis's
+own, 82.1 vs 98.6 mL in the paired mechanismWiring assertion). The
+tachycardia teaching point, confirmed two-sided rather than assumed:
+forcing hr to 130 (simulating new-onset rapid AFib) WIDENS the co deficit
+relative to a rate-matched healthy control — 38.3% at rest vs. 41.7% at
+hr130 — a real, measured worsening, not merely an unchanged percentage.
+
+**Shipped**: `mitralStenosis` (`conditions.js`, static severity 0.65,
+matching the same "chronic disease held constant for the encounter"
+reasoning `aorticStenosis`/`hocmObstructive` already use) and a new
+scenario `mitralStenosis` (CARD-052, `scenarios.js`) — a 71-year-old with a
+childhood rheumatic-fever history, decompensating with new rapid atrial
+fibrillation, added to `App.jsx`'s `SCEN_BODY_SYSTEM` map under Cardiac.
+`pat.mitralStenosisSeverity` given a real constructor default (0) in
+`patient.js`, alongside its siblings, closing the same "undefined on the
+very first tick" gap this document's own history already documents once
+for the other valve-lesion fields. Four new two-sided
+`mechanismWiring.mjs` assertions (presence/severity, specificity via a
+healthy control, distinctness from aortic stenosis's own opposite
+signature, and the tachycardia-widens-the-deficit teaching point) —
+verified standalone via a direct replica of the suite's own probe/pin
+helpers before being trusted (lesson 8): 4/4 passed. `mitralStenosisSeverity`
+added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification.** `node --check` clean on all six touched files
+(`conditions.js`, `cardiovascular_ode_full.js`, `patient.js`,
+`scenarios.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx eslint`
+on the same six plus `App.jsx`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings anywhere else. `npx vite build`: clean (12.51s, same pre-existing
+>500kB chunk-size warning). A standalone 900-second sweep of the new
+scenario through the real `physio()` pipeline confirmed no NaN/negative/
+undefined values for the new field and sane vitals throughout (pH 7.48,
+sbp 93.9 at 900s). The full `mechanismWiring.mjs`/`scenarioSweep.mjs`
+suites were NOT run to completion this session (per this project's own
+"quick standalone probe, not a 20+ minute full-suite background run"
+verification discipline for a single-condition batch) — the standalone
+probe replicas above are this batch's own real, measured evidence; a
+future full-suite pass should show these same numbers. All throwaway
+probe scripts were stripped before this entry was written, confirmed via
+a directory listing showing no `_tmp_*` files remain under `src/scripts/`.
 
 ### 2026-09-01 — Multi-agent parallel batch, second wave: five more conditions (Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine Toxicity, Malaria, Dengue Fever) plus a mass-conservation audit tool (V2-31), all via non-self-delegating worktree agents
 
@@ -9771,7 +9860,7 @@ rest ischemia without necrosis; subendocardial infarct (limitable); the evolving
 NSTE-ACS that can be prevented; and the completed transmural STEMI.
 
 ### Cardiac
-Mitral Valve Disease (chronic/stenotic forms) · Pacemaker Failure · Pacemaker Syndrome
+Pacemaker Failure · Pacemaker Syndrome
 
 *(Infective Endocarditis shipped this session in scoped form (fever/bacteremia
 + valve involvement + one timed embolic event) — the full vegetation-growth
@@ -9780,8 +9869,10 @@ Regurgitation both shipped this session — see section 3's newest entries.
 Hypertrophic Obstructive Cardiomyopathy shipped 2026-09-01 (see section 3's
 newest entry) — a real dynamic LVOTO mechanism now exists (composed into the
 already-built aorticStenosisSeverity/eaEff channel), closing the gap
-takotsubo's own entry had flagged. Mitral Valve Disease's chronic/degenerative
-forms remain unbuilt.)*
+takotsubo's own entry had flagged. Mitral Valve Disease's chronic/stenotic
+forms shipped this session as `mitralStenosis` — see section 3's newest
+entry; the remaining valve-disease backlog is now just Pacemaker Failure
+and Pacemaker Syndrome.)*
 
 *(This category shrank from 22 entries to 6, then to the 6 above, across two
 cardiac-conditions batches — see section 3 for the full writeup of both.

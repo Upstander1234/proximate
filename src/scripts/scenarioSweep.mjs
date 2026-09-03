@@ -214,6 +214,11 @@ const REQUIRED = [
   // cardiovascular.js's own comment on why that split exists).
   "aorticStenosisSeverity", "mitralRegurgFrac", "aorticRegurgFrac",
   "mitralRegurgStructural", "aorticRegurgStructural",
+  // Mitral stenosis (queue item 7's chronic/degenerative valve batch): a
+  // real, always-non-negative [0,0.9] severity dial (updateValves,
+  // cardiovascular.js), consumed by both the lumped EDV filling term and
+  // the full-loop ODE's own mvStenR-scaled Rmv resistance term.
+  "mitralStenosisSeverity",
   // Queue item 60, part 2 of 3 (tracheostomy state model): trachObstruction
   // is a real, always-non-negative 0-1 inner-cannula secretion-obstruction
   // severity, read by respiratory.js's airway-resistance calculation only
@@ -348,6 +353,11 @@ const NON_NEGATIVE = [
   // never negative — same set added to REQUIRED above.
   "aorticStenosisSeverity", "mitralRegurgFrac", "aorticRegurgFrac",
   "mitralRegurgStructural", "aorticRegurgStructural",
+  // Mitral stenosis (queue item 7's chronic/degenerative valve batch): a
+  // real, always-non-negative [0,0.9] severity dial (updateValves,
+  // cardiovascular.js), consumed by both the lumped EDV filling term and
+  // the full-loop ODE's own mvStenR-scaled Rmv resistance term.
+  "mitralStenosisSeverity",
   // Queue item 60, part 2 of 3 (tracheostomy state model): trachObstruction
   // is a real, always-non-negative 0-1 inner-cannula secretion-obstruction
   // severity, read by respiratory.js's airway-resistance calculation only
