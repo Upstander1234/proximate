@@ -737,6 +737,13 @@ export class Patient {
 
     // Cardiovascular
     this.baseSVR = this.ageProfile.baseSVR();
+    // Queue item V2-27: chronic concentric LV hypertrophy from sustained
+    // afterload elevation (cardiovascular.js's updateChronicRemodeling).
+    // 0-1, relaxes over a real weeks-scale time constant toward a target
+    // driven by sustained pat.svr elevation. Defaults to 0 so every
+    // existing patient/scenario is unaffected unless a call is run for a
+    // genuinely long simulated duration under sustained hypertension.
+    this.lvHypertrophy = 0;
     this.svr = this.baseSVR;
     this.cvp = 4;
     this.msfp = 7;

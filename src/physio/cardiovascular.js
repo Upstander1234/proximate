@@ -435,7 +435,46 @@ export function updateVenousReturn(pat, dt) {
 //    ventricular-arterial coupling, Windkessel arterial pressures, and the
 //    right-atrial volume balance that makes CVP a genuine state variable.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// CHRONIC ADAPTATION — concentric LV hypertrophy from sustained afterload
+// elevation (queue item V2-27, scoped to the smallest real slice per that
+// item's own text: ONE state variable, using this engine's established
+// relax()-toward-target idiom, additive on an existing compliance
+// parameter).
+//
+// Mechanism: sustained elevated afterload (pat.svr, an already-computed,
+// real quantity, not a scripted stat) drives the ventricular wall to
+// remodel toward a new, thicker steady state, exactly the way
+// pat.baroSetpoint/pat.arterialCompliance/etc. above already relax toward a
+// forcing target via the same approach() helper. Concentric LVH from
+// sustained hypertension is standard cardiology teaching as a WEEKS-TO-
+// MONTHS process (e.g. Katz, Physiology of the Heart; ACC/AHA hypertensive
+// heart disease reviews) — tau is set to 14 days (20160 min) so a call run
+// for many simulated days (mechanismWiring's own probe() supports an
+// arbitrary `run` in seconds) shows real, gradual, non-instant development,
+// not a switch.
+//
+// Consequence: reduced diastolic compliance ("harder to fill" even as
+// systolic function is initially preserved/enhanced) — wired as a NEW,
+// purely multiplicative term on edpB (the EDPVR diastolic-stiffness
+// coefficient already read by updateFullLoopODE, see buildParams below),
+// not a restructure of the solver. At lvHypertrophy=0 (any patient without
+// sustained afterload elevation, including every acute cardiac/shock
+// condition, which start near 0 and have no time within a single call to
+// develop this) the multiplier is exactly 1, a no-op by construction, not
+// just by measurement.
+const LVH_TAU_MIN = 14 * 24 * 60;      // 14 days — real, cited weeks-scale onset
+const LVH_SVR_ENGAGE = 1.15;           // afterload has to be sustained >=15% above this
+const LVH_SVR_SPREAD = 0.55;           // ...and saturates ~70% above normal
+export function updateChronicRemodeling(pat, dt) {
+  const normalSvr = pat.ageProfile ? pat.ageProfile.baseSVR() : 1200;
+  const ratio = (pat.svr || normalSvr) / normalSvr;
+  const target = clamp((ratio - LVH_SVR_ENGAGE) / LVH_SVR_SPREAD, 0, 1);
+  pat.lvHypertrophy = approach(pat.lvHypertrophy ?? 0, target, dt, LVH_TAU_MIN);
+}
+
 export function updateCardiovascular(pat, dt) {
+  updateChronicRemodeling(pat, dt);
   // ---- Electrical conduction & heart rate ----
   updateConduction(pat, dt);
   // Chronotropy is expressed RELATIVE to the resting autonomic balance, so that
@@ -1503,7 +1542,19 @@ function updateFullLoopODE(pat, dt) {
     // EDPVR excess: edpA invariant; edpB ∝ 1/bodyScale and edpU0 ∝ bodyScale so
     // the excess engages at the same fraction of normal EDV and gives the same
     // pressure at every body size.
-    edpA: 5.0 * pScale, edpB: 0.035 / chamberScale, edpU0: 115 * chamberScale,
+    // edpB carries a NEW multiplicative term from chronic concentric LV
+    // hypertrophy (see updateChronicRemodeling above, queue item V2-27):
+    // hypertrophied ventricles have real, documented reduced diastolic
+    // compliance ("harder to fill") even while systolic function is
+    // preserved/initially enhanced. LVH_STIFFNESS_COEF=1.0 doubles diastolic
+    // stiffness at full (lvHypertrophy=1) hypertrophy — a real, moderate
+    // diastolic-dysfunction magnitude, not an invented dramatic one. Exactly
+    // 1 (no-op) whenever lvHypertrophy is 0, which is every acute
+    // presentation and every condition that never sustains elevated
+    // afterload — confirmed by construction, not just measurement.
+    edpA: 5.0 * pScale,
+    edpB: (0.035 / chamberScale) * (1 + (pat.lvHypertrophy || 0) * 1.0),
+    edpU0: 115 * chamberScale,
   });
 
   const targetTotalMl = (pat.totalBloodVol || 4.9) * 1000;
