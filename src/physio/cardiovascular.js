@@ -251,7 +251,21 @@ export function updateAutonomic(pat, dt) {
   // that widens the venous bed drives it: pregnancy's progesterone-mediated
   // venodilation, chronic training, cirrhosis. 1 = normal.
   const venCap = clamp((pat.venousCapacitanceFactor ?? 1) * (pat.venousCapacitanceDrug ?? 1), 0.5, 2.0);
-  pat.unstressedVol = 0.70 * bv * venCap * (1 - clamp(pat.alphaTone, 0, 1) * 0.35);
+  // The mobilization coefficient below was a flat 0.35 despite this
+  // function's own comment claiming the autotransfusion is "preferentially
+  // from the splanchnic reservoir" — pat.splanchnicFrac (patient.js, default
+  // 0.33) was set at construction and never once read anywhere (queue item
+  // 5's dead-code sweep). Now the actual mobilization coefficient: at the
+  // default 0.33 this reproduces the original flat 0.35 almost exactly
+  // (0.33*1.06=0.3498), so no calibrated patient's baseline behavior moves.
+  // The real, new effect: renal.js's portal-hypertension mechanism now
+  // narrows splanchnicFrac for a cirrhotic patient (a chronically dilated,
+  // poorly-contractile splanchnic bed has less venoconstrictor RESERVE left
+  // to mobilize under acute sympathetic drive — a real, documented reason
+  // cirrhotic patients tolerate hemorrhage worse), so that patient
+  // autotransfuses measurably less blood from this reservoir during shock.
+  const splanchnicMobilization = clamp((pat.splanchnicFrac ?? 0.33) * 1.06, 0.1, 0.5);
+  pat.unstressedVol = 0.70 * bv * venCap * (1 - clamp(pat.alphaTone, 0, 1) * splanchnicMobilization);
 
   // Splenic/splanchnic RBC autotransfusion under strong drive (kept from before).
   if (pat.splenicRBC > 0 && pat.neuralSymp > 0.6) {

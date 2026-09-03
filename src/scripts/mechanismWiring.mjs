@@ -224,6 +224,7 @@ function snapshot(p) {
     angiotensinII: p.angiotensinII || 0,
     venousCapacitanceFactor: p.venousCapacitanceFactor ?? 1,
     portalPressure: p.portalPressure || 0,
+    splanchnicFrac: p.splanchnicFrac ?? 0.33,
     na: p.na ?? 140,
     afferentConstriction: p.afferentConstriction || 0,
     gfrFraction: p.baseGfr ? (p.gfr || 0) / p.baseGfr : 0,
@@ -6705,6 +6706,29 @@ console.log("\n[PORTAL HYPERTENSION / CIRRHOSIS — queue item V2-13]");
   reserveReduced ? pass++ : fail++;
   if (!reserveReduced) failures.push(`cirrhosis's reduced hepatic reserve should show as real liverInjury (organClearanceFactor's own already-verified consumer), got cirrhotic=${cirrhotic.after.liverInjury}, healthy control=${healthy.after.liverInjury}`);
   console.log(`  ${reserveReduced ? "PASS" : "FAIL"}  ${"...reduced hepatic reserve reuses real liverInjury/clearance".padEnd(46)} liverInjury: control ${healthy.after.liverInjury}, cirrhotic ${cirrhotic.after.liverInjury}`);
+
+  // Queue item 5's dead-code sweep: pat.splanchnicFrac (patient.js, default
+  // 0.33) was written at construction and never read anywhere. Now it's
+  // cardiovascular.js's own real mobilization-reserve coefficient for the
+  // splanchnic autotransfusion its comment already claimed (see that
+  // file's own comment at updateAutonomic), AND this portal-hypertension
+  // mechanism narrows it — a chronically dilated splanchnic bed has less
+  // venoconstrictor reserve left to mobilize under acute sympathetic
+  // drive, a real, documented reason cirrhotics tolerate hemorrhage worse.
+  assertVersus("portalPressure -> narrows splanchnicFrac (blunted autotransfusion reserve)", portal, healthy, "splanchnicFrac", "down", 0.005);
+
+  // The actual point: under an IDENTICAL superimposed hemorrhage, a
+  // cirrhotic patient's narrower splanchnicFrac means less blood is
+  // autotransfused out of the unstressed (splanchnic) pool at a matched
+  // alphaTone, so cardiac filling (and therefore pressure) is measurably
+  // worse than an otherwise-identical hemorrhaging control — not a
+  // decorative field, a real hemodynamic consequence.
+  const healthyHem = probe({ scen: "abdPain", settle: 180, run: 900, mutate: (p) => { p.activeBleedRate = 0.2; } });
+  const cirrhoticHem = probe({ scen: "abdPain", settle: 180, run: 900, mutate: (p) => { p.activeBleedRate = 0.2; p.portalPressure = 12; } });
+  const worseUnderHemorrhage = cirrhoticHem.after.sbp < healthyHem.after.sbp - 0.5;
+  worseUnderHemorrhage ? pass++ : fail++;
+  if (!worseUnderHemorrhage) failures.push(`a cirrhotic patient should tolerate an identical superimposed hemorrhage measurably WORSE (blunted splanchnic autotransfusion reserve), got healthy-hemorrhage sbp=${healthyHem.after.sbp.toFixed(1)}, cirrhotic-hemorrhage sbp=${cirrhoticHem.after.sbp.toFixed(1)}`);
+  console.log(`  ${worseUnderHemorrhage ? "PASS" : "FAIL"}  ${"...-> measurably worse pressure under identical hemorrhage".padEnd(46)} sbp: healthy+bleed ${healthyHem.after.sbp.toFixed(1)}, cirrhotic+bleed ${cirrhoticHem.after.sbp.toFixed(1)}`);
 }
 
 console.log("\n[PULMONARY CIRCULATION / RV-LV COUPLING — queue item V2-25]");

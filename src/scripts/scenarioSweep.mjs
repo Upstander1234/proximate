@@ -247,6 +247,11 @@ const REQUIRED = [
   // default 0), driving real splanchnic vasodilation and RAAS/ADH
   // activation via renal.js.
   "portalPressure",
+  // Queue item 5's dead-code sweep: pat.splanchnicFrac (patient.js,
+  // default 0.33) is now a real, always-present venoconstrictor-reserve
+  // coefficient (cardiovascular.js's splanchnic autotransfusion
+  // mobilization), narrowed by renal.js's portal-hypertension mechanism.
+  "splanchnicFrac",
 ];
 
 // Fields that may never go negative.
@@ -359,6 +364,9 @@ const NON_NEGATIVE = [
   "thirstDrive",
   // Queue item V2-13: real, always-non-negative HVPG-equivalent mmHg.
   "portalPressure",
+  // Queue item 5's dead-code sweep: splanchnicFrac is a bounded, always
+  // non-negative venoconstrictor-reserve coefficient.
+  "splanchnicFrac",
 ];
 
 const results = [];

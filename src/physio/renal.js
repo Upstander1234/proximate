@@ -121,6 +121,15 @@ export function updateRenalEndocrine(pat, dt) {
       // cirrhosis directly as the case this mechanism exists to reproduce.
       pat.venousCapacitanceFactor = Math.max(pat.venousCapacitanceFactor ?? 1,
         1 + pat._portalVasodilation * 0.8);
+      // A chronically dilated splanchnic bed has less venoconstrictor
+      // RESERVE left to mobilize under acute sympathetic drive (a real,
+      // documented reason cirrhotic patients tolerate superimposed
+      // hemorrhage/shock worse than an otherwise-matched patient) — narrows
+      // pat.splanchnicFrac (cardiovascular.js's real consumer, queue item 5)
+      // down from its default 0.33 toward a 0.13 floor as portal
+      // vasodilation approaches its own 0.22 ceiling.
+      pat.splanchnicFrac = Math.min(pat.splanchnicFrac ?? 0.33,
+        0.33 * (1 - pat._portalVasodilation * 0.6));
     }
 
     // --- RENIN SECRETION -----------------------------------------------------
