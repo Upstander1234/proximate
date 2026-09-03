@@ -801,4 +801,38 @@ export function updateGasExchange(pat, dt) {
     pat.pao2 = Math.max(20, Math.min(600, pat.pao2));
     pat.sao2 = oxySat(pat.pao2, pat.ph, pat.paco2, pat.coreTemp, pat.dpg);
     if (pat.co <= 0.1) pat.sao2 *= 0.5;
+
+    // THE "100% OXYGEN TEST" (V2-6, scoped slice) — a real, standard bedside/
+    // ICU maneuver for distinguishing PURE SHUNT (ARDS, severe pulmonary
+    // edema: blood bypasses ventilated alveoli entirely via effShunt above,
+    // so raising FiO2 barely moves the mixed pao2/pvO2 blend) from LOW-V/Q
+    // mismatch (pneumonia, bronchospasm: some gas exchange is still
+    // occurring, so a higher inspired fraction genuinely raises PaO2). Tracks
+    // pat.pao2 (partial pressure, real mmHg dynamic range), deliberately NOT
+    // pat.sao2/SpO2 — SpO2 saturates near 100% once PaO2 clears roughly
+    // 100-150 mmHg (the flat top of the oxyhemoglobin dissociation curve),
+    // so it has almost no discriminating range left at high FiO2 regardless
+    // of shunt severity; this is also why real clinicians use PaO2 (or the
+    // PaO2/FiO2 ratio — the actual Berlin ARDS severity criterion) for this
+    // test, not the pulse-ox percentage. This is NOT a new gas-exchange
+    // mechanism — the effShunt equation just above already produces exactly
+    // this graded refractoriness in pat.pao2 (confirmed by direct
+    // measurement before building this: ards's own 0.85 shuntFraction
+    // ceiling vs asthmaAttack's 0.6, mostly-V/Q-mismatch ceiling, produce
+    // genuinely different PaO2 deltas for the identical FiO2 step — see the
+    // numbers in this session's own verification). What was missing was a
+    // way to SURFACE that already-real distinction as something a crew can
+    // actually run, rather than an unlabelled internal number. Tracks the
+    // real room-air baseline the FIRST time this patient is seen breathing
+    // room air (or low-flow O2 under 25%), then the real delta once a
+    // high-flow device (FiO2 > 0.6 — o2nrb's own 0.85 and above) has
+    // actually been applied — both are genuine simulated values at two real
+    // points in time, not a reconstruction of the shunt equation from
+    // outside it.
+    if (fio2 <= 0.25 && pat._roomAirPao2 == null) {
+      pat._roomAirPao2 = pat.pao2;
+    }
+    if (fio2 > 0.6 && pat._roomAirPao2 != null) {
+      pat._o2TestDelta = pat.pao2 - pat._roomAirPao2;
+    }
 }

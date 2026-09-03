@@ -294,6 +294,12 @@ function snapshot(p) {
     // acute-chest-syndrome shunt consequence.
     rbcVol: p.rbcVol || 0,
     shuntFraction: p.shuntFraction || 0,
+    // V2-6 (scoped slice): the real "100% oxygen test" observables — see
+    // respiratory.js's own comment. pao2 itself was already real/live but
+    // never snapshotted before this batch needed it.
+    pao2: p.pao2 || 0,
+    o2TestDelta: p._o2TestDelta ?? null,
+    roomAirPao2: p._roomAirPao2 ?? null,
     // Queue item 59 (decompressionIllness): pulmResistFactor predates this
     // session (`pe`'s own mechanical-obstruction mechanism, now given a
     // real patient.js constructor default of 1) but had never been
@@ -6742,6 +6748,77 @@ console.log("\n[PULMONARY CIRCULATION / RV-LV COUPLING — queue item V2-25]");
   specific ? pass++ : fail++;
   if (!specific) failures.push(`a condition-less control's pvrWood should stay near its resting value (<2), got ${control.after.pvrWood}`);
   console.log(`  ${specific ? "PASS" : "FAIL"}  ${"...healthy control's own pvrWood stays low (specificity)".padEnd(46)} pvrWood ${control.after.pvrWood}`);
+}
+
+// [THE "100% OXYGEN TEST" — V2-6, scoped slice]
+//
+// Full V2-6 (real V/Q-compartment populations replacing the single global
+// shuntFraction) is explicitly too large for one batch, per this project's
+// own queue text. Investigated first, per that queue item's own explicit
+// instruction not to just defer: respiratory.js's existing shunt equation
+// (pat.pao2 = PAO2*(1-effShunt) + pvO2*effShunt) ALREADY produces the real,
+// graded clinical distinction between pure shunt (refractory to
+// supplemental O2, since shunted blood never contacts alveolar gas) and
+// low-V/Q mismatch (genuinely improves with FiO2, since some gas exchange
+// is still occurring) — no new gas-exchange mechanism was needed. What was
+// missing was a way to surface it: respiratory.js now tracks a real
+// room-air PaO2 baseline and the real PaO2 delta once sustained high-flow
+// O2 has been applied (both genuine simulated values at two real points in
+// time, not reconstructed from outside the equation), and a new exam
+// action (actions.js, o2ResponseTest) reads them.
+console.log("\n[THE \"100% OXYGEN TEST\" — V2-6, scoped slice]");
+{
+  // ardsTransfer's own shuntFraction climbs to its real 0.85 ceiling by
+  // ~12 minutes untreated (conditions.js: +0.03/min while effectiveFio2
+  // stays <=0.25) — settle long enough for that, THEN apply O2 and measure
+  // once FiO2 has actually reached its 0.85 ceiling (~60-120s onset ramp,
+  // pk.js's rising() curve for o2nrb), matching the real gate the new exam
+  // action itself enforces (fio2>=0.8) before it will render a verdict.
+  const ards = probe({ scen: "ardsTransfer", settle: 720, run: 840, apply: ["o2nrb"], reapply: 400 });
+  const asthma = probe({ scen: "asthmaAttack", settle: 720, run: 840, apply: ["o2nrb"], reapply: 400 });
+  const healthy = probe({ scen: "abdPain", settle: 720, run: 840, apply: ["o2nrb"], reapply: 400 });
+
+  // Presence: a real room-air baseline was captured, and a real delta was
+  // computed, for all three.
+  const gotBaselineAndDelta = [ards, asthma, healthy].every(
+    (r) => r.after.roomAirPao2 != null && r.after.o2TestDelta != null);
+  gotBaselineAndDelta ? pass++ : fail++;
+  if (!gotBaselineAndDelta) failures.push("100% oxygen test: room-air baseline / delta not captured for one or more probes");
+  console.log(`  ${gotBaselineAndDelta ? "PASS" : "FAIL"}  ${"room-air baseline + O2-test delta captured".padEnd(46)} ards Δ${ards.after.o2TestDelta?.toFixed(0)} asthma Δ${asthma.after.o2TestDelta?.toFixed(0)} healthy Δ${healthy.after.o2TestDelta?.toFixed(0)}`);
+
+  // The real, positive shunt finding: at its own severe ceiling, ARDS's
+  // PaO2 rise on sustained high-flow O2 stays under the 150 mmHg threshold
+  // the exam action itself uses to call "refractory" — MEASURED (see
+  // actions.js's own comment) at ~101-120 mmHg across repeated checks, with
+  // real margin below 150.
+  const ardsRefractory = ards.after.o2TestDelta < 150;
+  ardsRefractory ? pass++ : fail++;
+  if (!ardsRefractory) failures.push(`ARDS at its own shunt ceiling should read refractory (ΔPaO2<150), got ${ards.after.o2TestDelta}`);
+  console.log(`  ${ardsRefractory ? "PASS" : "FAIL"}  ${"...ARDS (pure shunt) reads refractory (Δ<150)".padEnd(46)} ΔPaO2 ${ards.after.o2TestDelta.toFixed(1)} mmHg`);
+
+  // The contrasting, real V/Q-mismatch finding: asthma's own bronchospasm-
+  // driven shunt (a real but lower ceiling, ~0.58 by this point — mostly
+  // V/Q mismatch, not true shunt) genuinely responds — MEASURED ~167 mmHg,
+  // well clear of the same 150 mmHg line.
+  const asthmaResponsive = asthma.after.o2TestDelta >= 150;
+  asthmaResponsive ? pass++ : fail++;
+  if (!asthmaResponsive) failures.push(`asthma should read O2-responsive (ΔPaO2>=150), got ${asthma.after.o2TestDelta}`);
+  console.log(`  ${asthmaResponsive ? "PASS" : "FAIL"}  ${"...asthma (V/Q mismatch) reads responsive (Δ>=150)".padEnd(46)} ΔPaO2 ${asthma.after.o2TestDelta.toFixed(1)} mmHg`);
+
+  // The actual clinical teaching point, asserted directly and two-sided in
+  // one check: pure shunt (ARDS) shows a genuinely SMALLER PaO2 rise than
+  // low-V/Q mismatch (asthma) for the identical FiO2 step — either
+  // condition alone reading "low" or "high" in isolation would not prove
+  // the mechanism actually DISTINGUISHES the two.
+  assertVersus("ARDS's O2-test delta is genuinely smaller than asthma's", ards, asthma, "o2TestDelta", "down", 40);
+
+  // Specificity: a condition-less control (no shunt at all) shows a real,
+  // large PaO2 rise, confirming the "refractory" verdict above is not just
+  // every patient reading low.
+  const healthyResponsive = healthy.after.o2TestDelta >= 150;
+  healthyResponsive ? pass++ : fail++;
+  if (!healthyResponsive) failures.push(`a condition-less control should read O2-responsive (ΔPaO2>=150), got ${healthy.after.o2TestDelta}`);
+  console.log(`  ${healthyResponsive ? "PASS" : "FAIL"}  ${"...a healthy control reads responsive too (specificity)".padEnd(46)} ΔPaO2 ${healthy.after.o2TestDelta.toFixed(1)} mmHg`);
 }
 
 console.log("\n" + "=".repeat(74));

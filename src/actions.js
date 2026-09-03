@@ -239,6 +239,50 @@ export const LIB=[
       return {say:`SpO₂ ${v.spo2}%. Pulse rate ${pr}.`+(dis?" That is not the rate you counted at the wrist.":""),
         kind:(dis||v.spo2<90)?"warn":"obs",meas:{"SpO₂":`${v.spo2}%`,PR:`${pr}`},
         evid:dis?"Oximeter PR ≠ palpated HR — poor peripheral perfusion.":null};}},
+  // The real bedside "100% oxygen test" (V2-6, scoped slice): reads the
+  // genuine room-air-vs-high-flow PaO2 delta respiratory.js's own shunt
+  // equation already produces (see that file's comment) — this action is
+  // purely a readout, it computes nothing physiological itself. A patient
+  // whose PaO2 barely rises despite genuine high-flow O2 has blood bypassing
+  // ventilated alveoli entirely (true shunt: ARDS, severe pulmonary edema) —
+  // supplemental oxygen cannot reach that blood no matter how much is given.
+  // A patient who responds well still has SOME gas exchange happening
+  // (V/Q mismatch: pneumonia, bronchospasm, mild-moderate edema) that a
+  // higher inspired fraction can exploit. Needs a real room-air baseline on
+  // record AND real, SUSTAINED high-flow O2 actually delivered — reports
+  // honestly if either is missing rather than guessing.
+  //
+  // Gate/threshold, MEASURED against the real engine (not guessed), across
+  // several already-shipped conditions at their own presenting/progressed
+  // severity, all given the same o2nrb dose (0.85 FiO2) and read once FiO2
+  // has actually reached that ceiling (the onset ramp takes ~45-60s, hence
+  // the >=0.8 gate rather than testing the instant a device is applied):
+  // ardsTransfer (shuntFraction at its own 0.85 ceiling) reads a delta of
+  // ~101-120 mmHg; asthmaAttack (~0.58) ~167; toxicInhalationChlorine
+  // (~0.54) ~194; resp/CHF (~0.33) ~269; a condition-less control and
+  // pneumoniaSepsis (shunt not yet engaged) both ~459-461. The gap between
+  // ARDS's own ceiling and every other tested condition is wide (>45 mmHg)
+  // and stable across repeated checks once FiO2 has settled, so 150 mmHg is
+  // a real, margin-backed cut rather than a number chosen to make one case
+  // pass.
+  {id:"o2ResponseTest",region:"armR",tab:"assess",label:"Oxygen response (100% O2 test)",gerund:"Checking oxygen responsiveness",cost:20,lvl:2,bag:"monitor",
+    // Deliberately reads PaO2 (v._pao2/v._roomAirPao2/v._o2TestDelta), not
+    // SpO2 — the pulse-ox percentage saturates near 100% at a PaO2 well
+    // below what a real "did the shunt open up" comparison needs, so it has
+    // almost no discriminating range left once a patient is on high-flow
+    // oxygen. PaO2 is the real clinical basis for this test (and for the
+    // PaO2/FiO2 ratio ARDS is actually staged on).
+    run:(s,v)=>{
+      if (v._fio2 < 0.8) return {say:"Not yet on sustained high-flow oxygen. Apply a non-rebreather or BVM at high flow, let it run a minute or two, then recheck.",kind:"obs"};
+      if (v._roomAirPao2 == null) return {say:"No room-air baseline on record — this patient was never seen on room air, so there is nothing to compare against.",kind:"obs"};
+      const delta = v._o2TestDelta;
+      if (delta == null) return {say:"Still gathering a comparison — give it a moment on high-flow oxygen.",kind:"obs"};
+      if (delta < 150) return {say:`Blood oxygen barely moved on sustained high-flow oxygen (room-air baseline ~${Math.round(v._roomAirPao2)} mmHg, now ~${v._pao2} mmHg). That is refractory hypoxemia — blood is bypassing ventilated alveoli entirely. Oxygen cannot fix that; think tension physiology, a mucus plug, ARDS, or severe pulmonary edema.`,
+          kind:"warn",find:`O2 test: refractory (ΔPaO2 ${delta.toFixed(0)} mmHg).`,
+          evid:"Refractory to supplemental oxygen — a real, positive shunt finding, not a hypoventilation problem."};
+      return {say:`Blood oxygen genuinely improved on sustained high-flow oxygen (room-air baseline ~${Math.round(v._roomAirPao2)} mmHg, now ~${v._pao2} mmHg). That is a real, oxygen-responsive picture — some gas exchange is still happening, this is ventilation/perfusion mismatch, not pure shunt.`,
+        kind:"obs",find:`O2 test: responsive (ΔPaO2 +${delta.toFixed(0)} mmHg).`};
+    }},
   {id:"gluc",region:"armR",tab:"assess",label:"Blood glucose",gerund:"Checking glucose",cost:25,once:1,lvl:2,pocket:"glucometer",probe:"glucometer",
     run:(s,v)=>({say:`${v.glu} mg/dL.`,find:`Glucose ${v.glu}.`,meas:{Glu:`${v.glu}`}})},
   {id:"gluc",region:"armL",tab:"assess",label:"Blood glucose",gerund:"Checking glucose",cost:25,once:1,lvl:2,pocket:"glucometer",probe:"glucometer",

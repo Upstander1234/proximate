@@ -1305,6 +1305,16 @@ export class Patient {
       // action can read it as ctx.v.agitation, matching how WIDE_QRS reads
       // ctx.v.qrsWidth.
       agitation: +((this.agitation ?? 0)).toFixed(2),
+      // V2-6 (scoped slice): the real "100% oxygen test" observables — a
+      // room-air baseline PaO2 and, once high-flow O2 has genuinely been
+      // applied, the measured delta. Both are real values respiratory.js
+      // computed from the actual shunt equation at two real points in time
+      // (see that file's own comment for why PaO2, not SpO2), not derived
+      // here — this is only publishing them.
+      _roomAirPao2: this._roomAirPao2 ?? null,
+      _o2TestDelta: this._o2TestDelta ?? null,
+      _pao2: Math.round(this.pao2 ?? 0),
+      _fio2: +((this.effectiveFio2 ?? 0.21)).toFixed(2),
       _map: this.map, _lactate: this.lactate, _ph: this.ph, _cons: this.consciousness,
       _pvLoop: this.pvLoop || null,
       _cv: {
