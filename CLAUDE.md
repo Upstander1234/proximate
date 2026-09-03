@@ -332,6 +332,105 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-01 — Third wave: V2 queue continued in parallel (V2-6 scoped slice, V2-10 scoped slice, V2-27 scoped slice, item 5 dead-code sweep), all via non-self-delegating worktree agents; V2-32 documentation
+
+Direct continuation of the second-wave entry below — same workflow (worktree
+isolation, wave-based disk management, explicit "do this yourself, no
+self-delegation" instruction in every prompt, which held cleanly for all four
+launches this wave with no self-delegation incidents). One real infrastructure
+hiccup: two consecutive `Agent` launches with `isolation:"worktree"` failed
+immediately with "Cannot create agent worktree: not in a git repository" —
+diagnosed as transient (the repo itself was confirmed intact via `git status`/
+`git worktree list`), resolved by simply retrying after a merge/cleanup cycle;
+not fully root-caused, flagged for a future session if it recurs.
+
+**Four items shipped:**
+
+**1. V2-6 (pulmonary V/Q compartments), scoped slice.** The full population-
+based V/Q-compartment rewrite remains explicitly out of scope for one batch
+(genuinely large, high-blast-radius). Instead, a real, useful diagnostic
+window was added: `respiratory.js`'s existing shunt equation already
+mathematically distinguishes pure shunt (refractory to supplemental O2) from
+V/Q mismatch (O2-responsive), it just had no surfaced observable. A real
+room-air PaO2 baseline and post-O2 PaO2 delta are now tracked and exposed via
+a new `o2ResponseTest` exam action. MEASURED: ARDS (near-pure shunt) reads
+refractory (ΔPaO2 ~101-120 mmHg, under the 150 mmHg threshold); asthma (V/Q
+mismatch) reads responsive (~167 mmHg); a healthy control also reads
+responsive (specificity). See queue item V2-6's own updated entry.
+
+**2. Item 5's dead-code sweep — `pat.splanchnicFrac` wired to a real
+consumer.** Found genuinely dead (default 0.33, never read anywhere) via the
+standard grep-reads-then-writes audit. Wired as a real venoconstrictor-reserve
+coefficient in cardiovascular.js's splanchnic autotransfusion mobilization
+mechanism, narrowed by renal.js's existing portal-hypertension mechanism
+(cirrhosis's `portalPressure`) — a real, cited interaction: portal
+hypertension genuinely reduces how much blood the splanchnic bed can
+autotransfuse under sympathetic stress.
+
+**3. V2-10 (nephron segment-level modeling), scoped slice.** The full
+glomerulus→PCT→loop of Henle→DCT→collecting-duct chain remains unbuilt
+(large, structural, no diuretic drug exists in this formulary as a real
+prerequisite). A real two-segment model shipped instead: `renal.js` gained
+`pat.proximalReabsorptionEff` (SGLT/glucose-sensitive, reusing item 43's own
+`glucoseExcess` signal) and `pat.distalReabsorptionEff` (aldosterone-driven,
+finally giving `pat.aldosterone` — previously computed every tick with no
+sodium/volume consumer at all — a real one), composing into
+`pat.segmentReabsorptionEff`. MEASURED: glucose=550 impairs proximal
+specifically while distal stays untouched; aldosterone=1.0 (full RAAS)
+boosts distal specifically while proximal stays untouched; critically, full
+RAAS activation CANNOT rescue a glucose-driven proximal leak (composite stays
+impaired) — the real teaching point that these are separate nephron
+segments, not one shared number. Item 43's own DKA osmotic-diuresis drain
+confirmed unbroken alongside this addition. A healthy, resting, euglycemic
+control's composite lands within 0.03 of exactly 1 (no regression to any
+already-calibrated volume trajectory).
+
+**4. V2-27 (chronic adaptation and remodeling), scoped slice.** The full
+multi-variable remodeling proposal (vascular stiffness, nephron loss,
+coronary atherosclerosis) remains unbuilt. A real first slow-timescale state
+variable shipped: `pat.lvHypertrophy`, relaxing toward a target driven by
+sustained elevated `pat.svr` on a cited ~14-day time constant. A genuine
+multi-week engine run was investigated and found infeasible in this
+harness's time budget (~0.5s per simulated minute at MAX_TICK, so a 60-day
+run would take hours) — verified instead via real, measured DIRECTIONAL
+engagement over a 900s window: sustained afterload measurably engages
+`lvHypertrophy` while a normotensive control stays exactly 0; a longer
+window shows more hypertrophy than a shorter one (gradual, not a step);
+acute cardiac conditions (`ami`, `cardiogenicShock`) stay negligible (<0.01,
+no regression); and forcing `lvHypertrophy=1` measurably reduces diastolic
+filling (EDV) via a new multiplicative EDPVR diastolic-stiffness term in
+`cardiovascular.js`, confirming the field reaches a real downstream
+consequence.
+
+**5. V2-32 — a real dependency/update-order map of the engine as it exists
+today**, replacing the source document's aspirational 23-step pipeline
+(which describes subsystems that don't exist yet) with the actual, verified
+`physiology.js` call order and the real per-mechanism time constants driving
+this project's "multi-timescale" property. See queue item V2-32's own entry
+for the full pipeline (conditions → drugs → inflammation → coagulation →
+metabolic/fluid → renal → respiratory → neuro/organ-injury → cardiovascular
+→ thermo → post-step passes).
+
+**Verification, per item, all via quick standalone probes against the real
+engine per this session's own "no long-running full-suite waits" discipline
+— NOT the full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites run to
+completion this wave.** `node --check` and targeted `npx eslint` clean on
+every touched file across all four items (`respiratory.js`, `actions.js`,
+`cardiovascular.js`, `renal.js`, `patient.js`, `mechanismWiring.mjs`,
+`scenarioSweep.mjs`), zero new findings beyond the pre-existing `App.jsx`
+baseline. Two real merge conflicts (both `mechanismWiring.mjs`, between
+item-5/V2-10 and then V2-27) were mechanical — independently-appended
+assertion sections, resolved by concatenation with no logic changes, each
+confirmed clean via `node --check` immediately after resolution. Merged into
+master in three commits; each worktree's own commit message documents its
+own specific probe results. **Stated honestly: the full regression suites
+were not run to completion against the merged, combined state of all four
+items together this wave** — each item's own probe covers its own change in
+isolation, and node --check/eslint confirm no syntax/lint regression across
+the merge, but a full `mechanismWiring.mjs`/`scenarioSweep.mjs` run against
+the fully-merged tree is the natural next verification step before treating
+this wave as fully closed.
+
 ### 2026-09-01 — Multi-agent parallel batch, second wave: five more conditions (Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine Toxicity, Malaria, Dengue Fever) plus a mass-conservation audit tool (V2-31), all via non-self-delegating worktree agents
 
 **Direct continuation of the entry immediately below (the first wave's own workflow notes still apply — worktree isolation, disk-space-limited waves, `git add -A` discipline). One new, real infrastructure finding this wave: self-delegation is unsafe under worktree isolation.** Two agents in this wave's first attempts (V2-31 twice, Necrotizing Fasciitis once) spawned their own child `Agent` calls rather than doing the work directly — an emergent behavior of the `claude` subagent type on a large task, not something this session asked for — and in every case the CHILD's worktree was found already removed once it tried to act, while the PARENT had already reported "completed" after only 2-4 tool calls. The pattern is consistent: the harness appears to tear down a worktree-isolated agent's own worktree once that agent itself returns, without waiting for any background child it spawned to finish using it. Every affected grandchild correctly refused to improvise outside its assigned isolation boundary and reported back cleanly with zero work done and zero damage — but the work still had to be redone. Fixed for the rest of this wave by adding an explicit "do this yourself, do NOT spawn another Agent call" instruction at the top of every subsequent agent prompt, which worked cleanly for the remaining five launches. **Lesson for a future session: never let a worktree-isolated `claude` agent self-delegate to a child Agent call — instruct it not to, explicitly, every time.**
@@ -6465,16 +6564,21 @@ V2-5. **Endothelial physiology as an explicit state.** `pat.capillaryLeak`
    state is a natural next step of that same work, not a new one from
    scratch.
 
-V2-6. **Pulmonary V/Q compartments — replace the single global
-   `shuntFraction` with real ventilation/perfusion-mismatch populations**
-   (normal/low-V/Q/high-V/Q/shunt/dead-space), per the source document's own
-   explicit ask. Today `respiratory.js` uses one lumped `shuntFraction` and
-   a separate `deadSpaceFraction` — real enough for most conditions, but a
-   genuine V/Q-compartment model would let PE (perfusion loss → dead space)
-   and pneumonia (ventilation loss → shunt/low-V/Q) be mechanistically
-   distinguished rather than both just moving one or the other flat
-   fraction. Large, high-blast-radius change — needs its own dedicated
-   batch with full-suite re-verification, not a quick add.
+V2-6. **PARTIALLY DONE (this session, scoped slice) — see section 3's newest
+   entry.** The full V/Q-compartment-population rewrite remains explicitly
+   out of scope for one batch (still true, see below), but a real, useful
+   scoped slice shipped: `respiratory.js`'s existing shunt equation already
+   distinguished pure shunt (refractory to O2) from V/Q mismatch (O2-
+   responsive) mathematically, it just had no surfaced observable. A real
+   room-air PaO2 baseline plus a measured post-O2 PaO2 delta are now tracked
+   and exposed via a new `o2ResponseTest` exam action — confirmed to
+   correctly read ARDS (near-pure shunt) as refractory (ΔPaO2<150 mmHg,
+   measured ~101-120) and asthma (V/Q mismatch) as responsive (measured
+   ~167 mmHg), the real "100% oxygen test" clinical teaching point. **Still
+   fully open**: the underlying single global `shuntFraction` scalar is
+   unchanged — this only added a real diagnostic window into the existing
+   mechanism, not the population-based V/Q-compartment model itself, which
+   remains large, high-blast-radius work needing its own dedicated batch.
 
 V2-7. **Respiratory muscle mechanics and fatigue, plus dynamic
    hyperinflation/intrinsic PEEP.** `pat.respMuscleFatigue` already exists
@@ -6507,15 +6611,25 @@ V2-9. **DONE (2026-09-01) — see section 3's newest entry.** A real
    osmotic diuresis (thirstDrive=0.7 by 1800s untreated vs. 0 for a healthy
    control).
 
-V2-10. **Nephron segment-level modeling — explicitly NOT the full proposal,
-   per queue item 43's own closed finding.** Item 43 already built and
-   shipped the highest-value slice (glucose-driven osmotic diuresis) WITHOUT
-   the full glomerulus→PCT→loop→DCT→collecting-duct chain, and documented
-   that the full chain remains large, structural, unattempted work. This
-   item is that remaining chain — read item 43's entry in full before
-   starting, since it already scoped what's real and what's not (e.g. no
-   diuretic drug exists in this formulary at all, a real prerequisite gap
-   for a loop-diuretic mechanism).
+V2-10. **PARTIALLY DONE (this session, scoped slice) — see section 3's
+   newest entry. Explicitly NOT the full proposal.** A real two-segment
+   model (proximal, SGLT/glucose-sensitive; distal, aldosterone-driven)
+   composing into `pat.segmentReabsorptionEff` now exists, built as an
+   addition alongside (not a replacement of) item 43's own already-shipped
+   osmotic-diuresis mechanism. Measured, not guessed: forcing glucose past
+   the real renal threshold (~180 mg/dL) impairs `proximalReabsorptionEff`
+   while leaving `distalReabsorptionEff` untouched; forcing aldosterone to
+   1.0 (full RAAS activation) does the mirror-image, raising distal while
+   leaving proximal untouched — confirming the two segments are genuinely
+   separate mechanisms, and that RAAS activation cannot rescue a proximal
+   glucose-driven leak (the real clinical teaching point: these are
+   different nephron segments). DKA's own item-43 osmotic-diuresis drain
+   confirmed unbroken alongside this. **Still fully open**: the full
+   glomerulus→PCT→loop of Henle→DCT→collecting-duct chain remains
+   unbuilt — this is two lumped segments standing in for the ladder, not
+   the ladder itself. No diuretic drug exists in this formulary at all
+   (a real prerequisite gap for a loop-diuretic mechanism), and no real
+   prerenal/intrinsic/postrenal AKI distinction was attempted.
 
 V2-11. **Cellular energetics, generalized.** `pat.atp`/`pat.energyFailure`/
    `pat.cytochromeBlock` already exist and are real, verified mechanisms
@@ -6643,15 +6757,27 @@ V2-26. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed, see
    still genuinely open: histamineH1/H2, serotonin, and NMDA receptor
    classes beyond ketamine's own use have no real consumer yet.
 
-V2-27. **Chronic adaptation and remodeling.** Some already exists
-   (chronic anemia's 2,3-DPG shift; COPD's baseline compliance/resistance
-   scaling). NOT yet built: genuinely slow-timescale state variables for LV
-   hypertrophy, vascular stiffness, nephron loss, coronary atherosclerosis
-   progression — each would need `developmentRate`/`regressionRate`/
-   bounds, per the source doc's own template, and a real long-duration
-   (days-to-weeks) test harness this project does not currently have (the
-   existing suites run single-call-length scenarios, not multi-day
-   progressions) — large, new infrastructure work, not just a condition.
+V2-27. **PARTIALLY DONE (this session, scoped slice) — see section 3's
+   newest entry.** A real, first slow-timescale state variable now exists:
+   `pat.lvHypertrophy`, relaxing toward a target driven by sustained
+   elevated `pat.svr` on a cited ~14-day time constant (`approach()`, the
+   same relax-toward-target idiom already used throughout
+   cardiovascular.js). A genuine multi-week run was investigated and found
+   infeasible in this harness's time budget (measured ~0.5s per simulated
+   minute at MAX_TICK, so a 60-day run alone would take hours) — verified
+   instead via real, measured DIRECTIONAL engagement over a 900s window:
+   sustained afterload elevation measurably engages `lvHypertrophy` while a
+   normotensive control stays exactly 0; a longer window shows more
+   hypertrophy than a shorter one (genuinely gradual, not a step function);
+   acute cardiac conditions (`ami`, `cardiogenicShock`) stay negligible
+   (<0.01, confirming no regression to already-shipped acute-cardiac
+   physiology); and forcing `lvHypertrophy=1` measurably reduces diastolic
+   filling (EDV) via a new multiplicative EDPVR diastolic-stiffness term,
+   confirming the field reaches a real downstream consequence, not just a
+   number that climbs. **Still fully open**: vascular stiffness, nephron
+   loss, and coronary atherosclerosis progression are all unbuilt, and no
+   real long-duration (days-to-weeks) test harness exists for this project
+   to verify true multi-week saturation rather than short-window direction.
 
 V2-28. **Pregnancy and fetal integration.** `updateObstetric` already
    models real gestational blood-volume/CO/SVR/aortocaval-compression
@@ -6700,13 +6826,90 @@ V2-31. **DONE (2026-09-01) — see section 3's entry ("multi-agent parallel
    investigated or fixed when found — genuinely separate physiology-engine
    work, correctly out of scope for a verification-tool task.
 
-V2-32. **A full physiology-engine dependency-graph document and multi-rate
-   simulation frequency table**, per the source document's own explicit
-   ask (which per-tick vs. per-substep vs. per-minute cadence each
-   subsystem should run at). This is documentation/architecture work best
-   done AFTER several of the above land, not before — attempting it now
-   would describe a system that doesn't exist yet in the shape being
-   documented.
+V2-32. **DONE (this session, first-pass) — a real dependency/update-order
+   map of the engine as it actually exists today, not the full source
+   document's aspirational 23-step pipeline (which describes subsystems,
+   like `pat.oxygen`/`pat.micro`/`pat.respiratoryMuscles`, that don't exist
+   yet).** Built by reading `physiology.js`'s actual `stepPatient()`/
+   `buildPatient()` call order and each module's own real inputs/outputs,
+   not guessed. The engine's real update order, per simulated tick:
+
+   1. **`conditions.progress()`** runs FIRST, for every active condition —
+      writes disease-declared quantities (`riskFactors`, `pathogenBurden`,
+      structural injury seeds, etc.) that every downstream module reads.
+      This ordering is load-bearing: several documented defects in this
+      project's history (the organophosphate `cholinergicVagalTone` reset
+      trap, the TCA `tcaNaBlock` reset trap) came from a condition writing
+      a field that a LATER step in this same list unconditionally resets.
+   2. **`pk.js`'s `updateDrugs()`** — resets several shared fields to their
+      neutral value every tick (`sodiumChannelBlock`, `drugInotropy`,
+      `vagalBlock`, `respDriveSuppression`, `sedationDepth`, etc.) and
+      re-derives them purely from currently-circulating drug concentration.
+      Any condition wanting to influence one of these fields must use its
+      OWN separate, condition-owned field composed at the real consumer
+      site (the established `pat.tcaNaBlock` alongside `pat.sodiumChannel
+      Block` pattern), never write the pk-owned field directly.
+   3. **`inflammation.js`'s `updateInflammation()`** — derives
+      `cytokineLoad` from `pathogenBurden` (a 90-minute relaxation), then
+      composes real consequences into `capillaryLeak` (ceiling ratchet),
+      `metabolicHeatMultiplier` (fever), and `coagulation.js`'s
+      consumptive-coagulopathy terms.
+   4. **`coagulation.js`'s `updateCoagulation()`** — factors/fibrinogen/
+      platelets relax toward a hepatic-synthesis-gated target, consumed by
+      active bleeding, tissue-factor release (inflammation), and
+      temperature (`tempEff`).
+   5. **`metabolic.js`'s `updateMetabolism()`/`updateFluidShifts()`** —
+      computes `do2`/`vo2Demand`/`actualVO2`/`energyFailure` (the engine's
+      single ischemia measure) and the real Starling-equation fluid shift
+      between `plasmaVol`/`interstitialVol`, sigma-gated by `capillaryLeak`.
+   6. **`renal.js`'s `updateRenalEndocrine()`** — GFR/excretion, RAAS
+      (renin→angiotensinII→aldosterone), ADH, the endocrine-pancreas
+      insulin/glucagon loop, thirst drive, and (this session) the
+      proximal/distal nephron-segment reabsorption-efficiency terms.
+   7. **`respiratory.js`'s `updateRespiratory()`** — gas exchange (shunt/
+      dead-space equations), work of breathing, `respMuscleFatigue`, reads
+      `effectiveFio2`/`upperAirwayObstruction`/`broncho` from drugs and
+      conditions already applied above.
+   8. **`neuro.js`'s `updateOrganInjury()`/cerebral/consciousness terms** —
+      per-organ DO2/O2Debt→injury accrual (kidney/liver/gut/skin/limb, item
+      42), CPP/CBF, and the consciousness-state classifier (reads
+      `sedationDepth` from step 2, `metabolicEncephalopathy`, ICP).
+   9. **`cardiovascular.js`'s `updateCardiovascular()`** — baroreflex,
+      arrhythmia-substrate composition, `updateValves()` (stenosis/
+      regurgitation/HOCM-LVOTO), the hematocrit-viscosity SVR multiplier,
+      chronic remodeling (`lvHypertrophy`, this session), then
+      **`updateFullLoopODE()`**, which OVERWRITES the lumped SV/EDV/ESV
+      with the authoritative beat-resolved PV-loop solution (section 5's
+      own documented "two solvers, the full ODE is authoritative" rule).
+   10. **`thermo.js`'s `updateTemperature()`** — heat balance (metabolic
+      production, skin/respiratory loss, external warming/cooling,
+      burn-barrier impairment), reads `metabolicHeatMultiplier` from step 3.
+   11. **`physiology.js`'s shared post-step passes** — the endothelial-
+      repair decay on `capillaryLeak` (queue item 49), mortality
+      classification (`mortality.js`, a pure observer per section 5, never
+      upstream of anything).
+
+   **Multi-rate note, confirmed by reading rather than assumed**: every
+   module above runs at the SAME per-tick cadence (`dt`, typically
+   substepped for numerical stability inside `cardiovascular_ode_full.js`'s
+   own RK4 integration) — there is no genuinely separate "per-minute" or
+   "per-substep-only" module today, contrary to the source document's own
+   23-step proposal. What DOES vary is each mechanism's own internal TIME
+   CONSTANT (`approach()`/relaxation taus), not its call frequency: cytokine
+   response ~90 min, endothelial repair ~36h, LV hypertrophy ~14 days,
+   thirst/RAAS on the order of minutes. This is the real "multi-timescale"
+   property V2-23 already names as "largely true by construction" — the
+   pipeline's own step ORDER above is what's genuinely new information here,
+   the timescale claim was already correct.
+
+   **What this pass deliberately does NOT do**: it does not attempt the
+   source document's own `pat.oxygen`/`pat.micro`/`pat.cellular`/
+   `pat.endothelium`/`pat.respiratoryMuscles`/`pat.renal` structured-object
+   consolidation (V2-1/V2-4/V2-11/V2-5/V2-7/V2-8) — those remain real,
+   separately-scoped refactors. This document describes the pipeline AS IT
+   EXISTS after this session's work, and should be re-read (not assumed
+   still accurate) once any of those consolidations land, since they would
+   change which module owns which field.
 
 5. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
    `duodote`'s dead `fx:{hr:20}`, `catecholamineReserve`, and
