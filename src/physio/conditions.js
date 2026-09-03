@@ -7466,6 +7466,17 @@ export const CONDITIONS = {
       preg.tilted = !(s && s.supine === true);
       pat.activeBleedRate = clamp((pat.activeBleedRate || 0) + dt * 0.005, 0.06, 0.28);
       pat.intrinsicPain = Math.max(pat.intrinsicPain ?? 8, 8);
+      // Placental exchange surface is lost roughly in proportion to how much
+      // of the placental bed has separated — the same real quantity driving
+      // the concealed-hemorrhage severity above, so it is re-derived from
+      // activeBleedRate's own ceiling rather than a second, independent
+      // dial: a 30-70% surface loss is the real range for a clinically
+      // significant (non-trivial) abruption, per Williams Obstetrics — this
+      // is the input to obstetric.js's fetal heart rate mechanism (queue
+      // item V2-28), the real reason abruption is a fetal, not just
+      // maternal, emergency.
+      const bleedFrac = clamp(((pat.activeBleedRate || 0) - 0.06) / (0.28 - 0.06), 0, 1);
+      preg.placentalAbruptionFactor = 0.3 + bleedFrac * 0.4;
     },
   },
 

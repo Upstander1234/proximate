@@ -311,8 +311,78 @@ export function establishPregnancy(pat, opts = {}) {
     // macrosomia) and retained placenta are the documented risk factors; a
     // condition sets this from whichever of those it represents.
     atonyFactor: opts.atonyFactor ?? 0,
+    // Loss of placental exchange surface area (queue item V2-28, scoped
+    // slice) — 0 is a normally-implanted, intact placenta. A condition that
+    // represents a real cause of reduced placental perfusion (placental
+    // abruption's separated surface, severe preeclampsia's uteroplacental
+    // vasculopathy) sets this 0-1; see updateFetalHeartRate() below for the
+    // consumer.
+    placentalAbruptionFactor: opts.placentalAbruptionFactor ?? 0,
+    fetalHR: opts.fetalHR ?? FHR_BASELINE,
   };
   return pat._pregnancy;
+}
+
+// ---------------------------------------------------------------------------
+// FETAL HEART RATE (queue item V2-28, deliberately scoped slice)
+//
+// The full "fetal compartment" queue item (V2-28) asks for fetal HR, fetal
+// oxygenation, placental/umbilical flow, fetal Hb and fetal O2 extraction —
+// too large for one batch. This is the single most clinically important,
+// EMS-relevant slice of it: fetal heart rate responding to reduced placental
+// perfusion, the actual Doppler/fetal-monitor finding a paramedic can assess
+// in the field (a handheld Doppler is real EMS equipment for a term OB call).
+//
+// Normal range: 110-160 bpm (ACOG Practice Bulletin No. 106; NICHD 2008
+// three-tier FHR categorization). Sustained fetal bradycardia (<110 bpm) is
+// the standard, literature-anchored sign of fetal distress/hypoxia from
+// reduced uteroplacental perfusion — modeled here as FHR falling once a
+// maternal-derived placental-perfusion proxy drops below a real threshold,
+// and holding at a normal baseline otherwise.
+//
+// PLACENTAL PERFUSION PROXY. Real uteroplacental blood flow is essentially
+// PRESSURE-PASSIVE — the spiral arteries lose their smooth muscle in normal
+// placentation and do not autoregulate the way the maternal cerebral/renal
+// circulations do (Cunningham et al., Williams Obstetrics) — so it scales
+// directly with the mother's own perfusion pressure. Rather than build a new,
+// separate placental-flow state, this reuses what is ALREADY computed every
+// tick: pat.map (the authoritative cardiovascular solver's own mean arterial
+// pressure) relative to a normal-pregnancy MAP reference (~85 mmHg — a term
+// pregnant woman's own physiologically LOWERED resting MAP, see the SVR term
+// above), further reduced by any active loss-of-placental-surface mechanism
+// (preg.placentalAbruptionFactor) and by acute aortocaval compression
+// (the `compression` term computed above in updateObstetric, which already
+// throttles maternal venous return — the same event throttles uterine
+// arterial inflow too, since the aorta itself can be compressed by the
+// gravid uterus in the supine position, not just the IVC).
+//
+// This is deliberately a PROXY, not a separate placental-flow ODE state —
+// the full V2-28 item's own placental/umbilical-flow slice remains open for
+// a future session; this reuses the mother's own already-authoritative MAP
+// rather than inventing a second, ungrounded pressure signal.
+const FHR_BASELINE = 140;          // midpoint of the normal 110-160 bpm range
+const FHR_NORMAL_MAP = 85;         // reference term-pregnant resting MAP, mmHg
+const FHR_PERFUSION_THRESHOLD = 0.72; // proxy value below which distress begins
+const FHR_TAU = 3;                 // minutes — fetal HR responds to acute
+                                    // perfusion changes over minutes, not
+                                    // instantly, matching how a sustained (not
+                                    // momentary) deceleration is what's
+                                    // clinically significant (NICHD criteria).
+
+function updateFetalHeartRate(pat, dt, preg, compression) {
+  const map = pat.map || FHR_NORMAL_MAP;
+  const mapFactor = clamp(map / FHR_NORMAL_MAP, 0, 1.3);
+  const abruption = clamp(preg.placentalAbruptionFactor || 0, 0, 1);
+  // Compression (0-0.28 typical range, see the aortocaval term above) is a
+  // real, additional acute throttle on uterine arterial inflow distinct from
+  // the mother's own systemic MAP.
+  const perfusion = clamp(mapFactor * (1 - abruption) * (1 - compression * 0.6), 0, 1.3);
+  const target = perfusion >= FHR_PERFUSION_THRESHOLD
+    ? FHR_BASELINE
+    : clamp(FHR_BASELINE - (FHR_PERFUSION_THRESHOLD - perfusion) * 260, 60, FHR_BASELINE);
+  const fhr0 = preg.fetalHR ?? FHR_BASELINE;
+  preg.fetalHR = clamp(fhr0 + (target - fhr0) * clamp(dt / FHR_TAU, 0, 1), 60, 200);
+  pat.fetalHR = preg.fetalHR;
 }
 
 export function updateObstetric(pat, dt, s) {
@@ -335,11 +405,18 @@ export function updateObstetric(pat, dt, s) {
 
   if (preg.delivered) {
     // Postpartum circulation: hemostasis by uterine involution, then a slow
-    // return toward the pre-pregnant baseline.
+    // return toward the pre-pregnant baseline. There is no fetus to monitor
+    // once delivered — fetalHR is left at its last value rather than reset,
+    // since nothing reads it after delivery (the newborn's own HR is a
+    // separate, already-real signal on the spawned newborn patient).
     updatePostpartumHemostasis(pat, dt);
     normalizePostpartum(pat, dt);
     return;
   }
+
+  // --- Fetal heart rate (queue item V2-28, scoped slice) ---
+  // Runs only while undelivered — this IS a fetal signal, not a maternal one.
+  updateFetalHeartRate(pat, dt, preg, compression);
 
   // --- Labor progression ---
   // Contractions advance cervical dilation/descent. In these scenarios labor is

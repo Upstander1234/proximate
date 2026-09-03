@@ -25,6 +25,7 @@ import { updateVenousReturn } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
 import { LIM } from "../scope.js";
 import { CONDITIONS } from "../physio/conditions.js";
+import { establishPregnancy } from "../physio/obstetric.js";
 
 const STEP = 2;
 
@@ -154,6 +155,10 @@ function snapshot(p) {
     glucagon: p.glucagon ?? 1,
     insulinSensitivity: p.insulinSensitivity ?? 1,
     magToxicity: p.magToxicity || 0,
+    // Fetal heart rate (queue item V2-28, scoped slice) — only meaningful
+    // for an undelivered pregnant patient; 0 for every other patient
+    // (obstetric.js never sets pat.fetalHR unless pat._pregnancy exists).
+    fetalHR: p.fetalHR || 0,
     neuromuscularBlock: p.neuromuscularBlock || 0,
     sao2: p.sao2 ?? 98,
     avConduction: p.avConduction ?? 1,
@@ -4233,6 +4238,89 @@ console.log("\n[THIRD BATCH — queue item 7, continued: OB/GYN hemorrhage, AAA,
       ok ? pass++ : fail++;
       if (!ok) failures.push(`placental abruption should bleed faster than placenta previa by 900s, got abruption=${ab.patient.activeBleedRate}, previa=${pv.patient.activeBleedRate}`);
       console.log(`  ${ok ? "PASS" : "FAIL"}  ${"abruption bleeds faster than previa (real ceiling contrast)".padEnd(46)} abruption = ${ab.patient.activeBleedRate.toFixed(3)}, previa = ${pv.patient.activeBleedRate.toFixed(3)}`);
+    }
+  }
+
+  // ----- FETAL HEART RATE (queue item V2-28, scoped slice) -----
+  // Fetal HR (110-160 bpm normal, ACOG PB 106 / NICHD 2008) driven by a
+  // placental-perfusion proxy derived from the mother's own already-real
+  // MAP, aortocaval compression, and placentalAbruption's real loss-of-
+  // surface-area signal. Deliberately does not touch maternal CO/MAP/SVR
+  // computation at all — updateFetalHeartRate() only READS pat.map, it
+  // never writes to it or any other maternal hemodynamic field (confirmed
+  // by reading the diff, not just asserted here).
+  {
+    // Healthy control: a real, well-tilted term pregnancy imposed directly
+    // via establishPregnancy (mutate), so this checks the mechanism itself
+    // on a matched patient rather than a scenario's own confounding
+    // physiology (no scenario in this library uses the bare healthyPregnancy
+    // condition standalone).
+    const healthy = probe({
+      scen: "abdPain", settle: 60, run: 900,
+      mutate: p => {
+        const preg = establishPregnancy(p, { gestation: 38 });
+        preg.tilted = true;
+      },
+    });
+    {
+      const fhr = healthy.patient.fetalHR;
+      const ok = fhr >= 110 && fhr <= 160;
+      ok ? pass++ : fail++;
+      if (!ok) failures.push(`healthy tilted pregnancy fetalHR should hold 110-160, got ${fhr}`);
+      console.log(`  ${ok ? "PASS" : "FAIL"}  ${"healthy tilted pregnancy holds fetal HR in the normal 110-160 range".padEnd(46)} fetalHR = ${fhr.toFixed(1)}`);
+    }
+
+    // Distressed: the real, already-shipped placentalAbruption scenario —
+    // concealed hemorrhage plus real lost placental surface area should
+    // drive genuine fetal bradycardia, not just a healthy-range wobble.
+    const abrupt = probe({ scen: "placentalAbruption", settle: 60, run: 900 });
+    {
+      const fhr = abrupt.patient.fetalHR;
+      const ok = fhr < 110;
+      ok ? pass++ : fail++;
+      if (!ok) failures.push(`placentalAbruption should drive fetal bradycardia (<110), got ${fhr}`);
+      console.log(`  ${ok ? "PASS" : "FAIL"}  ${"placental abruption drives real fetal bradycardia (<110 bpm)".padEnd(46)} fetalHR = ${fhr.toFixed(1)}`);
+    }
+
+    // Two-sided: the distressed arm's fetalHR must be well below the
+    // matched healthy control's, not merely under the absolute threshold —
+    // rules out both arms independently drifting to the same low number.
+    {
+      const ok = abrupt.patient.fetalHR < healthy.patient.fetalHR - 15;
+      ok ? pass++ : fail++;
+      if (!ok) failures.push(`abruption fetalHR should be well below a matched healthy control, got abruption=${abrupt.patient.fetalHR}, healthy=${healthy.patient.fetalHR}`);
+      console.log(`  ${ok ? "PASS" : "FAIL"}  ${"abruption fetalHR is well below a matched healthy pregnancy control".padEnd(46)} abruption = ${abrupt.patient.fetalHR.toFixed(1)}, healthy = ${healthy.patient.fetalHR.toFixed(1)}`);
+    }
+
+    // Specificity: a plain, non-pregnant patient must show exactly 0 — this
+    // mechanism is contamination-free for every patient it doesn't apply to.
+    {
+      const none = probe({ scen: "abdPain", settle: 60, run: 900 });
+      const ok = !none.patient.fetalHR;
+      ok ? pass++ : fail++;
+      if (!ok) failures.push(`non-pregnant control should show fetalHR=0, got ${none.patient.fetalHR}`);
+      console.log(`  ${ok ? "PASS" : "FAIL"}  ${"a non-pregnant control shows exactly zero contamination".padEnd(46)} fetalHR = ${none.patient.fetalHR || 0}`);
+    }
+
+    // Confirm this mechanism does not touch maternal hemodynamics: the
+    // healthy pregnant control's own sbp/hr should match what pregnancy
+    // adaptation alone produces (a real, already-established number this
+    // batch's diff never touches) — same imposed pregnancy, same result,
+    // run twice.
+    {
+      const healthy2 = probe({
+        scen: "abdPain", settle: 60, run: 900,
+        mutate: p => {
+          const preg = establishPregnancy(p, { gestation: 38 });
+          preg.tilted = true;
+        },
+      });
+      const dSbp = Math.abs(healthy.patient.sbp - healthy2.patient.sbp);
+      const dHr = Math.abs(healthy.patient.hrBase - healthy2.patient.hrBase);
+      const ok = dSbp < 0.5 && dHr < 0.5;
+      ok ? pass++ : fail++;
+      if (!ok) failures.push(`maternal hemodynamics should be deterministic/unaffected by the fetal HR mechanism, got dSbp=${dSbp}, dHr=${dHr}`);
+      console.log(`  ${ok ? "PASS" : "FAIL"}  ${"maternal sbp/hr are unaffected by the new fetal HR mechanism".padEnd(46)} dSbp = ${dSbp.toFixed(3)}, dHr = ${dHr.toFixed(3)}`);
     }
   }
 

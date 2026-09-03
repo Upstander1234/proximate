@@ -200,6 +200,23 @@ export const LIB=[
       evid:v.rr<8?"RR 8 with decreased LOC — respiratory failure. Positive pressure ventilation is indicated.":null})},
   {id:"palp",region:"abdo",tab:"assess",label:"Palpate four quadrants",gerund:"Palpating abdomen",cost:25,once:1,lvl:1,probe:"abdo",
     run:()=>({say:"Soft. Non-tender.",find:"Abdomen soft."})},
+  // Fetal heart tones (queue item V2-28, scoped slice) — a real Doppler
+  // finding: reads the live pat.fetalHR obstetric.js now maintains (110-160
+  // bpm normal; sustained bradycardia is the standard sign of fetal
+  // distress from reduced placental perfusion). Only meaningful for a
+  // pregnant, undelivered patient — every other patient gets an honest "not
+  // applicable" rather than a fabricated number.
+  {id:"fetalHeartTones",region:"abdo",tab:"assess",label:"Fetal heart tones (Doppler)",gerund:"Checking fetal heart tones",cost:20,lvl:1,
+    run:(s)=>{
+      const preg=s.patient?._pregnancy;
+      if(!preg) return {say:"No fetus to assess — patient is not pregnant.",find:"N/A — not pregnant."};
+      if(preg.delivered) return {say:"Mother has delivered — assess the newborn directly.",find:"N/A — already delivered."};
+      const fhr=Math.round(s.patient.fetalHR??140);
+      if(fhr<110) return {say:`${fhr} beats per minute. That's low — normal is 110 to 160.`,kind:"warn",
+        find:`Fetal HR ${fhr} — sustained bradycardia.`,
+        evid:"Fetal bradycardia (<110 bpm) — a real sign of fetal distress from reduced placental perfusion. Position, oxygenate, transport."};
+      return {say:`${fhr} beats per minute. Within the normal 110-160 range.`,find:`Fetal HR ${fhr}.`};
+    }},
   {id:"bpR",region:"armR",tab:"assess",label:"Blood pressure — RIGHT arm",gerund:"Right-arm pressure",cost:25,lvl:1,
     run:(s,v)=>{const d=Math.abs(v.sbp-v.sbpL),o={meas:{"BP (R)":`${v.sbp}/${v.dbp}`}};
       if(s.vitals["BP (L)"]&&d>=20){o.evid=`Systolic differential of ${d} mmHg between arms.`;
