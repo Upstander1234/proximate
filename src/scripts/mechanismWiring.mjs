@@ -6941,16 +6941,28 @@ console.log("\n[NEPHRON SEGMENT-LEVEL MODELING, scoped slice — queue item V2-1
   if (!distalUnaffectedByGlucose) failures.push(`glucose=550 should NOT move distalReabsorptionEff (a proximal-specific lesion, aldosterone-independent), got hyperglycemic distal=${hyperglycemic.after.distalReabsorptionEff.toFixed(4)} vs control ${control.after.distalReabsorptionEff.toFixed(4)}`);
   console.log(`  ${distalUnaffectedByGlucose ? "PASS" : "FAIL"}  ${"...distal (aldosterone) segment stays untouched by glucose".padEnd(46)} distal ${hyperglycemic.after.distalReabsorptionEff.toFixed(3)} vs control ${control.after.distalReabsorptionEff.toFixed(3)}`);
 
-  // DISTAL-specific effect: forcing aldosterone to a real, RAAS-activated
-  // level (this engine's own reninDrive ceiling produces aldosterone
-  // approaching ~1, per renal.js's own RAAS comment) raises
-  // distalReabsorptionEff while leaving proximalReabsorptionEff
+  // DISTAL-specific effect: forcing REAL RAAS activation via active
+  // hemorrhage (renal.js's own renin -> angiotensinII -> aldosterone
+  // chain, unmodified by this batch, driven off real perfusion pressure)
+  // raises distalReabsorptionEff while leaving proximalReabsorptionEff
   // completely untouched (aldosterone-independent by construction) --
   // the real, now-actually-wired consequence of pat.aldosterone, which
   // previously computed a real value every tick with NO consumer for
   // sodium/volume handling at all (only potassium excretion read it).
-  const raasActivated = probe({ scen: "abdPain", settle: 180, run: 600,
-    mutate: (p) => { p.aldosterone = 1.0; } });
+  // A first version of this assertion mutated p.aldosterone directly --
+  // caught as a real bug (lesson 8, the same reset-trap class this
+  // document already documents for pk.js-owned fields): renal.js's own
+  // `pat.aldosterone = pat.angiotensinII * 0.5 + ...` unconditionally
+  // recomputes it from angiotensinII every tick, so a directly-forced
+  // value was silently overwritten before distalReabsorptionEff ever
+  // read it -- MEASURED identical control-vs-treatment (1.0096 both).
+  // Fixed to force the real upstream trigger instead (a real hemorrhage,
+  // the textbook RAAS stimulus), over a real 33-minute window matching
+  // the portal-hypertension section's own precedent above -- MEASURED:
+  // control aldosterone 0.025 -> distal 1.010; hemorrhage aldosterone
+  // 0.863 -> distal 1.345, a real, substantial, correctly-driven rise.
+  const raasActivated = probe({ scen: "abdPain", settle: 180, run: 1980,
+    mutate: (p) => { p.activeBleedRate = 0.15; } });
   const distalBoosted = raasActivated.after.distalReabsorptionEff > control.after.distalReabsorptionEff + 0.2;
   distalBoosted ? pass++ : fail++;
   if (!distalBoosted) failures.push(`aldosterone=1.0 (full RAAS activation) should measurably raise distalReabsorptionEff vs a resting control, got raas=${raasActivated.after.distalReabsorptionEff.toFixed(4)} vs control=${control.after.distalReabsorptionEff.toFixed(4)}`);
@@ -7043,9 +7055,32 @@ console.log("\n[CHRONIC ADAPTATION — concentric LV hypertrophy — queue item 
   // otherwise-identical patient at lvHypertrophy=0, via the new
   // multiplicative edpB (EDPVR diastolic-stiffness) term, not a decorative
   // field with no downstream effect.
-  const stiff0 = probe({ scen: "abdPain", settle: 60, run: 300, mutate: (p) => { p.lvHypertrophy = 0; } });
-  const stiff1 = probe({ scen: "abdPain", settle: 60, run: 300, mutate: (p) => { p.lvHypertrophy = 1; } });
-  assertVersus("lvHypertrophy=1 -> reduced diastolic filling (edv falls vs lvHypertrophy=0)", stiff1, stiff0, "edv", "down", 0.3);
+  //
+  // A first version of this assertion, at rest with no volume challenge,
+  // failed once the full suite reached it (edv 120.142 vs 120.142,
+  // literally identical) — investigated per lesson 8, not patched blind,
+  // and re-confirmed as a real structural finding (not noise) by re-running
+  // with per-patient traits pinned neutral: at rest, both arms landed on
+  // the EXACT same edv to three decimals every time. Traced to
+  // `cardiovascular_ode_full.js`'s own edpExcess() formula:
+  // `u > edpU0 ? edpA*(exp(edpB*(u-edpU0))-1) : 0` is an OVERFILL safety
+  // term, exactly zero everywhere volume sits below edpU0 (115mL scaled) —
+  // a resting patient's own ~117 mL EDV sits barely above that threshold,
+  // so edpB's multiplier has essentially nothing to act on. This is a real
+  // clinical fact working in the mechanism's favor once recognized, not
+  // just a bug: LVH's diastolic dysfunction is classically UNMASKED by
+  // volume challenge (fluid bolus, exercise) rather than prominent at
+  // rest — so the assertion was moved to the clinically honest regime
+  // (a real fluid-loaded patient, totalBloodVol at 1.3x normal) instead of
+  // an invented rest-state threshold. MEASURED there, with traits pinned:
+  // a real, substantial, correctly-signed delta (edv 139.51 mL at
+  // lvHypertrophy=0 -> 135.17 mL at lvHypertrophy=1, -4.33 mL) — the
+  // mechanism genuinely reaches the observable, just not at rest.
+  const stiff0 = probe({ scen: "abdPain", settle: 60, run: 900,
+    mutate: (p) => { p.lvHypertrophy = 0; p.totalBloodVol = (p.ageProfile.bloodVolumeL() || 4.9) * 1.3; } });
+  const stiff1 = probe({ scen: "abdPain", settle: 60, run: 900,
+    mutate: (p) => { p.lvHypertrophy = 1; p.totalBloodVol = (p.ageProfile.bloodVolumeL() || 4.9) * 1.3; } });
+  assertVersus("lvHypertrophy=1 -> reduced diastolic filling under volume load (edv falls vs lvHypertrophy=0)", stiff1, stiff0, "edv", "down", 1.5);
 }
 
 console.log("\n" + "=".repeat(74));
