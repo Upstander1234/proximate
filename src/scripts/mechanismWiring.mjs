@@ -193,6 +193,10 @@ function snapshot(p) {
     // resistance-in-series handle.
     aorticStenosisSeverity: p.aorticStenosisSeverity ?? 0,
     hocmObstruction: p.hocmObstruction ?? 0,
+    // Mitral stenosis (queue item 7's chronic/degenerative valve batch):
+    // the inflow-orifice resistance dial, real and live (cardiovascular.js's
+    // updateValves + the full-loop ODE's own mvStenR-scaled Rmv).
+    mitralStenosisSeverity: p.mitralStenosisSeverity ?? 0,
     co: p.co ?? 0,
     regurgVolPerBeat: p._fullRegurgVol ?? 0,
     contractility: p.contractility ?? 1,
@@ -5287,6 +5291,57 @@ console.log("[AORTIC STENOSIS — queue item 7, condition-library workstream]");
   hazard ? pass++ : fail++;
   if (!hazard) failures.push(`nitro should drop sbp proportionally MORE in aorticStenosis than in a matched healthy control, got ${(asDropPct*100).toFixed(0)}% vs ${(healthyDropPct*100).toFixed(0)}%`);
   console.log(`  ${hazard ? "PASS" : "FAIL"}  ${"...and nitro is a real, disproportionate hazard here".padEnd(46)} sbp drop ${(asDropPct*100).toFixed(0)}% (AS) vs ${(healthyDropPct*100).toFixed(0)}% (control)`);
+}
+
+console.log("[MITRAL STENOSIS — queue item 7, chronic/degenerative valve batch]");
+{
+  // pat.mitralStenosisSeverity (cardiovascular.js's updateValves) was ALREADY
+  // built for queue item 41's regurgitation/PV-loop batch, consumed both by
+  // the lumped model's EDV filling term and by the full-loop ODE's own
+  // Rmv/stenR term — but grep-confirmed no condition had ever set
+  // riskFactors.mitralStenosis before this batch. Unlike aortic stenosis's
+  // fixed-orifice OUTFLOW cap, this is an INFLOW obstruction: reduced LV
+  // preload/EDV/CO, not a preserved-preload/added-afterload picture — the
+  // opposite hemodynamic signature, asserted here as the real distinguishing
+  // two-sided check, not a copy of the aorticStenosis assertion with a
+  // different scenario name.
+  const ms = probe({ scen: "mitralStenosis", settle: 300, run: 600 });
+  const healthy = probe({ scen: "abdPain", settle: 300, run: 600, mutate: (p) => { p.age = 71; } });
+
+  const fires = ms.after.edv < healthy.after.edv * 0.9 && ms.patient.mitralStenosisSeverity > 0.5;
+  fires ? pass++ : fail++;
+  if (!fires) failures.push(`mitralStenosis should show reduced edv (inflow-orifice cap on filling) and mitralStenosisSeverity>0.5 by 600s, got edv=${ms.after.edv}/control=${healthy.after.edv}, severity=${ms.patient.mitralStenosisSeverity}`);
+  console.log(`  ${fires ? "PASS" : "FAIL"}  ${"mitralStenosis -> reduced LV filling (inflow cap) fires".padEnd(46)} edv ${healthy.after.edv.toFixed(1)} (control) -> ${ms.after.edv.toFixed(1)}, severity ${ms.patient.mitralStenosisSeverity.toFixed(2)}`);
+
+  const healthyOk = healthy.patient.mitralStenosisSeverity === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero mitralStenosisSeverity, got ${healthy.patient.mitralStenosisSeverity}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...does NOT fire in a matched healthy control".padEnd(46)} mitralStenosisSeverity = ${healthy.patient.mitralStenosisSeverity}`);
+
+  // Specificity vs. aortic stenosis, the real distinguishing teaching point:
+  // MS reduces EDV (preload-starved); AS does NOT (preserved/elevated
+  // preload against a fixed downstream orifice) — a real, two-sided check
+  // that this is genuinely a different mechanism category, not the same
+  // stenosis effect relabeled onto a different valve.
+  const as = probe({ scen: "aorticStenosis", settle: 300, run: 600 });
+  const distinctFromAS = ms.after.edv < as.after.edv * 0.85;
+  distinctFromAS ? pass++ : fail++;
+  if (!distinctFromAS) failures.push(`mitralStenosis's edv should be meaningfully lower than aorticStenosis's own (opposite mechanism category), got ${ms.after.edv} vs ${as.after.edv}`);
+  console.log(`  ${distinctFromAS ? "PASS" : "FAIL"}  ${"...edv genuinely lower than aorticStenosis's own (opposite lesion)".padEnd(46)} edv ${ms.after.edv.toFixed(1)} (MS) vs ${as.after.edv.toFixed(1)} (AS)`);
+
+  // The key teaching point: tachycardia WORSENS filling/output here, unlike
+  // ordinary compensatory tachycardia — diastolic filling time shrinks
+  // disproportionately as rate rises, throttling the one phase this fixed
+  // orifice depends on. Two-sided: forced tachycardia widens the co gap vs
+  // a rate-matched healthy control, relative to the resting gap.
+  const msTachy = probe({ scen: "mitralStenosis", settle: 300, run: 600, mutate: (p) => { p.hrBase = 130; } });
+  const healthyTachy = probe({ scen: "abdPain", settle: 300, run: 600, mutate: (p) => { p.age = 71; p.hrBase = 130; } });
+  const restGapPct = (healthy.after.co - ms.after.co) / healthy.after.co;
+  const tachyGapPct = (healthyTachy.after.co - msTachy.after.co) / healthyTachy.after.co;
+  const worseWithTachy = tachyGapPct > restGapPct + 0.02;
+  worseWithTachy ? pass++ : fail++;
+  if (!worseWithTachy) failures.push(`mitralStenosis's co deficit vs a matched control should WIDEN with tachycardia (shortened diastolic filling time), got resting gap ${(restGapPct*100).toFixed(1)}% vs tachycardic gap ${(tachyGapPct*100).toFixed(1)}%`);
+  console.log(`  ${worseWithTachy ? "PASS" : "FAIL"}  ${"...tachycardia WIDENS the co deficit (shortened diastole)".padEnd(46)} co gap ${(restGapPct*100).toFixed(1)}% (rest) -> ${(tachyGapPct*100).toFixed(1)}% (hr130)`);
 }
 
 console.log("[HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY — queue item 7, dynamic LVOTO]");

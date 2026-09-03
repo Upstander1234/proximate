@@ -1005,6 +1005,7 @@ const SCEN_BODY_SYSTEM={
   digoxinToxicity:"Cardiac",pericarditis:"Cardiac",myocarditis:"Cardiac",hypertensiveUrgency:"Cardiac",
   hypertensiveEmergency:"Cardiac",prematureVentricularContractions:"Cardiac",prematureAtrialContractions:"Cardiac",
   sickSinusSyndrome:"Cardiac",electricalStorm:"Cardiac",aicdMalfunction:"Cardiac",
+  mitralStenosis:"Cardiac",
   // --- Respiratory ---
   pe:"Respiratory",fbao:"Respiratory",choking40:"Respiratory",asthmaAttack:"Respiratory",respArrest:"Respiratory",
   spontaneousPneumothorax:"Respiratory",pleuralEffusionCall:"Respiratory",ardsTransfer:"Respiratory",

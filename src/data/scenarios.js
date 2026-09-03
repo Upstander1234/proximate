@@ -1959,6 +1959,36 @@ aorticStenosis: {cat: "medical", id: "CARD-048", pronouns: "he", title: "Male, 7
     return {died, cause, notes, correct: s.pi === "CPMI", truth: "Severe aortic stenosis — exertional angina and near-syncope from a fixed, calcified aortic valve orifice"};},
 },
 
+mitralStenosis: {cat: "medical", id: "CARD-052", pronouns: "she", title: "Female, 71. Progressive shortness of breath, worse lying flat.",
+  limit: 1300, transport: 480,
+  bystanders: "Her daughter, visiting for the week, called when she couldn't catch her breath climbing the stairs.",
+  units: [{at: 400, level: "emt", name: "BLS 9"}],
+  dispatch: ["71F. Progressive shortness of breath over several weeks, worse today.", "Known 'heart murmur' as a child, rheumatic fever history per daughter.", "Sitting upright, working to breathe."],
+  update: ["Daughter: \"She's been getting more short of breath for weeks, but today her heart started racing and she could barely make it up the stairs.\""],
+  impression: "Sitting bolt upright at the edge of a chair, breathing carefully, a faint flush across both cheeks. Tired but alert.",
+  imps: ["RESP", "CPMI", "ALOC"],
+  condition: "mitralStenosis",
+  patient: {age: 71, gender: "female"},
+  clothing: {top: "long", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"I\'ve been getting more winded for weeks now, especially lying down at night. Today my heart just started racing and I got so short of breath climbing the stairs I had to stop."', kind: "pt",
+      evid: "Progressive exertional/orthopneic dyspnea, then an acute worsening coinciding with a sudden fast heartbeat, is the classic mitral stenosis decompensation pattern — new atrial fibrillation losing the atrial kick right when diastolic filling time is already the bottleneck.", find: "OPQRST: weeks of progressive dyspnea/orthopnea, acutely worse today with a new sensation of a racing heart."}),
+    sample: () => ({say: "Daughter: \"She had rheumatic fever as a little girl in another country, and a doctor told her years ago she had a heart murmur, but she never really followed up on it.\"", kind: "pt",
+      evid: "A childhood rheumatic fever history is the classic, most common real-world cause of chronic mitral stenosis — decades of slow fibrotic scarring of the valve before it becomes symptomatic.", find: "SAMPLE: childhood rheumatic fever, known untreated heart murmur, no cardiac follow-up."}),
+    heart: (s, v) => ({say: `Irregularly irregular, rate ${v.hr}, and a low-pitched rumbling sound you can just make out right after the normal heart sounds, best heard leaning her forward.`, kind: "crit",
+      evid: "An irregularly irregular rhythm (new atrial fibrillation, common in a chronically stretched left atrium) on top of a low-pitched diastolic rumble is the direct bedside signature of mitral stenosis with a new rapid ventricular response.", find: `Heart: irregularly irregular at ${v.hr}, low-pitched diastolic rumble.`}),
+    lungs: () => ({say: "Fine crackles at both bases, worse than a normal breath sounds exam.", kind: "crit",
+      evid: "Bibasilar crackles reflect the pulmonary venous congestion backing up behind a stenotic mitral valve — elevated left atrial pressure transmitted directly into the pulmonary circulation.", find: "Lungs: bibasilar fine crackles, pulmonary venous congestion."}),
+    skin: () => ({say: "A faint dusky-pink flush across both cheeks.", find: "Skin: mitral facies, a faint malar flush."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Severe mitral stenosis with a new rapid ventricular response, diastolic filling time collapsing faster than forward output could be supported.";
+    notes.push("The core recognition here is progressive exertional dyspnea/orthopnea in a patient with a childhood rheumatic-fever history, decompensating acutely once a fast heart rate (new atrial fibrillation) further shortened the one phase of the cycle — diastole — this fixed, narrowed valve depends on entirely for filling.");
+    notes.push("Unlike most tachycardia, a faster rate here does not raise output; it worsens it, since the stenotic valve can only pass blood during diastole and a shorter diastole gives less time to fill through an already-narrow orifice. Supportive care and prompt transport, not a drug that targets vascular tone the valve itself doesn't respond to.");
+    return {died, cause, notes, correct: s.pi === "RESP", truth: "Chronic mitral stenosis (rheumatic), decompensated by new rapid atrial fibrillation shortening diastolic filling time"};},
+},
+
 mitralRegurgitationAcute: {cat: "medical", id: "CARD-049", pronouns: "she", title: "Female, 68. Sudden shortness of breath, four days after a heart attack.",
   limit: 1300, transport: 480,
   bystanders: "Her son, who has been staying with her since her hospital discharge, called 911.",

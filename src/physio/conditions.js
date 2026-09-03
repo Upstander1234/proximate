@@ -1863,6 +1863,102 @@ export const CONDITIONS = {
     // are relatively contraindicated in severe symptomatic AS.
   },
 
+  // ===== MITRAL STENOSIS (chronic/degenerative, queue item 7 / section 8's
+  // Cardiac backlog — the last remaining piece of the queue-41 valve-
+  // mechanism family, previously deferred: "would need the same mechanism
+  // family, mechanistically distinct from vascular tone" =====
+  //
+  // Confirmed genuinely unbuilt before writing anything (lesson 16):
+  // grepped `mitralStenosis`/`riskFactors.mitralStenosis` across the whole
+  // tree — the MECHANISM already exists (cardiovascular.js's updateValves
+  // sets `pat.mitralStenosisSeverity = rf.mitralStenosis ? ... : 0`,
+  // consumed both by the lumped model's EDV filling term — `edv *= (1 -
+  // mitralStenosisSeverity*0.55)` — and by the authoritative full-loop ODE
+  // solver's `Rmv = p.Rmv * stenR(p.mitralStenosisSeverity)`, the exact
+  // same `stenR` resistance-in-series idiom aorticStenosis's own
+  // `eaEff`/outflow term uses, mirrored onto the INFLOW valve — built for
+  // queue item 41's regurgitation/PV-loop batch), but grep-confirmed NO
+  // condition has ever set `riskFactors.mitralStenosis`. This condition is
+  // the first real consumer of an already-built mechanism, the identical
+  // "mechanism existed, never wired" story aorticStenosis's own entry
+  // documents, not a newly-invented one.
+  //
+  // Pathophysiology (StatPearls, "Mitral Stenosis"; ACC/AHA 2020 valve
+  // guideline; most commonly rheumatic in origin, a slow, decades-long
+  // fibrotic narrowing of the mitral orifice): unlike aortic stenosis
+  // (an OUTFLOW obstruction — the LV must generate higher pressure to
+  // eject against a fixed downstream orifice), mitral stenosis is an
+  // INFLOW obstruction — blood cannot get INTO the LV fast enough through
+  // the narrowed valve during diastole. The direct hemodynamic signature is
+  // therefore the OPPOSITE of aortic stenosis: elevated LEFT ATRIAL
+  // pressure (backing up into the pulmonary veins, the real mechanism
+  // behind this disease's hallmark dyspnea/pulmonary edema and its real
+  // risk of atrial fibrillation from a chronically stretched LA), and a
+  // genuinely REDUCED LV preload/EDV (since a stenotic valve throttles
+  // filling), producing a fixed, afterload-independent cap on stroke
+  // volume and cardiac output. The single most important teaching point,
+  // and the reason this condition exists: TACHYCARDIA IS HARMFUL, not
+  // compensatory, in mitral stenosis. Diastole is the ONLY phase during
+  // which the stenotic valve can pass blood at all, and diastolic
+  // filling time shortens disproportionately as heart rate rises (the
+  // QT/RR-interval relationship — systole barely shortens, so a faster
+  // rate eats almost entirely into diastole), meaning a tachycardic
+  // mitral-stenosis patient gets LESS filling time per beat, not more
+  // beats' worth of adequate filling — the opposite of the usual "faster
+  // rate raises cardiac output" reflex, and the real reason new-onset
+  // atrial fibrillation (loss of the atrial kick ON TOP OF a faster,
+  // irregular ventricular response) is a classic acute-decompensation
+  // trigger in these patients.
+  mitralStenosis: {
+    initial: { age: 71, hr: 88, sbp: 108, rr: 22, pain: 2 },
+    progress(pat) {
+      pat.riskFactors.mitralStenosis = true;
+      // Chronic rheumatic disease — a real, established diagnosis, held
+      // constant for the whole encounter, same reasoning aorticStenosis's
+      // own static severity comment already gives: mitral stenosis
+      // progresses over YEARS/DECADES, not over a single call, so a fixed
+      // structural severity (rather than a ramp) is the correct, honest
+      // representation for a single field encounter. 0.65 lands in the
+      // ACC/AHA moderate-severe band (valve area 1.0-1.5 cm^2 territory),
+      // matching aorticStenosis's own 0.75 (severe AS) and hocmObstructive's
+      // 0.65 (moderate-severe HCM) for a comparably advanced, symptomatic
+      // presentation of a chronic valve lesion.
+      pat.riskFactors.mitralStenosisSeverity = 0.65;
+    },
+    // MEASURED (throwaway probe, stripped, against the real engine's
+    // authoritative full-loop ODE solver, following this project's own
+    // instrumentation discipline — lesson 8), matched abdPain healthy
+    // control at the same age (71), settled over 600s: resting edv 96.5 mL
+    // vs. control 118.6 mL (an 18.6% reduction) with co 4.67 vs 5.98 L/min
+    // (21.9% reduction) despite a similar heart rate — the fixed
+    // inflow-orifice mechanism genuinely capping forward flow through
+    // reduced filling, the opposite signature from aortic stenosis's own
+    // preserved-preload/pressure-overload picture. The tachycardia teaching
+    // point, confirmed by direct A/B rather than assumed from the
+    // mechanism's own shape: forcing hr to 130 (simulating new-onset rapid
+    // atrial fibrillation, this disease's own classic acute-decompensation
+    // trigger) WIDENS the gap — edv falls to 80.4 vs. a rate-matched
+    // control's 102.9 (21.9%) and co to 4.62 vs. 6.30 (26.7%) — a real,
+    // measured worsening at the higher rate, not merely an unchanged
+    // percentage: diastolic filling time genuinely shrinks disproportionately
+    // as rate rises, so the SAME fixed orifice throttles a larger fraction
+    // of the (now shorter) available filling window. This required a real
+    // engine fix, not just a condition: the shared valve-stenosis resistance
+    // mapping (`stenR`, cardiovascular_ode_full.js) was measured to be
+    // nearly INERT when applied to the mitral (inflow) valve at its
+    // existing linear coefficient — real and effective for aortic
+    // (outflow) stenosis, but diastole is long enough, and the mitral
+    // valve's base resistance small enough, that a 5-7x bump barely dents
+    // filling; the left atrium simply rises in pressure to compensate,
+    // itself real physiology (the actual mechanism of LA hypertension in
+    // MS) but leaving LV EDV nearly unchanged at rest as measured. Given a
+    // separate, steeper `mvStenR` mapping (quadratic in severity, closer to
+    // the real Gorlin-formula orifice-area relationship than a linear
+    // term) so a declared 0.65 severity produces the real, clinically
+    // honest reduced-filling signature above. See that file's own comment
+    // at the `mvStenR` definition for the full derivation.
+  },
+
   // ===== HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY (queue item 7 / section 8's
   // Cardiac backlog — previously deferred pending a "dynamic LVOTO"
   // mechanism, section 3's takotsubo/aorticStenosis entries both flagged

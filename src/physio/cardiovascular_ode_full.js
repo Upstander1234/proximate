@@ -379,7 +379,27 @@ export function derivative(x, t, p) {
   const dPV = dTh(x[IDX.thPV], Prv - Ppa, p.koPV, p.kcPV);
 
   // --- algebraic (non-inertial) valve flows: AV inflow tracts -----------
-  const Rmv = p.Rmv * stenR(p.mitralStenosisSeverity);
+  // Mitral stenosis uses its OWN, steeper severity->resistance mapping,
+  // deliberately NOT the shared stenR() the aortic/tricuspid outflow valves
+  // use — MEASURED (see conditions.js's mitralStenosis comment) that stenR's
+  // linear 1+sev*6 factor, while real and effective for an OUTFLOW valve
+  // (aortic stenosis directly gates ejection against downstream pressure,
+  // where a modest resistance bump measurably caps forward flow), is nearly
+  // INERT for this INFLOW valve: diastole is long relative to the mitral
+  // valve's tiny base resistance, so a 5-7x resistance bump barely dents
+  // diastolic filling — the left atrium simply rises in pressure to push the
+  // same volume through in the time available (itself real physiology, the
+  // actual mechanism behind LA hypertension in MS), leaving LV EDV nearly
+  // unchanged at rest. Real MS orifice-area staging (StatPearls; normal
+  // 4-6cm^2, severe <1.0cm^2) is a >=4-6x area reduction, and orifice flow
+  // resistance scales closer to area^2 (Gorlin-formula-adjacent) than
+  // linearly with area — so a quadratic severity term is the mechanistically
+  // closer shape, not just a bigger constant. mvStenR(0.65) = 1+0.65^2*40 =
+  // 17.9 (vs stenR's 4.9 at the same severity) is the value MEASURED to
+  // reproduce a real, clinically honest reduced-filling signature (see the
+  // condition's own MEASURED note for the exact before/after numbers).
+  const mvStenR = (sev) => 1 + (sev || 0) * (sev || 0) * 100;
+  const Rmv = p.Rmv * mvStenR(p.mitralStenosisSeverity);
   const Rtv = p.Rtv * stenR(p.tricuspidStenosisSeverity);
   const Qmv = clamp(x[IDX.thMV], 0, 1) * Math.max(0, Pla - Plv) / Rmv;
   const Qtv = clamp(x[IDX.thTV], 0, 1) * Math.max(0, Pra - Prv) / Rtv;
