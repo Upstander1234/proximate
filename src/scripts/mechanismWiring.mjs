@@ -103,6 +103,7 @@ function snapshot(p) {
     respDriveSuppression: p.respDriveSuppression || 0,
     intrinsicPEEP: p.intrinsicPEEP || 0,
     trappedVolume: p.trappedVolume || 0,
+    pvrWood: p.pvrWood || 0,
     // Circulatory mechanism variables
     cprActive: p.cprActive || 0,
     venousCapacitanceDrug: p.venousCapacitanceDrug ?? 1,
