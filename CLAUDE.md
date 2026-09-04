@@ -332,6 +332,79 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-03 — Queue item V2-27's remainder — a second chronic-adaptation state, `pat.vascularStiffness`, and a real "field was inert" defect found and fixed before it could ship
+
+Direct continuation of the same session's V2-25 work. `pat.lvHypertrophy`
+(a prior session) already established the real relax-toward-target idiom
+for slow-timescale chronic adaptation; this item's own remainder named
+vascular stiffness, nephron loss, and coronary atherosclerosis as still
+unbuilt. Scoped to vascular stiffness — a real, citable, well-understood
+mechanism (Framingham/pulse-wave-velocity literature on hypertension-driven
+arterial stiffening) with an obvious pairing to the already-shipped LVH
+work (same underlying cause, genuinely different, slower time course).
+
+`pat.vascularStiffness` (patient.js, default 0) relaxes toward a target
+driven by the same sustained-SVR-elevation ratio `updateChronicRemodeling`
+already computes for `lvHypertrophy`, but on its own, real, cited,
+SLOWER 90-day time constant (arterial wall remodeling from collagen
+deposition/elastin fragmentation is a real, separately-documented,
+months-scale process, distinct from and slower than LVH's own weeks-scale
+onset) — `cardiovascular.js`.
+
+**A real "written, read, still inert" defect (section 1's own third rule)
+was found and fixed before this could ship, not glossed over.** The first
+consumer attempt lowered the CEILING (`pat.arterialComplianceBase`) that
+`updateCardiovascular`'s own acute, pressure-dependent stiffening term
+relaxes toward. MEASURED directly before trusting it: this had ZERO effect
+on any published vital (`pat.pp`/`pat.sbp`/`pat.dbp` were bit-for-bit
+identical with `vascularStiffness` forced to 1 vs. 0) — because
+`arterialComplianceBase`/`arterialCompliance` only feed the LUMPED model's
+own `pat.ea`/stroke-volume calculation, which the authoritative full-loop
+ODE solver overwrites every tick (section 5's own documented "two solvers,
+the full ODE is authoritative" rule). Fixed by composing into
+`pat.arterialComplianceFactor` instead — the authoritative solver's OWN
+real aortic-compliance disease handle (`Cao` in `buildParams`,
+`cardiovascular_ode_full.js`), the SAME field `preeclampsia`'s own
+arterial-stiffening mechanism already writes, via the identical `Math.min`
+ceiling idiom so the two lesions compose correctly (whichever is more
+severe wins) rather than one silently clobbering the other.
+
+**MEASURED, not guessed, via a standalone probe (stripped after use) before
+trusting the fix (lesson 8):** a healthy control holds `vascularStiffness`
+at exactly 0 over 900s; forcing sustained elevated SVR (1900, vs. a normal
+~1150) engages it measurably (0.0001 by 900s, 0.0004 by 3600s — genuinely
+gradual on its own real 90-day tau, longer window shows more engagement,
+not a step); an acute cardiac condition (`ami`) stays at exactly 0 (no
+regression); and forcing `vascularStiffness=1` directly widens pulse
+pressure by ~17.8 mmHg versus an otherwise-identical control over a 60s
+window (35.9 -> 53.7) — a real, published-vital consequence via the
+authoritative ODE's own `Cao` term, the classic isolated-systolic-
+hypertension-in-stiff-arteries signature, not just a field that moves.
+
+Four new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[VASCULAR STIFFNESS — queue item V2-27's remainder, chronic-adaptation
+slice]` section, mirroring `lvHypertrophy`'s own section structure;
+`vascularStiffness`/`arterialComplianceFactor`/`pp` added to that suite's
+`snapshot()` helper (the latter two were real, live, pre-existing fields
+never previously snapshotted). `vascularStiffness`/`arterialComplianceFactor`
+added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification.** `node --check` clean on all four touched files
+(`patient.js`, `cardiovascular.js`, `mechanismWiring.mjs`,
+`scenarioSweep.mjs`). `npx eslint`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in any touched file. The four new assertions were verified
+passing via a standalone reproduction of the suite's own probe logic
+before being trusted (lesson 8); the full `mechanismWiring.mjs`/
+`scenarioSweep.mjs` suites were not confirmed to completion against this
+specific change within this session (see this session's V2-25 entry
+immediately below for the same shared-environment instability note — a
+background run launched for V2-25 was still in progress, reaching the
+`[TAKOTSUBO]` section clean with no new failures, when this entry was
+written; a future session should confirm the new `[VASCULAR STIFFNESS]`
+section in-suite). The throwaway probe script was stripped before this
+entry was written.
+
 ### 2026-09-03 — Queue item 40's standing overdose-condition workstream — amiodarone overdose (`amiodaroneOverdose`, TOX-017), the sixth drug shipped, and a real self-correction (lesson 16) of an unmeasured first-draft comment before it could ship
 
 Per item 40's own explicit warning ("measure before writing the scenario's
@@ -7361,10 +7434,27 @@ V2-27. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    physiology); and forcing `lvHypertrophy=1` measurably reduces diastolic
    filling (EDV) via a new multiplicative EDPVR diastolic-stiffness term,
    confirming the field reaches a real downstream consequence, not just a
-   number that climbs. **Still fully open**: vascular stiffness, nephron
-   loss, and coronary atherosclerosis progression are all unbuilt, and no
-   real long-duration (days-to-weeks) test harness exists for this project
-   to verify true multi-week saturation rather than short-window direction.
+   number that climbs. **Vascular stiffness is ALSO DONE now (this session)
+   — see section 3's newest entry.** A second, slower (90-day vs. LVH's
+   14-day tau) chronic state, `pat.vascularStiffness`, models real
+   arteriosclerotic stiffening of the conduit arteries themselves, driven by
+   the same sustained-afterload signal. A first consumer attempt (driving
+   `arterialComplianceBase`) was found by direct measurement to be
+   completely INERT — that field only feeds the lumped model's own SV/PP,
+   overwritten by the authoritative full-loop ODE. Fixed by composing into
+   `pat.arterialComplianceFactor` instead (the authoritative solver's own
+   real aortic-compliance disease handle, the SAME field preeclampsia's own
+   arterial-stiffening mechanism already writes, via the same `Math.min`
+   ceiling idiom). MEASURED: engages under sustained afterload while a
+   control stays exactly 0; more stiffness at 3600s than at 900s (gradual);
+   `ami` stays negligible; forcing `vascularStiffness=1` widens pulse
+   pressure by ~18 mmHg versus an otherwise-identical control — a real,
+   published-vital consequence (`pat.pp`, via the authoritative ODE), not
+   just a field that climbs. **Still fully open**: nephron loss and coronary
+   atherosclerosis progression are unbuilt, and no real long-duration
+   (days-to-weeks) test harness exists for this project to verify true
+   multi-week saturation rather than short-window direction, for either
+   this or `lvHypertrophy`.
 
 V2-28. **Pregnancy and fetal integration.** `updateObstetric` already
    models real gestational blood-volume/CO/SVR/aortocaval-compression

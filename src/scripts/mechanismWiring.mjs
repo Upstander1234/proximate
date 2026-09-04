@@ -193,6 +193,7 @@ function snapshot(p) {
     // hit when a new assertion first needed them.
     sv: p.sv ?? 0,
     edv: p.edv ?? 0,
+    pp: p.pp ?? 0,
     mitralRegurgFrac: p.mitralRegurgFrac ?? 0,
     aorticRegurgFrac: p.aorticRegurgFrac ?? 0,
     // HOCM (queue item 7, section 8 Cardiac backlog): the DYNAMIC LVOT
@@ -260,6 +261,8 @@ function snapshot(p) {
     // Queue item V2-27 (chronic adaptation): concentric LV hypertrophy,
     // relaxes toward a target driven by sustained afterload elevation.
     lvHypertrophy: p.lvHypertrophy || 0,
+    vascularStiffness: p.vascularStiffness || 0,
+    arterialComplianceFactor: p.arterialComplianceFactor ?? 1,
     plasmaVol: p.plasmaVol || 0,
     interstitialVol: p.interstitialVol || 0,
     // Added this batch (queue item 7, third batch) — a real, already-live
@@ -7134,6 +7137,56 @@ console.log("\n[CHRONIC ADAPTATION — concentric LV hypertrophy — queue item 
   const stiff1 = probe({ scen: "abdPain", settle: 60, run: 900,
     mutate: (p) => { p.lvHypertrophy = 1; p.totalBloodVol = (p.ageProfile.bloodVolumeL() || 4.9) * 1.3; } });
   assertVersus("lvHypertrophy=1 -> reduced diastolic filling under volume load (edv falls vs lvHypertrophy=0)", stiff1, stiff0, "edv", "down", 1.5);
+}
+
+console.log("\n[VASCULAR STIFFNESS — queue item V2-27's remainder, chronic-adaptation slice]");
+{
+  // Same mechanism family as lvHypertrophy just above (sustained afterload
+  // elevation, updateChronicRemodeling, cardiovascular.js), a SEPARATE,
+  // slower (90-day vs. 14-day) chronic-adaptation state modeling real
+  // arteriosclerotic stiffening of the conduit arteries themselves. The
+  // consumer had to be identified carefully: a first version drove
+  // pat.arterialCompliance/arterialComplianceBase, which turned out to be
+  // completely INERT to every published vital (they feed only the lumped
+  // model's own pat.sv/pp, overwritten by the authoritative full-loop ODE)
+  // -- found by direct measurement, not assumed. The real consumer is
+  // pat.arterialComplianceFactor, the authoritative solver's own aortic-
+  // compliance disease handle (the SAME field preeclampsia's own arterial-
+  // stiffening mechanism already writes), composed via the same Math.min
+  // ceiling idiom so the two lesions compose correctly.
+  const control = probe({ scen: "abdPain", settle: 2, run: 900 });
+  const sustainedHtn = probe({ scen: "abdPain", settle: 2, run: 900,
+    mutate: (p) => { p.svr = 1900; p.baseSVR = 1900; } });
+
+  const engaged = sustainedHtn.after.vascularStiffness > 0 && control.after.vascularStiffness === 0;
+  engaged ? pass++ : fail++;
+  if (!engaged) failures.push(`sustained afterload elevation should measurably engage vascularStiffness while a normotensive control stays exactly 0, got sustained=${sustainedHtn.after.vascularStiffness}, control=${control.after.vascularStiffness}`);
+  console.log(`  ${engaged ? "PASS" : "FAIL"}  ${"sustained afterload engages vascularStiffness; control stays 0".padEnd(46)} sustained ${sustainedHtn.after.vascularStiffness}, control ${control.after.vascularStiffness}`);
+
+  const sustainedHtnLonger = probe({ scen: "abdPain", settle: 2, run: 3600,
+    mutate: (p) => { p.svr = 1900; p.baseSVR = 1900; } });
+  const gradual = sustainedHtnLonger.after.vascularStiffness > sustainedHtn.after.vascularStiffness;
+  gradual ? pass++ : fail++;
+  if (!gradual) failures.push(`vascularStiffness at 3600s should exceed vascularStiffness at 900s under the same sustained afterload (real, gradual relaxation on a real months-scale tau, not a step), got 900s=${sustainedHtn.after.vascularStiffness}, 3600s=${sustainedHtnLonger.after.vascularStiffness}`);
+  console.log(`  ${gradual ? "PASS" : "FAIL"}  ${"...longer sustained afterload -> more stiffness (gradual, not instant)".padEnd(46)} 900s ${sustainedHtn.after.vascularStiffness}, 3600s ${sustainedHtnLonger.after.vascularStiffness}`);
+
+  const ami = probe({ scen: "ami", settle: 2, run: 900 });
+  const acuteInert = ami.after.vascularStiffness < 0.01;
+  acuteInert ? pass++ : fail++;
+  if (!acuteInert) failures.push(`an acute cardiac condition (ami) should show negligible vascularStiffness (<0.01), got ${ami.after.vascularStiffness}`);
+  console.log(`  ${acuteInert ? "PASS" : "FAIL"}  ${"...acute ami stays negligible (<0.01, not regressed)".padEnd(46)} ami ${ami.after.vascularStiffness}`);
+
+  // The real consequence: forcing vascularStiffness=1 measurably widens
+  // pulse pressure (real reduced arterial compliance -> disproportionate
+  // systolic pressure for the same stroke volume, the classic isolated-
+  // systolic-hypertension-in-the-elderly signature) versus an otherwise
+  // identical patient at vascularStiffness=0, reaching a real published
+  // vital (pat.pp, republished from the authoritative full-loop ODE), not
+  // just the field that was written.
+  const stiffOn = probe({ scen: "abdPain", settle: 2, run: 60,
+    mutate: (p) => { p.vascularStiffness = 1; } });
+  const stiffOff = probe({ scen: "abdPain", settle: 2, run: 60 });
+  assertVersus("vascularStiffness=1 -> widened pulse pressure (real reduced compliance reaches a published vital)", stiffOn, stiffOff, "pp", "up", 5);
 }
 
 // ---------------------------------------------------------------------

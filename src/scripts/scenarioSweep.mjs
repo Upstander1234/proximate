@@ -276,6 +276,11 @@ const REQUIRED = [
   // rather than the separate legacy estimate (see mechanismWiring's own
   // [RV/PULMONARY-VASCULAR COUPLING] section for the fix detail).
   "rvEdv", "rvEsv", "rvSv", "rvEf", "pvrWood",
+  // Queue item V2-27's remainder (this session): pat.vascularStiffness (a
+  // second, slower chronic-adaptation state alongside pat.lvHypertrophy) and
+  // its real consumer pat.arterialComplianceFactor were both already
+  // present as live fields but had never been added to this sweep.
+  "vascularStiffness", "arterialComplianceFactor",
 ];
 
 // Fields that may never go negative.
@@ -407,6 +412,10 @@ const NON_NEGATIVE = [
   // Queue item V2-25: RV EDV/ESV/SV are non-negative volumes/mL, EF is a
   // clamped 0-0.95 fraction, pvrWood is a clamped 0.6-20 Wood-unit resistance.
   "rvEdv", "rvEsv", "rvSv", "rvEf", "pvrWood",
+  // Queue item V2-27's remainder: vascularStiffness is a clamped 0-1 state;
+  // arterialComplianceFactor is a Math.min-composed ceiling with a real 0.6
+  // floor at vascularStiffness=1 -- never negative.
+  "vascularStiffness", "arterialComplianceFactor",
 ];
 
 const results = [];

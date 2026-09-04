@@ -483,11 +483,53 @@ export function updateVenousReturn(pat, dt) {
 const LVH_TAU_MIN = 14 * 24 * 60;      // 14 days — real, cited weeks-scale onset
 const LVH_SVR_ENGAGE = 1.15;           // afterload has to be sustained >=15% above this
 const LVH_SVR_SPREAD = 0.55;           // ...and saturates ~70% above normal
+
+// QUEUE ITEM V2-27 (second slow-timescale chronic-adaptation state, same
+// idiom as lvHypertrophy immediately above). Sustained hypertension does not
+// only remodel the ventricle — it also drives arteriosclerotic stiffening of
+// the conduit arteries themselves (collagen deposition, elastin fragmentation,
+// loss of vascular smooth-muscle compliance reserve; Framingham/pulse-wave-
+// velocity literature on hypertension-driven arterial stiffening). This is a
+// SEPARATE, SLOWER process from LVH (months-to-years of sustained pressure
+// load to become clinically apparent, versus LVH's own weeks-scale onset),
+// so it gets its own, longer tau rather than reusing LVH's. It is also
+// mechanistically distinct from updateCardiovascular's own acute,
+// pressure-dependent stiffening term (the exponential decay of
+// pat.arterialCompliance toward pat.arterialComplianceBase as MAP rises,
+// which relaxes back within minutes once pressure falls) — this state
+// instead slowly lowers the CEILING itself (pat.arterialComplianceBase),
+// a structural change that does NOT relax back on the acute term's own
+// minutes-scale timeline.
+const VSTIFF_TAU_MIN = 90 * 24 * 60;   // 90 days — real, cited months-scale onset, slower than LVH
+const VSTIFF_SVR_ENGAGE = LVH_SVR_ENGAGE; // same afterload-elevation threshold as LVH (one shared cause)
+const VSTIFF_SVR_SPREAD = LVH_SVR_SPREAD;
+const VSTIFF_MAX_COMPLIANCE_LOSS = 0.4; // real ceiling stiffened by at most 40% at vascularStiffness=1
+
 export function updateChronicRemodeling(pat, dt) {
   const normalSvr = pat.ageProfile ? pat.ageProfile.baseSVR() : 1200;
   const ratio = (pat.svr || normalSvr) / normalSvr;
   const target = clamp((ratio - LVH_SVR_ENGAGE) / LVH_SVR_SPREAD, 0, 1);
   pat.lvHypertrophy = approach(pat.lvHypertrophy ?? 0, target, dt, LVH_TAU_MIN);
+
+  const vsTarget = clamp((ratio - VSTIFF_SVR_ENGAGE) / VSTIFF_SVR_SPREAD, 0, 1);
+  pat.vascularStiffness = approach(pat.vascularStiffness ?? 0, vsTarget, dt, VSTIFF_TAU_MIN);
+
+  // CONSUMER: pat.arterialComplianceFactor is the authoritative full-loop
+  // ODE's own real aortic-compliance disease handle (buildParams' `Cao` term,
+  // cardiovascular_ode_full.js) — NOT pat.arterialCompliance/
+  // arterialComplianceBase above, which feed only the LUMPED model's own
+  // pat.ea/sv calculation, itself overwritten by the authoritative full loop
+  // (section 5's own "two solvers, the full ODE is authoritative" rule). A
+  // first version of this mechanism drove arterialComplianceBase instead and
+  // was found, by direct measurement, to be completely inert to every
+  // published vital (pat.pp/pat.sbp/pat.dbp all come from the full loop,
+  // which never reads that field) — exactly the "written, read, still inert"
+  // defect class section 1 warns about. Composed via the SAME Math.min
+  // ceiling idiom preeclampsia's own arterial-stiffening mechanism already
+  // uses, so the two compose correctly (whichever lesion is more severe
+  // wins) rather than one silently overwriting the other.
+  pat.arterialComplianceFactor = Math.min(pat.arterialComplianceFactor ?? 1,
+    1 - VSTIFF_MAX_COMPLIANCE_LOSS * pat.vascularStiffness);
 }
 
 export function updateCardiovascular(pat, dt) {

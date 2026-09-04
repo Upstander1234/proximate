@@ -773,6 +773,14 @@ export class Patient {
     // toward this ceiling at low pressure and stiffens as MAP rises.
     this.arterialComplianceBase = this.ageProfile.isElderly() ? 0.7 : 1.0;
     this.arterialCompliance = this.arterialComplianceBase;
+    // Queue item V2-27 (chronic vascular remodeling, second slow-timescale
+    // state after pat.lvHypertrophy): 0-1, relaxes toward a target driven by
+    // sustained elevated afterload (updateChronicRemodeling, cardiovascular.js),
+    // real arteriosclerotic stiffening that LOWERS this patient's own
+    // arterialComplianceBase ceiling over a months-scale time constant —
+    // distinct from and slower than the pressure-dependent acute stiffening
+    // updateCardiovascular already models tick-to-tick.
+    this.vascularStiffness = 0;
     this.pp = 40;
     this.sbp = this.sbpBase;
     this.dbp = 80;
