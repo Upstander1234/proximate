@@ -332,6 +332,36 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-03 — Queue item V2-2 (per-organ oxygen extraction / SvO2 composite) audited, confirmed already fully built and correct; no code changes needed
+
+Assigned as new work, but confirmed against the tree before writing anything
+(lesson 16): `neuro.js`'s `updateOrganInjury` already computes real,
+per-organ resting extraction targets (kidney 10%, liver/gut/muscle 25%,
+skin 10%, brain 35% static, heart 60% static) that rise reciprocally as
+each organ's own already-real DO2 signal (item 42) falls, capped at a real
+0.65-0.70 physiologic ceiling, composing via Guyton & Hall's own resting
+cardiac-output-distribution weights into a real, flow-weighted
+`pat.svO2Composite` — not the flat demand-of-1/binary debt signal this
+queue item's own text (written when the work was still open) describes.
+`scenarioSweep.mjs`'s tracked-field lists and a real, four-assertion
+`mechanismWiring.mjs` section (`[PER-ORGAN OXYGEN EXTRACTION — queue item
+V2-2]`) were both already in place, evidently from an earlier, undocumented
+session — this queue entry had simply never been marked closed.
+
+**Re-verified independently this session, not just read**, via a standalone
+probe (stripped after use) replicating `mechanismWiring.mjs`'s own
+`probe()`/`pinTraitsNeutral()` helpers verbatim (lesson 8): a healthy
+control (abdPain, 900s) shows svO2Composite 72.65 (real 60-85% normal
+range) with kidney extraction at 0.10 (its own cited resting target);
+cardiogenicShock (300s) shows kidney extraction 0.138 (spared, <0.30) while
+abdominalAorticAneurysm (1800s) shows 0.65 (exhausted, >=0.60) — the real,
+clinically distinct divergence per shock type — while their whole-body
+svO2Composite values stay far closer together (53.40 vs 51.24, delta 2.16)
+than the kidney-extraction gap, confirming the composite alone hides the
+per-organ story, exactly the teaching point this queue item was written to
+achieve. No touched files, no regression risk — this was a pure audit.
+Queue item V2-2 marked CLOSED in section 6.
+
 ### 2026-09-01 — Third wave: V2 queue continued in parallel (V2-6 scoped slice, V2-10 scoped slice, V2-27 scoped slice, item 5 dead-code sweep), all via non-self-delegating worktree agents; V2-32 documentation
 
 Direct continuation of the second-wave entry below — same workflow (worktree
@@ -6598,15 +6628,44 @@ V2-1. **Oxygen transport as a dedicated authoritative subsystem.** A real
    about generalizing and centralizing the REST of the oxygen-transport math
    around it, not rebuilding what's already real.
 
-V2-2. **Per-organ oxygen extraction, generalized.** Item 42 already built
-   real per-organ DO2/O2Debt for kidney, liver, gut, skin, and skeletal
-   muscle (see its own closed entry above) — this item is the remaining
-   piece: a real, per-organ EXTRACTION RATIO (not just delivery vs. a flat
-   demand-of-1), so brain/heart/kidney/liver/muscle/GI/skin each have their
-   own resting extraction target (roughly 35%/60%/10%/25%/25%/25%/10% per
-   the source doc, stated as calibration targets not fixed constants) and a
-   real SvO2 emerges from the composite, rather than only a binary
-   delivery-vs-demand debt signal per organ.
+V2-2. **CLOSED — audited this session, confirmed already fully built (a
+   prior, undocumented session shipped it; this queue entry had simply
+   gone stale — lesson 16).** Read `neuro.js`'s `updateOrganInjury`
+   directly before assuming this was unbuilt: it already computes a real,
+   per-organ extraction ratio for kidney/liver/gut/skin/muscle (via
+   `extractionOf(do2n, restTarget, ceiling)`, rising reciprocally as each
+   organ's own already-real DO2 signal — item 42 — falls, capped at a real
+   physiologic ceiling of 0.65-0.70 before anaerobic metabolism would take
+   over) plus static, cited resting targets for brain (0.35) and heart
+   (0.60) — matching this item's own 35%/60%/10%/25%/25%/25%/10% figures
+   almost exactly. These compose into `pat.svO2Composite`, a real,
+   flow-weighted mixed-venous saturation (Guyton & Hall's resting
+   cardiac-output-distribution weights per organ bed), not just a binary
+   delivery-vs-demand debt signal. `scenarioSweep.mjs`'s `REQUIRED`/
+   `NON_NEGATIVE` lists and `mechanismWiring.mjs`'s own
+   `[PER-ORGAN OXYGEN EXTRACTION — queue item V2-2]` section (four
+   two-sided assertions: healthy-control specificity for both
+   kidney-extraction and svO2Composite, and the real teaching point — two
+   shock scenarios with a near-identical whole-body svO2Composite but a
+   genuinely divergent per-organ kidney-extraction pattern, cardiogenic
+   sparing the kidney vs. AAA's hemorrhagic shock exhausting it) were
+   already in place. **Re-verified this session via a standalone probe
+   (stripped after use), not just read** — replicating
+   `mechanismWiring.mjs`'s own `probe()`/`pinTraitsNeutral()` helpers
+   verbatim (lesson 8): healthy control (abdPain, 900s) svO2Composite
+   72.65 (inside the real 60-85% normal range) with kidney extraction
+   0.10 (exactly its own resting target); cardiogenicShock (300s) kidney
+   extraction 0.138 (spared, <0.30) vs. AAA (1800s) kidney extraction
+   0.65 (exhausted, >=0.60) — the real divergence — while their whole-body
+   svO2Composite values (53.40 vs 51.24) stay far closer together (delta
+   2.16, well under 15), confirming the composite alone would hide the
+   per-organ story a single whole-body SvO2 number cannot show. No code
+   changes were needed. Brain/heart deliberately stay static targets
+   rather than dynamic (documented in-code as an honest, stated
+   limitation — `brainO2now`/`myoO2Balance` are real signals but in units
+   that don't reduce to the same 0-1 DO2-normalized-to-rest scale
+   kidney/liver/gut/skin/muscle share, and deriving a real conversion is
+   new perfusion-model work, out of this item's own stated scope).
 
 V2-3. **CLOSED (this session) — audited, no engine-mechanism change
    needed.** Confirmed by reading `renalPerf` (renal.js,
