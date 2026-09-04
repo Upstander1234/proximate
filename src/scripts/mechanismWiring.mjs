@@ -111,6 +111,8 @@ function snapshot(p) {
     opioidBlockade: p.opioidBlockade || 0,
     alphaTone: p.alphaTone || 0,
     beta1Tone: p.beta1Tone || 0,
+    mapRate: p.mapRate || 0,
+    neuralSymp: p.neuralSymp || 0,
     // Renal / endocrine
     // V2-26 (ketamine dual sympathomimetic/direct-depression mechanism):
     // the depletable catecholamine-reserve signal cardiovascular.js already
@@ -7145,6 +7147,94 @@ console.log("\n[LYMPHATIC RETURN / RESERVE CAPACITY — queue item V2-21]");
     console.log(`  ${ok ? "PASS" : "FAIL"}  healthy control, no leak -> stays at interstitial baseline over 10h    |excess|=${excessC.toFixed(4)}L`);
   }
 }
+// [BARORECEPTOR RATE SENSITIVITY -- queue item 5's dead-code sweep]
+// pat.mapRate (mmHg/min, smoothed dMAP/dt) was computed every tick in
+// updateAutonomic since at least an earlier session but had no consumer
+// anywhere in the engine -- the comment right above where it's computed
+// even claimed the baroreceptor "senses pressure error AND its rate of
+// change (dP/dt)", which was not true until this batch. Real baroreceptors
+// really do have a derivative component (Guyton & Hall): a rapidly falling
+// MAP provokes a brisker sympathetic response than a slow drift to the
+// same pressure. Wired as a bounded addition to sympTarget in
+// updateAutonomic (cardiovascular.js), scaled by the same per-patient
+// baroreflexGain trait as the proportional term.
+function runBaroreceptorRateSensitivity() {
+  console.log("\n[BARORECEPTOR RATE SENSITIVITY -- queue item 5's dead-code sweep, pat.mapRate]");
+
+  // Runs a scenario with a forced, constant activeBleedRate imposed every
+  // tick starting after a settled baseline -- a raw loop rather than
+  // probe()'s apply/reapply dose machinery, since bleed rate here is a
+  // continuous physiology override, not a drug dose.
+  function bleedRun(bleed, seconds) {
+    const s = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+    for (let T = STEP; T <= 120; T += STEP) { s.t = T; physio(s); pinTraitsNeutral(activePatient(s)); }
+    const rows = [];
+    for (let T = 120 + STEP; T <= 120 + seconds; T += STEP) {
+      s.t = T;
+      physio(s);
+      const p = activePatient(s);
+      if (bleed != null) p.activeBleedRate = bleed;
+      rows.push({ map: p.map, mapRate: p.mapRate, alphaTone: p.alphaTone, neuralSymp: p.neuralSymp });
+    }
+    return rows;
+  }
+
+  // A fast (0.4 L/min) and a slow (0.05 L/min) hemorrhage both eventually
+  // pass through the same MAP band. Compared as a WINDOW AVERAGE (rows
+  // within +-1 mmHg of the fast arm's own final MAP), not a single noisy
+  // instant -- an earlier version of this assertion picked a single nearest
+  // sample and was itself vulnerable to ordinary tick-to-tick noise in the
+  // slow arm's own near-flat mapRate; averaging over the several ticks each
+  // arm spends near that pressure band is the honest, reproducible
+  // comparison. MEASURED: the fast arm averages mapRate ~ -3.9 mmHg/min
+  // while passing through this band; the slow arm averages ~ -0.7 mmHg/min
+  // at the SAME mean pressure -- the real, distinguishing point: two
+  // patients at the identical MAP compensate differently depending on how
+  // fast they got there.
+  function avgNear(rows, targetMap, band) {
+    const near = rows.filter(r => Math.abs(r.map - targetMap) <= band);
+    const n = near.length || 1;
+    return {
+      n: near.length,
+      map: near.reduce((s, r) => s + r.map, 0) / n,
+      mapRate: near.reduce((s, r) => s + r.mapRate, 0) / n,
+      alphaTone: near.reduce((s, r) => s + r.alphaTone, 0) / n,
+      neuralSymp: near.reduce((s, r) => s + r.neuralSymp, 0) / n,
+    };
+  }
+  const fast = bleedRun(0.4, 70);
+  const slow = bleedRun(0.05, 300);
+  const targetMap = fast[fast.length - 1].map;
+  const fastAvg = avgNear(fast, targetMap, 1.0);
+  const slowAvg = avgNear(slow, targetMap, 1.0);
+
+  const matchedMapOk = fastAvg.n >= 2 && slowAvg.n >= 2 && Math.abs(fastAvg.map - slowAvg.map) < 1.0;
+  matchedMapOk ? pass++ : fail++;
+  if (!matchedMapOk) failures.push(`baroreceptor rate-sensitivity probe: could not find a matched-MAP window between fast/slow hemorrhage arms (fast n=${fastAvg.n} map=${fastAvg.map}, slow n=${slowAvg.n} map=${slowAvg.map})`);
+  console.log(`  ${matchedMapOk ? "PASS" : "FAIL"}  ${"...fast/slow hemorrhage arms reach a matched MAP".padEnd(46)} fast ${fastAvg.map.toFixed(1)} (n=${fastAvg.n}), slow ${slowAvg.map.toFixed(1)} (n=${slowAvg.n})`);
+
+  const rateGap = fastAvg.mapRate < slowAvg.mapRate - 1.5;
+  rateGap ? pass++ : fail++;
+  if (!rateGap) failures.push(`at matched MAP, the fast-hemorrhage arm should show a substantially more negative mapRate than the slow arm, got fast=${fastAvg.mapRate}, slow=${slowAvg.mapRate}`);
+  console.log(`  ${rateGap ? "PASS" : "FAIL"}  ${"...fast arm's mapRate is far more negative at matched MAP".padEnd(46)} fast ${fastAvg.mapRate.toFixed(2)}, slow ${slowAvg.mapRate.toFixed(2)}`);
+
+  const higherSymp = fastAvg.alphaTone > slowAvg.alphaTone + 0.01 && fastAvg.neuralSymp > slowAvg.neuralSymp + 0.01;
+  higherSymp ? pass++ : fail++;
+  if (!higherSymp) failures.push(`at matched MAP, the fast-hemorrhage arm should show measurably MORE sympathetic tone (alphaTone/neuralSymp) than the slow arm -- the real point of the derivative term -- got fast alphaTone=${fastAvg.alphaTone}, slow=${slowAvg.alphaTone}; fast neuralSymp=${fastAvg.neuralSymp}, slow=${slowAvg.neuralSymp}`);
+  console.log(`  ${higherSymp ? "PASS" : "FAIL"}  ${"...fast arm shows more sympathetic tone at the SAME MAP".padEnd(46)} alphaTone fast ${fastAvg.alphaTone.toFixed(3)} vs slow ${slowAvg.alphaTone.toFixed(3)}; neuralSymp fast ${fastAvg.neuralSymp.toFixed(3)} vs slow ${slowAvg.neuralSymp.toFixed(3)}`);
+
+  // Specificity: a hemodynamically quiet, condition-less control (no forced
+  // bleed) should show mapRate hovering near zero (ordinary integration
+  // noise, not a sustained trend) -- the derivative term should contribute
+  // essentially nothing to a resting patient's own sympathetic tone.
+  const control = bleedRun(0, 60);
+  const controlMeanAbsRate = control.reduce((sum, r) => sum + Math.abs(r.mapRate), 0) / control.length;
+  const controlQuiet = controlMeanAbsRate < 2.0;
+  controlQuiet ? pass++ : fail++;
+  if (!controlQuiet) failures.push(`a resting, bleed-less control's mapRate should stay near zero on average (<2 mmHg/min), got mean|mapRate|=${controlMeanAbsRate}`);
+  console.log(`  ${controlQuiet ? "PASS" : "FAIL"}  ${"...resting control's mapRate stays near zero (specificity)".padEnd(46)} mean|mapRate| ${controlMeanAbsRate.toFixed(2)}`);
+}
+runBaroreceptorRateSensitivity();
 
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);

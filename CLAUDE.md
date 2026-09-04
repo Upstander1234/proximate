@@ -400,6 +400,85 @@ this session (per this project's own "quick standalone probe, not a
 20+ minute full-suite background run" discipline for a scoped, single-item
 batch) — the isolated harness above is this batch's own real, measured
 evidence.
+### 2026-09-03 — Queue item 5's dead-code sweep, another fresh batch — `pat.mapRate` wired to a real baroreceptor rate-sensitivity mechanism
+
+Audited a fresh batch of ~34 `patient.js` constructor fields not previously
+named in this document's own dead-code-sweep entries (grep-reads-then-writes
+against every module in `src/`, per this item's own standing method):
+`venousToneModifier`, `splenicRBC`, `tvDrugOffset`, `sbpLeftOffset`,
+`opioidBlockade`, `txaEffect`, `vagalSurge`, `uterotonicDrive`, `dlco`,
+`arterialComplianceFactor`, `mg`, `afferentConstriction`, `scarBurden`,
+`atrialKick`, `venousCompliance`, `venousResistance`, `pacerRate`,
+`pacerOutput`, `pacedCapture`, `aorticOcclusion`, `svO2Composite`,
+`consciousnessTimer`, `homeMeds`, `interstitialVolBaseline`,
+`unstressedVol`, `arterialComplianceBase`, `portalPressure`,
+`_portalVasodilation`, `ivAlbuminMass`, `isAlbuminMass`, `mapRate`,
+`prevMap`, `adrenalOutput`, `catecholLevel`, `neuralSymp`,
+`diastolicFraction`, `ectopicFocus`, `atrialEctopicFocus`,
+`cardiacExternalP`, `pericardialP`. All confirmed-clean (a real reader
+exists) except two:
+
+**`pat.mapRate` was genuinely dead — computed every tick in
+`updateAutonomic` (a smoothed dMAP/dt), published, and never read by
+anything.** The comment sitting directly above where it's computed even
+claimed the baroreceptor "senses pressure error AND its rate of change
+(dP/dt)" — a comment describing a mechanism that had never been built, the
+same "a comment claims a fix that was never made" shape lesson 16 warns
+about. Real baroreceptors do have a genuine derivative component (Guyton &
+Hall): a rapidly falling MAP provokes a brisker sympathetic response than a
+slow drift to the identical pressure. Wired as a bounded addition to
+`sympTarget` in `updateAutonomic` (`cardiovascular.js`), scaled by the same
+per-patient `baroreflexGain` trait as the existing proportional term (the
+same afferent apparatus), and explicitly excluded from `nonBaroDrive`'s own
+baseline subtraction so it composes correctly with the existing
+central-command/vagal-withdrawal logic rather than being double-counted as
+non-baroreflex drive.
+
+**MEASURED, not guessed** (direct `physio()`/`activePatient()` instantiation,
+a fast 0.4 L/min vs. a slow 0.05 L/min hemorrhage on a plain `abdPain`
+patient, traits pinned neutral): at a MATCHED mean arterial pressure
+(window-averaged over each arm's own pass through the same MAP band, not a
+single noisy instant), the fast arm averages `mapRate` ~ -3.9 mmHg/min
+against the slow arm's ~ -0.7 mmHg/min, and shows measurably MORE
+sympathetic tone at that same pressure (`alphaTone` ~0.233 vs ~0.214,
+`neuralSymp` ~0.259 vs ~0.238) — the real, distinguishing clinical point:
+two patients at the identical blood pressure compensate differently
+depending on how fast they got there. A resting, bleed-less control's
+`mapRate` stays near zero on average (ordinary integration noise, not a
+sustained trend), confirming the new term contributes essentially nothing
+to a quiet patient.
+
+**`pat.venousCompliance` was reviewed and found NOT worth fixing this
+batch, stated honestly rather than silently left as a defect.** It's
+written every tick in `cardiovascular.js` (`pat.venousCompliance = cv`) but
+never read again — however the local variable `cv` it snapshots is already
+fully consumed earlier in the same calculation (`pat.msfp = stressedVol /
+cv`), so the mechanism's real effect is already realized through `msfp`/
+`vr`/downstream hemodynamics; the published field is a decorative leftover
+snapshot, not a mechanism that silently does nothing. A real consumer
+(e.g. a JVD/venous-congestion exam finding reading it directly) would be a
+reasonable future fix but wasn't forced here — no existing exam action's
+comment or scenario text claims this specific field drives anything, so
+adding a consumer would be inventing a new teaching point rather than
+completing an existing one.
+
+**Verification.** `node --check` and `npx eslint` clean on both touched
+files (`cardiovascular.js`, `mechanismWiring.mjs`). A new two-sided
+`[BARORECEPTOR RATE SENSITIVITY]` section added to `mechanismWiring.mjs`
+(matched-MAP window-average comparison, a rate-gap assertion, a
+sympathetic-tone assertion, and a resting-control specificity check) —
+verified via a standalone replica of the suite's own probe logic against
+the real engine before being trusted (lesson 8): all four checks pass with
+real margin. The full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites were
+NOT run to completion this session (per this project's own standing
+"quick, targeted, standalone probe, not a 20+ minute full-suite background
+wait" verification discipline) — the standalone probe above is this
+batch's own real, measured evidence. No new patient field was introduced
+(`mapRate`/`neuralSymp` both already existed with real constructor
+defaults), so no `scenarioSweep.mjs` list changes were needed. All
+throwaway probe scripts were stripped before this entry was written,
+confirmed via a directory listing showing no `_tmp_*` files remain under
+`src/scripts/`.
 
 ### 2026-09-01 — Third wave: V2 queue continued in parallel (V2-6 scoped slice, V2-10 scoped slice, V2-27 scoped slice, item 5 dead-code sweep), all via non-self-delegating worktree agents; V2-32 documentation
 

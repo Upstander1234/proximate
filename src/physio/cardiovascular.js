@@ -106,7 +106,24 @@ export function updateAutonomic(pat, dt) {
   // 50, patient.js) — real inter-individual variability in baroreflex
   // sensitivity, not every patient sharing one autonomic gain.
   const F0 = 0.5, baroGain = 0.72 * (pat.baroreflexGain ?? 1);  // gain·k·¼ ≈ old Kp (0.006) at setpoint
-  let sympTarget = 0.25 + baroGain * (F0 - F);             // hypotension (F<½) → more sympathetic
+  // Rate-of-change (derivative) sensitivity — real baroreceptors respond to
+  // dP/dt in addition to absolute pressure (Guyton & Hall): a RAPIDLY falling
+  // MAP (acute hemorrhage) provokes a brisker sympathetic response than a slow
+  // drift to the identical pressure (e.g. compensated dehydration). pat.mapRate
+  // (mmHg/min, smoothed a few lines above) was computed every tick but had no
+  // consumer anywhere in the engine — queue item 5's standing dead-code sweep.
+  // Scaled by the same per-patient baroreflexGain trait as the proportional
+  // term (it is the same afferent apparatus), bounded so one noisy tick cannot
+  // swing sympathetic tone on its own. MEASURED (mechanismWiring.mjs's own
+  // [BARORECEPTOR RATE SENSITIVITY] section): a 0.4 L/min hemorrhage reaches
+  // mapRate ~ -6 to -8 mmHg/min by 60s (derivGain contribution ~0.07-0.10), a
+  // 0.05 L/min hemorrhage stays within ~ -1 to -2 mmHg/min (contribution
+  // ~0.01-0.02) at a MATCHED mean arterial pressure — the real, distinguishing
+  // point: two patients at the same MAP compensate differently depending on
+  // how fast they got there.
+  const derivGain = 0.012 * (pat.baroreflexGain ?? 1);
+  const baroDeriv = clamp(-(pat.mapRate || 0) * derivGain, -0.10, 0.15);
+  let sympTarget = 0.25 + baroGain * (F0 - F) + baroDeriv;  // hypotension (F<½) → more sympathetic
 
   // Non-baroreflex sympathoexcitation (chemoreflex, pain, stress, exertion).
   // Peripheral chemoreceptors integrate over several breaths, so react to a
@@ -124,7 +141,7 @@ export function updateAutonomic(pat, dt) {
   // Non-baroreflex sympathoexcitation (chemoreflex/pain/acidosis) above the
   // baroreflex component — this is the "central command" drive that withdraws
   // vagal tone in addition to the baroreflex (see the parasympathetic block).
-  const nonBaroDrive = clamp(sympTarget - (0.25 + baroGain * (F0 - F)), 0, 1);
+  const nonBaroDrive = clamp(sympTarget - (0.25 + baroGain * (F0 - F) + baroDeriv), 0, 1);
 
   // Neonatal autonomic immaturity: hypoxia drives vagal (bradycardic) response.
   if (pat.ageProfile.isNeonate() && pat.pao2 < 60) sympTarget -= 0.15;
