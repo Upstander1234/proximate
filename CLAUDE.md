@@ -361,6 +361,45 @@ than the kidney-extraction gap, confirming the composite alone hides the
 per-organ story, exactly the teaching point this queue item was written to
 achieve. No touched files, no regression risk — this was a pure audit.
 Queue item V2-2 marked CLOSED in section 6.
+### 2026-09-03 — Queue item V2-21 (lymphatic reserve capacity) CLOSED — a real finite ceiling added on top of the engine's existing lymphatic-return term
+
+Confirmed against the tree first (lesson 16): `metabolic.js`'s
+`updateFluidShifts` already had a real Starling equation (leak-sensitive
+sigma) AND an existing lymphatic-return term pulling excess interstitial
+fluid back into plasma — an earlier, undocumented session had already built
+that much. What V2-21's own text asked for and was genuinely missing: a
+FINITE reserve ceiling on that return, citable to real physiology (Guyton &
+Hall — resting lymph flow ~2-4 L/day, with a real ~10-20x reserve safety
+factor before edema becomes clinically apparent). Without a ceiling, the
+existing return term could in principle fully compensate any sustained leak
+forever, which is not how real lymphatics behave.
+
+Added `pat.lymphaticFlow` (published current return rate) and
+`pat.lymphaticCapacity` (published ceiling, `0.0025 * 15 *
+(1-lymphaticObstruction)` L/min) to `metabolic.js`, capping the return term
+at that ceiling every tick. `pat.lymphaticObstruction` (patient.js, default
+0) is a new general handle for a future lymphedema-type condition, mirroring
+`pat.capillaryLeak`'s own convention — no shipped condition sets it yet.
+
+MEASURED via a standalone, isolated harness calling `updateFluidShifts`
+directly on a bare `Patient` (lesson 8 — a full-pipeline probe was tried
+first and found confounded by unrelated renal/RAAS water handling over the
+multi-hour horizons this needs): a resolved leak genuinely drains back
+toward baseline over 10h (excess 0.194L -> 0.005L); a sustained SEVERE leak
+shows real, persistent, uncompensated edema (excess 1.6L, lymphaticFlow
+pinned near lymphaticCapacity — reserve exhausted, not infinite); a healthy
+control stays within 0.01L of baseline over the same window. Three new
+two-sided assertions in `mechanismWiring.mjs`'s
+`[LYMPHATIC RETURN / RESERVE CAPACITY — queue item V2-21]` section, all
+passing. `lymphaticFlow`/`lymphaticCapacity` added to `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s constructor. `node
+--check`/`npx eslint` clean on all four touched files (`metabolic.js`,
+`patient.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). The full
+`mechanismWiring.mjs`/`scenarioSweep.mjs` suites were NOT run to completion
+this session (per this project's own "quick standalone probe, not a
+20+ minute full-suite background run" discipline for a scoped, single-item
+batch) — the isolated harness above is this batch's own real, measured
+evidence.
 
 ### 2026-09-01 — Third wave: V2 queue continued in parallel (V2-6 scoped slice, V2-10 scoped slice, V2-27 scoped slice, item 5 dead-code sweep), all via non-self-delegating worktree agents; V2-32 documentation
 
@@ -6849,14 +6888,43 @@ V2-20. **Advanced acid-base mass balance — CLOSED, per section 2's own
    because the source document names it explicitly — verify against section
    2/3 before assuming otherwise.
 
-V2-21. **Fluid, Starling, and lymphatic physiology.** Starling's equation
-   already exists in real form (`metabolic.js`'s `updateFluidShifts`, with a
-   leak-sensitive sigma). NOT yet built: an explicit lymphatic return/
-   capacity term (`lymphaticFlow`/`lymphaticCapacity`/
-   `lymphaticObstruction`) — today interstitial fluid that accumulates has
-   no modeled lymphatic drainage pathway back out, a real, citable, missing
-   mechanism for how real edema eventually stabilizes rather than
-   accumulating indefinitely.
+V2-21. **DONE (this session) — a real, finite lymphatic reserve-capacity
+   ceiling now exists on top of the already-real lymphatic-return term.**
+   Confirmed against the tree first (lesson 16): `metabolic.js`'s
+   `updateFluidShifts` already had a real Starling equation with a
+   leak-sensitive sigma AND an existing lymphatic-return term (built in an
+   earlier, undocumented session) — `pat.interstitialVolBaseline` as the
+   set point, `lymphGain=0.02/min` per L of excess pulling fluid back into
+   plasma. What was genuinely missing, and is what this item's own text
+   asked for: that return term had NO ceiling, so a sufficiently generous
+   `lymphGain` could in principle fully compensate ANY sustained leak
+   forever — a real, previously-invisible defect (an infinitely-elastic
+   lymphatic system, not the real one). Fixed by adding `pat.lymphaticFlow`
+   (published current return rate, L/min) and `pat.lymphaticCapacity`
+   (published reserve ceiling, `0.0025 * 15 * (1 - lymphaticObstruction)`
+   L/min — Guyton & Hall, ch. 16: resting thoracic-duct lymph flow ~2-4
+   L/day (~0.0025 L/min used here), with a real ~10-20x reserve safety
+   factor before edema becomes clinically apparent; 15x picked from the
+   middle of that cited range) and capping the return term at that ceiling
+   every tick. `pat.lymphaticObstruction` (patient.js constructor default
+   0) is a new general handle, mirroring `pat.capillaryLeak`'s own
+   convention, for a future lymphedema/filariasis/malignant-invasion
+   condition — no shipped condition sets it yet.
+
+   MEASURED via a standalone, isolated harness calling `updateFluidShifts`
+   directly on a bare `Patient` (per lesson 8 — a full-pipeline probe was
+   tried first and found confounded by unrelated renal/RAAS water handling
+   over the multi-hour horizons this mechanism needs): a resolved leak
+   (capillaryLeak 0.3 for 60min, then 0) genuinely drains back toward
+   baseline over the following 10h (excess 0.194L -> 0.005L); a SUSTAINED
+   severe leak (capillaryLeak=1.0 for 600min) shows real, persistent,
+   uncompensated edema (excess 1.6L) with `lymphaticFlow` pinned near
+   `lymphaticCapacity` (reserve exhausted, not infinite); a healthy,
+   leak-free control stays within 0.01L of baseline over the same 10h
+   window. Three two-sided assertions added to `mechanismWiring.mjs`'s new
+   `[LYMPHATIC RETURN / RESERVE CAPACITY — queue item V2-21]` section, all
+   passing. `lymphaticFlow`/`lymphaticCapacity` added to `scenarioSweep.mjs`'s
+   `REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s constructor.
 
 V2-22. **Metabolic demand, expanded.** `metabolic.js`'s `restVO2` and
    `vo2Demand` already compose basal metabolism, thermoregulation

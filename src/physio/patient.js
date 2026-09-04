@@ -132,6 +132,17 @@ export class Patient {
     // the interstitium has a set-point to return toward rather than filling
     // without limit.
     this.interstitialVolBaseline = this.interstitialVol;
+    // Lymphatic drainage (queue item V2-21, metabolic.js's updateFluidShifts):
+    // pat.lymphaticObstruction (0-1) is a general handle, default intact,
+    // for any future condition (post-surgical/radiation lymphedema,
+    // filariasis, malignant lymphatic invasion) that wants to impair
+    // drainage directly, mirroring pat.capillaryLeak's own convention.
+    // pat.lymphaticFlow/lymphaticCapacity are published, read-only
+    // observables (current lymph return rate and its ceiling, both L/min),
+    // initialized here so they read correctly before the first update().
+    this.lymphaticObstruction = 0;
+    this.lymphaticFlow = 0;
+    this.lymphaticCapacity = 0.0025 * 15;
     this.ivAlbuminMass = this.plasmaVol * 70;
     this.isAlbuminMass = this.interstitialVol * 30;
     this.ivProtein = 70;

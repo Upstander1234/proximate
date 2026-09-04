@@ -170,22 +170,64 @@ export function updateFluidShifts(pat, dt) {
       pat.isAlbuminMass -= albuminMove;
       pat.ivAlbuminMass += albuminMove;
     }
-    // --- LYMPHATIC RETURN ---
+    // --- LYMPHATIC RETURN (queue item V2-21) ---
     // Net capillary filtration is not a one-way leak: the lymphatics drain the
-    // interstitium back into the circulation (~2-4 L/day in an adult) and carry
-    // the filtered protein with it. Without this the Starling equation bleeds
-    // plasma into the interstitium indefinitely — a completely healthy patient
-    // lost ~3.7% of plasma volume every 30 min and progressively
-    // hemoconcentrated. Lymph flow rises steeply as the interstitium distends
-    // (the "edema safety factor"), so the interstitium has an equilibrium: at
-    // rest, lymph return balances filtration; when filtration rises, a modest
-    // interstitial expansion drives enough extra lymph to match it, and only
-    // when that reserve is exhausted does edema accumulate.
+    // interstitium back into the circulation and carry the filtered protein
+    // with it. Without this the Starling equation bleeds plasma into the
+    // interstitium indefinitely — a completely healthy patient lost ~3.7% of
+    // plasma volume every 30 min and progressively hemoconcentrated. Lymph
+    // flow rises as the interstitium distends (the "edema safety factor"), so
+    // the interstitium has an equilibrium: at rest, lymph return balances
+    // filtration; when filtration rises, a modest interstitial expansion
+    // drives enough extra lymph to match it — UP TO A REAL, FINITE CEILING.
+    //
+    // Normal resting lymph flow (thoracic-duct return) is ~2-4 L/day, i.e.
+    // ~0.0014-0.0028 L/min (Guyton & Hall, Textbook of Medical Physiology,
+    // ch. 16 — "Lymphatic System" and its discussion of the interstitial
+    // fluid/lymph flow curve). Under increased capillary filtration the
+    // lymphatics can raise their own flow roughly 10-20x above that resting
+    // rate before their pumping capacity is exceeded — this is the
+    // physiological "safety factor" that is WHY mild-to-moderate capillary
+    // leak (a stable early-sepsis patient, a modest allergic reaction) does
+    // not immediately produce visible edema: the lymphatics are quietly
+    // absorbing the extra filtrate. Only once filtration exceeds that
+    // ~10-20x reserve — severe sepsis, burns, anaphylaxis, preeclampsia at
+    // their own shipped severities — does the reserve get exhausted and
+    // interstitial fluid genuinely accumulate, unbounded, for as long as the
+    // leak persists. `lymphaticCapacity` below is set at 15x the resting
+    // reference (a value picked in the middle of that cited 10-20x range,
+    // not fitted to any one condition's own already-calibrated trajectory).
+    //
+    // `pat.lymphaticObstruction` (0-1, default 0) is the mechanism's other
+    // real, previously-missing lever: a real, if less commonly encountered,
+    // cause of edema in its own right (post-surgical/radiation lymphedema,
+    // filariasis, malignant lymphatic invasion) — no condition currently
+    // sets it, but the field exists as a general handle the same way
+    // `pat.capillaryLeak` is a general handle several conditions share,
+    // rather than something a future condition would need to invent state
+    // for from scratch.
     const isBase = pat.interstitialVolBaseline ?? pat.interstitialVol;
     const excess = pat.interstitialVol - isBase;
+    const lymphaticObstruction = Math.max(0, Math.min(1, pat.lymphaticObstruction || 0));
+    // Resting lymph reference and the real, finite reserve ceiling, both in
+    // L/min. 0.0025 L/min (~3.6 L/day) sits inside the cited 2-4 L/day range;
+    // 15x that is the reserve capacity — the actual, previously-missing cap.
+    const lymphRestingRef = 0.0025;
+    const lymphaticCapacity = lymphRestingRef * 15 * (1 - lymphaticObstruction);
+    pat.lymphaticCapacity = lymphaticCapacity;
     if (excess > 0) {
-      const lymphGain = 0.02;                       // L/min per L of interstitial excess
-      const lymph = Math.min(lymphGain * excess * dt, pat.interstitialVol * 0.1);
+      const lymphGain = 0.02;                       // L/min per L of interstitial excess, below the ceiling
+      // The reserve ceiling is the mechanism this queue item was filed to add:
+      // without it, lymphGain*excess grows without bound and can match ANY
+      // filtration rate, so even a severe, sustained capillary leak would be
+      // fully compensated and produce no visible edema — the opposite of the
+      // real clinical picture. Capped here, a filtration rate that exceeds
+      // the ceiling genuinely outpaces drainage and the interstitium
+      // accumulates fluid for as long as that holds, exactly as real severe
+      // capillary-leak edema does.
+      const lymphaticFlow = Math.min(lymphGain * excess, lymphaticCapacity);
+      pat.lymphaticFlow = lymphaticFlow;
+      const lymph = Math.min(lymphaticFlow * dt, pat.interstitialVol * 0.1);
       if (lymph > 0) {
         pat.interstitialVol -= lymph;
         pat.plasmaVol += lymph;
@@ -196,6 +238,8 @@ export function updateFluidShifts(pat, dt) {
         pat.isAlbuminMass -= prot;
         pat.ivAlbuminMass += prot;
       }
+    } else {
+      pat.lymphaticFlow = 0;
     }
     pat.ivProtein = pat.plasmaVol > 0 ? pat.ivAlbuminMass / pat.plasmaVol : 0;
     pat.isProtein = pat.interstitialVol > 0 ? pat.isAlbuminMass / pat.interstitialVol : 0;

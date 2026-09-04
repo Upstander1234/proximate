@@ -264,6 +264,11 @@ const REQUIRED = [
   "proximalReabsorptionEff",
   "distalReabsorptionEff",
   "segmentReabsorptionEff",
+  // Queue item V2-21 (lymphatic return/capacity, this session): the current
+  // lymph return rate and its reserve ceiling (metabolic.js's
+  // updateFluidShifts), patient.js constructor default 0/(0.0025*15) so
+  // every patient reads a real number from tick zero.
+  "lymphaticFlow", "lymphaticCapacity",
 ];
 
 // Fields that may never go negative.
@@ -390,6 +395,8 @@ const NON_NEGATIVE = [
   "proximalReabsorptionEff",
   "distalReabsorptionEff",
   "segmentReabsorptionEff",
+  // Queue item V2-21: both are real, always-non-negative L/min rates.
+  "lymphaticFlow", "lymphaticCapacity",
 ];
 
 const results = [];

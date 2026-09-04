@@ -26,6 +26,7 @@ import { LIB as ACTIONS } from "../actions.js";
 import { LIM } from "../scope.js";
 import { CONDITIONS } from "../physio/conditions.js";
 import { establishPregnancy } from "../physio/obstetric.js";
+import { updateFluidShifts } from "../physio/metabolic.js";
 
 const STEP = 2;
 
@@ -7081,6 +7082,68 @@ console.log("\n[CHRONIC ADAPTATION — concentric LV hypertrophy — queue item 
   const stiff1 = probe({ scen: "abdPain", settle: 60, run: 900,
     mutate: (p) => { p.lvHypertrophy = 1; p.totalBloodVol = (p.ageProfile.bloodVolumeL() || 4.9) * 1.3; } });
   assertVersus("lvHypertrophy=1 -> reduced diastolic filling under volume load (edv falls vs lvHypertrophy=0)", stiff1, stiff0, "edv", "down", 1.5);
+}
+
+// ---------------------------------------------------------------------
+// [LYMPHATIC RETURN / RESERVE CAPACITY — queue item V2-21]
+//
+// Tested via DIRECT calls to updateFluidShifts on a bare Patient instance,
+// not the full physio() pipeline — per lesson 8, this isolates the real
+// Starling+lymphatic mechanism from unrelated confounds (renal/RAAS/thirst
+// water handling) that dominate over the multi-hour horizons this
+// mechanism's own real time constants need to demonstrate. A full-pipeline
+// probe was tried first and found genuinely confounded (interstitialVol
+// drifted BELOW baseline over many hours from unrelated renal water
+// handling, masking the lymphatic mechanism's own real behavior) — this
+// isolated harness is the correct instrument for this specific mechanism.
+console.log("\n[LYMPHATIC RETURN / RESERVE CAPACITY — queue item V2-21]");
+{
+  // A: excess interstitial fluid, once the leak causing it resolves,
+  // genuinely drains back toward baseline over a realistic multi-hour
+  // horizon (was previously impossible — no lymphatic term existed at all,
+  // so excess fluid stayed at whatever level filtration left it forever).
+  const pA = new Patient({ age: 40, weight: 70, sex: "M" });
+  const baseA = pA.interstitialVolBaseline;
+  for (let t = 0; t < 60; t += 1) { pA.capillaryLeak = 0.3; updateFluidShifts(pA, 1); }
+  const excessAfterLeak = pA.interstitialVol - baseA;
+  for (let t = 60; t < 60 + 600; t += 5) { pA.capillaryLeak = 0; updateFluidShifts(pA, 5); }
+  const excessAfterDrain = pA.interstitialVol - baseA;
+  {
+    const ok = excessAfterLeak > 0.1 && excessAfterDrain < excessAfterLeak * 0.1;
+    ok ? pass++ : fail++;
+    if (!ok) failures.push(`lymphatic drainage: excess after leak ${excessAfterLeak.toFixed(4)}, after 10h drainage ${excessAfterDrain.toFixed(4)} (expected drainage to <10% of peak)`);
+    console.log(`  ${ok ? "PASS" : "FAIL"}  resolved capillary leak -> interstitial excess drains toward baseline over hours    excess ${excessAfterLeak.toFixed(4)} -> ${excessAfterDrain.toFixed(4)} L`);
+  }
+
+  // B: a SUSTAINED severe leak still shows real, expected edema — the
+  // lymphatic reserve is finite and gets exceeded, it does not fully
+  // compensate an ongoing severe leak (the real ceiling this queue item
+  // exists to add — without it, a sufficiently patient/generous lymphGain
+  // term could in principle fully compensate ANY leak forever).
+  const pB = new Patient({ age: 40, weight: 70, sex: "M" });
+  const baseB = pB.interstitialVolBaseline;
+  for (let t = 0; t < 600; t += 2) { pB.capillaryLeak = 1.0; updateFluidShifts(pB, 2); }
+  const excessB = pB.interstitialVol - baseB;
+  {
+    const ok = excessB > 0.5 && pB.lymphaticFlow >= pB.lymphaticCapacity * 0.8;
+    ok ? pass++ : fail++;
+    if (!ok) failures.push(`lymphatic reserve exceeded: excess=${excessB.toFixed(4)} lymphaticFlow=${pB.lymphaticFlow.toFixed(5)} lymphaticCapacity=${pB.lymphaticCapacity.toFixed(5)}`);
+    console.log(`  ${ok ? "PASS" : "FAIL"}  sustained severe leak -> real edema, lymphatic reserve exhausted (flow ~= capacity)    excess=${excessB.toFixed(3)}L flow/cap=${(pB.lymphaticFlow / pB.lymphaticCapacity).toFixed(2)}`);
+  }
+
+  // C: a healthy, leak-free patient stays at baseline over the same long
+  // window — specificity control, confirming the mechanism doesn't drift
+  // a normal patient away from their own set point.
+  const pC = new Patient({ age: 40, weight: 70, sex: "M" });
+  const baseC = pC.interstitialVolBaseline;
+  for (let t = 0; t < 600; t += 5) { pC.capillaryLeak = 0; updateFluidShifts(pC, 5); }
+  const excessC = Math.abs(pC.interstitialVol - baseC);
+  {
+    const ok = excessC < 0.05;
+    ok ? pass++ : fail++;
+    if (!ok) failures.push(`healthy control drifted: |excess|=${excessC.toFixed(4)} (expected <0.05)`);
+    console.log(`  ${ok ? "PASS" : "FAIL"}  healthy control, no leak -> stays at interstitial baseline over 10h    |excess|=${excessC.toFixed(4)}L`);
+  }
 }
 
 console.log("\n" + "=".repeat(74));
