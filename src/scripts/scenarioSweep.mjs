@@ -269,6 +269,13 @@ const REQUIRED = [
   // updateFluidShifts), patient.js constructor default 0/(0.0025*15) so
   // every patient reads a real number from tick zero.
   "lymphaticFlow", "lymphaticCapacity",
+  // Queue item V2-25 (this session): RV EDV/ESV/SV/EF and pulmonary vascular
+  // resistance were already real, live fields (cardiovascular.js's
+  // updateRightHeart/updateFullLoopODE) but had never been added to this
+  // sweep — now republished from the authoritative PVR-coupled ODE state
+  // rather than the separate legacy estimate (see mechanismWiring's own
+  // [RV/PULMONARY-VASCULAR COUPLING] section for the fix detail).
+  "rvEdv", "rvEsv", "rvSv", "rvEf", "pvrWood",
 ];
 
 // Fields that may never go negative.
@@ -397,6 +404,9 @@ const NON_NEGATIVE = [
   "segmentReabsorptionEff",
   // Queue item V2-21: both are real, always-non-negative L/min rates.
   "lymphaticFlow", "lymphaticCapacity",
+  // Queue item V2-25: RV EDV/ESV/SV are non-negative volumes/mL, EF is a
+  // clamped 0-0.95 fraction, pvrWood is a clamped 0.6-20 Wood-unit resistance.
+  "rvEdv", "rvEsv", "rvSv", "rvEf", "pvrWood",
 ];
 
 const results = [];

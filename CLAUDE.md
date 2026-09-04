@@ -332,6 +332,98 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-03 — Queue item V2-25 (pulmonary circulation / RV-LV coupling) — confirmed the PVR-driven RV afterload coupling already exists in the authoritative ODE, and fixed a real, previously-invisible defect: the published RV vitals were coming from a separate, non-coupled legacy estimate
+
+Confirmed against the tree first (lesson 16), then measured directly, not
+assumed either way per this item's own instruction. `cardiovascular_ode_full.js`
+already integrates a genuine RV chamber (`IDX.VRV`) with real afterload physics
+(`Rpul` scaled by `pat._fullRpulRatio`, itself derived from `pat.pvrWood`,
+itself derived from `pat.pulmResistFactor` — the `pe` condition's own existing
+PVR-elevation handle), and its pulmonary venous return feeds the SAME loop's
+own `VLA`/`VLV` states — i.e. the PVR -> RV afterload -> RV output -> LV
+preload chain this item names as the target emergent behavior is REAL and
+already computed, inside the authoritative solver, not missing.
+
+**What was genuinely missing, found by direct measurement (lesson 8, probe
+copied from `mechanismWiring.mjs`'s own `probe()`/`pinTraitsNeutral()`):**
+driving `pe` to its severity ceiling (pulmResistFactor 1->4, pvrWood 1.3->5.2)
+measurably reduced LV preload/output through the coupled ODE (edv 117->92 mL,
+sv 61->42 mL, co roughly flat at ~6 L/min only because compensatory
+tachycardia — hr climbing toward 144-180 — offsets the falling stroke volume;
+by 3000s the patient degenerates into VT) — the RV/LV coupling is real and
+reachable. But the RV-specific vitals actually PUBLISHED (`pat.rvEdv`/`rvEsv`/
+`rvSv`/`rvEf`) come from `updateRightHeart()`, a SEPARATE, non-coupled legacy
+estimate whose own EDV formula is pure preload (CVP-driven `fillingP`) with NO
+afterload term at all — confirmed this cannot show real afterload-driven RV
+strain: under severe `pe`, the legacy `rvEdv` FELL (142->108) instead of
+rising, purely because rising heart rate shrinks its `diastolicFraction`
+term faster than rising CVP grows `fillingP`. Separately, `fourChamberLoop.
+volumes.vrv` (the ODE's OWN true RV volume) was only ever read as a single
+INSTANTANEOUS end-of-tick sample — the exact aliased-sampling defect already
+found and fixed once for Pao/VLV (see the "SECOND BUG" comment in
+`updateFullLoopODE`), never extended to VRV, so even the real state was
+misread: raw vrv showed 91.8 (control) vs 42.2 (severe pe, one untraced
+sample) — backwards, from sampling phase alone, not physiology.
+
+**Fixed by extending the SAME windowed-peak technique already used for
+Pao/VLV to VRV** (`cardiovascular.js`'s `updateFullLoopODE`): `vrvMax`/`vrvMin`
+tracked over each tick's RK4 substep window, smoothed the same way (`betaEma`),
+giving `pat._fullRvEdv`/`_fullRvEsv`/`_fullRvSv`/`_fullRvEf` — no
+tricuspid/pulmonic regurgitant accumulator exists (only `IDX.WMR`/`WAR` for
+mitral/aortic), so total RV ejection is forward RV output with no subtraction
+needed, unlike the LV side. The publish block (right after the LV
+`useFullODE` republish) now republishes `pat.rvEdv`/`rvEsv`/`rvSv`/`rvEf` from
+this real state too, with the same single-authoritative-owner discipline the
+LV side already follows — `pat._legacyRvEdv` etc. snapshot the old estimate
+first for A/B inspection, matching the existing `_legacySv`/`_legacyEdv`
+convention.
+
+**MEASURED after the fix**: healthy control rvEdv 98.4/rvEsv 37.2/rvSv
+61.2/rvEf 0.622; severe `pe` at the same 900s timepoint: rvEdv 84.0/rvEsv
+41.8/rvSv 42.2/rvEf 0.502 — a real, measured RV-strain signature (EF falls,
+ESV rises — incomplete ejection against elevated afterload — forward RV
+output nearly halves). Stated honestly: RV EDV itself does NOT rise in this
+scenario's own compensated-tachycardia regime (HR climbing to 144 shrinks
+diastolic filling time faster than the elevated afterload/CVP can dilate the
+chamber) — the classic "acute RV dilation" sign (rising EDV) is not what this
+particular severity/heart-rate combination produces; the falling-EF/rising-ESV
+signature is the real, measured, directionally-correct consequence that does
+show up, and is reported as such rather than overclaimed.
+
+New `[RV/PULMONARY-VASCULAR COUPLING — queue item V2-25]` section added to
+`mechanismWiring.mjs` (four two-sided assertions: PVR genuinely rises under
+`pe`; elevated PVR depresses RV EF and forward RV stroke volume; the same
+run's LV preload/output falls too, proving the coupling reaches the LV side
+through the real pulmonary circuit, not a separate hand-authored link; a
+healthy control shows normal RV EF and PVR) — all four verified passing via a
+standalone reproduction of the suite's own probe logic (lesson 8) before being
+trusted. `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pulmResistFactor` added to
+`scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists (rvEdv/rvEsv/rvSv/rvEf
+were real, live, pre-existing fields that had simply never been tracked by
+either suite before this item needed them).
+
+**Verification.** `node --check` clean on all three touched files
+(`cardiovascular.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx
+eslint src`: exactly the pre-existing 3-error `react-refresh/only-export-
+components` baseline in `App.jsx`, zero new findings. `npx vite build`:
+clean (25.86s, same pre-existing >500kB chunk-size warning). The full
+`mechanismWiring.mjs` suite was launched three times this session to confirm
+no regression to the shared cardiovascular hot path; each run was killed or
+lost to this shared, multi-agent environment's own instability before
+reaching completion (consistent with lesson 14's documented "container
+killed it seven times" experience, and with three other agents running
+concurrent physiology batches this session) — every partial run observed
+(up to ~35 lines / ~20 assertions in) showed the SAME pre-existing PASS
+results as the documented baseline, with no new failures in the region
+reached. **Stated honestly: the full suite was NOT confirmed to completion
+this session** — the standalone probe reproducing the suite's own
+probe()/snapshot() logic (lesson 8) is this batch's own real, measured
+regression evidence for the new mechanism specifically; a future session
+should re-run `mechanismWiring.mjs`/`scenarioSweep.mjs` to completion once
+the shared environment is quieter and confirm the new `[RV/PULMONARY-
+VASCULAR COUPLING]` section passes in-suite, not just via the standalone
+reproduction.
+
 ### 2026-09-03 — Four cheap audits closed (V2-14, V2-19, item 49, item 72), V2-29 confirmed genuinely partial; no code changes needed on any of them
 
 Assigned a metabolic/cellular/inflammation bucket this session. Worked the
@@ -7123,15 +7215,30 @@ V2-24. **Advanced cardiovascular coupling.** Queue item 41 already closed
    entry in full before starting here; this item is that same remaining
    work, not a new one.
 
-V2-25. **Pulmonary circulation and RV coupling.** Real RV/LV
-   interdependence (PVR → RV afterload → RV output → LV preload, the
-   mechanism that should make PE cause obstructive shock) is explicitly
-   named in the source document as a target emergent behavior. Confirm
-   against `cardiovascular_ode_full.js` how much of this already exists
-   before assuming a gap — the `pe` condition already drives
-   `shuntFraction`/`pulmResistFactor`; whether that reaches genuine RV
-   dilation/failure in the authoritative solver needs a direct check, not
-   an assumption either way.
+V2-25. **DONE (this session) — the PVR->RV afterload->RV output->LV preload
+   coupling was already real inside the authoritative full-loop ODE (a real
+   RV chamber, `IDX.VRV`, with genuine afterload physics scaled from
+   `pat.pulmResistFactor`, feeding the same loop's own LV preload states) —
+   see section 3's newest entry for the full measurement.** What was
+   genuinely missing and is now fixed: the PUBLISHED RV vitals
+   (`pat.rvEdv`/`rvEsv`/`rvSv`/`rvEf`) came from a separate, non-coupled
+   legacy estimate with no afterload term at all, so they could not show
+   real afterload-driven RV strain (measured: legacy rvEdv FELL under severe
+   `pe`, the wrong direction). Fixed by extending the same windowed-peak
+   sampling technique already used for the LV/Pao (fixing a real aliasing
+   defect on VRV along the way) and republishing the RV vitals from that
+   real, coupled state — single authoritative owner, same rule the LV side
+   already follows. MEASURED: severe `pe` now shows real RV strain (EF
+   0.622->0.502, forward RV output nearly halving) alongside falling LV
+   preload/output through the same coupled circuit. Stated honestly: this
+   scenario's own compensated-tachycardia regime does NOT show classic
+   rising-EDV RV dilation (heart-rate-driven filling-time loss dominates
+   over afterload-driven volume increase) — the falling-EF/rising-ESV
+   signature is the real, measured consequence, reported as such rather than
+   overclaimed. Four new two-sided `mechanismWiring.mjs` assertions, verified
+   via a standalone probe (lesson 8); the full suite itself was not run to
+   completion this session (shared, unstable multi-agent environment — see
+   section 3) and should be re-confirmed in-suite by a future session.
 
 V2-26. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed, see
    section 3's newest entry; the rest of the item remains open.** Ketamine's

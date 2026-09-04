@@ -996,6 +996,12 @@ export function updateCardiovascular(pat, dt) {
   pat._legacySv = pat.sv; pat._legacyEdv = pat.edv; pat._legacyEsv = pat.esv;
   pat._legacyEf = pat.ef; pat._legacyCo = pat.co; pat._legacyMap = pat.map;
   pat._legacySbp = pat.sbp; pat._legacyDbp = pat.dbp; pat._legacyPp = pat.pp;
+  // QUEUE ITEM V2-25 — same A/B snapshot discipline extended to the RV metrics
+  // updateRightHeart() just computed, so the legacy (preload-only, no
+  // afterload term) RV estimate stays inspectable after this function
+  // republishes from the coupled ODE below.
+  pat._legacyRvEdv = pat.rvEdv; pat._legacyRvEsv = pat.rvEsv;
+  pat._legacyRvSv = pat.rvSv; pat._legacyRvEf = pat.rvEf;
 
   const useFullODE = pat.useFullODE ?? FULL_ODE_AUTHORITATIVE;
   if (useFullODE && pat._fullSv != null && pat.fourChamberLoop) {
@@ -1008,6 +1014,18 @@ export function updateCardiovascular(pat, dt) {
     pat.sbp = pat.fourChamberLoop.PaoSys;
     pat.dbp = pat.fourChamberLoop.PaoDia;
     pat.pp = Math.max(1, pat.sbp - pat.dbp);
+  }
+  // QUEUE ITEM V2-25 — republish RV EDV/ESV/SV/EF from the SAME authoritative,
+  // PVR-coupled ODE state the LV side already republishes from (see the long
+  // comment at the vrvMax/vrvMin windowed-peak tracking above for why the
+  // legacy updateRightHeart() estimate cannot show real afterload-driven RV
+  // dilation). Single authoritative owner, same rule the LV block above
+  // already follows: once the full loop has a real value, it wins.
+  if (useFullODE && pat._fullRvEdv != null && pat.fourChamberLoop) {
+    pat.rvEdv = pat._fullRvEdv;
+    pat.rvEsv = pat._fullRvEsv;
+    pat.rvSv = pat._fullRvSv;
+    pat.rvEf = pat._fullRvEf;
   }
 }
 
@@ -1647,6 +1665,12 @@ function updateFullLoopODE(pat, dt) {
     const tEnd = pat._fullT + dtSec;
     let paoMax = -Infinity, paoMin = Infinity;
     let vlvMax = -Infinity, vlvMin = Infinity;
+    // QUEUE ITEM V2-25 — same windowed peak-detection this tick already does
+    // for VLV (see the long note below on aliased instantaneous sampling),
+    // applied to VRV so real RV EDV/ESV/EF can be read off the SAME
+    // authoritative, PVR-coupled state the LV side already publishes from,
+    // instead of the separate, non-coupled updateRightHeart() estimate below.
+    let vrvMax = -Infinity, vrvMin = Infinity;
     // Zero the regurgitant-volume accumulators for this tick's window (see
     // IDX.WMR/WAR): they are integrated exactly by the RK4 below and read back
     // immediately after, so they measure THIS tick only and never accumulate
@@ -1663,6 +1687,9 @@ function updateFullLoopODE(pat, dt) {
       const vlv = pat._fullX[IDX.VLV];
       if (vlv > vlvMax) vlvMax = vlv;
       if (vlv < vlvMin) vlvMin = vlv;
+      const vrv = pat._fullX[IDX.VRV];
+      if (vrv > vrvMax) vrvMax = vrv;
+      if (vrv < vrvMin) vrvMin = vrv;
     }
     // Advance the integrated cardiac phase by exactly the time integrated.
     pat._fullPhase = (((pat._fullPhase ?? 0) + dtSec / (60 / effHr)) % 1 + 1) % 1;
@@ -1691,6 +1718,34 @@ function updateFullLoopODE(pat, dt) {
     pat._fullEsvRaw = pat._fullEsvRaw == null ? vlvMin : pat._fullEsvRaw + (vlvMin - pat._fullEsvRaw) * betaEma;
     pat._fullEdv = pat._fullEdvRaw;
     pat._fullEsv = Math.min(pat._fullEsvRaw, pat._fullEdvRaw);
+    // QUEUE ITEM V2-25 — identical windowed-peak smoothing applied to VRV.
+    // WHY THIS EXISTS: `updateRightHeart()` above (the legacy RV model) is the
+    // one currently publishing pat.rvEdv/rvEf/rvSv, but it derives RV EDV from
+    // a pure preload (CVP) formula with NO afterload term at all, so it cannot
+    // show the signature finding of acute cor pulmonale (RV DILATION under
+    // rising PVR) — measured directly: driving `pe` to its severity ceiling
+    // (pulmResistFactor -> 4, pvrWood 1.3 -> 5.2) made the legacy pat.rvEdv
+    // FALL (142 -> ~108) instead of rise, because rising heart rate shrinks
+    // its diastolicFraction term faster than rising CVP grows fillingP — the
+    // wrong direction for the exact teaching point (McConnell's sign / acute
+    // RV dilation) this queue item names as a target behavior. The ODE's own
+    // VRV state does not have this defect (afterload is a first-class term in
+    // its pressure-volume physics via Rpul/eaRv), but before this fix it was
+    // only ever read as ONE instantaneous end-of-tick sample
+    // (`fourChamberLoop.volumes.vrv`), aliased across the cardiac cycle
+    // exactly the way Pao/VLV were before their own windowed-peak fix above —
+    // confirmed the same way: raw vrv reads 91.8 (control) vs 42.2 (severe
+    // PE, single untraced sample), the OPPOSITE of dilation, purely from
+    // sampling phase. Tracking real max/min over the tick removes that alias.
+    pat._fullRvEdvRaw = pat._fullRvEdvRaw == null ? vrvMax : pat._fullRvEdvRaw + (vrvMax - pat._fullRvEdvRaw) * betaEma;
+    pat._fullRvEsvRaw = pat._fullRvEsvRaw == null ? vrvMin : pat._fullRvEsvRaw + (vrvMin - pat._fullRvEsvRaw) * betaEma;
+    pat._fullRvEdv = pat._fullRvEdvRaw;
+    pat._fullRvEsv = Math.min(pat._fullRvEsvRaw, pat._fullRvEdvRaw);
+    // No tricuspid/pulmonic regurgitant-volume accumulator exists (only
+    // IDX.WMR/WAR, mitral/aortic), so total RV ejection IS forward RV output —
+    // unlike the LV side there is no regurgitant fraction to subtract here.
+    pat._fullRvSv = Math.max(0, pat._fullRvEdv - pat._fullRvEsv);
+    pat._fullRvEf = pat._fullRvEdv > 0 ? clamp(pat._fullRvSv / pat._fullRvEdv, 0, 0.95) : 0;
     // TOTAL ventricular ejection this beat — the full volume excursion of the
     // LV, which is what leaves the chamber regardless of where it goes.
     const totalEjection = Math.max(0, pat._fullEdv - pat._fullEsv);

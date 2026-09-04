@@ -105,6 +105,9 @@ function snapshot(p) {
     intrinsicPEEP: p.intrinsicPEEP || 0,
     trappedVolume: p.trappedVolume || 0,
     pvrWood: p.pvrWood || 0,
+    // Queue item V2-25 — RV EDV/ESV/SV/EF, now republished from the same
+    // authoritative, PVR-coupled ODE state the LV side already uses.
+    rvEdv: p.rvEdv || 0, rvEsv: p.rvEsv || 0, rvSv: p.rvSv || 0, rvEf: p.rvEf || 0,
     // Circulatory mechanism variables
     cprActive: p.cprActive || 0,
     venousCapacitanceDrug: p.venousCapacitanceDrug ?? 1,
@@ -3764,6 +3767,53 @@ console.log("\n[LIDOCAINE OVERDOSE — queue item 40, fifth drug]");
   console.log(`  ${naloxOk ? "PASS" : "FAIL"}  ${"...confirmed: naloxone does NOT touch LAST toxicity (not an opioid)".padEnd(46)} delta=${naloxDelta.toFixed(3)}`);
 }
 
+console.log("\n[AMIODARONE OVERDOSE — queue item 40, sixth drug]");
+{
+  // Unlike diltiazem/metoprolol/atropine (own receptor coefficient is the
+  // ceiling), amiodarone's intensity is NOT saturated at this seeded dose —
+  // a dose sweep (see conditions.js's own comment) found potassiumChannelBlock
+  // scales from 0.169 at 1800mg to 0.359 at 9000mg, well short of its 0.5
+  // ceiling. This condition seeds 3600mg. MEASURED, and a real, honest
+  // correction from an unmeasured first draft (lesson 16): amiodarone's own
+  // drugs.js entry declares no direct chronotropic receptor, so this
+  // toxidrome is real hypotension + QT prolongation, NOT bradycardia — hr
+  // is asserted UNCHANGED from a condition-less control, not lowered.
+  const aOd = probe({ scen: "amiodaroneOverdose", settle: 30, run: 600 });
+  const presentOk = aOd.after.sbp < 105 && aOd.after.qt > 0.335 && aOd.after.potassiumChannelBlock > 0.2 && aOd.after.sodiumChannelBlock > 0.1;
+  presentOk ? pass++ : fail++;
+  if (!presentOk) failures.push(`amiodaroneOverdose should present with real hypotension + QT prolongation by 600s, got sbp=${aOd.after.sbp} qt=${aOd.after.qt} kBlock=${aOd.after.potassiumChannelBlock} naBlock=${aOd.after.sodiumChannelBlock}`);
+  console.log(`  ${presentOk ? "PASS" : "FAIL"}  ${"amiodaroneOverdose -> real hypotension + QT prolongation".padEnd(46)} sbp=${aOd.after.sbp.toFixed(1)} qt=${(aOd.after.qt*1000).toFixed(0)}ms kBlock=${aOd.after.potassiumChannelBlock.toFixed(2)}`);
+
+  // Specificity: a condition-less control shows none of it.
+  const control = probe({ scen: "abdPain", settle: 30, run: 600 });
+  const specOk = control.after.potassiumChannelBlock === 0 && control.after.sodiumChannelBlock === 0 && control.after.avSlowingDrug === 0;
+  specOk ? pass++ : fail++;
+  if (!specOk) failures.push(`condition-less control should show zero amiodarone channel blockade, got kBlock=${control.after.potassiumChannelBlock} naBlock=${control.after.sodiumChannelBlock} avSlow=${control.after.avSlowingDrug}`);
+  console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...specificity: condition-less control shows none of it".padEnd(46)} kBlock=${control.after.potassiumChannelBlock} naBlock=${control.after.sodiumChannelBlock}`);
+
+  // The real, honest two-sided finding this condition exists to teach: NOT
+  // bradycardia. hr must stay close to the control's own hr (a REAL absence,
+  // not just "not asserted") even though sbp/qt are clearly deranged.
+  const hrDelta = Math.abs(aOd.after.hr - control.after.hr);
+  const hrOk = hrDelta < 5;
+  hrOk ? pass++ : fail++;
+  if (!hrOk) failures.push(`amiodaroneOverdose should NOT produce bradycardia (no direct chronotropic receptor), hr delta vs control=${hrDelta.toFixed(2)}`);
+  console.log(`  ${hrOk ? "PASS" : "FAIL"}  ${"...confirmed: NOT bradycardia (no chronotropic receptor declared)".padEnd(46)} hr ${aOd.after.hr.toFixed(1)} vs control ${control.after.hr.toFixed(1)}`);
+
+  // Time course: sustained, not a brief spike, matching amiodarone's own
+  // kel=0.005 (the slowest clearance of any two-compartment drug here).
+  const early600 = aOd.after.sbp;
+  const later = probe({ scen: "amiodaroneOverdose", settle: 30, run: 900 });
+  const sustainedOk = later.after.sbp < 105 && Math.abs(later.after.sbp - early600) < 10;
+  sustainedOk ? pass++ : fail++;
+  if (!sustainedOk) failures.push(`amiodaroneOverdose hypotension should be sustained (slow clearance) from 600s to 900s, got ${early600} -> ${later.after.sbp}`);
+  console.log(`  ${sustainedOk ? "PASS" : "FAIL"}  ${"...sustained across the call, not a brief spike (slow clearance)".padEnd(46)} sbp ${early600.toFixed(1)} @600s -> ${later.after.sbp.toFixed(1)} @900s`);
+
+  // No specific antidote exists in this formulary (grep-confirmed) — this
+  // section is presence/specificity/time-course-only, the same honest
+  // framing atropineOverdose's own section already established.
+}
+
 console.log("\n[TRICYCLIC ANTIDEPRESSANT OVERDOSE — queue item 7]");
 {
   // Fast Na+ channel blockade -> QRS widening, the single most predictive
@@ -7235,6 +7285,61 @@ function runBaroreceptorRateSensitivity() {
   console.log(`  ${controlQuiet ? "PASS" : "FAIL"}  ${"...resting control's mapRate stays near zero (specificity)".padEnd(46)} mean|mapRate| ${controlMeanAbsRate.toFixed(2)}`);
 }
 runBaroreceptorRateSensitivity();
+
+console.log("[RV/PULMONARY-VASCULAR COUPLING — queue item V2-25]");
+{
+  // Confirmed against the tree first (lesson 16): the authoritative
+  // four-chamber ODE (cardiovascular_ode_full.js) already integrates a real
+  // RV chamber whose afterload (Rpul) is scaled by pat.pulmResistFactor --
+  // the exact PVR -> RV-afterload link this item asks about. What was
+  // genuinely missing: the RV vitals actually PUBLISHED to the rest of the
+  // engine (pat.rvEdv/rvEsv/rvSv/rvEf) came from a SEPARATE, non-coupled
+  // legacy estimate (updateRightHeart()'s own preload-only formula, with no
+  // afterload term at all), while the LV side had already been switched to
+  // read from the coupled ODE. Fixed by extending the SAME windowed-peak
+  // technique already used for VLV/Pao (aliased single-tick sampling was
+  // hiding the true beat-to-beat volume trace) to VRV, and republishing
+  // rvEdv/rvEsv/rvSv/rvEf from it -- one authoritative owner for both
+  // ventricles, not two disagreeing models.
+  const control = probe({ scen: "abdPain", settle: 2, run: 900 });
+  const pe = probe({ scen: "pe", settle: 2, run: 900 });
+
+  // PVR genuinely rises under pe and stays at baseline in the control --
+  // the precondition for everything below.
+  const pvrRises = pe.after.pvrWood > control.after.pvrWood * 2;
+  pvrRises ? pass++ : fail++;
+  if (!pvrRises) failures.push(`pe should raise pvrWood well above a matched healthy control, got pe=${pe.after.pvrWood}, control=${control.after.pvrWood}`);
+  console.log(`  ${pvrRises ? "PASS" : "FAIL"}  ${"pe: pulmonary vascular resistance rises vs. control".padEnd(46)} pe pvrWood=${pe.after.pvrWood.toFixed(1)}, control=${control.after.pvrWood.toFixed(1)}`);
+
+  // THE REAL WIRING CHECK: rising RV afterload (PVR) measurably depresses RV
+  // ejection fraction and forward RV stroke volume in the coupled solver --
+  // acute RV strain, the mechanism this item names as the target ("PE
+  // causes obstructive shock"). MEASURED, not assumed: this is why the fix
+  // matters -- before it, the legacy estimate showed rvEdv FALLING under
+  // severe pe (142 -> ~108, moving in the direction of resolving strain,
+  // not causing it) purely because rising heart rate shrinks its own
+  // diastolicFraction preload term faster than CVP rises, with no afterload
+  // term to counteract that at all.
+  const rvStrain = pe.after.rvEf < control.after.rvEf - 0.05 && pe.after.rvSv < control.after.rvSv * 0.8;
+  rvStrain ? pass++ : fail++;
+  if (!rvStrain) failures.push(`pe's elevated PVR should measurably depress RV ejection fraction and forward RV stroke volume vs. control, got pe rvEf=${pe.after.rvEf}/rvSv=${pe.after.rvSv}, control rvEf=${control.after.rvEf}/rvSv=${control.after.rvSv}`);
+  console.log(`  ${rvStrain ? "PASS" : "FAIL"}  ${"pe: elevated PVR depresses RV EF and forward RV output".padEnd(46)} pe rvEf=${pe.after.rvEf.toFixed(3)}/rvSv=${pe.after.rvSv.toFixed(1)}, control rvEf=${control.after.rvEf.toFixed(3)}/rvSv=${control.after.rvSv.toFixed(1)}`);
+
+  // RV/LV interdependence: the SAME pe run also depresses LV filling (EDV)
+  // and forward output through the real pulmonary-venous-return path inside
+  // the coupled ODE (RV -> PA -> pulmonary veins -> LA -> LV), not a
+  // separate hand-authored linkage.
+  const lvCoupled = pe.after.co < control.after.co * 0.98 || pe.after.edv < control.after.edv * 0.95;
+  lvCoupled ? pass++ : fail++;
+  if (!lvCoupled) failures.push(`pe's RV strain should measurably reduce LV preload/output through the coupled pulmonary circuit, got pe co=${pe.after.co}/edv=${pe.after.edv}, control co=${control.after.co}/edv=${control.after.edv}`);
+  console.log(`  ${lvCoupled ? "PASS" : "FAIL"}  ${"pe: RV strain reaches LV preload/output through the loop".padEnd(46)} pe co=${pe.after.co.toFixed(2)}/edv=${pe.after.edv.toFixed(1)}, control co=${control.after.co.toFixed(2)}/edv=${control.after.edv.toFixed(1)}`);
+
+  // Specificity: a matched healthy control shows no RV strain at all.
+  const controlQuiet = control.after.rvEf > 0.55 && control.after.pvrWood < 2;
+  controlQuiet ? pass++ : fail++;
+  if (!controlQuiet) failures.push(`a healthy control should show normal RV EF (>0.55) and normal PVR (<2 Wood units), got rvEf=${control.after.rvEf}, pvrWood=${control.after.pvrWood}`);
+  console.log(`  ${controlQuiet ? "PASS" : "FAIL"}  ${"...matched healthy control shows normal RV EF and PVR".padEnd(46)} rvEf=${control.after.rvEf.toFixed(3)}, pvrWood=${control.after.pvrWood.toFixed(1)}`);
+}
 
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
