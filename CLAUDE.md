@@ -332,6 +332,91 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-03 — Four cheap audits closed (V2-14, V2-19, item 49, item 72), V2-29 confirmed genuinely partial; no code changes needed on any of them
+
+Assigned a metabolic/cellular/inflammation bucket this session. Worked the
+cheap-audit items first per this batch's own instruction, confirming each
+against the tree (lesson 16) before writing anything:
+
+- **V2-14 (hepatic drug clearance vs. item 42's hepaticDO2) — CLOSED, fully
+  consistent, no gap.** `pk.js`'s `organClearanceFactor()` and `neuro.js`'s
+  `hepaticDO2` (item 42) both read the identical `pat.co / pat._restCo`
+  flow proxy — confirmed by reading both call sites directly, not
+  inferring from names. `neuro.js`'s own in-code comment at the
+  `hepaticDO2` computation already documents this as a deliberate,
+  intentional reuse ("`pk.js`'s organClearanceFactor() already uses the
+  SAME hepatic-blood-flow proxy... real physiology, not a new invention").
+  No wiring gap exists; the two signals cannot drift apart because they are
+  literally the same ratio computed twice from the same inputs.
+
+- **V2-19 (cerebral perfusion/oxygenation) — CLOSED, already substantially
+  real, matching the source document's own itemization.** `neuro.js`
+  computes a real CPP-driven `brainO2now` (autoregulation plateau
+  ~50-150 mmHg CPP, ischemic threshold, reperfusion-injury term with its
+  own asymmetric recovery), a Cushing-reflex mechanism gated on elevated
+  ICP specifically (not generic hypotension), an upper-autoregulation-limit
+  hypertensive-breakthrough term, and a `pat.consciousness` ladder derived
+  from that same `brainO2now` signal rather than written ad hoc. No
+  additional cerebral-perfusion mechanism from the source document's own
+  list was found missing on direct comparison.
+
+- **Item 49's third finding (`capillaryLeak` resolution) — reconfirmed
+  already fully resolved, no action needed.** The item's own text already
+  states this was fixed in a prior direct follow-up (endothelial-repair
+  decay in `physiology.js`'s `stepPatient()`); re-read in full this
+  session to confirm nothing in it was left dangling. It was not — the
+  entry is honestly closed by its own final paragraph.
+
+- **Item 72 (hyperkalaemia rhythm-instability treatment-responsiveness
+  question) — audited, confirmed this is an ALREADY-DELIBERATE, already
+  in-code-documented design decision from queue item 2, not an
+  unaddressed gap.** Read `cardiovascular.js` directly: `a.hyperK` (line
+  ~2493, feeding the stochastic `rhythmInstability`/VT pathway) reads raw
+  `pat.k` on purpose, per a comment already in place at the deterministic
+  `effK` state machine a few lines below (queue item 2's own fix) —
+  "calcium stabilises the conduction/threshold axis but does not correct
+  the potassium-driven excitability that actually causes ectopy... the
+  correct clinical nuance (calcium buys time, it doesn't treat the
+  hyperkalaemia)." Item 72's measured finding (calcium+bicarb doesn't
+  rescue the stochastic VT pathway in a realistic 10-minute window) is
+  therefore not a bug surfacing an oversight — it is exactly the documented
+  intended behavior, independently re-derived from the observable side.
+  The genuinely open question item 72 raises (should ONGOING treatment
+  that actually lowers serum K, e.g. bicarb's transcellular shift, decay
+  `rhythmInstability` faster than raw `pat.k` already falling does on its
+  own) remains open, correctly, at the scope the item's own text already
+  flagged: `a.hyperK`/`substrate` is shared engine-wide rhythm code also
+  consumed by ACS/AMI/electrical-storm/torsades, so recalibrating it needs
+  its own dedicated batch with re-verification against every one of those
+  conditions, not a bolt-on here. No code changed. Left open in section 6
+  with this clarification added.
+
+- **V2-29 (CPR as a distinct mechanical state) — confirmed genuinely
+  PARTIAL, not closeable as a cheap audit.** Read `cardiovascular.js`'s
+  full-loop CPR block directly (~line 1045 on): chest compressions are
+  already real external mechanical activation (not a `fx:{sbp:...}`
+  stat write) whose resulting pressure/CO/DO2 and, per the code's own
+  comment, EtCO2 (via the alveolar dead-space model reading
+  compression-generated flow) all fall out of the same shared circulation
+  every other state uses — genuine mechanism, not scripted. What is NOT
+  modeled, confirmed by reading the same block: `pat.cprActive` is a
+  0-1 binary/continuous gate with a FIXED output floor
+  (`mechAct = 0.17 * cpr`, "~25-30% of native CO") and a FIXED
+  `compressionRate = 110` constant — compression depth, rate, and duty
+  (fraction of time actually compressing vs. paused for ventilation/
+  pulse checks) have no independent effect on output; a technically poor
+  CPR performer and a textbook-perfect one produce identical hemodynamics
+  today. This is a real, confirmed remaining gap matching the item's own
+  framing exactly ("partially real... confirm, then extend rather than
+  rebuild") — extending it (making depth/rate/duty independently move the
+  0.17 floor) is genuine new mechanism work, not attempted this session
+  given the remaining time budget; left open in section 6, not marked
+  done.
+
+No files were touched by any of the five items above (all confirmed
+correct-as-is or already resolved); `node --check`/`eslint`/suite runs were
+therefore not needed for this part of the session — nothing changed.
+
 ### 2026-09-03 — Queue item V2-2 (per-organ oxygen extraction / SvO2 composite) audited, confirmed already fully built and correct; no code changes needed
 
 Assigned as new work, but confirmed against the tree before writing anything
@@ -6925,12 +7010,15 @@ V2-13. **Hepatic physiology, generalized beyond drug clearance.**
    (ascites via portal hypertension → splanchnic vasodilation → RAAS/ADH) is
    genuinely new, large mechanism work, not yet attempted.
 
-V2-14. **Hepatic drug clearance — already substantially real.**
-   `organClearanceFactor()` already ties clearance to `co/_restCo`
-   (hepatic-flow proxy) and hepatocellular integrity. Confirm this is fully
-   consistent with item 42's newer, more precise `hepaticDO2` signal before
-   assuming further work is needed — likely just a wiring check, not new
-   mechanism.
+V2-14. **CLOSED (2026-09-03) — audited, fully consistent, no gap.** Read
+   both call sites directly: `pk.js`'s `organClearanceFactor()` and
+   `neuro.js`'s `hepaticDO2` (item 42) both compute the SAME
+   `pat.co / pat._restCo` flow ratio — not just similar, literally the
+   identical proxy, and `neuro.js`'s own in-code comment already documents
+   this as a deliberate, intentional reuse rather than an accidental
+   coincidence. No wiring check was needed beyond confirming the two
+   expressions match; they cannot drift apart since they're the same
+   computation done twice. No code changed.
 
 V2-15/16. **DONE (2026-09-01) — see section 3's newest entry.** A real
    hematocrit-driven viscosity multiplier on `pat.svr` (cardiovascular.js),
@@ -6955,11 +7043,16 @@ V2-18. **Organ injury integration, generalized.** Item 48 already built the
    structural pattern to liver/gut per item 48's own "still open" note —
    read that entry first.
 
-V2-19. **Cerebral perfusion and oxygenation — already substantially real.**
-   `neuro.js` already computes real CPP/CBF/brainO2/consciousness-state
-   derivation (the neuro/endocrine batch, item 42's brain-adjacent work).
-   Audit against the source document's own itemization before assuming a
-   gap — likely mostly done; confirm rather than rebuild.
+V2-19. **CLOSED (2026-09-03) — audited against the source document's own
+   itemization, confirmed already substantially real, no gap found.**
+   `neuro.js` computes a real CPP-driven `brainO2now` (autoregulation
+   plateau ~50-150 mmHg, ischemic threshold, an asymmetric-recovery
+   reperfusion-injury term), a Cushing-reflex mechanism correctly gated on
+   elevated ICP specifically rather than generic hypotension, an
+   upper-autoregulation-limit hypertensive-breakthrough term, and a
+   `pat.consciousness` ladder derived from that same `brainO2now` signal.
+   Compared item-by-item against the source spec's cerebral-perfusion list;
+   nothing on it was found missing. No code changed.
 
 V2-20. **Advanced acid-base mass balance — CLOSED, per section 2's own
    header ("a real strong-ion-difference acid-base model, queue item 44,
@@ -7084,15 +7177,21 @@ V2-28. **Pregnancy and fetal integration.** `updateObstetric` already
    than directly scripting fetal distress is the correct design target once
    this is attempted.
 
-V2-29. **CPR physiology as a distinct mechanical state**, separate from an
-   ordinary cardiac-output state — compression fraction/depth/rate driving
-   real coronary and cerebral perfusion pressure, real ETCO2 reflecting
-   pulmonary blood flow, ventilation-during-CPR affecting intrathoracic
-   pressure/venous return. Today CPR's effect on physiology should be
-   checked against the tree before assuming a gap — this may already be
-   partially real via existing intrathoracic-pressure/venous-return
-   mechanics (see item 12's own findings on assisted-ventilation
-   intrathoracic effects) — confirm, then extend rather than rebuild.
+V2-29. **AUDITED (2026-09-03), confirmed genuinely PARTIAL — still open.**
+   Read `cardiovascular.js`'s full-loop CPR block directly (~line 1045):
+   chest compressions are already real external mechanical activation
+   (not a stat write) whose resulting pressure/CO/DO2 and EtCO2 (via the
+   alveolar dead-space model reading compression-generated flow, per the
+   code's own comment) fall out of the same shared circulation every other
+   state uses — genuine mechanism for the PRESENCE of CPR. What's
+   confirmed NOT modeled: `pat.cprActive` drives a FIXED output floor
+   (`mechAct = 0.17 * cpr`, "~25-30% of native CO") and a FIXED
+   `compressionRate = 110` — compression depth, rate, and duty (fraction
+   of time actually compressing) have no independent effect on output, so
+   technically poor and textbook-perfect CPR are indistinguishable to the
+   engine today. Extending the fixed floor into a depth/rate/duty-driven
+   one is genuine remaining mechanism work, not attempted this session;
+   left open, not closed.
 
 V2-30. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
    Investigated first: CO poisoning's pulse-ox blind spot (`pat.cohb`) and
@@ -9488,6 +9587,26 @@ plausible but not fitted to trial data.
     asserting something no longer honestly measurable — see that suite's
     own in-code comment at the `[HYPERKALEMIA FROM MISSED DIALYSIS]`
     section for the full trace.
+
+    **AUDITED (2026-09-03) — the raw-`pat.k` read is not an oversight; it
+    is queue item 2's own already-in-code-documented deliberate design
+    decision, confirmed by reading the comment already sitting directly
+    above the deterministic `effK` state machine a few lines below `a.hyperK`
+    in `cardiovascular.js`:** "the a.hyperK PVC/ectopy substrate just above
+    is DELIBERATELY left on raw pat.k, not effK: calcium stabilises the
+    conduction/threshold axis but does not correct the potassium-driven
+    excitability that actually causes ectopy... the correct clinical nuance
+    (calcium buys time, it doesn't treat the hyperkalaemia)." This item's
+    own measured finding (calcium+bicarb doesn't rescue the stochastic VT
+    pathway) is therefore exactly the intended behavior re-derived
+    independently from the outcome side, not a newly-discovered defect. The
+    part of this item that remains a genuinely open, unanswered question —
+    whether treatment that actually LOWERS raw serum K (bicarb's real
+    transcellular shift) should decay `rhythmInstability` faster than
+    ordinary K-falls-on-its-own does — is unaffected by this finding and
+    stays open, at the scope already correctly identified above (needs its
+    own dedicated batch touching shared rhythm code, not a bolt-on). No
+    code changed this session.
 
 73. **RESOLVED (this session) — `bicarb`'s own `fx.hco3:16` was derived
     against the wrong distribution volume, and is now re-anchored to a real
