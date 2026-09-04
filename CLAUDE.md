@@ -332,6 +332,98 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-03 — Queue item 40's standing overdose-condition workstream — amiodarone overdose (`amiodaroneOverdose`, TOX-017), the sixth drug shipped, and a real self-correction (lesson 16) of an unmeasured first-draft comment before it could ship
+
+Per item 40's own explicit warning ("measure before writing the scenario's
+clinical framing, not after"), confirmed before building that amiodarone's
+existing PK entry (twoCompartment, ec50=1.75) drives its
+`antiarrhythmic`/`receptors` terms (`sodiumBlock`/`potassiumBlock`/
+`avSlowing`/`arteriolarDilation`) continuously off summed effect-site
+concentration — not the per-drug-id Emax gate item 38 found for fentanyl —
+so this is a real, buildable overdose, the same shape diltiazem/metoprolol/
+lidocaine's own workstream entries already confirmed for their own drugs.
+
+**A dose sweep (1800/3600/6000/9000mg at 20min elapsed, run through the
+real `physio()` pipeline against the real scenario, not a hand-rebuilt tick
+loop) found a genuinely different SHAPE of finding than diltiazem/
+metoprolol/atropine's own "receptor coefficient is already the ceiling"
+result.** Amiodarone's intensity is NOT saturated at these doses —
+`potassiumChannelBlock` rose from 0.169 at 1800mg to 0.359 at 9000mg, well
+short of its own 0.5 ceiling — so severity genuinely scales with dose here,
+closer to lidocaine's LAST shape.
+
+**A real, previously-unmeasured claim in this condition's own first-draft
+comment was caught and corrected before shipping — the exact lesson 16
+mistake, self-inflicted and self-caught in the same batch.** An initial
+comment claimed "hr 88->69" (bradycardia) without having actually measured
+it. MEASURED, at a 3600mg seeded load: hr sits at 94.6-96.8 throughout the
+call, statistically indistinguishable from a condition-less control's own
+95.2-95.5 — amiodarone's `drugs.js` entry declares NO direct
+negative-chronotropic receptor (only `arteriolarDilation` for vasodilation
+plus the three channel/conduction `antiarrhythmic` terms); `avSlowingDrug`
+acts on AV-nodal CONDUCTION (`pat.avConduction`, cardiovascular.js,
+lengthening PR toward first-degree block), not on sinus rate. The
+condition, scenario, and resolve() text were all corrected to state this
+honestly: this toxidrome is real hypotension + QT prolongation, NOT
+bradycardia. What IS real: sbp 127.4 (control) -> 98.0 at 600s (a genuine
+~23% arteriolarDilation-mediated drop) and qt 0.318 -> 0.349 (a real ~10%
+QT prolongation via `potassiumChannelBlock`'s own already-calibrated 0.15
+coefficient in cardiovascular.js, landing inside amiodarone's documented
+10-15% QTc-prolongation range), both sustained essentially unchanged from
+60s through 900s — a genuine load/duration toxicity (amiodarone's kel=0.005
+is the slowest clearance of any two-compartment drug in this formulary),
+not a brief spike.
+
+**Scene framing**: a home-health IV-push medication error (a full week's
+oral maintenance dose given as one inadvertent bolus) rather than an
+intentional overdose — amiodarone is not a typical self-harm drug of
+choice, but IV-push dosing errors with this exact drug are a real,
+documented medication-safety issue. New scenario `amiodaroneOverdose`
+(TOX-017, `scenarios.js`): a `heart` probe reads `pat.qt` live (threshold
+set against the engine's OWN measured range per lesson 20 — a
+condition-less control reads ~318ms, this condition ~348ms, so 335ms
+cleanly separates them; real clinical QTc cutoffs, ~450-470ms, are absolute
+values this engine's internal qt scale isn't calibrated to). No specific
+antidote exists in this formulary (grep-confirmed) — the same honest
+"supportive care, no curative field drug" framing `atropineOverdose`/
+`lidocaineOverdose` already established.
+
+**Four new two-sided `mechanismWiring.mjs` assertions** in a new
+`[AMIODARONE OVERDOSE — queue item 40, sixth drug]` section: presence (real
+hypotension + QT prolongation + channel blockade); specificity (a
+condition-less control shows zero of any channel blockade); the honest,
+explicitly-asserted NON-bradycardia finding (hr within 5 bpm of a matched
+control, not lowered); and time-course (hypotension sustained from 600s to
+900s, not a brief spike). All four fields (`qt`, `potassiumChannelBlock`,
+`sodiumChannelBlock`, `avSlowingDrug`) were already real, live, and already
+in `mechanismWiring.mjs`'s own `snapshot()` from earlier batches — no new
+`scenarioSweep.mjs`/`patient.js` changes were needed, since this condition
+introduces no genuinely new physiology field, only a new producer for four
+already-real ones.
+
+**Verification.** `node --check`/`npx eslint` clean on all three touched
+files (`conditions.js`, `scenarios.js`, `mechanismWiring.mjs`) — zero new
+findings beyond the pre-existing 3-error `App.jsx` baseline. All four new
+assertions verified passing via a standalone extraction of the suite's own
+probe()/snapshot() helpers (lesson 17's sanctioned technique — copied
+verbatim, not reconstructed), run directly against the real engine: 4/4
+passed (sbp=98.2, qt=345ms, kBlock=0.25 at presence; hr 96.4 vs control
+95.5 confirming the non-bradycardia finding; sbp 98.2->96.6 from 600s to
+900s confirming sustained hypotension). **The full `mechanismWiring.mjs`
+suite was NOT run to completion this session** — this repo's shared,
+multi-agent environment had five to six other `node.exe` processes
+(concurrent physiology-queue batches from other agents working the same
+repo in parallel) actively contending for the single CPU core throughout
+this batch, and a full-suite run launched in the background made only
+partial progress (reaching the `[DEFIBRILLATION]` section, itself well past
+this batch's own new section, with zero failures observed in every section
+reached) before this entry was written — stated honestly as NOT confirmed
+in-suite, not assumed clean; the standalone extraction above is this
+batch's own real, measured regression evidence, per this project's own
+established precedent for a shared/busy-environment session. `scenarioSweep.mjs`
+was not run this batch (no new field was added for it to check). The
+throwaway extraction script was stripped before this entry was written.
+
 ### 2026-09-03 — Queue item V2-25 (pulmonary circulation / RV-LV coupling) — confirmed the PVR-driven RV afterload coupling already exists in the authoritative ODE, and fixed a real, previously-invisible defect: the published RV vitals were coming from a separate, non-coupled legacy estimate
 
 Confirmed against the tree first (lesson 16), then measured directly, not
@@ -7979,6 +8071,20 @@ V2-32. **DONE (this session, first-pass) — a real dependency/update-order
     LAST teaching point (benzo-refractory seizures, no curative field
     antidote for the cardiotoxicity — intralipid isn't carried), not a
     clean cure.
+    `amiodarone` is ALSO DONE (`amiodaroneOverdose`, TOX-017) — see section
+    3's newest entry for the full mechanism/calibration writeup. A dose
+    sweep confirmed intensity is NOT saturated at this drug's own doses
+    (unlike diltiazem/metoprolol/atropine), so severity genuinely scales
+    with the seeded dose. A real, self-caught lesson-16 correction: an
+    initial unmeasured comment claimed bradycardia before checking —
+    MEASURED, this toxidrome is real hypotension (arteriolarDilation) and
+    QT prolongation (potassiumChannelBlock, landing inside the documented
+    10-15% QTc range), with hr statistically unchanged from a matched
+    control, since amiodarone's own `drugs.js` entry declares no direct
+    chronotropic receptor. Sustained essentially unchanged from 60s through
+    900s, matching this drug's own kel=0.005 (the slowest clearance of any
+    two-compartment drug in this formulary) — a load/duration toxicity, not
+    a brief spike.
     Still open candidates:
     `midazolam` (→ Benzodiazepine Overdose — CONFIRMED to hit
     the SAME per-drug-id Emax-gate ceiling item 38 found for fentanyl:
@@ -7988,11 +8094,7 @@ V2-32. **DONE (this session, first-pass) — a real dependency/update-order
     this needs either re-identifying that coefficient, which would also
     change THERAPEUTIC midazolam dosing everywhere else it's used, or a
     different mechanism; deliberately not attempted as a quick add),
-    `amiodarone` (→ real, if uncommon,
-    acute toxicity — QT prolongation/hypotension, reusing the already-real
-    `sodiumBlock`/`potassiumBlock`/`avSlowing`/`arteriolarDilation` terms
-    the diltiazem/lidocaine work already confirmed are continuous, not
-    per-drug-id-gated), `morphine` (a second, non-fentanyl opioid-OD
+    `morphine` (a second, non-fentanyl opioid-OD
     presentation, useful for teaching the SAME reversal mechanism at
     different kinetics — morphine's own `keo`/`kel` make its time course
     genuinely different from fentanyl's),
@@ -10143,8 +10245,12 @@ which is clinically correct and why its evidence base is mixed.)
 ## 8. Target condition library
 
 The set the simulator is aiming at, for the condition-library workstream (queue
-item 7). **Roughly 280 entries against 187 currently implemented, direct
-count as of this session's multi-agent batch's SECOND wave (2026-09-01,
+item 7). **Roughly 280 entries against 188 currently implemented, direct
+count as of 2026-09-03's `amiodaroneOverdose` addition (queue item 40's
+standing workstream, not item 7's condition-library backlog — a
+`CONDITIONS` entry regardless, so it bumps this total; see section 3's
+topmost entry) on top of the prior 187 from this session's multi-agent
+batch's SECOND wave (2026-09-01,
 +5: Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine
 Toxicity, Malaria, Dengue Fever — see section 3's topmost entry) — see this
 section's own closing paragraph below the "already implemented" list for

@@ -5343,6 +5343,65 @@ tricyclicOverdose: {cat: "medical", id: "TOX-007", pronouns: "she", title: "Fema
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "DYSR", truth: "Tricyclic antidepressant overdose — sodium-channel blockade with QRS widening, anticholinergic toxidrome, and a real risk of sudden seizure/arrhythmia; sodium bicarbonate is the field antidote-equivalent"};},
 },
 
+// Amiodarone overdose (queue item 40's standing workstream, sixth drug —
+// TOX-017). See conditions.js's amiodaroneOverdose comment for the full
+// mechanism/measurement writeup: a nursing-home medication-error framing
+// (a full week's oral maintenance supply given as a single IV push) rather
+// than an intentional ingestion, since amiodarone is not typically a
+// self-harm drug of choice but IV-push dosing errors with this exact drug
+// are a real, documented medication-safety issue. Reuses the SAME
+// receptor/PK mechanism the therapeutic `amiodarone`/`amiodarone2` entries
+// already use (sodiumBlock/potassiumBlock/avSlowing/arteriolarDilation) —
+// no new engine mechanism, per this item's own explicit discipline. NOTE,
+// measured (not assumed — an earlier draft of this scenario wrongly
+// claimed bradycardia before checking): this presentation is real
+// hypotension + QT prolongation, NOT bradycardia — amiodarone's own
+// drugs.js entry declares no direct chronotropic receptor, so hr here is
+// statistically indistinguishable from a condition-less control.
+amiodaroneOverdose: {cat: "medical", id: "TOX-017", pronouns: "she", title: "Female, 74. Found weak and lightheaded by her home health aide.",
+  limit: 900, transport: 480,
+  bystanders: "Her home health aide, upset. \"I set up her medications every week, but this morning a new agency nurse gave her the whole week's pill organizer through her IV port instead of by mouth. I didn't realize until I found the empty organizer next to the pump.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 11"}],
+  dispatch: ["74F, weak and lightheaded, possible medication error.", "Home health aide reports an IV medication error about 20 minutes ago."],
+  update: [],
+  impression: "Pale, diaphoretic, lying still on the couch. Says she feels like she is going to pass out.",
+  imps: ["ODPO", "DYSR", "SHOK"],
+  condition: "amiodaroneOverdose",
+  patient: {age: 74, gender: "female"},
+  clothing: {top: "long", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Aide: \"She takes amiodarone for her heart, 200 milligrams a day, seven pills in her weekly organizer. The new nurse pushed the whole week's worth into her IV line by mistake, right around the time I got here.\"", kind: "pt",
+      evid: "A week's worth of oral amiodarone given as one IV push, about 20 minutes prior to a presentation of hypotension, is a real, documented medication-error toxidrome — amiodarone's own slow clearance means the effect will not simply wear off over the call.", find: "SAMPLE (collateral): amiodarone 200mg daily maintenance dose; approximately one week's supply given as a single inadvertent IV push roughly 20 minutes prior to EMS contact."}),
+    opqrst: () => ({say: "\"I just feel so weak and dizzy, like I might pass out. It came on fast, right after they gave me my medicine in my IV.\"", kind: "pt",
+      evid: "Weakness and presyncope beginning within minutes of an IV medication push points at the medication itself, not a separate new cardiac event.", find: "OPQRST: sudden-onset weakness/presyncope, temporally tied to an IV medication administration roughly 20 minutes ago."}),
+    // MEASURED, not scripted (see conditions.js): reads v.hr/v.sbp/pat.qt
+    // live. potassiumChannelBlock's own already-calibrated 0.15 coefficient
+    // (cardiovascular.js) is the real QT mechanism here, not a narrated
+    // number. Threshold set against the engine's OWN measured range
+    // (lesson 20) — a condition-less control at this hr reads ~0.318s,
+    // this condition reads ~0.348s, so 335ms cleanly separates them; real
+    // clinical QTc-prolongation cutoffs (~450-470ms) are absolute values
+    // this engine's internal qt scale is not calibrated to.
+    heart: (s, v) => {
+      const qt = s.patient?.qt ?? 0.32;
+      const qtMs = Math.round(qt * 1000);
+      const wide = qtMs > 335;
+      return {say: `Rate ${v.hr}, pressure ${v.sbp}.${wide ? " The monitor flags a prolonged QT interval." : ""}`, kind: v.sbp < 100 ? "obs" : "pt",
+        find: `Heart: rate ${v.hr}, sbp ${v.sbp}, QT ${qtMs}ms${wide ? " (prolonged)" : ""}.`,
+        evid: wide
+          ? "Amiodarone's potassium-channel blockade prolongs the QT interval, raising torsades risk, at the same time its arteriolar-dilating effect is causing the hypotension you're seeing right now — a real trade-off this drug carries even at therapeutic doses, magnified here. Rate is not particularly affected; this drug's overdose picture here is pressure and rhythm risk, not rate."
+          : "QT not yet flagged as prolonged, but amiodarone's potassium-channel effect can take time to fully manifest and should keep being watched on the monitor."};
+    },
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Amiodarone overdose, with refractory hypotension and QT prolongation unanswered.";
+    notes.push("This is amiodarone overdose — a real, if uncommon, IV medication-error toxidrome. Potassium-channel blockade prolongs the QT (raising torsades risk) while the drug's own vasodilating effect drops blood pressure — the actual picture here is pressure and rhythm risk, not a slowed heart rate; amiodarone has no strong direct chronotropic effect of its own.");
+    notes.push("Amiodarone's clearance is unusually slow — this is a LOAD/DURATION problem, not a brief spike that resolves on its own the way a single therapeutic dose's short peak does. Supportive care (fluids for the hypotension and close monitoring for torsades given the prolonged QT) is the real field job; there is no specific reversal agent for amiodarone toxicity carried in this drug box.");
+    notes.push("A same-drug repeat dose or another antiarrhythmic would only deepen the same sodium/potassium-channel blockade already causing this presentation — the wrong move here.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "DYSR", truth: "Amiodarone overdose (IV medication error) — hypotension and QT prolongation from the same potassium-channel/sodium-channel/vasodilating mechanisms therapeutic amiodarone uses, without a significant rate effect; no specific field antidote, supportive care and monitoring for torsades are the real interventions"};},
+},
+
 // Cocaine toxicity (queue item 7, Toxicology backlog — TOX-016). A young
 // patient with a sympathomimetic toxidrome and real cocaine-associated
 // chest pain from coronary vasospasm — see conditions.js's cocaineToxicity

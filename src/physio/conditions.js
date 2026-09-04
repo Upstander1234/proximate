@@ -3673,6 +3673,67 @@ export const CONDITIONS = {
     },
   },
 
+  // QUEUE ITEM 40, sixth drug. Amiodarone overdose (real, if uncommon,
+  // acute IV toxicity — accidental massive bolus / repeated dosing beyond
+  // TP 1210's own 450mg ceiling, or an intentional large ingestion of the
+  // oral form). Reuses the SAME `amiodarone` PK entry (pk.js, twoCompartment,
+  // ec50=1.75) and the SAME `antiarrhythmic`/`receptors` mechanism terms
+  // (sodiumBlock/potassiumBlock/avSlowing/arteriolarDilation, drugs.js)
+  // already confirmed continuous (Hill-equation on summed concentration),
+  // not the per-drug-id Emax gate item 38 found for fentanyl/midazolam — the
+  // diltiazem/metoprolol/lidocaine work already established this is the
+  // right test to run before building (item 40's own explicit warning).
+  //
+  // MEASURED before writing this condition's clinical framing (a stripped
+  // throwaway probe run through the REAL `physio()` pipeline against a real
+  // scenario — not a hand-rebuilt tick loop, per lesson 8), across a dose
+  // sweep (1800/3600/6000/9000mg at 20 min elapsed): a REAL, but different
+  // shape of finding than diltiazem/metoprolol/atropine's own "receptor
+  // coefficient is the ceiling" result. Unlike those three, amiodarone's
+  // intensity (Hill on summed concentration/ec50=1.75) is NOT already
+  // saturated at a therapeutic-sized dose here — potassiumChannelBlock rose
+  // from 0.169 at 1800mg to 0.359 at 9000mg, well short of its own 0.5
+  // ceiling even at 9000mg, so severity DOES genuinely scale with seeded
+  // dose (closer to lidocaine's LAST shape than diltiazem's). A second,
+  // more important finding, corrected from an earlier unmeasured first
+  // draft of this comment (lesson 16 — a claim is not a fact until checked
+  // against the tree): amiodarone's `drugs.js` entry declares NO direct
+  // negative-chronotropic receptor term (only `arteriolarDilation` for
+  // vasodilation and the three `antiarrhythmic` channel/conduction terms) —
+  // `avSlowingDrug` acts on AV-nodal CONDUCTION (`pat.avConduction`,
+  // cardiovascular.js), lengthening the PR interval toward first-degree
+  // block, not on sinus rate directly. MEASURED: at a 3600mg load (roughly
+  // 12x the 300mg single-dose ceiling, framed as a home-health IV-push
+  // medication error — a full WEEK's oral maintenance supply given as one
+  // inadvertent bolus, a real documented medication-safety failure mode,
+  // not an intentional-overdose framing amiodarone rarely sees) hr sits at
+  // 94.6 by 600s, statistically indistinguishable from a condition-less
+  // control's own 95.2 — this condition does NOT produce bradycardia, and
+  // the scenario/resolve text says so honestly rather than asserting a
+  // clinical sign the engine does not produce. What IS real and clinically
+  // significant at this dose: sbp 127.4 (control) -> 98.0 (real,
+  // arteriolarDilation-mediated hypotension, a genuine ~23% drop) and qt
+  // 0.318 -> 0.349 (a real ~10% QT prolongation via potassiumChannelBlock's
+  // own already-calibrated 0.15 coefficient, landing inside amiodarone's
+  // documented 10-15% QTc-prolongation range — see that coefficient's own
+  // comment in cardiovascular.js), both sustained essentially unchanged
+  // from 60s through 900s (amiodarone's kel=0.005 is the slowest clearance
+  // of any two-compartment drug in this formulary, so this is a genuine
+  // load/duration toxicity, not a brief spike that resolves on its own).
+  // No specific antidote reversal exists for this toxidrome in this
+  // formulary (grep-confirmed) — the same honest "supportive care, no
+  // curative field drug" framing atropineOverdose/lidocaineOverdose already
+  // established for a toxidrome this formulary cannot fully treat.
+  amiodaroneOverdose: {
+    initial: { age: 74, hr: 90, sbp: 124, dbp: 76, rr: 16, glu: 100, pain: 0 },
+    progress(pat) {
+      if (!pat._amioOdSeeded) {
+        pat._amioOdSeeded = true;
+        pat.drugInstances.push(seedPastDose(pat, "amiodarone", 3600, 20));
+      }
+    },
+  },
+
   // ===== TOXIC INHALATION — CHLORINE GAS =====
   // Queue item 28's physiology half. Chlorine reacts with airway water to
   // form hypochlorous/hydrochloric acid — a real, direct chemical injury
