@@ -630,7 +630,50 @@ export function updateElectrolytes(pat, dt) {
 
     // Renal excretion, driven by the gradient above normal and by aldosterone.
     const renalLoss = ((pat.k || 4) - 4.0) * pat.kExcretion * 0.01;
-    const aldoEffect = (pat.aldosterone - 1) * 0.05;
+    // Queue item 75, ONE of several real contributing bugs found (not the
+    // whole fix -- see the honest accounting below). This used to be
+    // `(pat.aldosterone - 1) * 0.05`, which treats aldosterone=1 as the "no
+    // extra excretion" baseline. But this file's own RAAS block (above)
+    // decays resting aldosterone toward 0, not 1 -- confirmed by direct
+    // measurement: a resting, condition-less patient settles at aldosterone
+    // ~0.047, not 1. That mismatch made aldoEffect a near-constant ~-0.048 at
+    // rest instead of ~0, a real, spurious, constant POSITIVE potassium
+    // accumulation every tick (dConc subtracts (renalLoss + aldoEffect)*dt).
+    // Every other consumer of aldosterone in this file (distalReabsorptionEff,
+    // the sodium-handling comment below) already treats 0 as the resting
+    // baseline; this term was the one outlier. Fixed to scale directly off
+    // aldosterone itself, so aldosterone~0 at rest contributes ~0 extra
+    // excretion, and elevated aldosterone (RAAS activation under hemorrhage/
+    // shock) still drives real extra kaliuresis exactly as before once
+    // genuinely elevated.
+    //
+    // HONEST ACCOUNTING (measured after this fix, standalone probe against
+    // `abdPain`, condition-less/dose-less, per conservationAudit.mjs's own
+    // methodology): this fix removes a real ~-0.048 constant bias, but
+    // `conservationAudit.mjs` still FAILS kMass (now drifting the other
+    // direction, ~12-15% over 15 min instead of the pre-fix ~2.4-3.9% rise)
+    // and totalBloodVol/plasmaVol (both pre-existing, unaffected by this
+    // fix). Root-caused (not guessed) by direct tick-by-tick probing: the
+    // dominant remaining driver is `kShiftConc` a few lines below, via
+    // `pat.ph` -- a condition-less "resting" patient's OWN `pat.paco2` does
+    // not reach a fixed point within the audit's 15-30 minute window (falls
+    // from 40 to ~34.6 and is STILL falling at 900s in a straight, unbroken
+    // line), producing a persistent, non-resolving respiratory alkalosis
+    // (pH ~7.457-7.459, not 7.40) that steadily shifts K+ into cells. Traced
+    // one level further: `pat.paco2`'s own target (respiratory.js's
+    // `updateGasExchange`, `vco2/pat.va*863`) tracks the RATIO of
+    // `pat.vo2Demand` (metabolic.js) to alveolar ventilation `pat.va`
+    // (rr/vt, cardiovascular-autonomic-driven) -- both of which relax from
+    // this engine's own elevated initial `pat.neuralSymp`/`pat.sympathetic`
+    // toward rest on DIFFERENT effective time constants, so their ratio (and
+    // therefore PaCO2, pH, and this term) has not converged by 900-1800s.
+    // This is genuinely separate, larger physiology-engine work (a
+    // multi-module sympathetic/ventilation/metabolic-demand relaxation
+    // mismatch, not a renal-module bug) -- filed as new queue item 76 rather
+    // than patched here blind. Kept this fix anyway because it is real,
+    // independently correct, and measurably reduces the OTHER contributing
+    // error even though it does not by itself close item 75.
+    const aldoEffect = (pat.aldosterone || 0) * 0.05;
 
     // NA/K-ATPase FAILURE — the post-arrest / post-mortem potassium rise.
     //
