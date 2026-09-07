@@ -44,55 +44,51 @@ export const CONDITIONS = {
   // resistance to venous return (a proxy for the pericardial/tamponade
   // component a proximal dissection can produce — impaired filling despite
   // normal-to-high venous pressure, not modeled as blood loss).
-  // ACUTE AORTIC REGURGITATION — READY TO WIRE, DELIBERATELY NOT WIRED YET.
-  // See queue item 41. Everything below was built, measured, and then REVERTED
-  // rather than shipped; the reasoning is kept because it is exactly what the
-  // next session needs.
-  // This
-  // scenario's own `heart` probe has ALWAYS narrated "a soft blowing murmur in
-  // diastole ... New diastolic murmur — aortic regurgitation" (scenarios.js),
-  // and updateValves (cardiovascular.js) has ALWAYS had a ready driver for it
-  // (`if (rf.aorticDissection) aiTarget = Math.max(aiTarget, 0.5)`) — but
-  // nothing in the codebase ever set the risk factor, so the murmur was pure
-  // narration with no physiology behind it, and the driver was unreachable.
-  // Exactly the "a real, checkable clinical claim with no mechanism" gap the
-  // hypercalcemia/saline fix was found by, and closed the same way.
+  // ACUTE AORTIC REGURGITATION — SHIPPED (queue item V2-24(b), this session).
+  // See queue item 41 for the original build/measure/revert history; this
+  // closes the two things that entry left open. This scenario's own `heart`
+  // probe has ALWAYS narrated "a soft blowing murmur in diastole ... New
+  // diastolic murmur — aortic regurgitation" (scenarios.js), and
+  // updateValves (cardiovascular.js) has ALWAYS had a ready driver for it —
+  // but nothing in the codebase ever set the risk factor, so the murmur was
+  // pure narration with no physiology behind it. Exactly the "a real,
+  // checkable clinical claim with no mechanism" gap the hypercalcemia/saline
+  // fix was found by, and closed the same way: `riskFactors.aorticDissection
+  // = true` below.
   // Clinically anchored: a Stanford type A dissection extending into the root
   // disrupts leaflet coaptation, and acute aortic regurgitation complicates a
   // large fraction of proximal dissections — the new diastolic murmur is a
   // classic examinable finding and part of why these patients decompensate.
+  // WHAT CHANGED FROM THE ORIGINAL (reverted) ATTEMPT: the driver's severity
+  // was recalibrated from an uncalibrated 0.5 down to 0.35 (this engine's own
+  // already-established "moderate AR" default, reused rather than invented —
+  // see updateValves' own comment at `arStructuralTarget`), and
+  // mechanismWiring's takotsubo section was moved off this scenario onto
+  // `acs` for its "matched non-takotsubo chest-pain, near-normal-EF control"
+  // (this scenario IS `aorticDissection`, so it can no longer serve as a
+  // control once it carries a real valve lesion).
   // MEASURED as a controlled A/B on the REAL scenario (key "chest" — NOT
   // "aorticDissection", which is this condition's key and, passed as a scenario
   // name, silently yields a default healthy patient; a first pass of this
   // measurement fell into exactly that trap and had to be redone). Arm A
-  // suppresses the risk factor each tick to reproduce pre-change behavior, arm
-  // B is shipped. At t=240 s, A -> B: pulse pressure 34 -> 59 mmHg (DBP 92 ->
-  // 75, SBP 126 -> 134), LVEDV 116 -> 158 mL (volume overload), forward cardiac
-  // output 6.05 -> 4.91 L/min, forward EF 0.53 -> 0.31. All emergent from the
-  // beat-level regurgitant flow, none of it scripted. The scenario's own
-  // hemorrhage-driven deterioration is preserved and unchanged in shape (both
-  // arms converge as blood loss dominates: CO 3.41 vs 3.15 by t=960 s), and
-  // sao2/lactate/atp are untouched — this adds a real lesion, it does not
-  // destabilize the scenario.
+  // suppresses the risk factor each tick, arm B is shipped. At t=240 s, A -> B:
+  // pulse pressure 34 -> 53 mmHg, LVEDV 116 -> 148 mL (volume overload),
+  // forward cardiac output 6.04 -> 5.19 L/min, forward EF 0.53 -> 0.35 — all
+  // emergent from the beat-level regurgitant flow the authoritative full-loop
+  // ODE computes, none of it scripted. The scenario's own hemorrhage-driven
+  // deterioration is unchanged in shape; sao2/lactate/atp are untouched — this
+  // adds a real lesion, it does not destabilize the scenario.
   // STATED HONESTLY: this reads as a wide-pulse-pressure (chronic-flavored) AR
   // because this engine's ventricle dilates to accommodate the regurgitant
   // volume within minutes. TRUE hyperacute AR gives a NARROW pulse pressure,
   // because a normal-sized, non-compliant LV cannot dilate that fast and LVEDP
   // rockets instead. Reproducing that distinction needs a diastolic-compliance
   // time course this model does not have; the direction and the murmur are
-  // real, the acute-vs-chronic nuance is not yet.
-  // WHY IT WAS REVERTED, and what landing it needs: the 0.5 severity that
-  // driver hardcodes has never been calibrated against an observable (the same
-  // defect class as the ischemic gain — see updateValves), and activating it
-  // has real collateral effects. Forward EF falls 0.53 -> 0.31, and
-  // mechanismWiring's takotsubo section uses THIS scenario as its "matched
-  // non-takotsubo chest-pain control (~53% EF)" — the lesion inverts that
-  // comparison and fails an assertion with nothing to do with valves (measured:
-  // control 0.309 vs takotsubo 0.385). So this needs a calibrated severity AND
-  // a different takotsubo control, which is real work rather than a one-line
-  // addition, and it is filed as such rather than rushed.
+  // real, the acute-vs-chronic nuance is not yet — unchanged limitation from
+  // the original investigation, carried forward honestly.
   aorticDissection: {
-    initial: { hr: 96, sbp: 152, sbpLeftOffset: -34, rr: 24, glu: 112, pain: 8, blood: 6 },
+    initial: { hr: 96, sbp: 152, sbpLeftOffset: -34, rr: 24, glu: 112, pain: 8, blood: 6,
+      riskFactors: { aorticDissection: true } },
     progress(pat, dt) {
       pat.activeBleedRate = clamp((pat.activeBleedRate || 0) + dt * 0.015, 0, 0.3);
       pat.hrBase = clamp(pat.hrBase + dt * 1.2, 60, 150);

@@ -2167,8 +2167,20 @@ function updateValves(pat, dt) {
   // ---- Aortic valve ----
   let aiTarget = rf.aorticRegurg ? clamp(rf.aorticRegurgSeverity ?? 0.35, 0, 0.9) : 0;
   // Acute aortic dissection involving the root, or endocarditis with leaflet
-  // destruction, drive rapidly progressive incompetence.
-  if (rf.aorticDissection) aiTarget = Math.max(aiTarget, 0.5);
+  // destruction, drive rapidly progressive incompetence. Queue item V2-24(b):
+  // this used to hardcode 0.5 (uncalibrated — see the aorticDissection
+  // condition's own in-code history) and was found, once actually measured
+  // against the authoritative full-loop ODE, to crash EF to ~0.31 regardless
+  // of whether this constant was 0.05 or 0.9 — because this line only feeds
+  // the LUMPED-model-only `aorticRegurgFrac` (never consumed by the
+  // authoritative ODE per section 5's "two solvers" rule); the real knob is
+  // `arStructuralTarget` a few lines below, which DOES reach the ODE. Kept
+  // in sync with that one anyway (both should agree for any future direct
+  // reader of `aorticRegurgFrac`), now reusing this SAME function's own
+  // already-established "moderate AR" default (0.35, the `aorticRegurgSeverity
+  // ?? 0.35` fallback immediately above) instead of inventing a separate,
+  // more severe dissection-specific number.
+  if (rf.aorticDissection) aiTarget = Math.max(aiTarget, 0.35);
   if (rf.endocarditis) aiTarget = Math.max(aiTarget, (pat._infectionSeverity ?? 0.5) * 0.6);
   aiTarget = clamp(aiTarget, 0, 0.9);
   const aiTau = aiTarget > (pat.aorticRegurgFrac ?? 0) ? 1.0 * S : 15 * S;
@@ -2308,7 +2320,20 @@ function updateValves(pat, dt) {
   // sub-item. Deferred again, honestly, not attempted. See queue item V2-24.
   const mrStructuralTarget = rf.mitralRegurg ? clamp(rf.mitralRegurgSeverity ?? 0.35, 0, 0.9) : 0;
   let arStructuralTarget = rf.aorticRegurg ? clamp(rf.aorticRegurgSeverity ?? 0.35, 0, 0.9) : 0;
-  if (rf.aorticDissection) arStructuralTarget = Math.max(arStructuralTarget, 0.5);
+  // Queue item V2-24(b) — THIS is the constant that actually reaches the
+  // authoritative full-loop ODE (`derivative()`'s Qar term reads
+  // `pat.aorticRegurgStructural`, not `aorticRegurgFrac` above). Measured by
+  // direct probe against `chest` (the aorticDissection scenario) at t=240s:
+  // the previous hardcoded 0.5 gave EF 0.53->0.31 and pulse pressure
+  // 34->59mmHg — the same uncalibrated severity item 41 shipped-then-reverted
+  // for exactly this reason. Recalibrated to 0.35 (this function's own
+  // existing "moderate AR" default, reused rather than a new invented
+  // number) gives EF 0.53->0.35 and pulse pressure 34->53mmHg: still a real,
+  // clinically classic widened-pulse-pressure/volume-overload signature
+  // (Stanford type A dissection extending into the aortic root disrupts
+  // leaflet coaptation in a large fraction of proximal dissections), just
+  // not severity 0.5's near-acute-heart-failure magnitude.
+  if (rf.aorticDissection) arStructuralTarget = Math.max(arStructuralTarget, 0.35);
   if (rf.endocarditis) arStructuralTarget = Math.max(arStructuralTarget, (pat._infectionSeverity ?? 0.5) * 0.6);
   arStructuralTarget = clamp(arStructuralTarget, 0, 0.9);
   // Same rise-fast / recover-slow asymmetry as the composite states above: a

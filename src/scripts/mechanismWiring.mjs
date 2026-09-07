@@ -196,6 +196,10 @@ function snapshot(p) {
     pp: p.pp ?? 0,
     mitralRegurgFrac: p.mitralRegurgFrac ?? 0,
     aorticRegurgFrac: p.aorticRegurgFrac ?? 0,
+    // Queue item V2-24(b) — the field the authoritative full-loop ODE
+    // actually consumes for aortic regurgitant flow (aorticRegurgFrac above
+    // is the lumped-model-only composite, never read by derivative()).
+    aorticRegurgStructural: p.aorticRegurgStructural ?? 0,
     // HOCM (queue item 7, section 8 Cardiac backlog): the DYNAMIC LVOT
     // obstruction term, composed into the already-tracked aortic-stenosis
     // resistance-in-series handle.
@@ -1584,9 +1588,15 @@ console.log("\n[TAKOTSUBO — stress cardiomyopathy]");
 {
   // Baseline: the takotsubo ventricle is stunned — EF is depressed to the
   // registry mean (~40%) versus a matched non-takotsubo chest-pain patient
-  // (~53%). This is the whole-chamber consequence of the apical Gi stunning.
+  // (~50%). This is the whole-chamber consequence of the apical Gi stunning.
+  // Control scenario is `acs` (troponin-positive but pre-necrosis chest pain,
+  // no valve lesion) — NOT `chest` (that key IS the aorticDissection
+  // scenario, which as of queue item V2-24(b) carries a real aortic
+  // regurgitation lesion of its own and depresses its own EF to ~0.35,
+  // which would make it a confounded control for a stunning-specific
+  // comparison).
   const tts = probe({ scen: "takotsubo", settle: 300, run: 300 });
-  const ctl = probe({ scen: "chest", settle: 300, run: 300 });
+  const ctl = probe({ scen: "acs", settle: 300, run: 300 });
   assertVersus("takotsubo depresses ejection fraction", tts, ctl, "ef", "down", 0.08);
   assertNonZero("takotsubo stunning state is active", tts, "takotsuboStun", 0.5);
   assertNonZero("takotsubo prolongs QTc (torsades substrate)", tts, "qtcConditionOffset", 0.03);
@@ -5487,6 +5497,43 @@ console.log("[MITRAL REGURGITATION, ACUTE (papillary muscle rupture) — queue i
   honestNegative ? pass++ : fail++;
   if (!honestNegative) failures.push(`nitro was expected NOT to raise forward co here (documented preload-dominant limitation), got ${mr.after.co} -> ${mrNitro.after.co}`);
   console.log(`  ${honestNegative ? "PASS" : "FAIL"}  ${"...and nitro (venodilator-dominant here) does NOT rescue forward flow".padEnd(46)} co ${mr.after.co.toFixed(2)} -> ${mrNitro.after.co.toFixed(2)}`);
+}
+
+console.log("[ACUTE AORTIC REGURGITATION from DISSECTION — queue item V2-24(b)]");
+{
+  // Queue item 41 built and then reverted this exact mechanism (see
+  // conditions.js's own aorticDissection comment for the full history): the
+  // driver existed (`if (rf.aorticDissection) ... = Math.max(..., 0.5)`,
+  // both on the lumped-model aorticRegurgFrac AND the ODE-consumed
+  // aorticRegurgStructural) but nothing ever set the risk factor, and 0.5
+  // was never calibrated. This item recalibrated to 0.35 (this engine's own
+  // existing "moderate AR" default) and wired the scenario's own
+  // already-narrated diastolic murmur to it for real.
+  //
+  // Two-sided per lesson 6, via a same-scenario suppressed-control A/B
+  // (mutate) rather than a different scenario, since "chest" IS this
+  // condition — there is no separate healthy analog with the same
+  // hemorrhage trajectory to compare against.
+  const withAR = probe({ scen: "chest", settle: 240, run: 240 });
+  const suppressed = probe({ scen: "chest", settle: 240, run: 240, mutate: (p) => { p.riskFactors.aorticDissection = false; } });
+
+  assertVersus("aorticDissection AR widens pulse pressure", withAR, suppressed, "pp", "up", 10);
+  assertVersus("aorticDissection AR raises LVEDV (volume overload)", withAR, suppressed, "edv", "up", 15);
+  assertVersus("aorticDissection AR lowers forward EF", withAR, suppressed, "ef", "down", 0.1);
+  assertNonZero("aorticDissection AR engages the ODE-consumed structural state", withAR, "aorticRegurgStructural", 0.3);
+
+  const suppressedOk = suppressed.patient.aorticRegurgStructural === 0;
+  suppressedOk ? pass++ : fail++;
+  if (!suppressedOk) failures.push(`suppressed-risk-factor arm should show zero aorticRegurgStructural, got ${suppressed.patient.aorticRegurgStructural}`);
+  console.log(`  ${suppressedOk ? "PASS" : "FAIL"}  ${"...and is fully OFF when the risk factor is suppressed".padEnd(46)} aorticRegurgStructural = ${suppressed.patient.aorticRegurgStructural}`);
+
+  // Specificity: a condition with NO valve disease at all (abdPain) never
+  // engages this mechanism.
+  const healthy = probe({ scen: "abdPain", settle: 240, run: 240 });
+  const healthyOk = healthy.patient.aorticRegurgStructural === 0;
+  healthyOk ? pass++ : fail++;
+  if (!healthyOk) failures.push(`healthy control (abdPain) should show zero aorticRegurgStructural, got ${healthy.patient.aorticRegurgStructural}`);
+  console.log(`  ${healthyOk ? "PASS" : "FAIL"}  ${"...and a matched healthy control never engages it".padEnd(46)} aorticRegurgStructural = ${healthy.patient.aorticRegurgStructural}`);
 }
 
 console.log("[INFECTIVE ENDOCARDITIS — queue item 7, scoped composite]");
