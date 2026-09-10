@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { LEVELS, DOMAINS_BY_LEVEL } from "./questions.js";
 import { getQuestionPool, poolByLevel } from "./questionPool.js";
-import { blankCardState, schedule, isDue } from "./srs.js";
+import { blankCardState, schedule, isDue, previewIntervals, RATING } from "./srs.js";
 import { getItemStats, recordResponse, choicePercentages, MIN_RESPONSES_FOR_DISPLAY } from "./itemStats.js";
 import { randomizePresentation } from "./randomize.js";
 import { ensureExposed } from "./exposure.js";
+import { reportingEnabled, submitReport, REPORT_REASONS } from "./reports.js";
 
 function shuffle(arr) {
   const a = [...arr];
@@ -15,7 +16,7 @@ function shuffle(arr) {
   return a;
 }
 
-export default function MCQPracticeTab({ progress, onUpdateCard }) {
+export default function MCQPracticeTab({ progress, onUpdateCard, user }) {
   const [view, setView] = useState("level"); // level | dashboard | practice
   const [level, setLevel] = useState("EMT");
   const [domainFilter, setDomainFilter] = useState("All"); // "All" = entire bank, else one topic
@@ -49,6 +50,7 @@ export default function MCQPracticeTab({ progress, onUpdateCard }) {
         domainFilter={domainFilter}
         onUpdateCard={onUpdateCard}
         onDone={() => setView("dashboard")}
+        user={user}
       />
     );
   }
@@ -191,7 +193,7 @@ function Stat({ label, value, accent }) {
   );
 }
 
-function Practice({ pool, progress, level, domainFilter, onUpdateCard, onDone }) {
+function Practice({ pool, progress, level, domainFilter, onUpdateCard, onDone, user }) {
   const [queue] = useState(() => dueQuestions(pool, progress, level, domainFilter));
   const [idx, setIdx] = useState(0);
   const [statsSum, setStatsSum] = useState({ correct: 0, wrong: 0 });
@@ -221,15 +223,18 @@ function Practice({ pool, progress, level, domainFilter, onUpdateCard, onDone })
       position={`${idx + 1} / ${queue.length}`}
       onAnswered={(correct) => setStatsSum((s) => (correct ? { ...s, correct: s.correct + 1 } : { ...s, wrong: s.wrong + 1 }))}
       onRated={() => setIdx((i) => i + 1)}
+      onExit={onDone}
+      user={user}
     />
   );
 }
 
-function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated }) {
+function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated, onExit, user }) {
   const display = useMemo(() => randomizePresentation(q), [q]);
   const [stats, setStats] = useState(null);
   const [selectedDisplayIdx, setSelectedDisplayIdx] = useState(null);
   const [revealed, setRevealed] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     ensureExposed(progress, q.id, onUpdateCard);
@@ -244,12 +249,18 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
     const canonicalIdx = display.toCanonical[i];
     const correct = canonicalIdx === q.answerIndex;
     onAnswered(correct);
-    recordResponse(q, canonicalIdx, correct);
+    recordResponse(q, canonicalIdx, correct, user);
   };
 
-  const rate = (quality) => {
-    const prevState = progress[q.id] || blankCardState();
-    const nextState = schedule(prevState, quality);
+  const cardState = progress[q.id] || blankCardState();
+  const preview = useMemo(
+    () => (revealed ? previewIntervals(cardState) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [revealed, q.id]
+  );
+
+  const rate = (rating) => {
+    const nextState = schedule(cardState, rating);
     onUpdateCard(q.id, { ...nextState, exposed: true });
     onRated();
   };
@@ -260,9 +271,25 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between text-sm text-slate-400">
+        <button onClick={onExit} className="hover:text-white underline underline-offset-4">
+          ← End session
+        </button>
         <span>{q.domain}</span>
-        <span>{position}</span>
+        <div className="flex items-center gap-3">
+          <span>{position}</span>
+          {reportingEnabled && (
+            <button
+              onClick={() => setReportOpen(true)}
+              className="text-xs text-slate-500 hover:text-amber-400 underline underline-offset-4"
+              title="Report a problem with this question"
+            >
+              Report
+            </button>
+          )}
+        </div>
       </div>
+
+      {reportOpen && <ReportQuestionModal q={q} user={user} onClose={() => setReportOpen(false)} />}
 
       <div className="rounded-xl bg-slate-900 border border-slate-800 p-5">
         <div className="text-lg font-medium mb-4">{q.question}</div>
@@ -302,13 +329,119 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
       {revealed && (
         <div className="rounded-xl bg-slate-900 border border-slate-800 p-4 space-y-4">
           <div className="text-sm text-slate-300">{q.explanation}</div>
+          {cardState.leech && (
+            <div className="text-xs text-amber-400">
+              This card keeps coming back wrong — it's a "leech." Consider reviewing the explanation more closely.
+            </div>
+          )}
           <div className="flex gap-2">
-            <RateButton label="Again" sub="< 1 day" color="bg-red-700 hover:bg-red-600" onClick={() => rate(1)} />
-            <RateButton label="Good" sub="grows steadily" color="bg-sky-700 hover:bg-sky-600" onClick={() => rate(3)} />
-            <RateButton label="Easy" sub="longer gap" color="bg-emerald-700 hover:bg-emerald-600" onClick={() => rate(5)} />
+            <RateButton
+              label="Again"
+              sub={preview?.again.label}
+              color="bg-red-700 hover:bg-red-600"
+              onClick={() => rate(RATING.AGAIN)}
+            />
+            <RateButton
+              label="Hard"
+              sub={preview?.hard.label}
+              color="bg-amber-700 hover:bg-amber-600"
+              onClick={() => rate(RATING.HARD)}
+            />
+            <RateButton
+              label="Good"
+              sub={preview?.good.label}
+              color="bg-sky-700 hover:bg-sky-600"
+              onClick={() => rate(RATING.GOOD)}
+            />
+            <RateButton
+              label="Easy"
+              sub={preview?.easy.label}
+              color="bg-emerald-700 hover:bg-emerald-600"
+              onClick={() => rate(RATING.EASY)}
+            />
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ReportQuestionModal({ q, user, onClose }) {
+  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [details, setDetails] = useState("");
+  const [status, setStatus] = useState(null); // null | "submitting" | "done" | error string
+
+  const submit = async () => {
+    setStatus("submitting");
+    try {
+      await submitReport(user, q, reason, details);
+      setStatus("done");
+    } catch (e) {
+      setStatus(e.message || "Something went wrong.");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl bg-slate-900 border border-slate-800 p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Report this question</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">
+            ✕
+          </button>
+        </div>
+
+        {!user || user.isGuest ? (
+          <div className="text-sm text-slate-400">Sign in to report a question.</div>
+        ) : status === "done" ? (
+          <div className="text-sm text-emerald-300">
+            Thanks, this has been sent to an admin for review.
+            <button onClick={onClose} className="block mt-3 text-slate-300 underline underline-offset-4">
+              Close
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Reason</label>
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
+              >
+                {REPORT_REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Details (optional)</label>
+              <textarea
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
+                placeholder="What's wrong with this question?"
+              />
+            </div>
+            {typeof status === "string" && status !== "submitting" && (
+              <div className="text-sm text-red-400">{status}</div>
+            )}
+            <button
+              onClick={submit}
+              disabled={status === "submitting"}
+              className="w-full py-2.5 rounded-lg bg-amber-700 hover:bg-amber-600 disabled:opacity-50 font-medium"
+            >
+              {status === "submitting" ? "Submitting…" : "Submit report"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -5531,6 +5531,7 @@ export default function App(){
   /* ═══ READY? — the character is saved as of here; this is the persistent entry point ═══ */
   if(g.phase==="ready"){
     return (<Shell g={g} setG={setG} css={css}><div style={{maxWidth:520,margin:"0 auto",paddingTop:110,textAlign:"center"}}>
+      <BackBtn toPhase="scope" setG={setG}/>
       <div style={{fontFamily:MONO,fontSize:11,letterSpacing:".3em",color:C.dim}}>{(g.saveName||"").toUpperCase()}</div>
       <div style={{fontSize:28,fontWeight:700,marginTop:16}}>Ready?</div>
       <div style={{fontSize:13,color:C.dim,marginTop:10,lineHeight:1.7}}>

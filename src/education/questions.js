@@ -2377,9 +2377,9 @@ export const QUESTIONS = [
 
 {
   id: "resp-adv-001",
-  domain: "Respiratory",
+  domain: "Airway",
   level: "EMT",
-  blueprintCategory: "respiratory",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A 27-year-old patient suddenly develops sharp chest discomfort and shortness of breath while resting at home. The patient had knee surgery 10 days ago. You find a respiratory rate of 30/min, pulse of 118/min, blood pressure of 128/84 mmHg, and SpO2 of 91% on room air. Lung sounds are clear bilaterally. Which condition should be highest on your differential?",
   choices: [
@@ -2397,7 +2397,7 @@ export const QUESTIONS = [
   id: "cardio-adv-001",
   domain: "Cardiology",
   level: "EMT",
-  blueprintCategory: "cardiovascular",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A 61-year-old man with a history of poorly controlled hypertension suddenly develops severe chest and upper back pain that he describes as tearing. His left radial pulse is strong, but the right radial pulse is noticeably weaker. He is pale and anxious. Which condition should you suspect?",
   choices: [
@@ -2413,9 +2413,9 @@ export const QUESTIONS = [
 
 {
   id: "ops-adv-001",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
-  blueprintCategory: "medicalLegal",
+  blueprintCategory: "operations",
   question:
     "An EMT fails to perform an assessment that a reasonably competent EMT would have performed, and the omission contributes to the patient's injury. Which element of negligence does the EMT's failure most directly represent?",
   choices: [
@@ -2431,9 +2431,9 @@ export const QUESTIONS = [
 
 {
   id: "resp-adv-002",
-  domain: "Respiratory",
+  domain: "Airway",
   level: "EMT",
-  blueprintCategory: "respiratory",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A 70-year-old patient with a long history of cigarette smoking becomes short of breath after walking across the house. The patient is sitting upright, leaning forward, and breathing through pursed lips. Respirations are 32/min and lung sounds reveal diffuse expiratory wheezing. Which condition is most consistent with this presentation?",
   choices: [
@@ -2451,7 +2451,7 @@ export const QUESTIONS = [
   id: "cardio-adv-002",
   domain: "Cardiology",
   level: "EMT",
-  blueprintCategory: "cardiovascular",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A 64-year-old patient develops unilateral calf swelling and tenderness several days after a prolonged period of immobility. The affected calf is warmer and slightly redder than the other leg. Which condition should you be most concerned about?",
   choices: [
@@ -2467,9 +2467,9 @@ export const QUESTIONS = [
 
 {
   id: "ops-adv-002",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
-  blueprintCategory: "medicalLegal",
+  blueprintCategory: "operations",
   question:
     "During an EMS call in a crowded public location, a bystander overhears the EMT discussing the patient's diagnosis with the patient's partner. The EMT did not intentionally reveal the information to the bystander. Which principle is most relevant to this situation?",
   choices: [
@@ -2485,9 +2485,9 @@ export const QUESTIONS = [
 
 {
   id: "resp-adv-003",
-  domain: "Respiratory",
+  domain: "Airway",
   level: "EMT",
-  blueprintCategory: "anaphylaxis",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A 35-year-old patient develops sudden difficulty breathing shortly after eating a meal containing an unknown ingredient. You find widespread hives, facial swelling, wheezing, and increasing respiratory distress. Which condition best explains the patient's presentation?",
   choices: [
@@ -2505,7 +2505,7 @@ export const QUESTIONS = [
   id: "cardio-adv-003",
   domain: "Cardiology",
   level: "EMT",
-  blueprintCategory: "vascular",
+  blueprintCategory: "secondaryAssessment",
   question:
     "Which process is a major cause of arterial blood-flow obstruction?",
   choices: [
@@ -2521,9 +2521,9 @@ export const QUESTIONS = [
 
 {
   id: "ops-adv-003",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
-  blueprintCategory: "medicalLegal",
+  blueprintCategory: "operations",
   question:
     "A patient involved in a motor-vehicle collision is visibly intoxicated and refuses transport. The patient cannot explain the potential consequences of refusing care and repeatedly gives contradictory answers about what happened. What is the most important issue for the EMT to determine?",
   choices: [
@@ -2541,7 +2541,7 @@ export const QUESTIONS = [
   id: "resp-adv-004",
   domain: "Airway",
   level: "EMT",
-  blueprintCategory: "airwayObstruction",
+  blueprintCategory: "primaryAssessment",
   question:
     "A 48-year-old patient suddenly collapses while eating. A witness reports that the patient was clutching the throat, could not speak, and then became unresponsive. The patient is now apneic. Which problem should you suspect first?",
   choices: [
@@ -2559,7 +2559,7 @@ export const QUESTIONS = [
   id: "cardio-adv-004",
   domain: "Cardiology",
   level: "EMT",
-  blueprintCategory: "vascular",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A weakened portion of an arterial wall progressively expands outward and forms a localized bulge. What is this condition called?",
   choices: [
@@ -2575,9 +2575,9 @@ export const QUESTIONS = [
 
 {
   id: "ops-adv-004",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
-  blueprintCategory: "medicalLegal",
+  blueprintCategory: "operations",
   question:
     "An alert adult with decision-making capacity clearly refuses an examination. The EMT nevertheless intentionally performs a physical examination without permission and without a recognized exception such as an emergency that permits treatment without consent. Which legal concept is most directly involved?",
   choices: [
@@ -2593,9 +2593,9 @@ export const QUESTIONS = [
 
 {
   id: "resp-adv-005",
-  domain: "Respiratory",
+  domain: "Airway",
   level: "EMT",
-  blueprintCategory: "respiratory",
+  blueprintCategory: "secondaryAssessment",
   question:
     "Which finding is most characteristic of obstructive lung disease such as COPD?",
   choices: [
@@ -2613,7 +2613,7 @@ export const QUESTIONS = [
   id: "cardio-adv-005",
   domain: "Cardiology",
   level: "EMT",
-  blueprintCategory: "vascular",
+  blueprintCategory: "secondaryAssessment",
   question:
     "A patient with a previous lower-extremity DVT suddenly develops shortness of breath, pleuritic chest pain, and tachycardia. Which complication should be considered?",
   choices: [
@@ -2629,9 +2629,9 @@ export const QUESTIONS = [
 
 {
   id: "ops-adv-005",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
-  blueprintCategory: "documentation",
+  blueprintCategory: "operations",
   question:
     "During transport, an EMT realizes that the wrong medication was administered to a patient. The patient's condition remains stable. A supervisor tells the EMT to leave the medication error out of the patient care report. What should the EMT do?",
   choices: [
@@ -2653,7 +2653,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-007",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2671,7 +2671,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-008",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2689,7 +2689,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-009",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2707,7 +2707,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-010",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2725,7 +2725,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-011",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2743,7 +2743,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-012",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2761,7 +2761,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-013",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2779,7 +2779,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-014",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2797,7 +2797,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-015",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2815,7 +2815,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-016",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2833,7 +2833,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-017",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2851,7 +2851,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-018",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2869,7 +2869,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-019",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2887,7 +2887,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-020",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2905,7 +2905,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-021",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2923,7 +2923,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-022",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2941,7 +2941,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-023",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -2959,7 +2959,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-024",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2977,7 +2977,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-025",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -2995,7 +2995,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-026",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3013,7 +3013,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-027",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3031,7 +3031,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-028",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3049,7 +3049,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-029",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3067,7 +3067,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-030",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3085,7 +3085,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-031",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3103,7 +3103,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-032",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3121,7 +3121,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-033",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3139,7 +3139,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-034",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3157,7 +3157,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-035",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3175,7 +3175,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-036",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3193,7 +3193,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-037",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3211,7 +3211,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-038",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3229,7 +3229,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-039",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3247,7 +3247,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-040",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3265,7 +3265,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-041",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3283,7 +3283,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-042",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3301,7 +3301,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-043",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3319,7 +3319,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-044",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
   question:
@@ -3337,7 +3337,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-045",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
   question:
@@ -3355,7 +3355,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-046",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3373,7 +3373,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-047",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3391,7 +3391,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-048",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3409,7 +3409,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-049",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3427,7 +3427,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-050",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3445,7 +3445,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-051",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3463,7 +3463,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-052",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3481,7 +3481,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-053",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3499,7 +3499,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-054",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3517,7 +3517,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-055",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3535,7 +3535,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-056",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3553,7 +3553,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-057",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3571,7 +3571,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-058",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3589,7 +3589,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-059",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3607,7 +3607,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-060",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3625,7 +3625,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-061",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -3643,7 +3643,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-062",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3661,7 +3661,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-063",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
   question:
@@ -3678,7 +3678,7 @@ export const QUESTIONS = [
 },
 {
   id: "ops-064",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3696,7 +3696,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-065",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3714,7 +3714,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-066",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3732,7 +3732,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-067",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3750,7 +3750,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-068",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3768,7 +3768,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-069",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3786,7 +3786,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-070",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3804,7 +3804,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-071",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3822,7 +3822,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-072",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3840,7 +3840,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-073",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3858,7 +3858,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-074",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3876,7 +3876,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-075",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3894,7 +3894,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-076",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3914,7 +3914,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-077",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3932,7 +3932,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-078",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3953,7 +3953,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-079",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3971,7 +3971,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-080",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -3992,7 +3992,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-081",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4010,7 +4010,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-082",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4031,7 +4031,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-083",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4049,7 +4049,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-084",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4070,7 +4070,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-085",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4088,7 +4088,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-086",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4109,7 +4109,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-087",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4127,7 +4127,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-088",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4148,7 +4148,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-089",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4166,7 +4166,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-090",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4187,7 +4187,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-091",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4205,7 +4205,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-092",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4226,7 +4226,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-093",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4244,7 +4244,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-094",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4265,7 +4265,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-095",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4283,7 +4283,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-096",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4304,7 +4304,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-097",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4322,7 +4322,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-098",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4343,7 +4343,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-099",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4361,7 +4361,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-100",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4382,7 +4382,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-101",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4400,7 +4400,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-102",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4421,7 +4421,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-103",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4439,7 +4439,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-104",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4460,7 +4460,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-105",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4478,7 +4478,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-106",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4499,7 +4499,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-107",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4517,7 +4517,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-108",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4538,7 +4538,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-109",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4556,7 +4556,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-110",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4577,7 +4577,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-111",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4595,7 +4595,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-112",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4616,7 +4616,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-113",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4634,7 +4634,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-114",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4655,7 +4655,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-115",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4673,7 +4673,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-116",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4694,7 +4694,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-117",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4712,7 +4712,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-118",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4733,7 +4733,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-119",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4751,7 +4751,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-120",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4772,7 +4772,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-121",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4790,7 +4790,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-122",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4811,7 +4811,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-123",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4829,7 +4829,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-124",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -4850,7 +4850,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-125",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4868,7 +4868,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-126",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4889,7 +4889,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-127",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4907,7 +4907,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-128",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4928,7 +4928,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-129",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4946,7 +4946,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-130",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -4967,7 +4967,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-131",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -4985,7 +4985,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-132",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5006,7 +5006,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-133",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5024,7 +5024,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-134",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5045,7 +5045,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-135",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5063,7 +5063,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-136",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5084,7 +5084,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-137",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5102,7 +5102,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-138",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5123,7 +5123,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-139",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5141,7 +5141,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-140",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5162,7 +5162,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-141",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5180,7 +5180,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-142",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5201,7 +5201,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-143",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5219,7 +5219,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-144",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5240,7 +5240,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-145",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5261,7 +5261,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-146",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5279,7 +5279,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-147",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5300,7 +5300,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-148",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5318,7 +5318,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-149",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5339,7 +5339,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-150",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5357,7 +5357,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-151",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5378,7 +5378,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-152",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5396,7 +5396,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-153",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5417,7 +5417,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-154",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5435,7 +5435,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-155",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5456,7 +5456,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-156",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5474,7 +5474,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-157",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5495,7 +5495,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-158",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5513,7 +5513,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-159",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5534,7 +5534,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-160",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5552,7 +5552,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-161",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5573,7 +5573,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-162",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5591,7 +5591,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-163",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5612,7 +5612,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-164",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5630,7 +5630,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-165",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
   question:
@@ -5651,7 +5651,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-166",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5669,7 +5669,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-167",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5690,7 +5690,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-168",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5708,7 +5708,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-169",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5729,7 +5729,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-170",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5747,7 +5747,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-171",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5768,7 +5768,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-172",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5786,7 +5786,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-173",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5807,7 +5807,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-174",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5825,7 +5825,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-175",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5846,7 +5846,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-176",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5867,7 +5867,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-177",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5885,7 +5885,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-178",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5906,7 +5906,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-179",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5924,7 +5924,7 @@ export const QUESTIONS = [
 
 {
   id: "ops-180",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5945,7 +5945,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-181",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -5966,7 +5966,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-182",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -5987,7 +5987,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-183",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -6008,7 +6008,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-184",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -6029,7 +6029,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-185",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -6050,7 +6050,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-186",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
   question:
@@ -6071,7 +6071,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-187",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -6092,7 +6092,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-188",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -6113,7 +6113,7 @@ export const QUESTIONS = [
 // ----------------------------------------------------------------------------
 {
   id: "ops-189",
-  domain: "Operations",
+  domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
   question:
@@ -6134,7 +6134,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-201",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6152,7 +6152,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-202",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6170,7 +6170,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-203",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6188,7 +6188,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-204",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6206,7 +6206,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-205",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6224,7 +6224,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-206",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6242,7 +6242,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-207",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6260,7 +6260,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-208",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6278,7 +6278,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-209",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6296,7 +6296,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-210",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6314,7 +6314,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-211",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6332,7 +6332,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-212",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6350,7 +6350,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-213",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6368,7 +6368,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-214",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6386,7 +6386,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-215",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6404,7 +6404,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-216",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6422,7 +6422,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-217",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6440,7 +6440,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-218",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6458,7 +6458,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-219",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6476,7 +6476,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-220",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6494,7 +6494,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-221",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6512,7 +6512,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-222",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6530,7 +6530,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-223",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6548,7 +6548,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-224",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6566,7 +6566,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-225",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6584,7 +6584,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-226",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6602,7 +6602,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-227",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "secondaryAssessment",
 //   question:
@@ -6620,7 +6620,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-228",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6638,7 +6638,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-229",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6656,7 +6656,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-230",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6674,7 +6674,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-231",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6692,7 +6692,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-232",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6710,7 +6710,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-233",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6728,7 +6728,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-234",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6746,7 +6746,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-235",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6764,7 +6764,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-236",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6782,7 +6782,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-237",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6800,7 +6800,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-238",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6818,7 +6818,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-239",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -6836,7 +6836,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-240",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6854,7 +6854,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-241",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6872,7 +6872,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-242",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6890,7 +6890,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-243",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6908,7 +6908,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-244",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6926,7 +6926,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-245",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "primaryAssessment",
 //   question:
@@ -6944,7 +6944,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-246",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6962,7 +6962,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-247",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "operations",
 //   question:
@@ -6980,7 +6980,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-248",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -6998,7 +6998,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-249",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -7016,7 +7016,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-250",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -7034,7 +7034,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-251",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "treatmentTransport",
 //   question:
@@ -7052,7 +7052,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-252",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -7070,7 +7070,7 @@ export const QUESTIONS = [
 
 // {
 //   id: "ops-253",
-//   domain: "Operations",
+//   domain: "EMS Operations",
 //   level: "EMT",
 //   blueprintCategory: "sceneSafety",
 //   question:
@@ -7304,7 +7304,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-201",
+    id: "ops-338",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7326,7 +7326,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-202",
+    id: "ops-339",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7344,7 +7344,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-203",
+    id: "ops-340",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7366,7 +7366,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-204",
+    id: "ops-341",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7384,7 +7384,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-205",
+    id: "ops-342",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7406,7 +7406,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-206",
+    id: "ops-343",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7424,7 +7424,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-207",
+    id: "ops-344",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7446,7 +7446,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-208",
+    id: "ops-345",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7464,7 +7464,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-209",
+    id: "ops-346",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7486,7 +7486,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-210",
+    id: "ops-347",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7504,7 +7504,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-211",
+    id: "ops-348",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7526,7 +7526,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-212",
+    id: "ops-349",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7544,7 +7544,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-213",
+    id: "ops-350",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7566,7 +7566,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-214",
+    id: "ops-351",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -7584,7 +7584,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-215",
+    id: "ops-352",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -7606,7 +7606,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-216",
+    id: "ops-353",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7624,7 +7624,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-217",
+    id: "ops-354",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7646,7 +7646,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-218",
+    id: "ops-355",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7664,7 +7664,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-219",
+    id: "ops-356",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7686,7 +7686,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-220",
+    id: "ops-357",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7704,7 +7704,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-221",
+    id: "ops-358",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7726,7 +7726,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-222",
+    id: "ops-359",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7744,7 +7744,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-223",
+    id: "ops-360",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7766,7 +7766,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-224",
+    id: "ops-361",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7784,7 +7784,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-225",
+    id: "ops-362",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7806,7 +7806,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-226",
+    id: "ops-363",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7824,7 +7824,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-227",
+    id: "ops-364",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7846,7 +7846,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-228",
+    id: "ops-365",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7864,7 +7864,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-229",
+    id: "ops-366",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7886,7 +7886,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-230",
+    id: "ops-367",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7904,7 +7904,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-231",
+    id: "ops-368",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7926,7 +7926,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-232",
+    id: "ops-369",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7944,7 +7944,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-233",
+    id: "ops-370",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7966,7 +7966,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-234",
+    id: "ops-371",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7984,7 +7984,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-235",
+    id: "ops-372",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8006,7 +8006,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-236",
+    id: "ops-373",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8024,7 +8024,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-237",
+    id: "ops-374",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8046,7 +8046,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-238",
+    id: "ops-375",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8064,7 +8064,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-239",
+    id: "ops-376",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8086,7 +8086,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-240",
+    id: "ops-377",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8104,7 +8104,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-241",
+    id: "ops-378",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8126,7 +8126,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-242",
+    id: "ops-379",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8144,7 +8144,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-243",
+    id: "ops-380",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8166,7 +8166,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-244",
+    id: "ops-381",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8184,7 +8184,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-245",
+    id: "ops-382",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8206,7 +8206,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-246",
+    id: "ops-383",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8224,7 +8224,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-247",
+    id: "ops-384",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8246,7 +8246,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-248",
+    id: "ops-385",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8264,7 +8264,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-249",
+    id: "ops-386",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8286,7 +8286,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-250",
+    id: "ops-387",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8304,7 +8304,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-251",
+    id: "ops-388",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8326,7 +8326,7 @@ export const QUESTIONS = [
   // ============================================================================
 
   {
-    id: "ops-252",
+    id: "ops-389",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8344,7 +8344,7 @@ export const QUESTIONS = [
   },
 
   {
-    id: "ops-253",
+    id: "ops-390",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -8679,7 +8679,8 @@ export const QUESTIONS = [
     answerIndex: 1,
     explanation:
       "An MCI requires resource-conscious triage and rapid movement of patients toward appropriate definitive care. Treatment priorities are based on triage rather than providing identical care to every patient."
-  },
+  }
+,
 // Converted and reverse-question versions of the supplied EMT question set.
 // The questions below preserve the underlying educational concepts while
 // using substantially different wording, scenarios, and distractors.
@@ -9173,7 +9174,8 @@ export const QUESTIONS = [
     answerIndex: 1,
     explanation:
       "The EMS medical director retains ultimate authority for clinical patient-care decisions during an MCI. The incident commander manages the broader incident, while operational officers coordinate specific functions under that command structure."
-  },
+  }
+,
 
 
   {
@@ -15600,7 +15602,8 @@ export const QUESTIONS = [
     answerIndex: 0,
     explanation:
       "The elbow lies between the shoulder and wrist and is therefore proximal to the wrist."
-  },
+  }
+,
 // ============================================================================
 // CARDIOLOGY QUESTION BANK
 // Rewritten from supplied study material with independently generated
@@ -17536,7 +17539,8 @@ export const QUESTIONS = [
     answerIndex: 0,
     explanation:
       "Artifact is an ECG tracing disturbance caused by factors other than the patient's cardiac electrical activity."
-  },
+  }
+,
 
   {
     id: "cardiology-160",
@@ -21236,7 +21240,8 @@ export const QUESTIONS = [
     answerIndex: 0,
     explanation:
       "Suspected abuse and neglect should be documented and reported according to applicable laws and agency procedures."
-  },
+  }
+,
 // ============================================================================
 // MEDICAL + OBGYN / EMT
 // Rewritten + reverse-question set
@@ -22058,4 +22063,3596 @@ export const QUESTIONS = [
   explanation:
     "A nasal cannula is commonly used to provide relatively low-flow supplemental oxygen to patients who are breathing adequately on their own.",
 },
+  {
+    id: "ops-391",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which federal organization has played the primary federal role in funding the development of the National EMS Education Standards and the National EMS Scope of Practice Model?",
+    choices: [
+      "Federal Emergency Management Agency (FEMA)",
+      "National Highway Traffic Safety Administration (NHTSA)",
+      "Centers for Disease Control and Prevention (CDC)",
+      "Department of Homeland Security (DHS)",
+    ],
+    answerIndex: 1,
+    explanation:
+      "NHTSA, through its Office of EMS within the U.S. Department of Transportation, has supported the development of major national EMS education and scope-of-practice documents. These documents establish national guidance, while states determine actual licensure and practice requirements."
+  },
+
+  {
+    id: "ops-392",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which organization administers the national cognitive certification examination for entry-level EMTs?",
+    choices: [
+      "American Heart Association",
+      "National Association of EMS Educators",
+      "National Registry of Emergency Medical Technicians",
+      "Commission on Accreditation of Allied Health Education Programs",
+    ],
+    answerIndex: 2,
+    explanation:
+      "The National Registry of Emergency Medical Technicians, or NREMT, administers national EMS certification examinations. State licensure is a separate matter and is governed by individual states."
+  },
+
+  {
+    id: "ops-393",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "How many clinician levels are identified in the 2019 National EMS Scope of Practice Model?",
+    choices: [
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+    ],
+    answerIndex: 2,
+    explanation:
+      "The model identifies four levels: Emergency Medical Responder, Emergency Medical Technician, Advanced EMT, and Paramedic."
+  },
+
+  {
+    id: "ops-394",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Your crew arrives at a busy intersection after a collision involving several vehicles. Before approaching injured occupants, what should you do?",
+    choices: [
+      "Immediately begin triage",
+      "Confirm that the scene is safe for responders and patients",
+      "Call the receiving hospital",
+      "Begin assigning patients to ambulances",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Scene safety takes priority over patient contact. The crew should identify hazards such as traffic, unstable vehicles, fire, hazardous materials, and violence before entering the scene."
+  },
+
+  {
+    id: "ops-395",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "For an ordinary patient contact in which no significant splash or spray is expected, which PPE is generally the minimum requirement?",
+    choices: [
+      "Gloves",
+      "Gloves and gown",
+      "Gloves, gown, mask, and eye protection",
+      "A full-body protective suit",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Gloves are appropriate for routine patient contact when exposure to blood or body fluids is possible. Additional PPE should be selected according to the anticipated exposure."
+  },
+
+  {
+    id: "ops-396",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which lifting technique best reduces the risk of an EMS provider sustaining a back injury?",
+    choices: [
+      "Hold the patient away from the body to improve visibility",
+      "Keep the load close and use the legs rather than bending through the back",
+      "Rotate the torso while lifting",
+      "Lift as quickly as possible",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Safe lifting involves maintaining a stable posture, keeping the load close to the body, avoiding twisting, and using the legs to generate force."
+  },
+
+  {
+    id: "ops-397",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "An EMT develops persistent sleep problems, irritability, withdrawal, and other trauma-related symptoms several weeks after a particularly disturbing pediatric call. Which condition should be considered?",
+    choices: [
+      "A brief acute stress response",
+      "Ordinary fatigue",
+      "Post-traumatic stress disorder",
+      "A normal response that requires no follow-up",
+    ],
+    answerIndex: 2,
+    explanation:
+      "Persistent trauma-related symptoms that continue beyond the immediate aftermath of an event can indicate PTSD. EMS personnel should seek appropriate professional assessment rather than simply ignoring these symptoms."
+  },
+
+  {
+    id: "ops-398",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "During START triage, a patient is able to walk to the designated ambulatory-patient area and follows instructions. What initial triage category is appropriate?",
+    choices: [
+      "Immediate",
+      "Delayed",
+      "Minor",
+      "Expectant/deceased",
+    ],
+    answerIndex: 2,
+    explanation:
+      "In START, patients who can walk when instructed are initially categorized as green, or minor. They should subsequently be reassessed because their condition can change."
+  },
+
+  {
+    id: "ops-399",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Within the Incident Command System, who is ultimately responsible for overall incident management?",
+    choices: [
+      "The first EMT to arrive",
+      "The Incident Commander",
+      "The senior law-enforcement officer",
+      "The EMS medical director",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The Incident Commander has overall responsibility for managing the incident under ICS. Command may later be transferred according to established procedures."
+  },
+
+  {
+    id: "ops-400",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What is the primary purpose of a continuous quality-improvement program within an EMS agency?",
+    choices: [
+      "Identify individual employees to punish for mistakes",
+      "Systematically identify opportunities to improve care and operations",
+      "Replace medical oversight",
+      "Perform only an annual state inspection",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Quality improvement is an ongoing process used to identify patterns, evaluate performance, and improve patient care and system operations. It is generally intended to be improvement-oriented rather than punitive."
+  },
+
+  {
+    id: "ops-401",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Who normally provides physician-level medical oversight for an EMS agency?",
+    choices: [
+      "The senior field EMT",
+      "The agency's physician medical director",
+      "The state EMS communications center",
+      "The emergency department charge nurse",
+    ],
+    answerIndex: 1,
+    explanation:
+      "An EMS medical director is a physician who provides medical oversight, including development or approval of protocols and, when applicable, online medical direction."
+  },
+
+  {
+    id: "ops-402",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "An EMT wants to determine whether a particular intervention is legally permitted during a call. Which sources are most directly relevant?",
+    choices: [
+      "The national education standards alone",
+      "State law/licensure requirements and applicable medical-director-approved protocols",
+      "A commercial EMT textbook",
+      "An AHA textbook alone",
+    ],
+    answerIndex: 1,
+    explanation:
+      "National models provide guidance, but actual legal scope is determined through state law and regulation. EMS clinicians must also follow applicable agency protocols and medical direction."
+  },
+
+  {
+    id: "ops-403",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which group of capabilities was added to the EMT level through the 2021 change notices associated with the National EMS Scope of Practice Model?",
+    choices: [
+      "Endotracheal intubation and 12-lead interpretation",
+      "IM medication administration, certain emergency vaccination activities, and nasopharyngeal specimen collection",
+      "IV catheter placement and blood transfusion",
+      "Surgical airway procedures",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The 2021 change notices expanded the model's EMT scope in several areas, including IM medication administration, vaccination during declared public-health emergencies, and nasopharyngeal specimen collection. Actual authorization remains dependent on state and system rules."
+  },
+
+  {
+    id: "ops-404",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which statement best describes the purpose of a patient care report?",
+    choices: [
+      "It is primarily a private training worksheet",
+      "It serves as a clinical, legal, continuity-of-care, and potentially billing record",
+      "It is optional if the patient is transported",
+      "It cannot be used in legal proceedings",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The PCR documents the encounter and supports continuity of care, quality review, billing, and legal processes. It should therefore be accurate, complete, objective, and timely."
+  },
+
+  {
+    id: "ops-405",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which ambulance configuration uses a van chassis with the patient compartment incorporated into the van body?",
+    choices: [
+      "Type I",
+      "Type II",
+      "Type III",
+      "Type IV",
+    ],
+    answerIndex: 1,
+    explanation:
+      "A Type II ambulance is based on a van-style chassis with an integrated patient compartment. Type I and Type III configurations use a separate modular patient compartment."
+  },
+
+  {
+    id: "ops-406",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What is one important tradeoff associated with emergency ambulance response using lights and siren?",
+    choices: [
+      "It routinely saves more than 15 minutes",
+      "It may save a relatively small amount of time while increasing crash risk",
+      "It eliminates the need for traffic awareness",
+      "It is federally required for every EMS response",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Research has generally found that lights-and-siren response provides relatively modest time savings while increasing the risk associated with emergency vehicle operation. Agencies therefore use policies to determine when emergency response is justified."
+  },
+
+  {
+    id: "ops-407",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which patient would generally be the strongest candidate for consideration of helicopter EMS?",
+    choices: [
+      "A stable patient located a few minutes from an appropriate hospital",
+      "A critically ill or injured patient for whom ground transport would create a substantial delay to definitive care",
+      "A stable patient whose family simply prefers an aircraft",
+      "Every patient involved in a collision",
+    ],
+    answerIndex: 1,
+    explanation:
+      "HEMS can be appropriate when the patient's condition and geography make the time or capabilities of air transport clinically advantageous. Availability of a safe landing zone and other operational factors must also be considered."
+  },
+
+  {
+    id: "ops-408",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Your crew encounters a vehicle collision with a downed electrical wire. What should you do?",
+    choices: [
+      "Push the wire away with a dry wooden object",
+      "Approach once visible arcing stops",
+      "Establish an appropriate safety perimeter and wait for qualified utility personnel to declare the area safe",
+      "Ask the patient to exit the vehicle",
+    ],
+    answerIndex: 2,
+    explanation:
+      "A downed electrical wire should be presumed energized until qualified utility personnel establish that it is safe. EMS should maintain an appropriate exclusion area and avoid contact with the vehicle or wire."
+  },
+
+  {
+    id: "ops-409",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "When an EMT suspects a patient may be experiencing human trafficking, which approach is most appropriate when circumstances permit?",
+    choices: [
+      "Confront the suspected trafficker",
+      "Ignore the concern and document nothing",
+      "Attempt to speak privately with the patient and follow applicable reporting procedures",
+      "Refuse to transport the patient",
+    ],
+    answerIndex: 2,
+    explanation:
+      "When safe and feasible, obtaining an opportunity to speak privately with the patient can help identify concerns. EMS personnel should document objective findings and follow applicable agency and state reporting requirements."
+  },
+
+  {
+    id: "ops-410",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "A vehicle involved in a crash is unstable and leaking fuel. What is the safest initial EMS action?",
+    choices: [
+      "Enter immediately before the vehicle catches fire",
+      "Remain at a safe location and request appropriate fire/rescue resources to control the hazards",
+      "Begin treatment inside the vehicle regardless of the hazard",
+      "Move the vehicle yourself",
+    ],
+    answerIndex: 1,
+    explanation:
+      "An unstable vehicle and fuel leak can create significant hazards. EMS should stage at a safe location and allow appropriately trained rescue personnel to stabilize the scene before patient access."
+  },
+
+  {
+    id: "ops-411",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "In the SBAR communication format, what does the letter R represent?",
+    choices: [
+      "Reassessment",
+      "Response",
+      "Recommendation",
+      "Resuscitation",
+    ],
+    answerIndex: 2,
+    explanation:
+      "SBAR stands for Situation, Background, Assessment, and Recommendation. It provides a structured framework for communicating important patient information."
+  },
+
+  {
+    id: "ops-412",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which practice is an example of effective crew resource management in EMS?",
+    choices: [
+      "The highest-ranking provider makes every decision without input",
+      "Crew members use closed-loop communication and speak up about safety concerns",
+      "Providers avoid questioning one another",
+      "Only the driver is allowed to identify hazards",
+    ],
+    answerIndex: 1,
+    explanation:
+      "CRM emphasizes communication, teamwork, situational awareness, leadership, followership, and recognition of human factors. Closed-loop communication and speaking up about safety concerns can reduce preventable errors."
+  },
+
+  {
+    id: "ops-413",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Following a particularly difficult call, the crew participates in a peer-support discussion focused on their emotional responses and coping. What is the primary purpose of this activity?",
+    choices: [
+      "Determine which provider made a clinical error",
+      "Support responder well-being and coping",
+      "Replace the patient care report",
+      "Assign blame for the incident",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Peer-support and responder wellness activities are intended to help personnel process difficult experiences and identify when additional support may be needed. They are distinct from clinical case review or an operational after-action review."
+  },
+
+  {
+    id: "ops-414",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "An EMT accidentally sustains a needlestick injury. What should happen immediately?",
+    choices: [
+      "Finish the shift before reporting it",
+      "Clean the exposure site promptly and report the exposure according to agency procedure",
+      "Apply a tourniquet above the injury",
+      "Recap and save the needle",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The exposed area should be washed promptly with soap and water. Mucous-membrane exposures should be flushed. The exposure should then be reported and managed according to the agency's occupational-exposure protocol."
+  },
+
+  {
+    id: "ops-415",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What is the fundamental assumption behind standard precautions?",
+    choices: [
+      "Only visibly ill patients can transmit infection",
+      "Patients with known infections are the only ones requiring PPE",
+      "Blood and relevant body fluids from any patient may contain infectious material",
+      "Vaccination eliminates the need for PPE",
+    ],
+    answerIndex: 2,
+    explanation:
+      "Standard precautions are based on treating potentially infectious blood and body fluids appropriately regardless of whether an infection has been identified in the patient."
+  },
+
+  {
+    id: "ops-416",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "An EMS crew is transporting a patient with suspected active pulmonary tuberculosis. Which respiratory protection is appropriate for the EMT?",
+    choices: [
+      "No respiratory protection",
+      "A fit-tested N95 or higher-level respirator",
+      "A cloth face covering",
+      "A surgical mask worn by the EMT only",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Suspected pulmonary TB requires airborne precautions. EMS personnel should use an appropriate fit-tested N95 or higher-level respirator according to infection-control policy. A source-control mask may also be placed on the patient when tolerated."
+  },
+
+  {
+    id: "ops-417",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "At a hazardous-materials incident, what is the name of the area where contamination may be present and access is restricted to appropriately trained personnel?",
+    choices: [
+      "Cold zone",
+      "Warm zone",
+      "Hot zone",
+      "Support zone",
+    ],
+    answerIndex: 2,
+    explanation:
+      "The hot zone, also called the exclusion zone, is the area where the hazardous substance is known or suspected to be present. Entry is restricted to appropriately trained and equipped personnel."
+  },
+
+  {
+    id: "ops-418",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Where should EMS normally receive and treat patients who have completed appropriate decontamination at a hazardous-materials scene?",
+    choices: [
+      "Inside the hot zone",
+      "In the warm zone before decontamination",
+      "In the cold zone after appropriate decontamination",
+      "Inside the ambulance before decontamination",
+    ],
+    answerIndex: 2,
+    explanation:
+      "After appropriate decontamination, patients can be transferred into the cold zone for medical evaluation and treatment. Moving contaminated patients into ambulances prematurely can spread contamination."
+  },
+
+  {
+    id: "ops-419",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What is a primary purpose of the U.S. Department of Transportation Emergency Response Guidebook at a hazardous-materials incident?",
+    choices: [
+      "Determine ambulance medication dosages",
+      "Identify hazardous materials and provide initial response guidance and isolation information",
+      "Assign START triage colors",
+      "Calculate ambulance fuel requirements",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The ERG helps first responders identify hazardous materials using information such as UN/NA identification numbers and placards and provides initial guidance regarding hazards, isolation, and protective actions."
+  },
+
+  {
+    id: "ops-420",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What span of control is generally recommended within ICS?",
+    choices: [
+      "One supervisor for 1 to 2 subordinates",
+      "Approximately 3 to 7 subordinates per supervisor",
+      "At least 10 subordinates per supervisor",
+      "There is no recommended limit",
+    ],
+    answerIndex: 1,
+    explanation:
+      "ICS generally recommends a span of control of approximately three to seven subordinates, with five often considered an effective target."
+  },
+
+  {
+    id: "ops-421",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "During adult START triage, a patient remains apneic after the airway is repositioned. How is the patient initially categorized?",
+    choices: [
+      "Immediate",
+      "Delayed",
+      "Minor",
+      "Expectant/deceased",
+    ],
+    answerIndex: 3,
+    explanation:
+      "In the traditional adult START algorithm, an apneic patient who does not begin breathing after airway repositioning is categorized as black. Local triage protocols should always be followed."
+  },
+
+  {
+    id: "ops-422",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which pediatric mass-casualty triage system modifies START to account for children?",
+    choices: [
+      "JumpSTART",
+      "RPM-Junior",
+      "SALT-Peds",
+      "Pediatric START-Plus",
+    ],
+    answerIndex: 0,
+    explanation:
+      "JumpSTART is a pediatric adaptation of START. It accounts for pediatric physiology and includes modifications such as giving rescue breaths to certain apneic children before assigning a triage category."
+  },
+
+  {
+    id: "ops-423",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which style is most appropriate for a routine EMS radio report?",
+    choices: [
+      "Long and highly technical",
+      "Brief, organized, and stated in clear language",
+      "Limited to the patient's name",
+      "Composed entirely of ten-codes",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Radio reports should communicate the most important information efficiently. A structured report may include the unit identifier, patient's age and sex, chief complaint, pertinent history, assessment findings, treatment, and ETA."
+  },
+
+  {
+    id: "ops-424",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "How should the narrative section of an EMS patient care report generally be written?",
+    choices: [
+      "As personal opinions and assumptions",
+      "Chronologically and objectively, distinguishing patient statements from provider observations",
+      "Only as a list of vital signs",
+      "With as little detail as possible",
+    ],
+    answerIndex: 1,
+    explanation:
+      "PCR narratives should accurately describe what happened in a logical sequence. Objective findings should be distinguished from patient statements, and unsupported assumptions should be avoided."
+  },
+
+  {
+    id: "ops-425",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "After submitting a PCR, an EMT discovers that one vital sign was entered incorrectly. What is the appropriate approach?",
+    choices: [
+      "Silently overwrite the original value",
+      "Delete the entire report",
+      "Follow the agency's amendment procedure and document the correction without concealing the original entry",
+      "Ignore the mistake",
+    ],
+    answerIndex: 2,
+    explanation:
+      "Once a report has been finalized, corrections should be made through the approved amendment or addendum process. The original documentation should remain identifiable so the record maintains its integrity."
+  },
+
+  {
+    id: "ops-426",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which practice best represents family-centered EMS care?",
+    choices: [
+      "Automatically exclude family members from every patient encounter",
+      "Respect patient and family perspectives while involving them appropriately in communication and decisions",
+      "Allow family wishes to override all clinical considerations",
+      "Avoid discussing care with family under all circumstances",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Family-centered care emphasizes respectful communication, collaboration, and consideration of patient and family perspectives while maintaining appropriate clinical judgment and patient autonomy."
+  },
+
+  {
+    id: "ops-427",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "An EMT is caring for a patient whose cultural practices differ from the EMT's own. Which response demonstrates cultural humility?",
+    choices: [
+      "Assume the patient's beliefs based on their appearance",
+      "Respectfully ask about relevant preferences and avoid making assumptions",
+      "Refuse care when cultural practices are unfamiliar",
+      "Replace standard medical care with the patient's preferred practices",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Cultural humility involves recognizing personal assumptions, listening to the patient, and communicating respectfully. It does not require abandoning clinical standards or appropriate medical care."
+  },
+
+  {
+    id: "ops-428",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What is one major goal of Mobile Integrated Health and Community Paramedicine programs?",
+    choices: [
+      "Eliminate the need for emergency ambulances",
+      "Reduce avoidable emergency utilization through appropriate community-based care and coordination",
+      "Provide unrestricted hospital-level intensive care in homes",
+      "Replace all primary-care providers",
+    ],
+    answerIndex: 1,
+    explanation:
+      "MIH/CP programs can extend EMS capabilities into community settings through activities such as follow-up visits, care coordination, health assessment, and navigation to appropriate resources."
+  },
+
+  {
+    id: "ops-429",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "Which EMS action best supports rapid, coordinated care for a suspected acute stroke?",
+    choices: [
+      "Transport to any hospital without advance notification",
+      "Recognize stroke symptoms, determine the last-known-well time, perform an appropriate stroke assessment, and provide early notification",
+      "Delay transport until all possible history is obtained",
+      "Wait until hospital arrival to mention the suspected stroke",
+    ],
+    answerIndex: 1,
+    explanation:
+      "EMS can improve stroke care by identifying possible stroke early, establishing the last-known-well time, performing an appropriate assessment, selecting an appropriate destination according to local protocols, and notifying the receiving facility."
+  },
+
+  {
+    id: "ops-430",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "In traditional trauma terminology, what does the phrase 'platinum ten minutes' refer to?",
+    choices: [
+      "Ten minutes of mandatory documentation",
+      "A goal of keeping on-scene time for critical trauma patients very short",
+      "Ten minutes of CPR before transport",
+      "A required ten-minute reassessment interval",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The 'platinum ten minutes' concept emphasizes minimizing scene time for critically injured patients when rapid transport to definitive care is appropriate. It is a guiding concept rather than an absolute rule for every trauma call."
+  },
+
+  {
+    id: "ops-431",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "When approaching a helicopter on the ground, which practice is safest?",
+    choices: [
+      "Approach from the rear where the crew cannot see you",
+      "Approach only after receiving the crew's signal and remain within the pilot's field of view as directed",
+      "Run toward the aircraft to reduce exposure time",
+      "Walk beneath the rotor whenever convenient",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Personnel should never approach a helicopter until directed by the flight crew. They should remain visible to the crew and follow the specific aircraft and landing-zone safety instructions. The tail rotor is especially hazardous."
+  },
+
+  {
+    id: "ops-432",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which sequence most closely represents the normal progression of an EMS ambulance call?",
+    choices: [
+      "Preparation → dispatch → response → scene → transport → hospital → post-run",
+      "Dispatch → billing → patient contact → sleep",
+      "Preparation → transport → dispatch → documentation",
+      "Scene → dispatch → preparation → hospital → transport",
+    ],
+    answerIndex: 0,
+    explanation:
+      "An EMS call typically progresses from preparation and dispatch through response, arrival and patient care, transport and hospital handoff, followed by post-run activities such as cleaning, restocking, and documentation."
+  },
+
+  {
+    id: "ops-433",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What does 'due regard' mean when operating an ambulance during an emergency response?",
+    choices: [
+      "Traffic laws no longer matter",
+      "Other drivers are entirely responsible for avoiding the ambulance",
+      "The ambulance operator must still operate with reasonable care and attention to foreseeable hazards",
+      "The ambulance may travel through intersections without slowing",
+    ],
+    answerIndex: 2,
+    explanation:
+      "Emergency vehicle privileges do not eliminate the driver's responsibility to operate safely. Drivers must account for traffic, intersections, pedestrians, visibility, road conditions, and other hazards."
+  },
+
+  {
+    id: "ops-434",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Why should the patient compartment be cleaned and appropriately disinfected between patient contacts?",
+    choices: [
+      "Primarily to protect the upholstery",
+      "To reduce the possibility of transmitting infectious organisms between patients and crew",
+      "To prevent battery discharge",
+      "Only to satisfy billing requirements",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Cleaning and disinfection help interrupt transmission of infectious organisms through contaminated surfaces. The level of cleaning should match the type and extent of contamination."
+  },
+
+  {
+    id: "ops-435",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which combination represents reasonable strategies for reducing fatigue-related EMS errors?",
+    choices: [
+      "Longer shifts combined with stimulant use",
+      "Ignoring fatigue unless a mistake occurs",
+      "Appropriate scheduling, fatigue awareness, opportunities for sleep or napping when feasible, and structured handoffs",
+      "Requiring every EMS employee to work the same shift pattern",
+    ],
+    answerIndex: 2,
+    explanation:
+      "Fatigue mitigation includes appropriate scheduling, sleep education, fatigue recognition, opportunities for rest when feasible, and structured handoffs. No single schedule is appropriate for every EMS system."
+  },
+
+  // ============================================================================
+  // REVERSE QUESTIONS
+  // ============================================================================
+
+  {
+    id: "ops-436",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which federal organization is associated with development and funding support for major national EMS education and scope-of-practice guidance?",
+    choices: [
+      "NHTSA",
+      "FEMA",
+      "CDC",
+      "DHS",
+    ],
+    answerIndex: 0,
+    explanation:
+      "NHTSA, through its Office of EMS, has played a major federal role in supporting national EMS education and scope-of-practice documents."
+  },
+
+  {
+    id: "ops-437",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which organization is responsible for administering the national EMT certification examination?",
+    choices: [
+      "AHA",
+      "NREMT",
+      "NAEMSE",
+      "CAAHEP",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The National Registry of Emergency Medical Technicians administers national EMS certification examinations, including the EMT cognitive examination."
+  },
+
+  {
+    id: "ops-438",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which set correctly lists the four clinician levels in the National EMS Scope of Practice Model?",
+    choices: [
+      "EMR, EMT, AEMT, Paramedic",
+      "EMT, Paramedic, Nurse, Physician",
+      "EMR, EMT, Critical Care, Physician",
+      "First Responder, EMT, AEMT, Physician",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The model identifies Emergency Medical Responder, Emergency Medical Technician, Advanced EMT, and Paramedic as its four EMS clinician levels."
+  },
+
+  {
+    id: "ops-439",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What must be established before an EMT enters a potentially hazardous scene to begin patient care?",
+    choices: [
+      "Hospital destination",
+      "Scene safety",
+      "Patient billing information",
+      "A complete patient history",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Scene safety must be assessed before patient contact. An injured or contaminated responder cannot effectively provide patient care."
+  },
+
+  {
+    id: "ops-440",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What is generally the minimum PPE for routine patient contact when no major splash or spray is anticipated?",
+    choices: [
+      "Gloves",
+      "Gown only",
+      "N95 respirator and eye protection",
+      "Full-body protective suit",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Gloves are generally used for routine patient contact when exposure to potentially infectious material is possible. Additional PPE is selected based on anticipated exposure."
+  },
+
+  {
+    id: "ops-441",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which technique is most appropriate when lifting a patient?",
+    choices: [
+      "Keep the load close and use the legs",
+      "Twist while lifting",
+      "Hold the load far from the body",
+      "Lift with the back",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Keeping the load close, avoiding twisting, and using the legs helps reduce mechanical stress and the risk of injury."
+  },
+
+  {
+    id: "ops-442",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "A responder continues to experience significant trauma-related symptoms weeks after a disturbing call. What condition should prompt consideration of professional evaluation?",
+    choices: [
+      "PTSD",
+      "Normal transient fatigue",
+      "Dehydration",
+      "Motion sickness",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Persistent symptoms following a traumatic event can be associated with PTSD and warrant appropriate professional assessment."
+  },
+
+  {
+    id: "ops-443",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Under START, what initial category is assigned to an ambulatory patient who can walk when directed?",
+    choices: [
+      "Green",
+      "Red",
+      "Yellow",
+      "Black",
+    ],
+    answerIndex: 0,
+    explanation:
+      "START initially directs ambulatory patients to the designated walking-wounded area and assigns them a green category."
+  },
+
+  {
+    id: "ops-444",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Who has overall command responsibility for an incident under ICS?",
+    choices: [
+      "The Incident Commander",
+      "The first EMT to reach a patient",
+      "The receiving physician",
+      "The senior paramedic",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The Incident Commander is responsible for overall incident management under the Incident Command System."
+  },
+
+  {
+    id: "ops-445",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What type of EMS activity continuously examines system performance and patient-care processes to identify improvements?",
+    choices: [
+      "Quality improvement",
+      "Criminal investigation",
+      "Credentialing",
+      "Dispatch prioritization",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Quality improvement is an ongoing process designed to identify opportunities to improve care and system performance."
+  },
+
+  {
+    id: "ops-446",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What role is normally filled by the physician who provides clinical oversight for an EMS agency?",
+    choices: [
+      "Medical director",
+      "Incident Commander",
+      "Field training officer",
+      "Dispatch supervisor",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The EMS medical director provides physician-level medical oversight and is involved in protocols, quality systems, and medical direction."
+  },
+
+  {
+    id: "ops-447",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Where should an EMT look to determine the legally authorized scope and applicable clinical protocols for practice?",
+    choices: [
+      "State requirements and applicable medical-director-approved protocols",
+      "A national textbook alone",
+      "A private study website",
+      "The EMT's personal preference",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Actual EMS scope is governed by state law and regulation, with system-specific practice governed by applicable medical direction and protocols."
+  },
+
+  {
+    id: "ops-448",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which three areas were among the capabilities added to the EMT scope model through the 2021 change notices?",
+    choices: [
+      "IM medication administration, certain emergency vaccination activities, and nasopharyngeal specimen collection",
+      "Endotracheal intubation, cricothyrotomy, and blood transfusion",
+      "12-lead interpretation, pacing, and cardioversion",
+      "Central-line placement, ultrasound, and chest tube insertion",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The 2021 change notices expanded the EMT model to include capabilities such as IM medication administration, certain vaccination activities during public-health emergencies, and nasopharyngeal specimen collection."
+  },
+
+  {
+    id: "ops-449",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What document records the patient's EMS encounter and can serve clinical, legal, continuity-of-care, and billing functions?",
+    choices: [
+      "Patient care report",
+      "Shift checklist",
+      "Vehicle inspection form",
+      "Dispatch log",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The patient care report documents the clinical encounter and can have clinical, operational, legal, and billing significance."
+  },
+
+  {
+    id: "ops-450",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which ambulance type is characterized by an integrated patient compartment built into a van-style chassis?",
+    choices: [
+      "Type II",
+      "Type I",
+      "Type III",
+      "Type IV",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Type II ambulances use a van-style chassis with an integrated patient compartment."
+  },
+
+  {
+    id: "ops-451",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What is a major disadvantage of routine lights-and-siren ambulance response?",
+    choices: [
+      "It increases crash risk while generally providing only modest time savings",
+      "It prevents communication with dispatch",
+      "It is slower than walking",
+      "It is prohibited for trauma calls",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Emergency driving can increase collision risk. Evidence generally shows that the time saved is relatively modest, so emergency response should be used appropriately."
+  },
+
+  {
+    id: "ops-452",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "When is helicopter EMS most likely to provide a meaningful advantage?",
+    choices: [
+      "When it can substantially reduce time to appropriate definitive care for a patient who needs it",
+      "Whenever a family requests it",
+      "For every stable patient",
+      "Only when the destination is within five minutes",
+    ],
+    answerIndex: 0,
+    explanation:
+      "HEMS should be considered when patient condition, distance, transport times, available capabilities, and operational safety make air transport beneficial."
+  },
+
+  {
+    id: "ops-453",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What should EMS personnel do when a downed electrical wire is present at a crash scene?",
+    choices: [
+      "Maintain an appropriate safety perimeter and wait for qualified utility personnel",
+      "Touch the wire with a nonmetallic object",
+      "Approach once sparks disappear",
+      "Enter the vehicle immediately",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The wire should be considered energized until qualified utility personnel establish that the area is safe."
+  },
+
+  {
+    id: "ops-454",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "When trafficking is suspected, what action can help EMS assess the patient's situation safely when feasible?",
+    choices: [
+      "Speak with the patient privately when possible",
+      "Confront the suspected trafficker",
+      "Refuse treatment",
+      "Allow an accompanying person to answer every question",
+    ],
+    answerIndex: 0,
+    explanation:
+      "A private conversation may allow the patient to communicate concerns without coercion. EMS should also follow applicable reporting and safeguarding procedures."
+  },
+
+  {
+    id: "ops-455",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What should EMS do when a crash vehicle is unstable and leaking fuel?",
+    choices: [
+      "Stage safely and request appropriate fire/rescue resources",
+      "Immediately enter the vehicle",
+      "Move the vehicle without specialized assistance",
+      "Ignore the leak",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Fuel leaks and unstable vehicles create hazards that require appropriate scene stabilization before routine patient access."
+  },
+
+  {
+    id: "ops-456",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "In SBAR, what does the abbreviation stand for?",
+    choices: [
+      "Situation, Background, Assessment, Recommendation",
+      "Scene, Breathing, Airway, Response",
+      "Symptoms, Background, Airway, Reassessment",
+      "Subjective, Bystanders, Assessment, Response",
+    ],
+    answerIndex: 0,
+    explanation:
+      "SBAR stands for Situation, Background, Assessment, and Recommendation."
+  },
+
+  {
+    id: "ops-457",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What EMS teamwork approach emphasizes communication, situational awareness, and shared decision-making?",
+    choices: [
+      "Crew resource management",
+      "Quality assurance only",
+      "Incident billing",
+      "Vehicle maintenance management",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Crew resource management applies human-factors principles to EMS teamwork and emphasizes communication, situational awareness, leadership, and error prevention."
+  },
+
+  {
+    id: "ops-458",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What is the primary purpose of a peer-support discussion after a psychologically difficult EMS call?",
+    choices: [
+      "Support responder coping and well-being",
+      "Determine which provider should be disciplined",
+      "Replace the PCR",
+      "Determine the patient's diagnosis",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Peer support focuses on responder well-being and coping. It is different from an operational after-action review or formal clinical case review."
+  },
+
+  {
+    id: "ops-459",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What should an EMT do first after sustaining a needlestick exposure?",
+    choices: [
+      "Clean the exposed area promptly and report the exposure",
+      "Wait until the end of the shift",
+      "Recap the needle",
+      "Apply a tourniquet",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Prompt cleansing and reporting are important steps following an occupational exposure. Further evaluation should follow the agency's exposure-control process."
+  },
+
+  {
+    id: "ops-460",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What infection-control principle forms the foundation of standard precautions?",
+    choices: [
+      "Potentially infectious material should be anticipated even when infection is not known",
+      "Only patients with diagnosed infections require precautions",
+      "Vaccinated providers need no PPE",
+      "Only respiratory symptoms require PPE",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Standard precautions are based on the assumption that potentially infectious material may be present even when the patient's infection status is unknown."
+  },
+
+  {
+    id: "ops-461",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What respiratory protection is appropriate for an EMT caring for a patient with suspected airborne pulmonary TB?",
+    choices: [
+      "A fit-tested N95 or higher-level respirator",
+      "A cloth mask",
+      "No mask",
+      "Eye protection alone",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Airborne precautions for suspected TB call for an appropriate fit-tested N95 or higher-level respirator for the provider."
+  },
+
+  {
+    id: "ops-462",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What is the hazardous-materials zone called where contamination is present or suspected and entry is restricted?",
+    choices: [
+      "Hot zone",
+      "Warm zone",
+      "Cold zone",
+      "Staging zone",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The hot zone is the exclusion area containing or potentially containing the hazardous substance."
+  },
+
+  {
+    id: "ops-463",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "After appropriate decontamination at a Haz-Mat incident, where does EMS normally receive the patient?",
+    choices: [
+      "Cold zone",
+      "Hot zone",
+      "Inside the contaminated ambulance",
+      "Before decontamination in the warm zone",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Decontaminated patients are transferred to the cold zone for medical care, helping prevent contamination of EMS equipment and personnel."
+  },
+
+  {
+    id: "ops-464",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which resource helps first responders identify hazardous materials and determine initial isolation and protective-action guidance?",
+    choices: [
+      "Emergency Response Guidebook",
+      "NREMT test plan",
+      "PCR software",
+      "Ambulance maintenance manual",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The DOT Emergency Response Guidebook provides initial response guidance for hazardous-materials incidents, including identification and isolation information."
+  },
+
+  {
+    id: "ops-465",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What span of control is generally recommended for an ICS supervisor?",
+    choices: [
+      "Approximately 3 to 7 subordinates",
+      "One subordinate only",
+      "At least 15 subordinates",
+      "No limit",
+    ],
+    answerIndex: 0,
+    explanation:
+      "ICS generally recommends a manageable span of control of about three to seven subordinates, with five often used as a target."
+  },
+
+  {
+    id: "ops-466",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "In traditional adult START triage, what category is assigned to an apneic patient who does not begin breathing after airway repositioning?",
+    choices: [
+      "Black",
+      "Red",
+      "Yellow",
+      "Green",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Under traditional START, an adult who remains apneic after an airway-opening maneuver is initially categorized black."
+  },
+
+  {
+    id: "ops-467",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What pediatric triage system is specifically designed as an adaptation of START?",
+    choices: [
+      "JumpSTART",
+      "SALT-Peds",
+      "RPM-Junior",
+      "Pediatric RPM",
+    ],
+    answerIndex: 0,
+    explanation:
+      "JumpSTART modifies START for pediatric patients and accounts for differences in pediatric physiology and respiratory arrest."
+  },
+
+  {
+    id: "ops-468",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What characteristics should an effective EMS radio report have?",
+    choices: [
+      "Brief, organized, clear, and focused on relevant patient information",
+      "Long and filled with unnecessary jargon",
+      "Limited to the patient's name",
+      "Entirely composed of ten-codes",
+    ],
+    answerIndex: 0,
+    explanation:
+      "A structured, concise radio report allows receiving personnel to understand the patient's condition and prepare for arrival."
+  },
+
+  {
+    id: "ops-469",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What writing style is most appropriate for an EMS PCR narrative?",
+    choices: [
+      "Objective and chronological",
+      "Opinionated and speculative",
+      "Extremely abbreviated",
+      "Written entirely from memory several days later",
+    ],
+    answerIndex: 0,
+    explanation:
+      "PCR narratives should document events objectively and in a logical sequence, distinguishing patient statements from provider observations."
+  },
+
+  {
+    id: "ops-470",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "How should a finalized PCR generally be corrected when an error is discovered?",
+    choices: [
+      "Use the agency's authorized amendment or addendum process",
+      "Secretly overwrite the original entry",
+      "Delete the report",
+      "Leave the error uncorrected",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Corrections to finalized documentation should preserve the integrity of the original record and follow the agency's established amendment procedure."
+  },
+
+  {
+    id: "ops-471",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What concept emphasizes respect, collaboration, and appropriate involvement of patients and families in care?",
+    choices: [
+      "Family-centered care",
+      "Command-and-control medicine",
+      "Isolation-based care",
+      "Administrative triage",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Family-centered care recognizes the role of patients and families while maintaining patient autonomy, clinical judgment, and appropriate boundaries."
+  },
+
+  {
+    id: "ops-472",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What communication approach involves recognizing personal assumptions and respectfully adapting communication to the patient's cultural context?",
+    choices: [
+      "Cultural humility",
+      "Cultural avoidance",
+      "Provider-centered communication",
+      "Clinical isolation",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Cultural humility involves self-awareness, listening, avoiding assumptions, and communicating respectfully across cultural differences."
+  },
+
+  {
+    id: "ops-473",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "Which EMS model uses community-based clinicians for activities such as follow-up, assessment, care coordination, and navigation to appropriate services?",
+    choices: [
+      "Mobile Integrated Health / Community Paramedicine",
+      "Traditional emergency dispatch",
+      "Emergency department triage",
+      "Hazardous-materials response",
+    ],
+    answerIndex: 0,
+    explanation:
+      "MIH/CP programs use EMS resources in expanded community roles that can include follow-up care, assessments, referrals, and coordination with other health services."
+  },
+
+  {
+    id: "ops-474",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "Which information is particularly important for EMS to establish and communicate when stroke is suspected?",
+    choices: [
+      "Last-known-well time",
+      "The patient's preferred ambulance color",
+      "The crew's meal break",
+      "The patient's insurance company alone",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The last-known-well time is critical in evaluating suspected stroke because treatment decisions are often strongly influenced by the timing of symptom onset."
+  },
+
+  {
+    id: "ops-475",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "What does the traditional trauma concept of the 'platinum ten' emphasize?",
+    choices: [
+      "Minimizing unnecessary on-scene time for critically injured patients",
+      "Performing ten minutes of documentation",
+      "Waiting ten minutes before transport",
+      "Repeating vital signs every ten minutes",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The platinum-ten concept emphasizes rapid scene management and minimizing unnecessary delays before transport when definitive trauma care is needed."
+  },
+
+  {
+    id: "ops-476",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What should occur before EMS personnel approach a landed helicopter?",
+    choices: [
+      "The flight crew should signal that the approach is safe",
+      "The EMT should approach from the rear",
+      "The EMT should run toward the aircraft",
+      "The EMT should walk beneath the rotor disk",
+    ],
+    answerIndex: 0,
+    explanation:
+      "EMS personnel should wait for instructions from the flight crew and follow aircraft-specific approach procedures. Rotor and tail-rotor hazards require strict compliance."
+  },
+
+  {
+    id: "ops-477",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question:
+      "What sequence best represents the major phases of an ambulance response?",
+    choices: [
+      "Preparation, dispatch, response, scene, transport, hospital, post-run",
+      "Dispatch, billing, sleep, transport",
+      "Scene, preparation, dispatch, billing",
+      "Transport, dispatch, scene, preparation",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The ambulance call cycle progresses through preparation, dispatch, response, patient contact and scene operations, transport, hospital handoff, and post-run activities."
+  },
+
+  {
+    id: "ops-478",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What principle requires an ambulance operator to continue operating safely even when emergency-vehicle privileges apply?",
+    choices: [
+      "Due regard",
+      "Automatic right-of-way",
+      "Unrestricted emergency privilege",
+      "Priority driving",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Due regard means the emergency vehicle operator remains responsible for operating with reasonable care and accounting for foreseeable hazards."
+  },
+
+  {
+    id: "ops-479",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "What is the primary infection-control reason for cleaning the ambulance patient compartment between calls?",
+    choices: [
+      "Reduce cross-contamination and pathogen transmission",
+      "Prevent upholstery damage",
+      "Improve fuel efficiency",
+      "Reduce paperwork",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Cleaning and appropriate disinfection reduce the risk that organisms from one patient or exposure will be transmitted to subsequent patients or crew members."
+  },
+
+  {
+    id: "ops-480",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which combination best describes an EMS fatigue-mitigation strategy?",
+    choices: [
+      "Appropriate scheduling, fatigue recognition, rest opportunities, and structured handoffs",
+      "Long shifts combined with stimulant use",
+      "Ignoring fatigue unless an error occurs",
+      "Using one identical schedule for every EMS system",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Fatigue management uses multiple strategies, including appropriate scheduling, recognition of fatigue, opportunities for rest, and structured handoffs that reduce communication errors."
+  },
+
+// Medical, Legal & Ethical Issues
+// Rewritten original questions + reverse-concept questions
+
+{
+  id: "medlegal-001",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An adult patient is unconscious and has a condition that requires immediate emergency treatment. No family member or legal representative is available. Which type of consent allows the EMT to provide necessary emergency care?",
+  choices: [
+    "Expressed consent",
+    "Implied consent",
+    "Informed consent",
+    "Written consent",
+  ],
+  answerIndex: 1,
+  explanation:
+    "Implied consent allows emergency treatment when a patient is unable to make or communicate a decision and a reasonable person would be expected to consent to necessary life-saving care. Expressed and written consent require the patient or an authorized representative to communicate permission.",
+},
+
+{
+  id: "medlegal-002",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "operations",
+  question:
+    "An EMT is transferring a patient's medical information to the hospital that will continue treating the patient. Under HIPAA, which circumstance generally permits this disclosure without obtaining separate authorization from the patient?",
+  choices: [
+    "The EMT wants to discuss an interesting call with friends",
+    "The disclosure is being made for treatment, payment, or health care operations",
+    "The patient's name is removed from the discussion",
+    "A family member says they want to know what happened",
+  ],
+  answerIndex: 1,
+  explanation:
+    "HIPAA permits certain disclosures of protected health information for treatment, payment, and health care operations. A clinical handoff to the receiving facility is part of treatment. Simply removing a patient's name does not automatically make every disclosure permissible.",
+},
+
+{
+  id: "medlegal-003",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "A competent adult with chest discomfort refuses ambulance transport after the EMT explains the potential consequences. Which action is most appropriate before the crew leaves?",
+  choices: [
+    "Ask the patient's spouse to authorize the refusal",
+    "Accept the refusal without further documentation",
+    "Verify that the patient understands the risks and document the refusal according to protocol",
+    "Transport the patient despite the refusal because chest pain can be serious",
+  ],
+  answerIndex: 2,
+  explanation:
+    "A competent adult generally has the right to refuse care. The EMT should assess decision-making capacity, explain the relevant risks and benefits, encourage appropriate care, and document the refusal according to local protocol. A family member cannot override the decision of a competent adult.",
+},
+
+{
+  id: "medlegal-004",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "You are caring for a patient who has a valid, applicable out-of-hospital DNR or POLST indicating that resuscitation should not be performed. The patient subsequently becomes pulseless. What should the EMT do?",
+  choices: [
+    "Start CPR until a family member arrives",
+    "Begin chest compressions but withhold ventilations",
+    "Follow the valid order, provide appropriate comfort-focused care, and follow medical-control or local protocol requirements",
+    "Ignore the document because an EMT must always begin CPR on a pulseless patient",
+  ],
+  answerIndex: 2,
+  explanation:
+    "A valid out-of-hospital DNR or POLST should generally be honored when it meets applicable requirements. The EMT should follow local procedures for verification, provide appropriate comfort care, and involve medical direction when required. Exact requirements vary by jurisdiction and protocol.",
+},
+
+{
+  id: "medlegal-005",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "operations",
+  question:
+    "An EMT leaves a patient's care before another appropriately qualified provider has accepted responsibility for the patient. Which legal concept best describes this situation?",
+  choices: [
+    "Informed consent",
+    "Abandonment",
+    "Implied consent",
+    "Negligence per se",
+  ],
+  answerIndex: 1,
+  explanation:
+    "Abandonment can occur when an EMS provider terminates an established patient-provider relationship without ensuring an appropriate transfer of care. The EMT should complete a proper handoff to an appropriately qualified provider before ending care.",
+},
+
+// -----------------------------------------------------------------------------
+// REVERSE QUESTIONS
+// These questions approach the same knowledge from the answer/concept side.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medlegal-006",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "Which consent doctrine is based on the assumption that an incapacitated patient would agree to necessary emergency treatment if they were capable of making the decision?",
+  choices: [
+    "Expressed consent",
+    "Implied consent",
+    "Informed consent",
+    "Administrative consent",
+  ],
+  answerIndex: 1,
+  explanation:
+    "Implied consent is the doctrine used in appropriate emergencies when the patient cannot provide consent and immediate treatment is necessary. The assumption is that a reasonable person would consent to care needed to prevent death or serious harm.",
+},
+
+{
+  id: "medlegal-007",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "operations",
+  question:
+    "Treatment, payment, and health care operations are commonly grouped under which HIPAA concept when discussing permitted uses or disclosures of protected health information?",
+  choices: [
+    "TPO",
+    "DNR",
+    "AMA",
+    "POLST",
+  ],
+  answerIndex: 0,
+  explanation:
+    "TPO stands for treatment, payment, and health care operations. HIPAA permits certain disclosures for these purposes without requiring a separate patient authorization in every circumstance. EMS-to-hospital clinical communication commonly falls under treatment.",
+},
+
+{
+  id: "medlegal-008",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An adult patient has decision-making capacity but declines recommended ambulance transport after the EMT explains the potential consequences. What type of EMS process is being described?",
+  choices: [
+    "Involuntary treatment",
+    "Abandonment",
+    "Refusal of care",
+    "Implied consent",
+  ],
+  answerIndex: 2,
+  explanation:
+    "This is a refusal of care. A competent adult generally may decline EMS assessment, treatment, or transportation. The EMT should ensure the patient understands the relevant risks, follow applicable protocol, and thoroughly document the encounter.",
+},
+
+{
+  id: "medlegal-009",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "What document or medical order may direct EMS personnel to withhold resuscitative efforts from an eligible patient when it is valid and applicable under local law and protocol?",
+  choices: [
+    "A standard patient care report",
+    "A valid DNR or POLST",
+    "An EMS refusal form signed by a bystander",
+    "A hospital discharge summary",
+  ],
+  answerIndex: 1,
+  explanation:
+    "A valid DNR or POLST may communicate a patient's wishes regarding resuscitation and other medical interventions. EMS personnel must follow the verification and treatment procedures established by their jurisdiction and medical direction.",
+},
+
+{
+  id: "medlegal-010",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "operations",
+  question:
+    "What legal term describes ending an established patient-care relationship without making sure that another appropriately qualified provider has assumed responsibility for the patient?",
+  choices: [
+    "Abandonment",
+    "Battery",
+    "Implied consent",
+    "Assault",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Abandonment involves an inappropriate termination of patient care without an adequate transfer of responsibility. Once an EMS provider has established a patient-provider relationship, care should continue until the patient is appropriately transferred, released according to protocol, or otherwise handled through an authorized process.",
+},
+
+// Anatomy, Physiology & Medical Terminology
+// Rewritten source concepts + reverse-form questions
+
+{
+  id: "medical-212",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "Which description correctly represents the reference position used when describing anatomical locations?",
+  choices: [
+    "Standing upright and facing forward, with the arms alongside the body and palms facing forward",
+    "Standing upright with the palms facing backward and the feet together",
+    "Lying flat on the back with the arms resting beside the body",
+    "Standing upright while facing away from the examiner with the arms raised"
+  ],
+  answerIndex: 0,
+  explanation:
+    "The standard anatomical position has the person standing upright and facing forward, with the arms at the sides and palms facing forward. This position provides the reference for directional anatomical terms. The other positions do not represent the standard anatomical reference position."
+},
+
+{
+  id: "medical-213",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "An injury is located on the patient's chest between the sternum and the spine, closer to the front surface of the body. Which directional term should the EMT use?",
+  choices: [
+    "Posterior",
+    "Medial",
+    "Anterior",
+    "Lateral"
+  ],
+  answerIndex: 2,
+  explanation:
+    "Anterior refers to the front or toward the front of the body. Posterior refers to the back, medial means toward the body's midline, and lateral means farther from the midline."
+},
+
+{
+  id: "medical-214",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "When comparing the locations of the wrist and elbow, which statement is anatomically correct?",
+  choices: [
+    "The wrist is proximal to the elbow",
+    "The wrist is distal to the elbow",
+    "The wrist is medial to the elbow",
+    "The wrist is superior to the elbow"
+  ],
+  answerIndex: 1,
+  explanation:
+    "Distal describes a location farther from the trunk or point of attachment. Because the wrist is farther from the shoulder and trunk than the elbow, the wrist is distal to the elbow. Proximal means closer to the trunk or point of attachment."
+},
+
+{
+  id: "medical-215",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "During an assessment, an EMT documents that an unconscious patient's body is resting on the back with the face directed upward. How should this position be recorded?",
+  choices: [
+    "Prone",
+    "Fowler's",
+    "Supine",
+    "Lateral recumbent"
+  ],
+  answerIndex: 2,
+  explanation:
+    "Supine describes a person lying on the back with the face upward. Prone describes lying face-down. Fowler's refers to a seated or semi-seated position, while lateral recumbent describes lying on the side."
+},
+
+{
+  id: "medical-216",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An unconscious patient is breathing normally and has no indication of a spinal injury. Which position is commonly used to help maintain the airway while reducing the likelihood of aspiration?",
+  choices: [
+    "Left lateral recumbent",
+    "Supine",
+    "Prone",
+    "High Fowler's"
+  ],
+  answerIndex: 0,
+  explanation:
+    "A lateral recovery position, commonly performed on the left side, can help maintain airway patency and allow secretions to drain while reducing aspiration risk in an appropriate patient. Supine positioning can allow secretions or vomit to obstruct the airway, while prone and upright positions are not the standard recovery position."
+},
+
+// ---------------------------------------------------------------------------
+// REVERSE QUESTIONS
+// These approach the same concepts from the answer rather than reproducing
+// the original question structure.
+// ---------------------------------------------------------------------------
+
+{
+  id: "medical-217",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "An EMT uses a standardized body orientation in which the patient is upright, facing forward, arms resting at the sides, and palms turned forward. What is this position called?",
+  choices: [
+    "Anatomical position",
+    "Supine position",
+    "Fowler's position",
+    "Prone position"
+  ],
+  answerIndex: 0,
+  explanation:
+    "This is the standard anatomical position. It serves as the reference orientation for describing locations and relationships between structures of the body. Supine and prone describe lying positions, while Fowler's describes an upright or semi-upright position."
+},
+
+{
+  id: "medical-218",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "Which anatomical directional term means 'toward the front of the body'?",
+  choices: [
+    "Lateral",
+    "Posterior",
+    "Anterior",
+    "Medial"
+  ],
+  answerIndex: 2,
+  explanation:
+    "Anterior means toward the front of the body. Posterior means toward the back, medial means toward the body's midline, and lateral means away from the midline."
+},
+
+{
+  id: "medical-219",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "What anatomical term describes a structure that is farther from the trunk or point where a limb attaches?",
+  choices: [
+    "Superior",
+    "Proximal",
+    "Distal",
+    "Medial"
+  ],
+  answerIndex: 2,
+  explanation:
+    "Distal means farther from the trunk or point of attachment. Proximal has the opposite relationship and describes a structure closer to the trunk or point of attachment."
+},
+
+{
+  id: "medical-220",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "Which patient position places the person on their back with the face directed upward?",
+  choices: [
+    "Prone",
+    "Supine",
+    "Left lateral recumbent",
+    "Fowler's"
+  ],
+  answerIndex: 1,
+  explanation:
+    "Supine means lying on the back with the face upward. Prone means lying face-down. Lateral recumbent means lying on one side, while Fowler's describes an upright or semi-upright position."
+},
+
+{
+  id: "medical-221",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An appropriate unconscious, normally breathing patient without suspected spinal trauma is placed on their side to help protect the airway. What is this commonly called?",
+  choices: [
+    "Trendelenburg position",
+    "Recovery position",
+    "Supine position",
+    "Fowler's position"
+  ],
+  answerIndex: 1,
+  explanation:
+    "The recovery position places an appropriate unconscious but normally breathing patient laterally to help maintain airway patency and reduce aspiration risk. It should not replace appropriate spinal precautions when spinal injury is suspected."
+},
+// Life Span Development
+// Rewritten + reverse-question set
+// Level: EMT
+// Domain: Medical + OBGYN
+
+{
+  id: "medical-222",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "During an EMS assessment, which age range is generally classified as the infant stage?",
+  choices: [
+    "Birth through approximately 12 months",
+    "Birth through approximately 30 days",
+    "1 through 3 years",
+    "3 through 6 years",
+  ],
+  answerIndex: 0,
+  explanation:
+    "For EMS developmental assessment, an infant is generally considered to be from birth through 1 year of age. The neonatal period is limited to roughly the first month of life, while the toddler period begins around 1 year. The other choices describe neonatal, toddler, or preschool age ranges."
+},
+
+{
+  id: "medical-223",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "You are assessing a healthy 6-month-old who is resting comfortably. Which pulse rate would be most consistent with a normal resting heart rate for this patient?",
+  choices: [
+    "72 beats/min",
+    "118 beats/min",
+    "168 beats/min",
+    "42 beats/min",
+  ],
+  answerIndex: 1,
+  explanation:
+    "A resting infant commonly has a heart rate of about 100 to 160 beats/min. A rate of 118 beats/min falls within that expected range. The other values are more consistent with rates outside the typical resting infant range."
+},
+
+{
+  id: "medical-224",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "While evaluating a calm 4-month-old, you count the child's respirations for a full minute. Which finding is within the expected resting range?",
+  choices: [
+    "14 breaths/min",
+    "22 breaths/min",
+    "36 breaths/min",
+    "68 breaths/min",
+  ],
+  answerIndex: 2,
+  explanation:
+    "A resting infant normally breathes approximately 25 to 50 times per minute. A respiratory rate of 36 breaths/min is therefore within the expected range. The other rates are either below or substantially above the usual infant range."
+},
+
+{
+  id: "medical-225",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "A parent asks when the larger soft spot on the front of an infant's skull normally disappears. Which response is most appropriate?",
+  choices: [
+    "Usually during the first 2 to 3 months",
+    "Usually around 6 months",
+    "Usually by roughly 12 to 18 months",
+    "Usually sometime between 4 and 6 years",
+  ],
+  answerIndex: 2,
+  explanation:
+    "The anterior fontanelle generally closes during the second year of life, commonly around 12 to 18 months. The posterior fontanelle closes much earlier. Abnormal bulging or depression of a fontanelle can be clinically significant and should be considered along with the rest of the patient's assessment."
+},
+
+{
+  id: "medical-226",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "Which behavior would be most typical of a child in the toddler stage?",
+  choices: [
+    "Playing beside other children without consistently interacting with them",
+    "Using sophisticated abstract reasoning",
+    "Managing painful procedures with the same coping skills as an adult",
+    "Consistently understanding complex cause-and-effect relationships",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Toddlers commonly engage in parallel play, in which they play alongside other children without extensive cooperative interaction. Stranger anxiety and limited communication skills are also common. Toddlers generally benefit from simple explanations and the presence of a trusted caregiver during assessment."
+},
+
+// -----------------------------------------------------------------------------
+// REVERSE QUESTIONS
+// These approach the same concepts from the opposite direction.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-227",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "An EMS provider is reviewing pediatric age classifications. A patient who is 10 months old should be categorized as which developmental group?",
+  choices: [
+    "Neonate",
+    "Infant",
+    "Toddler",
+    "Preschooler",
+  ],
+  answerIndex: 1,
+  explanation:
+    "A 10-month-old is an infant because the infant period extends from birth through approximately 1 year. Neonates are limited to the first several weeks, while the toddler period begins at about 1 year."
+},
+
+{
+  id: "medical-228",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "Which resting heart rate would be considered an expected finding in a healthy 8-month-old infant?",
+  choices: [
+    "48 beats/min",
+    "82 beats/min",
+    "132 beats/min",
+    "196 beats/min",
+  ],
+  answerIndex: 2,
+  explanation:
+    "Resting infants commonly have heart rates around 100 to 160 beats/min. A pulse of 132 beats/min is therefore within the expected range. The other values are outside the typical resting range for an infant."
+},
+
+{
+  id: "medical-229",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "During assessment of a resting infant, which respiratory rate would most strongly suggest a normal finding?",
+  choices: [
+    "10 breaths/min",
+    "18 breaths/min",
+    "40 breaths/min",
+    "75 breaths/min",
+  ],
+  answerIndex: 2,
+  explanation:
+    "A resting infant generally has a respiratory rate of approximately 25 to 50 breaths/min. A rate of 40 breaths/min falls within this expected range."
+},
+
+{
+  id: "medical-230",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "During a routine assessment, an EMT explains that the anterior fontanelle generally closes during which period?",
+  choices: [
+    "Within the first month",
+    "Around 3 to 6 months",
+    "Approximately 12 to 18 months",
+    "After the child's fifth birthday",
+  ],
+  answerIndex: 2,
+  explanation:
+    "The anterior fontanelle normally closes at approximately 12 to 18 months of age. The posterior fontanelle closes substantially earlier, generally within the first few months."
+},
+
+{
+  id: "medical-231",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "An EMT is assessing a 2-year-old who becomes upset around unfamiliar providers and plays next to, rather than cooperatively with, another child. Which developmental stage best explains these behaviors?",
+  choices: [
+    "Neonate",
+    "Infant",
+    "Toddler",
+    "School-age child",
+  ],
+  answerIndex: 2,
+  explanation:
+    "The patient is a toddler. Stranger anxiety and parallel play are characteristic behaviors during this developmental stage. Toddlers also tend to have limited communication abilities and benefit from simple, concrete explanations."
+},
+
+// -----------------------------------------------------------------------------
+// PHARMACOLOGY / MEDICATION QUESTIONS
+// Rewritten from the supplied concepts, with independently written
+// reverse-direction questions. EMT level.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-232",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "Which medication administration route became part of the national EMT scope through the 2021 scope-of-practice change notices?",
+  choices: [
+    "Intramuscular injection",
+    "Intravenous injection",
+    "Intraosseous infusion",
+    "Subcutaneous injection",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Intramuscular (IM) administration was added to the EMT level through Change Notice 1.0 to the 2019 National EMS Scope of Practice Model. The change expanded EMT authority for certain IM medications and public-health activities. IV and IO administration remain outside the general national EMT scope, while subcutaneous administration is not the route added by that change."
+},
+
+{
+  id: "medical-233",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An EMT is preparing to administer a medication. Which action is NOT normally considered one of the traditional six medication-administration rights?",
+  choices: [
+    "Confirming the correct patient",
+    "Confirming the correct medication",
+    "Confirming the correct route",
+    "Confirming the manufacturer's brand name",
+  ],
+  answerIndex: 3,
+  explanation:
+    "The traditional six rights are commonly taught as the right patient, medication, dose, route, time, and documentation. Confirming a manufacturer's brand name is not one of those traditional six rights. Medication-safety practices can include additional checks beyond these six."
+},
+
+{
+  id: "medical-234",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "A medication used to reverse opioid-induced respiratory depression is commonly marketed under which brand name?",
+  choices: [
+    "Narcan",
+    "EpiPen",
+    "Ventolin",
+    "Glucagon",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Narcan is a commonly recognized brand name for naloxone, an opioid antagonist used to reverse opioid-induced respiratory depression. EpiPen is associated with epinephrine, Ventolin is a brand of albuterol, and glucagon is the generic name of a different medication."
+},
+
+{
+  id: "medical-235",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An alert adult has chest discomfort that is concerning for acute coronary syndrome. Which medication would an EMT commonly administer when indicated and when no contraindication is present?",
+  choices: [
+    "Chewable aspirin",
+    "Warfarin",
+    "Furosemide",
+    "Heparin",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Chewable aspirin is a standard EMT medication for suspected ischemic cardiac chest pain when indicated and when contraindications are absent. Warfarin, furosemide, and heparin are not routine EMT medications for this presentation. The exact aspirin dose and administration requirements should follow the applicable EMS protocol."
+},
+
+{
+  id: "medical-236",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "Before assisting a patient with prescribed sublingual nitroglycerin for suspected cardiac chest pain, which assessment is especially important because nitroglycerin can lower blood pressure?",
+  choices: [
+    "Blood pressure",
+    "Blood glucose only",
+    "Pupil size",
+    "Skin temperature only",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Blood pressure should be assessed before assisting with nitroglycerin because the medication can produce vasodilation and hypotension. The EMT should also assess for other contraindications, including relevant medication use such as phosphodiesterase-5 inhibitors, and follow the applicable local or state protocol. There is not one universal NREMT-mandated systolic blood pressure cutoff for every EMS system."
+},
+
+// -----------------------------------------------------------------------------
+// REVERSE QUESTIONS
+// These test the same underlying knowledge from the opposite direction.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-237",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An EMT needs to administer a medication by injecting it directly into muscle tissue. Which route is being used?",
+  choices: [
+    "Intramuscular",
+    "Intravenous",
+    "Intraosseous",
+    "Intranasal",
+  ],
+  answerIndex: 0,
+  explanation:
+    "An injection delivered into muscle tissue is administered by the intramuscular, or IM, route. The IV route delivers medication into a vein, the IO route delivers it into the vascular space through bone, and the intranasal route delivers medication through the nasal mucosa."
+},
+
+{
+  id: "medical-238",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An EMT verifies the patient, medication, dose, route, time, and documentation before and after giving a medication. What medication-safety framework do these checks represent?",
+  choices: [
+    "The traditional six rights",
+    "The SAMPLE history",
+    "The OPQRST assessment",
+    "The pediatric assessment triangle",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Patient, medication, dose, route, time, and documentation correspond to the traditional six rights of medication administration. EMS systems and educational programs may teach additional medication-safety checks as well."
+},
+
+{
+  id: "medical-239",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "Which medication is the generic drug name associated with the brand name Narcan?",
+  choices: [
+    "Naloxone",
+    "Epinephrine",
+    "Albuterol",
+    "Glucagon",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Naloxone is the generic medication associated with the brand name Narcan. Naloxone is an opioid antagonist used to reverse opioid-induced respiratory depression."
+},
+
+{
+  id: "medical-240",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "Which medication is an antiplatelet drug commonly used by EMTs for suspected ischemic chest pain when indicated?",
+  choices: [
+    "Aspirin",
+    "Warfarin",
+    "Furosemide",
+    "Heparin",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Aspirin is an antiplatelet medication commonly administered by EMTs for suspected ischemic cardiac chest pain when indicated and not contraindicated. The other medications are not routine EMT treatments for this presentation."
+},
+
+{
+  id: "medical-241",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An EMT is considering whether a patient can safely receive prescribed nitroglycerin. Which finding should be checked because nitroglycerin may cause hypotension?",
+  choices: [
+    "The patient's blood pressure",
+    "The patient's hair color",
+    "The patient's dominant hand",
+    "The patient's visual acuity",
+  ],
+  answerIndex: 0,
+  explanation:
+    "Blood pressure is an important assessment before nitroglycerin because the medication can lower blood pressure. The EMT should also assess for other contraindications and follow the applicable EMS protocol rather than relying on a single universal blood-pressure cutoff."
+},
+// ----------------------------------------------------------------------------
+// Airway, Respiration & Ventilation
+// Original question concepts rewritten as original questions, with
+// reverse/concept-identification variants.
+// All questions are tagged EMT because these concepts are explicitly within
+// the EMT airway curriculum.
+// ----------------------------------------------------------------------------
+
+  {
+    id: "airway-090",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "During swallowing, which structure helps keep material from entering the trachea?",
+    choices: [
+      "Hyoid bone",
+      "Epiglottis",
+      "Cricoid cartilage",
+      "Thyroid cartilage",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The epiglottis helps protect the laryngeal inlet during swallowing, directing food and liquid toward the esophagus rather than the airway. The hyoid and laryngeal cartilages provide structural support but do not perform this same protective function.",
+  },
+
+  {
+    id: "airway-091",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "Which structure forms a complete ring around the airway and is located immediately inferior to the thyroid cartilage?",
+    choices: [
+      "Cricoid cartilage",
+      "Epiglottis",
+      "Hyoid bone",
+      "Arytenoid cartilage",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The cricoid cartilage forms a complete ring around the airway and lies inferior to the thyroid cartilage. This distinguishes it from the C-shaped cartilaginous rings of the trachea.",
+  },
+
+  {
+    id: "airway-092",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "An unresponsive trauma patient may have a cervical spine injury. Which technique should an EMT initially use to open the patient's airway?",
+    choices: [
+      "Head-tilt/chin-lift",
+      "Jaw thrust without head extension",
+      "Neck hyperextension",
+      "Flexion of the cervical spine",
+    ],
+    answerIndex: 1,
+    explanation:
+      "When cervical spine injury is suspected, a trained rescuer should initially attempt a jaw thrust without head extension to minimize movement of the cervical spine. However, maintaining a patent airway takes priority. If the airway cannot be opened with a jaw thrust and appropriate adjuncts, head-tilt/chin-lift may be necessary.",
+  },
+
+  {
+    id: "airway-093",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "When selecting the appropriate length of an oropharyngeal airway, the EMT should generally measure from the:",
+    choices: [
+      "Tip of the nose to the earlobe",
+      "Corner of the mouth to the angle of the jaw",
+      "Chin to the sternal notch",
+      "Bridge of the nose to the chin",
+    ],
+    answerIndex: 1,
+    explanation:
+      "An OPA is commonly sized by measuring from the corner of the mouth to the angle of the jaw. This provides an estimate of the appropriate airway length. Measuring from the nose to the earlobe is associated with sizing an NPA.",
+  },
+
+  {
+    id: "airway-094",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "Which finding would make placement of an oropharyngeal airway inappropriate in an otherwise unresponsive patient?",
+    choices: [
+      "Snoring respirations",
+      "An intact gag reflex",
+      "Absent spontaneous respirations",
+      "Poor tongue tone",
+    ],
+    answerIndex: 1,
+    explanation:
+      "An OPA should not be inserted in a patient with an intact gag reflex because stimulation of the oropharynx can cause gagging and vomiting. An OPA is intended for an unresponsive patient who lacks an effective gag reflex.",
+  },
+
+  // --------------------------------------------------------------------------
+  // REVERSE QUESTIONS
+  //
+  // These approach the same knowledge from the answer/concept rather than
+  // reproducing the original question structure.
+  // --------------------------------------------------------------------------
+
+  {
+    id: "airway-095",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "Which airway structure acts as a protective flap over the laryngeal opening during swallowing?",
+    choices: [
+      "Cricoid cartilage",
+      "Epiglottis",
+      "Hyoid bone",
+      "Vocal cords",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The epiglottis is a leaf-shaped structure that helps protect the airway during swallowing by covering the laryngeal inlet. The other structures contribute to airway anatomy but do not serve this primary protective role.",
+  },
+
+  {
+    id: "airway-096",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "An EMT is reviewing the laryngeal cartilages and wants to identify the structure that forms a complete circular ring. Which structure should the EMT select?",
+    choices: [
+      "Thyroid cartilage",
+      "Cricoid cartilage",
+      "Epiglottis",
+      "Hyoid bone",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The cricoid cartilage is the only complete ring of cartilage in the larynx. The thyroid cartilage does not form a complete ring, and the hyoid is a bone rather than cartilage.",
+  },
+
+  {
+    id: "airway-097",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "Which airway-opening technique is specifically intended to minimize cervical movement when a trained rescuer suspects head or neck trauma?",
+    choices: [
+      "Jaw thrust without head extension",
+      "Head-tilt/chin-lift with neck extension",
+      "Forced cervical flexion",
+      "Rapid neck rotation",
+    ],
+    answerIndex: 0,
+    explanation:
+      "A jaw thrust without head extension is the preferred initial airway-opening technique when head or neck trauma raises concern for cervical spine injury. If this does not establish a patent airway, airway management takes priority and head-tilt/chin-lift may be required.",
+  },
+
+  {
+    id: "airway-098",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "An EMT measures from the corner of a patient's mouth toward the angle of the jaw before selecting an airway adjunct. Which device is being sized?",
+    choices: [
+      "Nasopharyngeal airway",
+      "Oropharyngeal airway",
+      "Supraglottic airway",
+      "Bag-mask device",
+    ],
+    answerIndex: 1,
+    explanation:
+      "The corner of the mouth to the angle of the jaw is a common measurement used when selecting the appropriate size OPA. NPA sizing is generally based on external nasal measurements.",
+  },
+
+  {
+    id: "airway-099",
+    domain: "Airway",
+    level: "EMT",
+    question:
+      "An unresponsive patient has no effective gag reflex and is experiencing upper-airway obstruction from loss of tongue tone. Which adjunct may be appropriate if there is no contraindication?",
+    choices: [
+      "Oropharyngeal airway",
+      "Nothing because the patient is unresponsive",
+      "A tongue depressor placed over the tongue",
+      "Routine cricoid pressure",
+    ],
+    answerIndex: 0,
+    explanation:
+      "An OPA can help maintain airway patency in an unresponsive patient who lacks an effective gag reflex. It should not be used when an intact gag reflex is present. Routine cricoid pressure is not recommended during adult cardiac arrest.",
+  },
+// -----------------------------------------------------------------------------
+// PATIENT ASSESSMENT SET
+// Originalized from the supplied concepts.
+// Current NREMT alignment: 2025 EMT examination structure.
+// blueprintCategory uses the current NREMT domain names.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-242",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "sceneSafety",
+  question:
+    "Before approaching a patient at an emergency scene, an EMT should first:",
+  choices: [
+    "Obtain the patient's blood pressure",
+    "Determine whether the scene is safe and identify hazards",
+    "Ask the patient about their medical history",
+    "Begin documenting the patient care report"
+  ],
+  answerIndex: 1,
+  explanation:
+    "Scene safety comes before patient contact. The EMT should identify hazards, use appropriate PPE, determine the nature of the call and mechanism of injury when applicable, and determine whether additional resources are needed. Patient assessment and treatment begin after the scene has been evaluated for safety."
+},
+
+{
+  id: "medical-243",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "During the initial assessment of a sick or injured patient, which sequence best represents the EMT's priorities?",
+  choices: [
+    "Medical history → vital signs → secondary assessment → airway",
+    "General impression → mental status → airway → breathing → circulation",
+    "Blood pressure → pulse → SAMPLE history → airway",
+    "Secondary examination → treatment → general impression → vital signs"
+  ],
+  answerIndex: 1,
+  explanation:
+    "The primary assessment rapidly identifies immediate threats to life. The EMT forms a general impression, evaluates mental status, assesses the airway, evaluates breathing, and assesses circulation while identifying and treating life threats as appropriate. A complete history and detailed secondary assessment follow when the patient's condition permits."
+},
+
+{
+  id: "medical-244",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An EMT asks a patient to respond to a spoken question. The patient does not respond, but opens their eyes and follows a command when the EMT applies an appropriate painful stimulus. Which AVPU category best describes the patient's level of consciousness?",
+  choices: [
+    "Alert",
+    "Verbal",
+    "Pain",
+    "Unresponsive"
+  ],
+  answerIndex: 2,
+  explanation:
+    "In the AVPU system, a patient classified as 'P' responds only to painful stimulus. The patient is not alert and does not respond to verbal stimulation, but does respond to pain. AVPU provides a rapid assessment of level of consciousness."
+},
+
+{
+  id: "medical-245",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An EMT determines that a patient knows who they are, where they are, the approximate date or time, and what happened to them. Which finding does this most closely describe?",
+  choices: [
+    "Orientation to person, place, time, and event",
+    "A patient who is responsive only to verbal stimuli",
+    "A patient with a Glasgow Coma Scale of 8",
+    "An assessment of the patient's motor strength"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Orientation questions commonly evaluate person, place, time, and event or situation. This is one way of assessing mental status during patient assessment. It should not be confused with AVPU or the more detailed Glasgow Coma Scale."
+},
+
+{
+  id: "medical-246",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "Which statement about the adult Glasgow Coma Scale is accurate?",
+  choices: [
+    "It ranges from 0 to 10 and evaluates only verbal response",
+    "It ranges from 3 to 15 and evaluates eye, verbal, and motor responses",
+    "It ranges from 1 to 20 and evaluates pupil size and reaction",
+    "It ranges from 5 to 25 and replaces the primary assessment"
+  ],
+  answerIndex: 1,
+  explanation:
+    "The adult Glasgow Coma Scale ranges from 3 to 15. It combines scores for eye opening, verbal response, and motor response. GCS is a more detailed assessment of neurologic function than AVPU, but it does not replace the primary assessment or the EMT's evaluation of airway, breathing, and circulation."
+},
+
+// -----------------------------------------------------------------------------
+// REVERSE QUESTIONS
+// These approach the same concepts from the answer side.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-247",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "sceneSafety",
+  question:
+    "An EMT evaluates hazards, determines the nature of the call, considers the mechanism of injury, estimates the number of patients, and decides whether additional resources are necessary before making patient contact. What part of EMS assessment is being performed?",
+  choices: [
+    "Secondary assessment",
+    "Scene size-up",
+    "SAMPLE history",
+    "Reassessment"
+  ],
+  answerIndex: 1,
+  explanation:
+    "These actions are components of scene size-up. Scene size-up occurs before or as the crew approaches the patient and is intended to identify hazards, determine the nature of the emergency, estimate resource needs, and establish an initial understanding of the situation."
+},
+
+{
+  id: "medical-248",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An EMT rapidly evaluates a patient's general appearance, level of consciousness, airway, breathing, and circulation while looking for immediately life-threatening problems. What assessment is this?",
+  choices: [
+    "Primary assessment",
+    "Secondary assessment",
+    "Past medical history",
+    "Focused physical examination"
+  ],
+  answerIndex: 0,
+  explanation:
+    "This describes the primary assessment. Its purpose is to rapidly identify life threats and determine the patient's immediate treatment and transport priorities."
+},
+
+{
+  id: "medical-249",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "A rapid mental-status scale categorizes a patient according to whether they are awake and appropriately responsive, respond to verbal stimulation, respond only to painful stimulation, or fail to respond. What assessment tool is being described?",
+  choices: [
+    "SAMPLE",
+    "AVPU",
+    "OPQRST",
+    "Glasgow Coma Scale"
+  ],
+  answerIndex: 1,
+  explanation:
+    "AVPU is a rapid method of describing level of consciousness: Alert, responds to Verbal stimulus, responds to Painful stimulus, or Unresponsive. The Glasgow Coma Scale provides a more detailed numerical assessment."
+},
+
+{
+  id: "medical-250",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An assessment determines whether a patient knows their identity, location, the approximate time, and the circumstances surrounding the emergency. Which aspect of patient assessment is being evaluated?",
+  choices: [
+    "Orientation and mental status",
+    "Airway patency",
+    "Peripheral circulation",
+    "Mechanism of injury"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Questions about identity, location, time, and the circumstances of the event are used to evaluate orientation and mental status. Altered orientation can be an important finding during the primary or secondary assessment depending on the situation."
+},
+
+{
+  id: "medical-251",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "An EMS provider wants a numerical neurologic assessment that separately scores eye opening, verbal response, and motor response, with a combined adult score ranging from 3 to 15. Which tool should be used?",
+  choices: [
+    "AVPU",
+    "SAMPLE",
+    "Glasgow Coma Scale",
+    "OPQRST"
+  ],
+  answerIndex: 2,
+  explanation:
+    "The Glasgow Coma Scale evaluates eye opening, verbal response, and motor response and produces an adult total from 3 to 15. AVPU is a faster categorical assessment of responsiveness rather than a numerical scale."
+},
+
+{    id: "medical-252",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which statement best describes shock in a prehospital patient?",
+    choices: [
+      "It is any temporary loss of consciousness.",
+      "It occurs when tissue perfusion is insufficient to meet the body's metabolic needs.",
+      "It is present whenever a patient's blood pressure falls below 120 mmHg systolic.",
+      "It is primarily a psychological reaction to a stressful event."
+    ],
+    answerIndex: 1,
+    explanation:
+      "Shock is a state of inadequate tissue perfusion in which oxygen and nutrient delivery cannot adequately meet cellular metabolic demands. A patient can be in shock before hypotension develops, so the EMT should consider the entire clinical presentation rather than using blood pressure alone."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 1 -> REVERSE
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-253",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "An EMT is assessing a patient whose circulation is no longer adequately supplying tissues with oxygen and nutrients. What condition does this describe?",
+    choices: [
+      "Shock",
+      "Isolated hypertension",
+      "Syncope",
+      "Hyperventilation syndrome"
+    ],
+    answerIndex: 0,
+    explanation:
+      "The condition described is shock, which involves inadequate tissue perfusion relative to metabolic demand. Hypotension may occur as shock progresses, but it is not required for shock to be present."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 2 -> REWRITTEN
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-254",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which group correctly matches the major mechanisms of shock with representative examples?",
+    choices: [
+      "Cardiogenic: pump failure; hypovolemic: inadequate circulating volume; distributive: abnormal vasodilation; obstructive: physical obstruction to circulation",
+      "Cardiogenic: blood loss; hypovolemic: allergic reaction; distributive: myocardial infarction; obstructive: dehydration",
+      "Hypovolemic: vasodilation; distributive: blood loss; cardiogenic: tension pneumothorax; obstructive: sepsis",
+      "All forms of shock result from the same mechanism and differ only in severity"
+    ],
+    answerIndex: 0,
+    explanation:
+      "Major shock mechanisms include cardiogenic, hypovolemic, distributive, and obstructive shock. Examples include pump failure for cardiogenic shock, loss of circulating volume for hypovolemic shock, abnormal vasodilation in distributive shock, and conditions such as tension pneumothorax or cardiac tamponade in obstructive shock."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 2 -> REVERSE
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-255",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A patient develops severe vasodilation during an anaphylactic reaction. Which broad mechanism of shock does this represent?",
+    choices: [
+      "Cardiogenic",
+      "Obstructive",
+      "Distributive",
+      "Hypovolemic"
+    ],
+    answerIndex: 2,
+    explanation:
+      "Anaphylaxis can produce distributive shock because widespread vasodilation and increased vascular permeability impair effective circulation. Distributive shock also includes mechanisms such as septic and neurogenic shock."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 3 -> REWRITTEN
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-256",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which finding would be most consistent with compensated shock in an adult?",
+    choices: [
+      "Normal blood pressure accompanied by tachycardia, cool pale skin, and anxiety",
+      "Cardiac arrest with no palpable pulse",
+      "Severe hypotension with complete loss of consciousness in every case",
+      "Warm, dry skin with a slow pulse as the expected presentation"
+    ],
+    answerIndex: 0,
+    explanation:
+      "During compensated shock, the body can temporarily maintain blood pressure through compensatory mechanisms such as increased sympathetic activity and vasoconstriction. Tachycardia, cool or pale skin, anxiety or restlessness, and other signs of poor perfusion may appear before obvious hypotension."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 3 -> REVERSE
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-257",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "An adult has a near-normal blood pressure but is tachycardic, pale, cool, and increasingly restless. Which physiologic state should the EMT be concerned about?",
+    choices: [
+      "Compensated shock",
+      "Normal physiologic response with no concern for perfusion",
+      "Cardiac arrest",
+      "Isolated hypertension"
+    ],
+    answerIndex: 0,
+    explanation:
+      "This combination can indicate compensated shock. The cardiovascular system may maintain blood pressure temporarily despite inadequate tissue perfusion. The EMT should recognize these early findings rather than waiting for hypotension."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 4 -> REWRITTEN, CORRECTED
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-258",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which finding would most strongly suggest that compensatory mechanisms are failing in a patient with shock?",
+    choices: [
+      "Persistent signs of poor perfusion accompanied by hypotension",
+      "A normal blood pressure with no other abnormal findings",
+      "A temporary increase in heart rate with otherwise normal perfusion",
+      "A mildly elevated blood pressure with warm skin"
+    ],
+    answerIndex: 0,
+    explanation:
+      "Hypotension in a patient with other signs of poor perfusion is concerning for progression to decompensated shock. The important point is that shock should not be ruled out simply because the blood pressure has not yet fallen below a particular numerical threshold."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 4 -> REVERSE, CORRECTED
+  // --------------------------------------------------------------------------
+  {
+    id: "medical-259",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "An adult with suspected shock now has worsening signs of poor perfusion and a falling blood pressure. What does this most likely indicate?",
+    choices: [
+      "Compensatory mechanisms are becoming insufficient to maintain adequate circulation.",
+      "The patient has automatically recovered from shock.",
+      "The patient has isolated hypertension.",
+      "The findings rule out circulatory compromise."
+    ],
+    answerIndex: 0,
+    explanation:
+      "A falling blood pressure together with worsening signs of poor perfusion suggests that compensatory mechanisms are failing. Hypotension is an important late finding, but there is no single blood pressure value that should be used by itself to diagnose or exclude shock."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 5 -> REWRITTEN, UPDATED
+  // --------------------------------------------------------------------------
+  {
+    id: "trauma-095",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "An EMT encounters life-threatening bleeding from an extremity. Which intervention is appropriate?",
+    choices: [
+      "Apply a manufactured tourniquet when appropriate and tighten it until the life-threatening bleeding stops.",
+      "Apply ice and elevate the extremity as the primary treatment.",
+      "Apply a loose bandage and avoid further pressure.",
+      "Wait for hypotension before attempting hemorrhage control."
+    ],
+    answerIndex: 0,
+    explanation:
+      "Life-threatening extremity hemorrhage requires immediate hemorrhage control. A manufactured tourniquet is appropriate when indicated and should be tightened until the bleeding stops. Direct pressure remains an important hemorrhage-control technique, particularly when a tourniquet cannot be used or is unavailable."
+  },
+
+  // --------------------------------------------------------------------------
+  // ORIGINAL 5 -> REVERSE, UPDATED
+  // --------------------------------------------------------------------------
+  {
+    id: "trauma-096",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "Which intervention is specifically appropriate for uncontrolled, life-threatening bleeding from an extremity when a tourniquet can be applied?",
+    choices: [
+      "Apply a properly positioned tourniquet and tighten it until the bleeding stops.",
+      "Elevate the extremity and apply an ice pack.",
+      "Apply pressure only to a distant pressure point.",
+      "Delay treatment until signs of shock appear."
+    ],
+    answerIndex: 0,
+    explanation:
+      "For life-threatening extremity bleeding, a properly applied tourniquet is an appropriate hemorrhage-control intervention. Current first-aid guidance supports prompt tourniquet use for life-threatening extremity bleeding, while direct pressure remains the mainstay of hemorrhage control when a tourniquet is not applicable or available."
+  },
+
+
+
+{
+  id: "medical-260",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "A 62-year-old patient reports new pressure in the center of the chest that began while walking. The discomfort extends toward the left arm, and the patient is pale, sweaty, and nauseated. Which condition should be considered a major concern?",
+  choices: [
+    "Acute coronary syndrome",
+    "Spontaneous pneumothorax",
+    "Isolated musculoskeletal chest pain",
+    "Uncomplicated gastroesophageal reflux"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Acute coronary syndrome should be strongly considered because new central chest pressure accompanied by diaphoresis, nausea, and radiation to the arm is concerning for myocardial ischemia. Pneumothorax more commonly produces sudden pleuritic pain and respiratory findings, while musculoskeletal and reflux symptoms have different typical patterns. ACS can also occur without the classic presentation, so the absence of every listed symptom would not exclude it."
+},
+
+{
+  id: "medical-261",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "Which patient with possible acute coronary syndrome deserves particular attention even if significant chest discomfort is absent?",
+  choices: [
+    "A healthy 20-year-old with a brief episode of anxiety",
+    "An older adult reporting unexplained shortness of breath and unusual fatigue",
+    "A teenager with isolated ankle pain",
+    "A young athlete with predictable muscle soreness after exercise"
+  ],
+  answerIndex: 1,
+  explanation:
+    "Older adults may have less typical ACS presentations, including dyspnea, weakness, fatigue, nausea, or other nonspecific symptoms. The absence of prominent chest pain does not rule out ACS. The other presentations are less suggestive of an acute coronary syndrome based on the information given."
+},
+
+{
+  id: "medical-262",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An alert adult has symptoms concerning for acute coronary syndrome. After completing the assessment, the EMT should follow local protocol regarding aspirin and assistance with prescribed nitroglycerin. Which additional approach is most appropriate?",
+  choices: [
+    "Provide oxygen automatically regardless of the patient's oxygenation",
+    "Keep the patient comfortable, reassess frequently, and arrange appropriate transport",
+    "Delay transport until the chest discomfort completely resolves",
+    "Have the patient walk to the ambulance to assess exercise tolerance"
+  ],
+  answerIndex: 1,
+  explanation:
+    "An EMT should continue assessment and reassessment, keep the patient in a position of comfort, provide indicated treatment within scope and protocol, and arrange appropriate transport. Transport should not be delayed simply because symptoms temporarily improve. Routine oxygen is not indicated solely because ACS is suspected when the patient is adequately oxygenated."
+},
+
+{
+  id: "medical-263",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "A patient with suspected ACS has an SpO₂ of 96% and no signs of respiratory distress. Which statement about supplemental oxygen is most consistent with current ACS guidance?",
+  choices: [
+    "Oxygen should routinely be applied to prevent myocardial ischemia",
+    "Oxygen is unnecessary solely because ACS is suspected when the patient is not hypoxic",
+    "A nonrebreather mask should always be used for chest pain",
+    "Oxygen should be withheld from every patient with ACS, regardless of oxygenation"
+  ],
+  answerIndex: 1,
+  explanation:
+    "Current ACS guidance does not recommend routine supplemental oxygen for patients who are not hypoxic. Oxygen is indicated when hypoxemia is present or when clinically necessary. The specific oxygen delivery method should be based on the patient's condition and applicable EMS protocol."
+},
+
+{
+  id: "medical-264",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "A patient with a history of heart failure is sitting upright and struggling to breathe. You hear widespread crackles, and the patient has jugular venous distention and peripheral edema. Which condition best explains this presentation?",
+  choices: [
+    "Acute decompensated heart failure with pulmonary congestion",
+    "Isolated upper-airway obstruction",
+    "Simple dehydration",
+    "Uncomplicated allergic rhinitis"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Crackles, dyspnea, jugular venous distention, and peripheral edema are consistent with acute decompensated heart failure and pulmonary congestion. The patient should be assessed and treated according to the severity of respiratory compromise and local protocol. Positioning, oxygen when indicated, and positive-pressure ventilation such as CPAP when authorized may be appropriate."
+},
+
+// -----------------------------------------------------------------------------
+// REVERSE / CONCEPT-INVERSION QUESTIONS
+// These test the same underlying knowledge from a different direction.
+// -----------------------------------------------------------------------------
+
+{
+  id: "medical-265",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "An EMT is evaluating a patient for possible ACS. Which combination of findings would make myocardial ischemia particularly concerning?",
+  choices: [
+    "Central chest pressure with diaphoresis and radiation toward an arm",
+    "Localized rib tenderness after lifting a heavy object",
+    "Sharp pain that occurs only with deep inspiration and coughing",
+    "Itchy skin with isolated nasal congestion"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Central chest pressure accompanied by autonomic symptoms such as diaphoresis and possible radiation to an arm is concerning for ACS. The other findings point toward alternative causes of chest or respiratory symptoms."
+},
+
+{
+  id: "medical-266",
+  domain: "Medical + OBGYN",
+  level: "EMT",
+  blueprintCategory: "secondaryAssessment",
+  question:
+    "Which patient could have ACS despite not describing the classic complaint of crushing chest pain?",
+  choices: [
+    "An older patient with unexplained dyspnea, nausea, and unusual fatigue",
+    "A healthy adolescent with a superficial abrasion",
+    "A patient with chronic knee pain after exercise",
+    "A patient with isolated itching after changing laundry detergent"
+  ],
+  answerIndex: 0,
+  explanation:
+    "ACS can present with nonspecific symptoms, particularly in some older adults and other populations at increased cardiovascular risk. Dyspnea, nausea, weakness, fatigue, or other atypical symptoms should not automatically be dismissed as noncardiac."
+},
+
+{
+  id: "medical-267",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "An EMT suspects ACS in an alert adult. Which approach best reflects appropriate BLS management?",
+  choices: [
+    "Perform ongoing assessment, follow local protocol for indicated medications, keep the patient comfortable, and arrange appropriate transport",
+    "Wait for the patient's symptoms to disappear before beginning transport",
+    "Administer an advanced cardiac medication outside the EMT's authorized scope",
+    "Require the patient to walk to the ambulance before treatment begins"
+  ],
+  answerIndex: 0,
+  explanation:
+    "BLS management focuses on assessment, appropriate supportive care, authorized interventions according to protocol, reassessment, and timely transport. EMTs should not independently perform interventions outside their scope or local medical direction."
+},
+
+{
+  id: "medical-268",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "treatmentTransport",
+  question:
+    "Which ACS patient most clearly has an indication for supplemental oxygen based on oxygen saturation alone?",
+  choices: [
+    "A patient with an SpO₂ of 98% and no respiratory distress",
+    "A patient with an SpO₂ of 95% and no respiratory distress",
+    "A patient with an SpO₂ of 88%",
+    "A patient with an SpO₂ of 97% who reports anxiety"
+  ],
+  answerIndex: 2,
+  explanation:
+    "The 2025 ACS guideline recommends supplemental oxygen for patients with ACS and confirmed hypoxia, defined as an oxygen saturation below 90%. Routine oxygen is not recommended for ACS patients with oxygen saturation at or above 90% in the absence of another indication."
+},
+
+{
+  id: "medical-269",
+  domain: "Cardiology",
+  level: "EMT",
+  blueprintCategory: "primaryAssessment",
+  question:
+    "Which combination is most suggestive of acute decompensated heart failure with pulmonary congestion?",
+  choices: [
+    "Dyspnea, crackles, jugular venous distention, and peripheral edema",
+    "Fever, isolated sore throat, and enlarged tonsils",
+    "Abdominal tenderness with localized right lower-quadrant pain",
+    "Unilateral ear pain with normal respiratory findings"
+  ],
+  answerIndex: 0,
+  explanation:
+    "Dyspnea accompanied by pulmonary crackles and signs of systemic venous congestion such as jugular venous distention and peripheral edema is consistent with acute decompensated heart failure. Treatment depends on the patient's respiratory status and local EMS protocols and may include oxygen when indicated and CPAP when appropriate and authorized."
+},
+// ----------------------------------------------------------------------------
+// TRAUMA QUESTIONS
+// Rewritten from source concepts with new wording/scenarios.
+// Each original concept has:
+//   1. A conventional rewritten question
+//   2. A "reverse" question that starts from the answer/concept
+//
+// Note: The current NREMT EMT examination uses:
+// Scene Size-Up and Safety
+// Primary Assessment
+// Secondary Assessment
+// Patient Treatment and Transport
+// Operations
+//
+// "Trauma" is retained here as the content domain for this app's
+// organizational system. For an NREMT-aligned blueprint, use
+// blueprintCategory to map the question to the current NREMT domain.
+// ----------------------------------------------------------------------------
+
+  {
+    id: "trauma-097",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which situation would generally be considered the LEAST concerning mechanism of injury for an otherwise healthy adult?",
+    choices: [
+      "An adult falls from a second-story balcony and lands on the ground",
+      "A restrained driver is involved in a high-speed collision with major passenger-compartment intrusion",
+      "A pedestrian is struck by a moving vehicle and thrown several feet",
+      "An adult trips on a level surface and lands on their hands and knees"
+    ],
+    answerIndex: 3,
+    explanation:
+      "A simple ground-level trip and fall in a healthy adult is generally a lower-risk mechanism when there are no other concerning findings. Falls from significant height, high-energy vehicle collisions with major intrusion, and pedestrian-versus-vehicle impacts can indicate substantial energy transfer and should prompt careful assessment. Mechanism of injury is only one part of determining the patient's risk; the patient's age, presentation, and physical findings must also be considered."
+  },
+
+  {
+    id: "trauma-098",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question:
+      "Which finding would most strongly suggest that an apparently minor fall could involve a significant traumatic injury?",
+    choices: [
+      "The patient is a healthy adult who stumbled while walking",
+      "The patient fell from a substantial height and landed directly on the head and neck",
+      "The patient sat down after tripping but did not strike anything",
+      "The patient slipped while walking slowly and immediately stood up"
+    ],
+    answerIndex: 1,
+    explanation:
+      "A fall from substantial height with direct impact to the head and neck represents a potentially significant mechanism and warrants careful assessment for traumatic injury. The apparent simplicity of the event does not eliminate concern when substantial energy or a vulnerable body region is involved."
+  },
+
+
+  // ==========================================================================
+  // ORIGINAL CONCEPT 2: OPEN CHEST WOUND
+  // ==========================================================================
+
+  {
+    id: "trauma-099",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "An alert patient has a penetrating wound to the chest that produces an audible sucking sound with each breath. What is the most appropriate initial treatment?",
+    choices: [
+      "Pack the wound deeply with gauze",
+      "Apply a vented chest seal and monitor closely for worsening respiratory distress",
+      "Cover the wound with dry gauze and leave it completely uncovered",
+      "Apply a bulky pressure dressing tightly around the entire chest"
+    ],
+    answerIndex: 1,
+    explanation:
+      "An open chest wound can allow air to enter the pleural space. A vented chest seal is an appropriate initial treatment when available. The patient must be continuously reassessed for signs of worsening respiratory distress or tension physiology. Local protocols should guide the specific dressing and management technique."
+  },
+
+  {
+    id: "trauma-100",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question:
+      "A patient with a penetrating chest injury has an occlusive dressing over the wound. Shortly afterward, the patient develops increasing respiratory distress and signs of obstructive shock. What complication should the EMT be most concerned about?",
+    choices: [
+      "Simple rib fracture",
+      "Tension pneumothorax",
+      "Isolated pulmonary contusion",
+      "Cardiac dysrhythmia caused by hypothermia"
+    ],
+    answerIndex: 1,
+    explanation:
+      "Increasing respiratory distress and obstructive-shock findings after treatment of an open chest wound should raise concern for tension pneumothorax. An occlusive dressing can interfere with air leaving the pleural space if a one-way valve effect develops. The EMT should follow local protocol for managing the dressing while providing appropriate supportive care and rapid transport."
+  },
+
+
+  // ==========================================================================
+  // ORIGINAL CONCEPT 3: FLAIL CHEST
+  // ==========================================================================
+
+  {
+    id: "trauma-101",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "After a high-energy chest injury, an EMT notices that a section of the patient's chest wall moves inward during inspiration and outward during expiration. What does this finding most strongly suggest?",
+    choices: [
+      "Flail chest",
+      "Simple pneumothorax",
+      "Cardiac tamponade",
+      "Isolated clavicle fracture"
+    ],
+    answerIndex: 0,
+    explanation:
+      "Paradoxical movement of a free segment of the chest wall is characteristic of flail chest. The injury is commonly associated with significant blunt chest trauma and may occur along with pulmonary contusion. The patient's respiratory status is more clinically important than simply identifying the chest-wall injury."
+  },
+
+  {
+    id: "trauma-102",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "What term describes a traumatic chest-wall injury in which multiple adjacent ribs are fractured sufficiently to create a segment that is no longer mechanically stable with the rest of the chest wall?",
+    choices: [
+      "Hemothorax",
+      "Flail chest",
+      "Tension pneumothorax",
+      "Pericardial tamponade"
+    ],
+    answerIndex: 1,
+    explanation:
+      "A flail chest occurs when multiple adjacent ribs are fractured in a pattern that creates a mechanically unstable segment of the chest wall. Paradoxical movement may occur, although it is not necessary for the EMT to wait for obvious paradoxical motion before recognizing serious chest trauma. Associated pulmonary injury can significantly impair ventilation and oxygenation."
+  },
+
+
+  // ==========================================================================
+  // ORIGINAL CONCEPT 4: CARDIAC TAMPONADE / BECK'S TRIAD
+  // ==========================================================================
+
+  {
+    id: "trauma-103",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A patient with penetrating chest trauma is hypotensive and has distended neck veins and unusually muffled heart sounds. Which condition best explains this combination of findings?",
+    choices: [
+      "Cardiac tamponade",
+      "Simple pneumothorax",
+      "Isolated femur fracture",
+      "Pulmonary edema from congestive heart failure"
+    ],
+    answerIndex: 0,
+    explanation:
+      "Hypotension, muffled heart sounds, and jugular venous distention are classically associated with Beck's triad and suggest cardiac tamponade in the appropriate clinical setting. However, the complete triad is not always present. The EMT should recognize the possibility of obstructive shock, provide appropriate supportive care within scope, and arrange rapid transport."
+  },
+
+  {
+    id: "trauma-104",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question:
+      "Which combination of findings is classically associated with cardiac tamponade?",
+    choices: [
+      "Hypertension, bradycardia, and warm skin",
+      "Hypotension, muffled heart sounds, and jugular venous distention",
+      "Fever, productive cough, and bilateral crackles",
+      "Hypertension, unilateral absent breath sounds, and cyanosis"
+    ],
+    answerIndex: 1,
+    explanation:
+      "The classic Beck's triad consists of hypotension, muffled heart sounds, and jugular venous distention. Cardiac tamponade can impair cardiac filling and produce obstructive shock. The triad is not perfectly sensitive, so its absence does not rule out tamponade."
+  },
+
+
+  // ==========================================================================
+  // ORIGINAL CONCEPT 5: TENSION PNEUMOTHORAX
+  // ==========================================================================
+
+  {
+    id: "trauma-105",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which assessment finding would be LEAST consistent with a tension pneumothorax?",
+    choices: [
+      "Severe respiratory distress with worsening oxygenation",
+      "Markedly decreased breath sounds on one side",
+      "Hypotension with other findings suggesting obstructive shock",
+      "Clear, equal breath sounds with stable vital signs"
+    ],
+    answerIndex: 3,
+    explanation:
+      "A tension pneumothorax generally produces significant respiratory and cardiovascular compromise. Unilateral markedly decreased or absent breath sounds may be present, and hypotension can occur as intrathoracic pressure interferes with venous return. Clear, equal breath sounds with stable vital signs would be much less consistent with a tension pneumothorax."
+  },
+
+  {
+    id: "trauma-106",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "An injured patient develops severe respiratory distress, rapidly worsening hypotension, and markedly decreased breath sounds on one side of the chest. Which life threat should the EMT suspect?",
+    choices: [
+      "Tension pneumothorax",
+      "Isolated rib fracture",
+      "Cardiac tamponade without respiratory compromise",
+      "Simple ankle fracture"
+    ],
+    answerIndex: 0,
+    explanation:
+      "Severe respiratory distress combined with unilateral markedly decreased breath sounds and signs of shock is highly concerning for tension pneumothorax. Tracheal deviation can occur but is a late and unreliable finding, so its absence should not reassure the EMT. Immediate management should follow the EMT's scope and local medical direction, with rapid transport when indicated."
+  },
+
+// ----------------------------------------------------------------------------
+// SPECIAL PATIENT POPULATIONS
+// Transformed and fact-checked against current NREMT/AHA guidance.
+// These questions are independently worded and structured rather than
+// reproducing the source question wording.
+//
+// Reverse questions intentionally test the same knowledge from the opposite
+// direction. They are not simply the original question with the answer
+// inserted into the stem.
+// ----------------------------------------------------------------------------
+
+  {
+    id: "medical-270",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "You observe a toddler from several feet away before beginning a hands-on examination. Which three areas should you rapidly evaluate as part of the Pediatric Assessment Triangle?",
+    choices: [
+      "General appearance, work of breathing, and circulation to the skin",
+      "Airway patency, blood pressure, and capillary refill",
+      "Mental status, pulse rate, and respiratory rate",
+      "Level of consciousness, oxygen saturation, and skin temperature",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The Pediatric Assessment Triangle is a rapid visual assessment consisting of appearance, work of breathing, and circulation to the skin. It can be performed immediately on seeing the child and helps determine whether the child appears critically ill before a hands-on assessment begins. The other choices contain useful clinical findings but are not the three components of the PAT.",
+  },
+
+  {
+    id: "medical-271",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A 2-year-old is unusually limp, barely interacts with the crew, and has a weak cry. What is the most appropriate interpretation of these findings during an initial visual assessment?",
+    choices: [
+      "The child is probably tired and can be reassessed after obtaining a full set of vital signs",
+      "The findings are concerning for significant illness and warrant prompt assessment and appropriate supportive care",
+      "The findings primarily indicate that the child is hungry",
+      "The findings are expected in a child who is anxious around EMS personnel",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Poor tone and reduced interaction are abnormal findings in the appearance component of the Pediatric Assessment Triangle. An abnormal appearance can indicate significant illness and should prompt immediate attention to airway, breathing, circulation, and other life threats rather than delaying care until a complete set of vital signs is obtained.",
+  },
+
+  {
+    id: "medical-272",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "You arrive for an infant who is becoming unresponsive after a prolonged respiratory illness. Which statement best describes the usual mechanism of pediatric cardiac arrest?",
+    choices: [
+      "It is most commonly caused by an isolated coronary artery event",
+      "It commonly develops secondary to respiratory failure or circulatory shock",
+      "It is usually caused by a primary ventricular dysrhythmia",
+      "It is almost always caused by traumatic injury",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Pediatric cardiac arrest commonly develops from respiratory failure and/or shock rather than the primary cardiac causes that are more typical of adult sudden cardiac arrest. Recognizing and treating respiratory compromise and shock early is therefore especially important in pediatric patients.",
+  },
+
+  // ==========================================================================
+  // PEDIATRIC CPR
+  // ==========================================================================
+
+  {
+    id: "cardiology-263",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "An EMT and a second trained rescuer are performing CPR on a child with no advanced airway in place. Which compression-to-ventilation ratio should they use?",
+    choices: [
+      "30 compressions to 2 ventilations",
+      "15 compressions to 2 ventilations",
+      "15 compressions to 1 ventilation",
+      "3 compressions to 1 ventilation",
+    ],
+    answerIndex: 1,
+    explanation:
+      "For an infant or child in cardiac arrest without an advanced airway, two rescuers should use a 15:2 compression-to-ventilation ratio. A single rescuer uses 30:2. The 3:1 ratio is used for neonatal resuscitation, not routine pediatric CPR.",
+  },
+
+  {
+    id: "cardiology-264",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A single EMT is performing conventional CPR on an infant in cardiac arrest before another rescuer arrives. Which CPR pattern is appropriate when no advanced airway is present?",
+    choices: [
+      "15 compressions followed by 2 ventilations",
+      "30 compressions followed by 2 ventilations",
+      "3 compressions followed by 1 ventilation",
+      "Continuous compressions with no ventilations",
+    ],
+    answerIndex: 1,
+    explanation:
+      "A single rescuer should use a 30:2 compression-to-ventilation ratio for an infant or child when no advanced airway is present. Once a second trained rescuer is available, the ratio changes to 15:2. Pediatric cardiac arrest generally benefits from ventilation as well as chest compressions.",
+  },
+
+  // ==========================================================================
+  // NEONATAL RESUSCITATION
+  // ==========================================================================
+
+  {
+    id: "medical-273",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Immediately after birth, a newborn is apneic and has a heart rate of 80/min despite initial drying, warming, stimulation, and appropriate airway positioning. What intervention should be initiated?",
+    choices: [
+      "Begin positive-pressure ventilation",
+      "Begin chest compressions immediately",
+      "Administer aspirin",
+      "Place the newborn in cold water to stimulate respirations",
+    ],
+    answerIndex: 0,
+    explanation:
+      "A newborn who remains apneic or has a heart rate below 100/min after initial steps requires positive-pressure ventilation. Chest compressions are indicated if the heart rate remains below 60/min despite effective ventilation. Neonatal resuscitation differs from routine infant and child CPR, including its use of a 3:1 compression-to-ventilation ratio when compressions are required.",
+  },
+
+  // ==========================================================================
+  // REVERSE QUESTIONS
+  // These approach the same concepts from the answer side.
+  // ==========================================================================
+
+  {
+    id: "medical-274",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A rapid pediatric visual assessment specifically examines appearance, work of breathing, and circulation to the skin. What assessment tool is being described?",
+    choices: [
+      "Pediatric Assessment Triangle",
+      "SAMPLE history",
+      "AVPU assessment",
+      "OPQRST assessment",
+    ],
+    answerIndex: 0,
+    explanation:
+      "The Pediatric Assessment Triangle is the rapid visual assessment that evaluates appearance, work of breathing, and circulation to the skin. SAMPLE and OPQRST are history-taking frameworks, while AVPU is a method of describing responsiveness.",
+  },
+
+  {
+    id: "medical-275",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A child with poor tone, limited interaction, and an abnormal cry should be treated as potentially seriously ill rather than assumed to be tired or hungry. Which PAT component is primarily represented by these findings?",
+    choices: [
+      "Appearance",
+      "Work of breathing",
+      "Circulation to the skin",
+      "Blood pressure",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Tone, interactiveness, consolability, gaze, and the quality of a child's cry or speech are part of the appearance component of the Pediatric Assessment Triangle. Abnormal appearance is concerning and should prompt rapid assessment for potentially serious illness.",
+  },
+
+  {
+    id: "cardiology-265",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A pediatric cardiac arrest develops after severe respiratory compromise and shock rather than from a primary cardiac event. What general pattern of pediatric arrest does this represent?",
+    choices: [
+      "A secondary arrest associated with respiratory failure and/or shock",
+      "A typical adult-style primary coronary arrest",
+      "An arrest caused exclusively by trauma",
+      "A benign pediatric syncopal event",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Pediatric cardiac arrest commonly occurs secondary to respiratory failure and/or shock. This differs from the classic adult pattern in which sudden primary cardiac arrest is more common. Early recognition and treatment of respiratory and circulatory deterioration are therefore critical.",
+  },
+
+  {
+    id: "cardiology-266",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "Which CPR ratio is associated with two rescuers performing conventional CPR on an infant or child when there is no advanced airway?",
+    choices: [
+      "30:2",
+      "15:2",
+      "3:1",
+      "10:1",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Two rescuers performing CPR on an infant or child without an advanced airway use a 15:2 compression-to-ventilation ratio. The 30:2 ratio applies when there is only one rescuer. A 3:1 ratio is associated with neonatal resuscitation when chest compressions are required.",
+  },
+
+  {
+    id: "medical-276",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question:
+      "A newborn remains apneic after the initial newborn-care steps, and the heart rate is below 100/min. Which intervention is the appropriate next step in neonatal resuscitation?",
+    choices: [
+      "Positive-pressure ventilation",
+      "Immediate chest compressions",
+      "Routine deep suctioning",
+      "Adult-dose aspirin",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Persistent apnea or a heart rate below 100/min after the initial steps calls for positive-pressure ventilation. Chest compressions are considered when the heart rate remains below 60/min despite effective ventilation. Routine suctioning is not the default intervention for every newborn.",
+  },
+
 ];
+
+
+

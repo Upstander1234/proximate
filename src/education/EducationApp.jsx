@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { subscribeAuth, signIn, signUp, signInWithGoogle, signOutUser } from "./auth.js";
+import { subscribeAuth, signOutUser } from "./auth.js";
 import { loadProgress, saveProgress } from "./store.js";
 import { firebaseConfigured } from "./firebase.js";
 import { isAdminUser } from "./adminConfig.js";
+import { loadProfile } from "./profile.js";
+import AuthScreen from "./AuthScreen.jsx";
 import MCQPracticeTab from "./MCQPracticeTab.jsx";
 import AdaptiveTestTab from "./AdaptiveTestTab.jsx";
 import LecturesTab from "./LecturesTab.jsx";
 import MethodsPage from "./MethodsPage.jsx";
 import SubmitQuestionForm from "./SubmitQuestionForm.jsx";
 import AdminReviewTab from "./AdminReviewTab.jsx";
+import ProfileSettings from "./ProfileSettings.jsx";
 
 const TABS = [
   { key: "mcq", label: "MCQ Practice" },
@@ -23,6 +26,8 @@ export default function EducationApp({ onExit }) {
   const [tab, setTab] = useState("mcq");
   const [showAuth, setShowAuth] = useState(false);
   const [showMethods, setShowMethods] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileVersion, setProfileVersion] = useState(0);
 
   useEffect(() => {
     let unsub = () => {};
@@ -73,12 +78,31 @@ export default function EducationApp({ onExit }) {
     );
   }
 
+  if (showProfile) {
+    return (
+      <ScreenShell onExit={onExit}>
+        <ProfileSettings
+          user={user}
+          onBack={() => {
+            setShowProfile(false);
+            setProfileVersion((v) => v + 1); // let UserBar re-fetch in case it changed
+          }}
+        />
+      </ScreenShell>
+    );
+  }
+
   const admin = isAdminUser(user);
   const tabs = admin ? [...TABS, { key: "admin", label: "Admin Review" }] : TABS;
 
   return (
     <ScreenShell onExit={onExit}>
-      <UserBar user={user} onAuth={() => setShowAuth(true)} />
+      <UserBar
+        user={user}
+        onAuth={() => setShowAuth(true)}
+        onProfile={() => setShowProfile(true)}
+        profileVersion={profileVersion}
+      />
       <nav className="flex flex-wrap gap-1.5 mb-6 border-b border-slate-800 pb-3">
         {tabs.map((t) => (
           <button
@@ -98,9 +122,9 @@ export default function EducationApp({ onExit }) {
         ))}
       </nav>
 
-      {tab === "mcq" && <MCQPracticeTab progress={progress} onUpdateCard={updateCard} />}
+      {tab === "mcq" && <MCQPracticeTab progress={progress} onUpdateCard={updateCard} user={user} />}
       {tab === "adaptive" && (
-        <AdaptiveTestTab progress={progress} onUpdateCard={updateCard} onOpenMethods={() => setShowMethods(true)} />
+        <AdaptiveTestTab progress={progress} onUpdateCard={updateCard} onOpenMethods={() => setShowMethods(true)} user={user} />
       )}
       {tab === "lectures" && <LecturesTab onOpenPractice={() => setTab("mcq")} />}
       {tab === "submit" && <SubmitQuestionForm user={user} />}
@@ -109,12 +133,32 @@ export default function EducationApp({ onExit }) {
   );
 }
 
-function UserBar({ user, onAuth }) {
+function UserBar({ user, onAuth, onProfile, profileVersion }) {
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    loadProfile(user).then((p) => {
+      if (active) setProfile(p);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user, profileVersion]);
+
   return (
     <div className="rounded-xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between mb-4">
       <div>
         <div className="text-sm text-slate-400">Signed in as</div>
-        <div className="font-medium">{user.name}</div>
+        <div className="font-medium flex items-center gap-2">
+          {user.name}
+          {profile?.isStudent && (
+            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-sky-900/60 text-sky-300 border border-sky-700">
+              Student
+            </span>
+          )}
+        </div>
+        {profile?.providerLevel && <div className="text-xs text-slate-500 mt-0.5">{profile.providerLevel}</div>}
         {user.isGuest && (
           <div className="text-xs text-amber-400 mt-1">
             Guest mode — progress is saved on this device only.
@@ -122,16 +166,24 @@ function UserBar({ user, onAuth }) {
           </div>
         )}
       </div>
-      {firebaseConfigured &&
-        (user.isGuest ? (
-          <button onClick={onAuth} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
-            Sign in / Create account
-          </button>
-        ) : (
-          <button onClick={() => signOutUser()} className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
-            Sign out
-          </button>
-        ))}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onProfile}
+          className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm"
+        >
+          Profile
+        </button>
+        {firebaseConfigured &&
+          (user.isGuest ? (
+            <button onClick={onAuth} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
+              Sign in / Create account
+            </button>
+          ) : (
+            <button onClick={() => signOutUser()} className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
+              Sign out
+            </button>
+          ))}
+      </div>
     </div>
   );
 }
@@ -152,88 +204,3 @@ function ScreenShell({ children, onExit }) {
   );
 }
 
-function AuthScreen({ onDone }) {
-  const [mode, setMode] = useState("signin"); // signin | signup
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setBusy(true);
-    try {
-      if (mode === "signup") await signUp(email, password, name);
-      else await signIn(email, password);
-      onDone();
-    } catch (err) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const google = async () => {
-    setError("");
-    setBusy(true);
-    try {
-      await signInWithGoogle();
-      onDone();
-    } catch (err) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="max-w-sm mx-auto space-y-4">
-      <h2 className="text-2xl font-bold">{mode === "signup" ? "Create account" : "Sign in"}</h2>
-      <form onSubmit={submit} className="space-y-3">
-        {mode === "signup" && (
-          <input
-            placeholder="Display name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2"
-          />
-        )}
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2"
-        />
-        <input
-          type="password"
-          required
-          minLength={6}
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2"
-        />
-        {error && <div className="text-sm text-red-400">{error}</div>}
-        <button
-          disabled={busy}
-          className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 font-medium disabled:opacity-50"
-        >
-          {mode === "signup" ? "Create account" : "Sign in"}
-        </button>
-      </form>
-      <button disabled={busy} onClick={google} className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-medium">
-        Continue with Google
-      </button>
-      <button onClick={() => setMode(mode === "signup" ? "signin" : "signup")} className="w-full text-sm text-slate-400 hover:text-white">
-        {mode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
-      </button>
-      <button onClick={onDone} className="w-full text-sm text-slate-500 hover:text-slate-300">
-        Continue as guest instead
-      </button>
-    </div>
-  );
-}
