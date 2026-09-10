@@ -9,6 +9,20 @@ neuro, obstetric — plus a two-compartment pharmacokinetic/pharmacodynamic laye
 **This document is self-contained.** It supersedes all previous handoffs; you do
 not need any earlier version.
 
+**This document covers the physiology engine and gameplay only.** Proximate
+also ships a separate, largely independent EMT-B study-platform subsystem at
+`src/education/` (`EducationApp.jsx` and friends — MCQ practice with SRS
+scheduling, an NREMT-inspired IRT-based adaptive practice exam, a WIP
+Lectures tab, and a crowdsourced-question submission/admin-review workflow),
+reachable from `RootApp.jsx`'s home screen alongside the game. It shares no
+code with the physiology engine and is not covered by this document's own
+verification suites (`mechanismWiring.mjs`/`scenarioSweep.mjs`/
+`physiologyValidation.mjs` never touch it) or by section 6's queue. If you're
+asked to work on questions, SRS, the adaptive exam, lectures, or
+crowdsourcing, start by reading `src/education/*.js` directly rather than
+searching this document for it — nothing about that subsystem is tracked
+here beyond this pointer and the changelog entry at the top of section 3.
+
 ## How to read this document, and what is authoritative
 
 This file is long because the project's own rule (section 4) is that every
@@ -331,6 +345,155 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### 2026-09-09 — Education subsystem: MCQ Practice, an IRT-based Adaptive Practice Exam, a WIP Lectures tab, and crowdsourced-question submission/review, built on top of the pre-existing `src/education/` module (not the physiology engine — see the preface's own new pointer)
+
+**Not physiology-engine work.** Filed here only because section 3 is this
+project's one changelog; none of this touched `src/physio/*`,
+`physiology.js`, or either verification suite, and none of it is tracked in
+section 6's queue. Read `src/education/*.js` directly for anything further —
+this entry is a pointer, not a maintained status board for that subsystem.
+
+**What existed already, confirmed by reading the tree before building
+anything:** a real, working MCQ study screen (`EducationApp.jsx`,
+`questions.js`, `srs.js`, `store.js`, `auth.js`, `firebase.js`) — a static,
+hand-authored EMT question bank, an SM-2 spaced-repetition scheduler keyed
+per-question per-user, and optional Firebase auth/Firestore sync with a
+localStorage/guest-mode fallback when Firebase isn't configured. No question
+randomization, no community answer-choice statistics, no adaptive/IRT
+testing, no crowdsourcing, no admin review, and no Lectures tab existed.
+
+**Shipped, reusing that existing architecture rather than duplicating it:**
+`contentBlueprint.js` (the NREMT content-blueprint category weights, plus a
+documented, honestly-approximate domain→category mapping since existing
+questions are tagged by body-system topic, not assessment phase);
+`itemStats.js` (community per-question response aggregation — attempts,
+correct, per-choice counts — via Firestore with a clearly-labeled
+device-local fallback); `randomize.js` (per-presentation answer-choice
+shuffling that always grades/records against the stable canonical index,
+never the on-screen position); `exposure.js` (question-"seen" tracking
+built directly on the existing SRS progress store — a question counts as
+seen the instant it's shown, in any mode, shared automatically since MCQ
+Practice and the Adaptive Exam both write into the same progress object);
+`questionPool.js` (merges the built-in bank with manually-approved
+crowdsourced questions into one runtime pool); `adaptiveEngine.js` (a real
+2-parameter-logistic IRT model — MAP ability estimation via Newton-Raphson
+with a weak N(0,1) prior, per-item difficulty derived from community data
+and shrunk toward neutral until enough responses back it, content-blueprint-
+aware item selection, a hard 70-question floor and 120-question ceiling, a
+99% confidence stopping criterion); `crowdsource.js`/`adminConfig.js`
+(Firestore-gated question submission and a manual admin approve/reject
+queue — documented required security rules in `crowdsource.js`'s own header,
+not enforced client-side); `lectures.js` (an empty, WIP-labeled data shape
+reusing the existing domain taxonomy, ready for real lecture content later
+without a redesign). New UI: `MCQPracticeTab.jsx`, `AdaptiveTestTab.jsx`,
+`LecturesTab.jsx`, `MethodsPage.jsx` (the player-facing transparency page —
+explicitly states this is NOT the real NREMT algorithm), `SubmitQuestionForm
+.jsx`, `AdminReviewTab.jsx`; `EducationApp.jsx` rebuilt as a tabbed shell
+routing between them.
+
+**A real bug was found and fixed via actual browser verification, not just
+lint/build.** A full-length adaptive exam run through the real UI
+(`tools/browser/verifyAdaptiveExamCompletion.mjs`, new) stopped at 40
+questions — a direct violation of the hard 70-question floor. Root cause:
+`selectNextItem`'s eligibility filter excluded any question already
+administered EARLIER IN THE SAME EXAM even once reuse was allowed, so once
+the ~57-question EMT bank (smaller than the 70-question minimum) had been
+fully cycled through once, no eligible candidate remained and the exam
+stopped early. Fixed with a real three-tier eligibility fallback in
+`adaptiveEngine.js`'s `selectNextItem` (never-seen-anywhere → seen elsewhere
+but not yet this exam → true within-exam repeat, only as a last resort) —
+re-verified via the same script, twice: a full run now reaches a
+70-120-question stop, the exhaustion notice fires exactly once, and the
+review screen pages through every administered question correctly
+(including genuine within-exam repeats, which are unavoidable and expected
+given a bank this size).
+
+**Verification.** `npx eslint src/education` and `npx eslint src`: clean,
+exactly the project's own pre-existing 3-error `App.jsx`
+`react-refresh/only-export-components` baseline, zero findings in anything
+this batch touched. `npx vite build`: clean, same pre-existing >500kB
+chunk-size warning. Two new permanent Playwright scripts,
+`tools/browser/verifyEducationApp.mjs` (a full click-through of all four
+tabs plus the Methods page, guest mode, run twice clean, zero console
+errors) and `tools/browser/verifyAdaptiveExamCompletion.mjs` (drives a
+complete adaptive exam to its natural stop via real clicks — not state
+injection, since none of this subsystem's state is exposed through
+`App.jsx`'s dev hooks — asserting the 70-120 bound, the single exhaustion
+notice, and full review coverage; run twice clean after the fix above).
+Neither `mechanismWiring.mjs` nor `scenarioSweep.mjs` was run, since neither
+imports anything under `src/education/`.
+
+### 2026-09-05 — Queue item 75: fixed `renal.js`'s `aldoEffect` resting-baseline bug, root-caused (not fixed) the dominant remaining kMass drift driver, filed as new item 76
+
+`conservationAudit.mjs` (queue item V2-31) had found a real, unexplained
+drift in "conserved" quantities for a completely resting, condition-less,
+dose-less patient (queue item 75). Picked up a genuine, real fix already
+present as an in-progress uncommitted change (`renal.js`'s `aldoEffect`
+term), verified it by direct measurement rather than trusting the existing
+comment's claim, and found the claim was PARTIALLY right: it fixed a real
+bug, but did not close the item.
+
+**The real bug, confirmed and kept.** `aldoEffect` used to be
+`(pat.aldosterone - 1) * 0.05`, treating aldosterone=1 as the "no extra
+excretion" resting baseline. But this file's own RAAS block decays resting
+aldosterone toward 0, not 1 — measured settling at ~0.047 for a
+condition-less patient. That mismatch produced a near-constant, spurious
+~-0.048 potassium-RETENTION bias every tick at rest (every other
+aldosterone consumer in this file already treats 0 as the resting
+baseline). Fixed to scale directly off aldosterone itself, so aldosterone~0
+at rest contributes ~0 extra excretion.
+
+**Honest re-measurement after the fix, not assumed fixed.** Re-ran
+`conservationAudit.mjs`: kMass still FAILS, now drifting the OPPOSITE
+direction (~12-15% over 15 min instead of the pre-fix ~2.4-3.9% rise) —
+the aldoEffect bug had been partially MASKING a larger, opposite-signed
+leak, not causing the whole thing. totalBloodVol/plasmaVol failures are
+unaffected (pre-existing, different mechanism, still open per item 75's
+own original note about the Starling/lymphatic balance).
+
+**Root-caused the dominant remaining driver, by direct tick-by-tick
+probing (a standalone script, stripped after use, per lesson 8) — not
+guessed.** The dominant contributor to the still-failing kMass drift is
+`renal.js`'s own `kShiftConc` term (real, correctly-coded H+/K+ exchange
+physiology), forced by a resting patient's `pat.ph` sitting persistently
+around 7.457-7.459 instead of 7.40. This is NOT an acid-base-module defect
+— `pat.ph` is correctly DERIVED each tick from na/k/cl/paco2/etc.
+(`acidbase.js`), not an independent state that could itself drift. Traced
+one level further: the real cause is `pat.paco2` (respiratory.js) never
+reaching a fixed point within the audit's own 15-30 minute window — it
+falls from the constructed initial 40 mmHg toward ~34.6 mmHg and is still
+falling, in an unbroken line, at t=900s. `respiratory.js`'s
+`paco2Target = (vco2/pat.va) * 863` is the ratio of `pat.vo2Demand`
+(metabolic.js) to alveolar ventilation `pat.va` (from `pat.rr`/`pat.vt`,
+driven by `pat.neuralSymp`/`pat.sympathetic` in cardiovascular.js) — both
+numerator and denominator relax from this engine's own elevated
+constructed initial sympathetic tone toward rest, but on DIFFERENT
+effective time constants, so PaCO2 (and everything downstream of it) keeps
+drifting for as long as neuralSymp itself hasn't converged, which
+measurably outlasts this project's own 900-1800s verification window. This
+is genuinely separate, larger, cross-module (respiratory/cardiovascular-
+autonomic/metabolic) physiology-engine work — filed in full as new queue
+item 76 (section 6) rather than patched blind inside a renal-module fix,
+since a change to the shared initial-sympathetic-tone/relaxation dynamics
+would move every scenario's own resting baseline and needs its own
+dedicated, carefully re-verified batch.
+
+**Verification.** `node --check` clean on `renal.js`. `npx eslint
+src/physio/renal.js`: zero findings. `npx vite build`: clean (60s, same
+pre-existing >500kB chunk-size warning, no new warnings).
+`node src/scripts/scenarioSweep.mjs` re-run to completion before AND after
+this fix: byte-identical **183 scenarios, 20,833,820 checks, 915 failed**
+in both runs (the 915 are a confirmed PRE-EXISTING, unrelated
+rvEdv/rvEsv/rvSv/rvEf/pvrWood-undefined-at-t=2s defect present on
+unmodified `master` too — not investigated further here, out of scope for
+this item, but worth its own future queue entry if not already tracked).
+`mechanismWiring.mjs` run to completion in the shared, busy multi-agent
+environment this session (see this document's own standing note about
+that); no assertion touching `k`/`kMass`/`aldosterone`/`ph`/`paco2` was
+newly failing versus its own pre-existing baseline. This session's own
+throwaway diagnostic probe scripts (two, both under `src/scripts/_probeK
+.mjs`-style throwaway names) were stripped before this entry was written.
 
 ### 2026-09-03 — Queue item V2-27's remainder — a second chronic-adaptation state, `pat.vascularStiffness`, and a real "field was inert" defect found and fixed before it could ship
 
@@ -4658,7 +4821,7 @@ current status). Consult it for mechanism-level reasoning behind older
 fixes; it is not required reading for day-to-day work.
 ## 4. How to work
 
-**WRITE EVERYTHING IN AMERICAN ENGLISH.** Code, comments, commit messages,
+**WRITE EVERYTHING IN AMERICAN ENGLISH AND NO EM DASHES IN PUBLIC FACING CONTENT.** Code, comments, commit messages,
 scenario prose, assertion names, and this handoff. The tree is mixed — older
 comments contain British spellings (`edema`, `hemorrhage`, `modeled`,
 `stabilise`) — so match American spelling in anything you write or touch, and do
@@ -7239,33 +7402,112 @@ V2-10. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    (a real prerequisite gap for a loop-diuretic mechanism), and no real
    prerenal/intrinsic/postrenal AKI distinction was attempted.
 
-V2-11. **Cellular energetics, generalized.** `pat.atp`/`pat.energyFailure`/
-   `pat.cytochromeBlock` already exist and are real, verified mechanisms
-   (metabolic.js, plus cyanidePoisoning's utilization-block work). This item
-   is formalizing them into the source doc's own `pat.cellular = {atp, adp,
-   oxidativeCapacity, oxygenUtilization, lactateProduction,
-   lactateClearance, metabolicStress}` shape — again, a structuring/
-   consolidation task more than new physiology, since the individual pieces
-   already exist and are already verified.
+V2-11. **AUDITED (2026-09-05), still genuinely OPEN — not attempted, with an
+   honest reason.** `pat.atp`/`pat.energyFailure`/`pat.cytochromeBlock`
+   really do exist and are real, verified, well-consumed mechanisms
+   (metabolic.js, plus cyanidePoisoning's utilization-block work) — but read
+   directly before assuming a literal `pat.cellular={atp,adp,...}` object is
+   a clean consolidation: `pat.atp` (cardiovascular.js) is a MYOCARDIUM-
+   SPECIFIC ischemia signal (consumed by QRS widening, AV block,
+   contractility, arrhythmia risk — a dozen-plus real call sites), while
+   `pat.energyFailure` (metabolic.js) is the genuinely whole-body oxidative-
+   deficit signal (its own real consumer: renal.js's Na/K-ATPase pump-
+   failure term). These are two DIFFERENT quantities that happen to share
+   the source spec's word "atp," not one field split across two files.
+   Folding them into a single `pat.cellular.atp` would either conflate a
+   cardiac-specific signal with a whole-body one (physiologically wrong) or
+   require renaming `pat.atp`'s ~15 existing call sites for zero mechanism
+   gain. The spec's other named sub-fields — `adp`, `oxidativeCapacity`,
+   `oxygenUtilization`, `metabolicStress` — have no existing engine quantity
+   behind them at all; inventing them with no distinct real consumer beyond
+   what `energyFailure`/`cytochromeBlock` already provide would be exactly
+   the decorative-field pattern this document's own discipline forbids.
+   Left open rather than closed, since the underlying ask (a real, coherent
+   whole-body cellular-energetics view) is not literally satisfied by what
+   exists — but the literal structured-object shape the source spec asks
+   for is not the right next step for it. No code changed.
 
-V2-12. **Lactate production/clearance as an explicit two-term balance.**
-   `pat.lactate` already exists and is already driven correctly by multiple
-   real sources (sepsis, ischemia, sympathetic tone — confirmed in several
-   already-shipped conditions' own verification). This item is auditing
-   whether production and CLEARANCE should be split into two separately
-   inspectable terms (hepatic-flow-gated clearance already exists implicitly
-   via item 42's hepaticDO2 work — check whether it already reads through to
-   lactate clearance before assuming a gap).
+V2-12. **CLOSED (2026-09-05) — audited, confirmed already fully built (a
+   prior, undocumented session shipped it — the code's own comment already
+   reads "QUEUE ITEM V2-12" — lesson 16, a stale queue entry).** Read
+   `metabolic.js`'s `updateMetabolic` directly: production and clearance are
+   already two genuinely separate, real terms. Production splits further
+   into non-ischemic systemic sources (`lactateProd` — sepsis, sympathetic
+   tone, beta-2 tone) and a tissue/serum-compartment ischemic-washout term
+   (`pat.tissueLactate`, queue item 15's own resolved washout-phenomenon
+   work). Clearance (`clearance`) is gated on REAL-TIME hepatic flow
+   (`pat.hepaticDO2`, item 42) via `hepaticFlowFactor`, not only on
+   accumulated structural `liverInjury` — exactly the gap this item's own
+   text asked to confirm was not silently missing (production AND impaired
+   clearance both worsening serum lactate in shock — the real "type A
+   lactic acidosis" picture — rather than only production). Confirmed this
+   already reads through correctly: `hepaticFlowFactor = Math.max(0.15,
+   Math.min(1, pat.hepaticDO2 ?? 1))` composes directly into the clearance
+   rate. Not published as separate `pat.lactateProduction`/
+   `pat.lactateClearance` fields — evaluated and deliberately skipped: both
+   terms are local per-tick values with no consumer beyond the composite
+   `pat.lactate` itself (already a real, lab-drawable, clinically consumed
+   field), so publishing them as top-level state would be dead state under
+   this document's own "every new field needs a real consumer" rule. No
+   code changed.
 
-V2-13. **Hepatic physiology, generalized beyond drug clearance.**
-   `organClearanceFactor()` (pk.js) and item 42's `hepaticDO2`/
-   `hepaticO2Debt`/`liverInjury` are real and verified. NOT yet built: a
-   structured `pat.liver` object (albumin synthesis, clotting-factor
-   synthesis, bilirubin, ammonia clearance, glycogen/gluconeogenesis) as a
-   coherent whole — `pat.hyperammonemia`-style conditions already exist
-   per-symptom; a real portal-pressure/portal-flow model for cirrhosis
-   (ascites via portal hypertension → splanchnic vasodilation → RAAS/ADH) is
-   genuinely new, large mechanism work, not yet attempted.
+V2-13. **PARTIALLY DONE — the portal-pressure/portal-flow half (a prior,
+   undocumented session) and this session's own new hepatic-coagulopathy
+   half are both real and verified; the rest remains open.** `organ
+   ClearanceFactor()` (pk.js) and item 42's `hepaticDO2`/`hepaticO2Debt`/
+   `liverInjury` were already real and verified before this session.
+   **Found already built, just unread (lesson 16):** a real, cited
+   `pat.portalPressure` (HVPG-equivalent mmHg, renal.js) driving splanchnic
+   vasodilation and venous-capacitance expansion past the real >5/>=10 mmHg
+   portal-hypertension/CSPH thresholds (Groszmann et al., NEJM 2005;
+   Garcia-Tsao et al., Hepatology 2017) — reaching the already-real RAAS/ADH
+   machinery through the same defended-volume pathway hemorrhage/pregnancy
+   use, plus a narrowed `pat.splanchnicFrac` (blunted autotransfusion
+   reserve under superimposed hemorrhage). A shipped `cirrhosis` condition
+   (conditions.js) sets `pat.portalPressure=12`/`pat.liverInjury=0.30`.
+   Fully covered by `mechanismWiring.mjs`'s own `[PORTAL HYPERTENSION /
+   CIRRHOSIS — queue item V2-13]` section (specificity below threshold,
+   real RAAS engagement, real relative fluid retention over 3h, narrowed
+   splanchnic reserve, measurably worse hemodynamics under a matched
+   superimposed hemorrhage).
+
+   **New this session**: hepatic SYNTHETIC failure was genuinely missing —
+   `coagulation.js`'s factor-regeneration block chased every clotting
+   factor back to a FIXED target (100 / fibrinogen 3) regardless of how
+   much liver a patient had left, so a decompensated cirrhotic could never
+   show real coagulopathy from reduced production alone (only from active
+   consumption/DIC/ATC, already-real but mechanistically different). Fixed
+   with two real, separately-cited links: (1) `pat.liverInjury` now scales
+   the regeneration TARGET for factors II/V/X and fibrinogen via
+   `hepaticSynthCapacity = max(0.1, 1 - liverInjury*0.7)` — reusing pk.js's
+   own hepatocyte-integrity proxy rather than inventing a second one
+   (Tripodi & Mannucci, NEJM 2011, "The Coagulopathy of Chronic Liver
+   Disease": reduced hepatic synthesis of II/V/VII/IX/X is the central
+   mechanism of cirrhotic PT/INR prolongation). Factor VIII is deliberately
+   EXCLUDED — it is endothelial, not hepatocyte, synthesis, and stays
+   normal/elevated in real liver failure, a genuine teaching-point
+   divergence rather than an oversight. (2) `pat.portalPressure` now drives
+   real splenic-sequestration thrombocytopenia (Afdhal et al., Am J Med
+   2008), zero below the same real 5 mmHg threshold, ramping to a bounded
+   60% platelet reduction by CSPH — mechanistically distinct from both (1)
+   and from the existing DIC/dilution platelet terms. Both reuse
+   `pat.coagPct`/`pat.plateletCount`'s own already-real consumers (a death-
+   cause check in physiology.js, scenario lab reads) rather than adding new
+   unconsumed fields. Six new two-sided `mechanismWiring.mjs` assertions
+   added to the existing `[PORTAL HYPERTENSION / CIRRHOSIS — queue item
+   V2-13]` section (liverInjury-forced factorX/factorII/coagPct falls,
+   factorVIII specifically spared, portalPressure-forced thrombocytopenia,
+   and sub-threshold specificity) — see section 2 for the fresh suite run.
+
+   **Still fully open**: a structured `pat.liver` object consolidating
+   these scattered fields is unbuilt (same refactor-vs-new-mechanism
+   question as V2-11/V2-8); albumin synthesis (oncotic pressure /
+   ascites-from-hypoalbuminemia, distinct from the portal-pressure-driven
+   ascites mechanism above), bilirubin, and ammonia/urea-cycle clearance
+   have NO mechanistic link to `liverInjury` at all — `pat.hyperammonemia`
+   remains a standalone scripted condition rather than something cirrhosis
+   itself can cause; glycogen/gluconeogenesis (hepatic hypoglycemia risk in
+   liver failure) is entirely unbuilt.
 
 V2-14. **CLOSED (2026-09-03) — audited, fully consistent, no gap.** Read
    both call sites directly: `pk.js`'s `organClearanceFactor()` and
@@ -7292,13 +7534,33 @@ V2-17. **DONE (2026-09-01) — see section 3's newest entry.** A real,
    onset in major trauma, confirmed inert for minor trauma and for
    cytokine-only sepsis.
 
-V2-18. **Organ injury integration, generalized.** Item 48 already built the
-   reversible-vs-structural distinction for kidney (`atnProgression` vs.
-   `kidneyInjury`) and found the debrief/`outcomeReport()` consumer chain is
-   itself disconnected from the app (a real, separate, still-open front-end
-   gap — see item 48's own entry). This item is extending the reversible/
-   structural pattern to liver/gut per item 48's own "still open" note —
-   read that entry first.
+V2-18. **CLOSED (2026-09-05) — audited, confirmed already fully built (a
+   prior, undocumented session shipped it — lesson 16, another stale queue
+   entry).** Item 48 built the reversible-vs-structural distinction for
+   kidney (`atnProgression` vs. `kidneyInjury`) and this item's own text
+   asked for the SAME pattern to be extended to liver/gut. Read the actual
+   code rather than trusting the queue text: `neuro.js` already has
+   `pat.hepaticStunning` (rises while `hepaticDO2<0.5`, decays at half that
+   rate once perfusion returns, mirroring `atnProgression`'s own
+   rise/decay idiom exactly) and `pat.gutMucosalStunning` (identical
+   pattern, gated on `gutDO2`) — both explicitly commented as item 48's own
+   liver/gut extension. `physiology.js`'s `outcomeReport()` already reports
+   both as real "reversible findings" distinct from the structural
+   `liverInjury`/`gutInjury` thresholds. **Brain was ALSO already done**,
+   explicitly labeled in-code "queue item V2-18 (brain)": rather than a
+   second brainInjury accumulator, the already-shipped `tia` condition
+   (conditions.js) IS the real reversible-cerebral-ischemia mechanism —
+   decaying `strokeWeakness`/`strokeAphasia` back to zero over ~20 minutes
+   (vs. a structural stroke's permanent hold), with `pat._maxStrokeWeakness`
+   as the marker letting `outcomeReport()` tell a resolved TIA apart from a
+   structural stroke. All three (liver/gut/brain) already have real
+   two-sided `mechanismWiring.mjs` coverage (`[REVERSIBLE HEPATIC/GUT
+   DYSFUNCTION — queue item 48]`, `[BRAIN: TIA-PATTERN REVERSIBLE DEFICIT —
+   queue item V2-18]`) and `hepaticStunning`/`gutMucosalStunning` are in
+   `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s
+   constructor. Item 48's own separately-noted front-end gap (the debrief
+   view being disconnected from the app) remains its own open item, out of
+   this item's scope. No code changed.
 
 V2-19. **CLOSED (2026-09-03) — audited against the source document's own
    itemization, confirmed already substantially real, no gap found.**
@@ -7355,13 +7617,33 @@ V2-21. **DONE (this session) — a real, finite lymphatic reserve-capacity
    passing. `lymphaticFlow`/`lymphaticCapacity` added to `scenarioSweep.mjs`'s
    `REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s constructor.
 
-V2-22. **Metabolic demand, expanded.** `metabolic.js`'s `restVO2` and
-   `vo2Demand` already compose basal metabolism, thermoregulation
-   (shivering), and some activity-driven terms. NOT yet built: an explicit
-   work-of-breathing O2-cost term feeding BACK into demand (respiratory
-   muscle fatigue's own O2 consumption, per V2-7) and a seizure/agitation-
-   specific demand spike distinct from the generic sympathetic-tone-driven
-   rise already present.
+V2-22. **CLOSED (2026-09-05) — audited, confirmed already fully built (a
+   prior, undocumented session shipped both halves — lesson 16, a third
+   stale queue entry found this session).** Read `metabolic.js`'s
+   `updateMetabolic` directly: `pat.vo2Demand` already composes basal
+   metabolism (`restVO2`, scaled by `pat.metabolicRate`), fever
+   (`feverFactor`), adrenergic drive, AND both halves this item asked for.
+   **Work-of-breathing O2 cost**: `wobRatio` (minute ventilation above a
+   real resting reference) times a bronchospasm-aware `loadFactor`
+   (`1 + effectiveBroncho*1.5`) produces `wob`, capped at a real +35% —
+   directly implementing this item's own cited "20-30% of VO2 in severe
+   respiratory distress" figure, and composing with V2-7's own
+   `pat.respMuscleFatigue`-adjacent minute-ventilation machinery rather
+   than a second, disconnected proxy. **Seizure/agitation demand spike**:
+   `seizing` (a real 2.2x multiplier, pre-existing) plus a SEPARATE,
+   explicitly-labeled `agitationVO2` term ("queue item V2-22, second
+   half" in the code's own comment) driven by `pat.agitationBurden`
+   (excitedDelirium/cocaineToxicity/neurolepticMalignantSyndrome/
+   serotoninSyndrome) — capped at +40%, anchored on the Ainsworth et al.
+   Compendium of Physical Activities' ~2-3 MET classification for
+   restless/agitated behavior, explicitly smaller than the seizure
+   multiplier since sustained agitation is not the same peak full-body
+   exertion as a generalized tonic-clonic contraction, stated honestly as
+   the closest documented proxy rather than a precise trial figure. Both
+   terms multiply directly into `pat.vo2Demand`, feeding the same real
+   `oxygenDebt`/`energyFailure`/lactate-production chain every other VO2
+   driver here already does — a real, wired consumer, not a decorative
+   multiplier. No code changed.
 
 V2-23. **Multi-timescale physiology — largely already true by
    construction** (renal/RAAS/inflammation already relax on genuinely
@@ -10124,36 +10406,93 @@ plausible but not fitted to trial data.
     confound (indistinguishable from a non-cardiac apnea patient) was found
     only on a fifth check that should have been the first.
 
-75. **NEW, filed 2026-09-01 — a real, measured, unexplained drift in
+75. **PARTIALLY FIXED (2026-09-05) — one real contributing bug closed, the
+    dominant driver root-caused and re-filed as item 76 below; still open.**
+    Original filing (2026-09-01): a real, measured, unexplained drift in
     "conserved" quantities for a completely resting, condition-less,
     dose-less patient, found by the new `conservationAudit.mjs` tool
-    (queue item V2-31, see section 3's newest entry).** `pat.kMass` rises
-    and `pat.totalBloodVol`/`pat.plasmaVol` both fall STEADILY (confirmed
+    (queue item V2-31, see section 3's newest entry). `pat.kMass` rose
+    and `pat.totalBloodVol`/`pat.plasmaVol` both fell STEADILY (confirmed
     via a point-by-point diagnostic sweep, not just start/end — the drift
     rate is essentially linear from t=60s to t=1800s, with no sign of
     settling toward a steady state) for a plain `abdPain`/`chestPainM`
     patient with NO condition, NO dose, NOTHING happening — measured
     ~3.5-3.7% kMass rise and ~2.2-2.9% totalBloodVol fall over 15 minutes,
-    ~6.9% plasmaVol fall over 30 minutes. `pat.naMass` and `pat.rbcMass` are
+    ~6.9% plasmaVol fall over 30 minutes. `pat.naMass` and `pat.rbcMass` were
     comparatively much closer to stable (~0.5-0.7% and ~0% respectively over
-    the same window) — this is NOT a uniform "everything drifts a little"
-    numerical-noise artifact, since some quantities are clean and others are
-    not. This means `patient.js`'s constructed initial state is not a true
-    fixed point of the coupled renal/fluid-shift ODE for at least SOME
-    tracked quantities, and since every scenario in the game starts from
-    this same initial state, a "healthy, untouched" patient genuinely
-    drifts hemodynamically over a realistic call length with no story
-    reason for it — a real, if likely modest-magnitude, hyper-realism gap.
-    NOT investigated or fixed when found (out of scope for a verification-
-    tool task, per section 4's own batch-size discipline). Worth checking
-    first against `metabolic.js`'s own Starling/lymphatic-return term
-    (already fixed once for a related but reportedly-different imbalance,
-    per queue item 49's history — confirm whether this is a genuine
-    regression of that fix, a different term entirely, or an interaction
-    with `renal.js`'s renin/RAAS resting-state calibration) and
-    `renal.js`'s own K+/Na+ handling comments (several of which already
-    document "TECHNICAL DEBT" around the macula-densa/volume-limb
-    approximations) before assuming a brand-new mechanism is needed.
+    the same window) — confirming this was NOT a uniform "everything drifts a
+    little" numerical-noise artifact.
+
+    **One real bug closed this session, `renal.js`'s `aldoEffect`.** The old
+    `(pat.aldosterone - 1) * 0.05` treated aldosterone=1 as the resting
+    baseline, but this file's own RAAS block decays resting aldosterone
+    toward 0, not 1 — measured settling at ~0.047. That mismatch produced a
+    near-constant, spurious ~-0.048 potassium-retention bias every tick at
+    rest (every other aldosterone consumer in this file already treats 0 as
+    resting baseline; this term was the one outlier). Fixed to scale directly
+    off aldosterone itself. See section 3's newest entry and the fix's own
+    in-code comment (`renal.js`) for the full measurement.
+
+    **Still open — the dominant driver is NOT in `renal.js` at all.**
+    Re-measured after the aldoEffect fix: `conservationAudit.mjs` still FAILS
+    kMass (now drifting the OTHER direction, ~12-15% over 15 min, since the
+    fix removed a bias that had been partially masking a larger, opposite
+    one) and totalBloodVol/plasmaVol (both pre-existing, unaffected by this
+    fix, unrelated mechanism — likely the Starling/lymphatic balance per this
+    entry's original note, still not investigated). Root-caused the kMass
+    driver one level further, by direct tick-by-tick probing rather than
+    guessing: it is `renal.js`'s own `kShiftConc` term (pH-driven
+    transcellular K+ shift), forced by a resting patient's `pat.ph` sitting
+    persistently around 7.457-7.459 rather than 7.40 — NOT a `renal.js` or
+    `acidbase.js` defect, since pH there is correctly DERIVED each tick from
+    na/k/cl/paco2/etc., not an independent state that could itself "drift."
+    The real culprit is one level further still: `pat.paco2` (respiratory.js)
+    never reaches a fixed point within the audit's own 15-30 minute window —
+    filed in full as new queue item 76 below, since it is genuinely separate,
+    larger, cross-module (respiratory/cardiovascular-autonomic/metabolic)
+    physiology-engine work, not a renal-module bug fix.
+
+76. **NEW, filed 2026-09-05 — a resting, condition-less patient's own
+    `pat.paco2`/`pat.ph` never reach a fixed point within any realistic
+    call-length window, found while root-causing item 75's kMass drift.**
+    Measured directly (standalone tick-by-tick probe against `abdPain`, no
+    condition, no dose): `pat.paco2` falls from the constructed initial 40
+    mmHg toward ~34.6 mmHg over 900s and is STILL falling, in an unbroken,
+    slowly-decelerating line, at t=900s — no sign of settling within the
+    window `conservationAudit.mjs` (item 75/V2-31) uses. Traced to its
+    source, not guessed: `respiratory.js`'s `updateGasExchange` computes
+    `paco2Target = (vco2/pat.va) * 863`, i.e. the RATIO of CO2 production
+    (`pat.vo2Demand`, metabolic.js) to alveolar ventilation (`pat.va`, itself
+    from `pat.rr`/`pat.vt`, which are driven off `pat.neuralSymp`/
+    `pat.sympathetic` in cardiovascular.js's autonomic block). Both the
+    numerator and denominator of that ratio relax from this engine's own
+    elevated CONSTRUCTED initial sympathetic tone toward true rest, but on
+    DIFFERENT effective time constants — so their ratio, and therefore
+    PaCO2 and pH, keep drifting for as long as neuralSymp itself hasn't
+    fully settled, which measurably outlasts the 900-1800s window this
+    project's own verification tooling uses. Downstream consequence
+    confirmed (not assumed): the resulting persistent mild respiratory
+    alkalosis (pH ~7.457-7.459 instead of 7.40) drives `renal.js`'s
+    `kShiftConc` term (real H+/K+ exchange physiology, correctly coded) to
+    shift potassium into cells every tick, which is the dominant remaining
+    contributor to item 75's kMass drift after this session's `aldoEffect`
+    fix. **Two candidate fixes, neither attempted this session (genuinely
+    separate, cross-module, high-blast-radius work — every scenario in the
+    game starts from this same initial state, so a miscalibration here is
+    load-bearing for the whole engine's resting baseline, not a one-file
+    patch):**
+    (1) construct `patient.js`'s initial `neuralSymp`/`sympathetic` (and
+    anything downstream of it) already at ITS OWN true resting equilibrium
+    rather than an elevated value that must relax there, which would remove
+    the transient entirely rather than just speeding convergence; or
+    (2) match the effective relaxation time constants of `pat.vo2Demand` and
+    `pat.rr`/`pat.vt`'s own dependence on `neuralSymp` so their RATIO
+    converges quickly even if each individually takes longer. Either needs
+    its own dedicated batch with the same measurement discipline as this
+    finding (before/after tick-by-tick probes on a resting control, not just
+    start/end deltas), and needs re-verification against every scenario's
+    OWN baseline vitals at t=0 (a change here moves the resting point every
+    scenario in the game launches from).
 
 ---
 
@@ -10890,8 +11229,6 @@ genuinely takes longer to reach brain death than a warm one.)*
 ### Chronic
 Coronary Artery Disease (as symptomatic chronic disease, not merely stenosis) ·
 Neuropathy · Osteoporosis · Congestive Heart Failure (Stable) ·
-Chronic Liver Disease ·
-Cirrhosis ·
 Chronic Anemia ·
 Peripheral Arterial Disease ·
 Peripheral Neuropathy ·

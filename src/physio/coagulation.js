@@ -134,12 +134,58 @@ export function updateCoagulation(pat, dt) {
     // Slow hepatic synthesis / marrow release back toward normal, so trivial
     // losses recover and a healthy patient's coagulation stays intact. Severe,
     // sustained hemorrhage still outpaces this and becomes coagulopathic.
-    pat.factorII   += (100 - pat.factorII)   * 0.02 * dt;
-    pat.factorV    += (100 - pat.factorV)    * 0.02 * dt;
+    //
+    // QUEUE ITEM V2-13 — HEPATIC SYNTHETIC FAILURE, real coagulopathy of
+    // liver disease. This regen block previously chased every factor back to
+    // a fixed 100/3, regardless of how much liver a patient had left — so a
+    // decompensated cirrhotic (pat.liverInjury already real, item 42/48;
+    // pat.portalPressure already real, this item's own renal.js half) could
+    // never show a real elevated bleeding tendency from synthetic failure
+    // alone, only from active consumption (bleeding/DIC/ATC above). That is
+    // physiologically wrong: chronic liver disease is a recognized, distinct
+    // cause of coagulopathy even with zero active bleeding, because factors
+    // II, V, VII, IX and X (plus fibrinogen) are hepatocyte-synthesized, and
+    // a fibrotic/failing liver cannot replace consumption at the normal
+    // rate (Tripodi & Mannucci, NEJM 2011, "The Coagulopathy of Chronic
+    // Liver Disease" — reduced synthesis of the vitamin-K-dependent factors
+    // plus factor V is the central mechanism behind cirrhosis's prolonged
+    // PT/INR).
+    //
+    // hepaticSynthCapacity reuses pk.js's own organClearanceFactor()
+    // hepatocyte-integrity proxy (Math.max(0.1, 1 - liverInjury*0.7)) rather
+    // than inventing a second liver-damage curve — same quantity, same
+    // reasoning, single mental model for "how much working liver is left."
+    // Factor VIII is DELIBERATELY excluded: it is synthesized mainly by
+    // vascular endothelium, not hepatocytes, and is characteristically
+    // NORMAL OR ELEVATED (an acute-phase reactant) in liver failure even as
+    // II/V/VII/IX/X fall — a real, teachable divergence, not an oversight.
+    const hepaticSynthCapacity = Math.max(0.1, 1 - (pat.liverInjury ?? 0) * 0.7);
+    const factorTarget = 100 * hepaticSynthCapacity;
+    pat.factorII   += (factorTarget - pat.factorII)   * 0.02 * dt;
+    pat.factorV    += (factorTarget - pat.factorV)    * 0.02 * dt;
     pat.factorVIII += (100 - pat.factorVIII) * 0.02 * dt;
-    pat.factorX    += (100 - pat.factorX)    * 0.02 * dt;
-    pat.fibrinogen     += (3   - pat.fibrinogen)     * 0.01 * dt;
-    pat.plateletCount  += (250 - pat.plateletCount)  * 0.01 * dt;
+    pat.factorX    += (factorTarget - pat.factorX)    * 0.02 * dt;
+    pat.fibrinogen     += (3 * hepaticSynthCapacity - pat.fibrinogen)     * 0.01 * dt;
+
+    // PORTAL HYPERTENSION -> SPLENIC SEQUESTRATION -> THROMBOCYTOPENIA
+    // (queue item V2-13, second real liver-disease coagulation link).
+    // Portal hypertension causes congestive splenomegaly, which sequesters
+    // platelets in the enlarged spleen rather than destroying them — the
+    // recognized mechanism behind cirrhotic thrombocytopenia (Afdhal et al.,
+    // Am J Med 2008, "Thrombocytopenia associated with chronic liver
+    // disease"), distinct from both DIC-style consumption and dilution
+    // above. Reuses pat.portalPressure (renal.js, this same item's own HVPG
+    // handle) directly rather than a new liver-severity proxy: below the
+    // real >5 mmHg portal-hypertension threshold this term is exactly zero
+    // (a patient with no portal lesion is guaranteed unaffected), ramping to
+    // a real, bounded 60% sequestration ceiling by clinically-significant
+    // portal hypertension (>=10 mmHg) and beyond — cirrhotic platelet counts
+    // commonly settle in the 50-100 x10^9/L range (of a 250 baseline here),
+    // consistent with a 40-60% reduction, not the near-total loss DIC alone
+    // can cause.
+    const pp = Math.max(0, pat.portalPressure || 0);
+    const spleenSequestration = Math.max(0, Math.min(0.6, (pp - 5) / 15 * 0.6));
+    pat.plateletCount  += (250 * (1 - spleenSequestration) - pat.plateletCount)  * 0.01 * dt;
 
     const activationRate = 0.1 * pat.thrombin;
     pat.plateletActivation += activationRate * dt;

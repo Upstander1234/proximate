@@ -6897,6 +6897,44 @@ console.log("\n[PORTAL HYPERTENSION / CIRRHOSIS — queue item V2-13]");
   worseUnderHemorrhage ? pass++ : fail++;
   if (!worseUnderHemorrhage) failures.push(`a cirrhotic patient should tolerate an identical superimposed hemorrhage measurably WORSE (blunted splanchnic autotransfusion reserve), got healthy-hemorrhage sbp=${healthyHem.after.sbp.toFixed(1)}, cirrhotic-hemorrhage sbp=${cirrhoticHem.after.sbp.toFixed(1)}`);
   console.log(`  ${worseUnderHemorrhage ? "PASS" : "FAIL"}  ${"...-> measurably worse pressure under identical hemorrhage".padEnd(46)} sbp: healthy+bleed ${healthyHem.after.sbp.toFixed(1)}, cirrhotic+bleed ${cirrhoticHem.after.sbp.toFixed(1)}`);
+
+  // QUEUE ITEM V2-13 (this session's own addition) — hepatic SYNTHETIC
+  // failure, genuinely distinct from the RAAS/fluid-retention mechanism
+  // above: liverInjury reduces the target that coagulation.js's factor
+  // regeneration chases (factorII/V/X, fibrinogen), so a cirrhotic patient
+  // shows real coagulopathy from reduced PRODUCTION even with zero active
+  // consumption/bleeding. Forcing liverInjury directly (not portalPressure)
+  // isolates this from the RAAS mechanism above, which is portalPressure-
+  // driven and does not touch liverInjury at all.
+  const liverFail = probe({ scen: "abdPain", settle: 180, run: 3600,
+    mutate: (p) => { p.liverInjury = 0.7; } });
+  const liverHealthy = probe({ scen: "abdPain", settle: 180, run: 3600 });
+  assertVersus("liverInjury -> real hepatic-synthetic coagulopathy (factorX falls)", liverFail, liverHealthy, "factorX", "down", 1);
+  assertVersus("...-> factorII falls too", liverFail, liverHealthy, "factorII", "down", 1);
+  assertVersus("...-> real fall in overall clot strength (coagPct)", liverFail, liverHealthy, "coagPct", "down", 1);
+  // The real teaching-point divergence: factor VIII is endothelial, not
+  // hepatic, synthesis, and is deliberately EXCLUDED from the liverInjury
+  // term (coagulation.js's own comment) — a severely liver-failed patient
+  // should NOT show a depressed factorVIII from this mechanism alone.
+  const viiiSpared = liverFail.after.factorVIII >= liverHealthy.after.factorVIII - 1;
+  viiiSpared ? pass++ : fail++;
+  if (!viiiSpared) failures.push(`factorVIII should stay essentially unaffected by liverInjury alone (endothelial, not hepatic, synthesis), got healthy=${liverHealthy.after.factorVIII.toFixed(1)}, liver-failed=${liverFail.after.factorVIII.toFixed(1)}`);
+  console.log(`  ${viiiSpared ? "PASS" : "FAIL"}  ${"...factorVIII deliberately SPARED (endothelial synthesis)".padEnd(46)} factorVIII: control ${liverHealthy.after.factorVIII.toFixed(1)}, liver-failed ${liverFail.after.factorVIII.toFixed(1)}`);
+
+  // Portal hypertension -> splenic sequestration -> thrombocytopenia, the
+  // SECOND real liver-disease coagulation link, mechanistically distinct
+  // from synthetic failure above (spleen, not hepatocytes) and from DIC-
+  // style consumption elsewhere in this file. Forces portalPressure (not
+  // liverInjury), the same field the RAAS mechanism above already uses.
+  const csph = probe({ scen: "abdPain", settle: 180, run: 3600,
+    mutate: (p) => { p.portalPressure = 12; } });
+  assertVersus("portalPressure -> real splenic-sequestration thrombocytopenia", csph, healthy3h, "plateletCount", "down", 5);
+  const belowThreshold = probe({ scen: "abdPain", settle: 180, run: 3600,
+    mutate: (p) => { p.portalPressure = 4; } });
+  const subThresholdSpecific = Math.abs(belowThreshold.after.plateletCount - healthy3h.after.plateletCount) < 1;
+  subThresholdSpecific ? pass++ : fail++;
+  if (!subThresholdSpecific) failures.push(`portalPressure below the real 5 mmHg portal-hypertension threshold should cause exactly zero sequestration, got control plateletCount=${healthy3h.after.plateletCount.toFixed(1)}, portalPressure=4 plateletCount=${belowThreshold.after.plateletCount.toFixed(1)}`);
+  console.log(`  ${subThresholdSpecific ? "PASS" : "FAIL"}  ${"...specificity: below 5 mmHg threshold, exactly zero sequestration".padEnd(46)} plateletCount: control ${healthy3h.after.plateletCount.toFixed(1)}, portalPressure=4 ${belowThreshold.after.plateletCount.toFixed(1)}`);
 }
 
 console.log("\n[PULMONARY CIRCULATION / RV-LV COUPLING — queue item V2-25]");
