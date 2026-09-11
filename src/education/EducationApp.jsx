@@ -27,6 +27,7 @@ const TABS = [
   { key: "stats", label: "Progress" },
   { key: "lectures", label: "Lectures", badge: "WIP" },
   { key: "submit", label: "Submit a Question" },
+  { key: "methods", label: "Methods" },
 ];
 
 export default function EducationApp({ onExit }) {
@@ -142,6 +143,7 @@ export default function EducationApp({ onExit }) {
       {tab === "global" && <GlobalStatsTab />}
       {tab === "lectures" && <LecturesTab onOpenPractice={() => setTab("mcq")} />}
       {tab === "submit" && <SubmitQuestionForm user={user} />}
+      {tab === "methods" && <MethodsPage onBack={() => setTab("dashboard")} />}
       {tab === "admin" && admin && <AdminReviewTab user={user} />}
     </ScreenShell>
   );

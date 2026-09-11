@@ -14,6 +14,7 @@ const TILES = [
   { key: "stats", label: "Progress & Statistics", desc: "Your accuracy, streaks, and suggested study areas." },
   { key: "lectures", label: "Lectures", desc: "WIP." },
   { key: "submit", label: "Submit a Question", desc: "Contribute to the crowdsourced question bank." },
+  { key: "methods", label: "Methods", desc: "Every calculation behind these numbers, explained plainly." },
 ];
 
 export default function EducationDashboard({ user, onNavigate }) {

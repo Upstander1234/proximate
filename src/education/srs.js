@@ -23,6 +23,18 @@
 //     lapses: 0,            // total times a graduated card has been rated Again
 //     leech: false,         // true once lapses crosses LEECH_THRESHOLD
 //     seen: 0, correct: 0, wrong: 0,
+//     answered: 0, answeredCorrect: 0,
+//                            // real MCQ-answer accuracy — "correct"/"wrong"
+//                            // above are the Anki-style self-graded RECALL
+//                            // rating (Again/Hard/Good/Easy), not whether the
+//                            // player actually picked the right choice. A
+//                            // player can pick the wrong answer and still
+//                            // rate their recall "Good" once they've read the
+//                            // explanation, so `correct` alone is not a valid
+//                            // accuracy signal. These two fields are the
+//                            // untouched, ground-truth answer-correctness
+//                            // count and are what personal-stats accuracy
+//                            // must be computed from.
 //   }
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
@@ -65,6 +77,8 @@ export function blankCardState() {
     seen: 0,
     correct: 0,
     wrong: 0,
+    answered: 0,
+    answeredCorrect: 0,
   };
 }
 

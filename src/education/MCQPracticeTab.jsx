@@ -260,6 +260,12 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
     const canonicalIdx = display.toCanonical[i];
     const correct = canonicalIdx === q.answerIndex;
     onAnswered(correct);
+    const cs = progress[q.id] || blankCardState();
+    onUpdateCard(q.id, {
+      ...cs,
+      answered: (cs.answered || 0) + 1,
+      answeredCorrect: (cs.answeredCorrect || 0) + (correct ? 1 : 0),
+    });
     recordResponse(q, canonicalIdx, correct, user);
     recordPrediction(user, {
       questionId: q.id,

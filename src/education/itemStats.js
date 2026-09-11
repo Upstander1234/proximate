@@ -189,6 +189,14 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
       /* fall through with an unknown level */
     }
   }
+  // The global "questions answered" counter is a plain engagement count,
+  // not a difficulty-calibration signal — it must fire for every real
+  // response, including one that weightFor() below defines as contributing
+  // nothing to community difficulty (no provider level set, "Other
+  // Healthcare Professional", etc). Firing it here, before that weighting
+  // is even computed, keeps the two concerns from being silently conflated.
+  if (firebaseConfigured) incrementGlobalCounter("totalQuestionsAnswered");
+
   const { attemptsWeight, correctWeight } = weightFor(responderLevel, question.level, wasCorrect);
   if (attemptsWeight === 0) return; // this response is defined to count for nothing
 
@@ -207,7 +215,6 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
         },
         { merge: true }
       );
-      incrementGlobalCounter("totalQuestionsAnswered");
       return;
     } catch (e) {
       console.error("recordResponse: Firestore write failed, recording locally", e);

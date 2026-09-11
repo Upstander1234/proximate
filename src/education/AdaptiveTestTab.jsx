@@ -273,7 +273,15 @@ export default function AdaptiveTestTab({ progress, onUpdateCard, onOpenMethods,
     // The adaptive test only knows right/wrong, not the player's own felt
     // difficulty, so it maps onto Good/Again rather than ever claiming Easy.
     const nextCard = schedule(prevCard, correct ? RATING.GOOD : RATING.AGAIN);
-    onUpdateCard(current.question.id, { ...nextCard, exposed: true });
+    onUpdateCard(current.question.id, {
+      ...nextCard,
+      exposed: true,
+      // Real answer-correctness ledger, independent of the SRS rating above
+      // — see srs.js's own header note on why `correct`/`wrong` alone are
+      // not a valid personal-accuracy signal.
+      answered: (prevCard?.answered || 0) + 1,
+      answeredCorrect: (prevCard?.answeredCorrect || 0) + (correct ? 1 : 0),
+    });
 
     const record = {
       question: current.question,
