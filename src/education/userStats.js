@@ -136,7 +136,7 @@ export function computeUserStats(progress, pool, predictionLog) {
   const suggestion = weakestDomain
     ? weakestDomainTarget > 0
       ? `${weakestDomain.domain} is currently your weakest domain. As of now, Proximate predicts your accuracy in ${weakestDomain.domain} is ~${weakestDomain.accuracy}%. Assuming you keep answering ${weakestDomain.domain} questions at an ${Math.round(TARGET_ACCURACY * 100)}% clip, it would take roughly ${weakestDomainTarget} more ${weakestDomain.domain} questions for your recorded accuracy in this domain to reach ${Math.round(TARGET_ACCURACY * 100)}%.`
-      : `${weakestDomain.domain} is currently your weakest domain, but your accuracy there (~${weakestDomain.accuracy}%) is already at or above the ${Math.round(TARGET_ACCURACY * 100)}% target — it's your weakest only relative to your other domains.`
+      : `${weakestDomain.domain} is currently your weakest domain, but your accuracy there (~${weakestDomain.accuracy}%) is already at or above the ${Math.round(TARGET_ACCURACY * 100)}% target. It's your weakest only relative to your other domains.`
     : null;
 
   return {

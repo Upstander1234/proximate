@@ -14,8 +14,8 @@ export default function MethodsPage({ onBack }) {
         <h1 className="text-3xl font-bold">How Proximate's Education System Works</h1>
         <p className="text-slate-400 mt-2">
           This page explains, in plain language, every real calculation and design decision behind
-          Proximate's study tools — question selection, spaced repetition, difficulty and prediction
-          estimates, and the study suggestions on your dashboard — and what each one is not.
+          Proximate's study tools: question selection, spaced repetition, difficulty and prediction
+          estimates, and the study suggestions on your dashboard, and what each one is not.
         </p>
       </div>
 
@@ -24,13 +24,13 @@ export default function MethodsPage({ onBack }) {
         adaptive-testing algorithm or scoring method. What follows is Proximate's own design, inspired by
         publicly available information about computerized adaptive testing (CAT) principles in general and
         the publicly described structure of the NREMT EMT cognitive exam. Your result is an educational
-        practice metric — Proximate's own estimated EMT readiness — never an official NREMT score, an
+        practice metric, Proximate's own estimated EMT readiness, never an official NREMT score, an
         NREMT prediction, or a guarantee of passing the real exam.
       </Section>
 
       <Section title="How questions are selected">
         Every question you're offered is chosen to give useful information about your current estimated
-        ability — not simply the hardest or easiest question available. The selection considers, together:
+        ability, not simply the hardest or easiest question available. The selection considers, together:
         <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-300">
           <li>your current estimated ability</li>
           <li>each candidate question's estimated difficulty and discrimination</li>
@@ -47,16 +47,16 @@ export default function MethodsPage({ onBack }) {
         "difficulty plus one / minus one" staircase. The model maintains a user ability estimate, a
         standard error for that estimate, and per-item difficulty and discrimination parameters. A correct
         answer generally raises your ability estimate and shifts subsequent questions toward higher
-        difficulty; an incorrect answer generally lowers it and shifts toward lower difficulty — but the
+        difficulty; an incorrect answer generally lowers it and shifts toward lower difficulty. The
         actual next question is the one estimated to give the most USEFUL information about your ability
         at that point, not simply a harder or easier one.
       </Section>
 
       <Section title="Community difficulty vs. your ability">
-        A question's "community difficulty" comes from how everyone who has answered it has performed —
-        it is tracked completely separately from any one user's ability estimate, and separately again
+        A question's "community difficulty" comes from how everyone who has answered it has performed.
+        It is tracked completely separately from any one user's ability estimate, and separately again
         from the question's quality (a manual approval decision). An 80%-correct question is never used
-        as a stand-in for how able YOU are — that's what the ability model is for.
+        as a stand-in for how able YOU are. That's what the ability model is for.
       </Section>
 
       <Section title="New questions become more reliable over time">
@@ -65,17 +65,17 @@ export default function MethodsPage({ onBack }) {
         back it, and heavily shrunk toward a neutral, medium-difficulty assumption until then. As more
         users answer a question, its difficulty (and, eventually, discrimination) estimate becomes more
         reliable, and it naturally moves from "provisional" to "fully trusted" in the adaptive selection
-        process — no manual recalibration is required.
+        process. No manual recalibration is required.
       </Section>
 
       <Section title={`Exam length: ${MIN_QUESTIONS}–${MAX_QUESTIONS} questions`}>
         The exam never ends before {MIN_QUESTIONS} questions, matching the range publicly described for the
         NREMT EMT cognitive exam (70–120 items). Once {MIN_QUESTIONS} questions have been answered, the
         exam may end if your ability estimate has reached Proximate's own 99% confidence stopping
-        criterion — intentionally tighter than the 95% band often associated with NREMT-style CAT, since
+        criterion, intentionally tighter than the 95% band often associated with NREMT-style CAT, since
         Proximate's own questions aren't guaranteed to be equivalent to real NREMT items. If that
         confidence level hasn't been reached by {MAX_QUESTIONS} questions, the exam stops there and says so
-        plainly — it does not claim to have reached its normal confidence-based stopping point when it
+        plainly. It does not claim to have reached its normal confidence-based stopping point when it
         hasn't.
       </Section>
 
@@ -95,14 +95,14 @@ export default function MethodsPage({ onBack }) {
         <p className="mt-3 text-slate-400">
           Because Proximate's existing questions are tagged by body-system topic rather than by
           assessment phase, each question's blueprint category is currently derived from its topic using a
-          documented approximation, not hand-tagged individually — stated here plainly as a known
+          documented approximation, not hand-tagged individually. Stated here plainly as a known
           limitation of the current content library, not hidden.
         </p>
       </Section>
 
       <Section title="Never-before-seen questions come first">
-        A question counts as "seen" the moment it is shown to you anywhere in Proximate — MCQ Practice,
-        a prior adaptive exam, or any future presentation context — using the same attempt/history
+        A question counts as "seen" the moment it is shown to you anywhere in Proximate: MCQ Practice,
+        a prior adaptive exam, or any future presentation context, using the same attempt/history
         architecture the rest of Proximate uses, not a separate one. The adaptive exam prioritizes
         questions you've never seen, with reliable difficulty data, that suit your current ability, while
         respecting the content blueprint. If you exhaust every eligible question in the bank, Proximate
@@ -112,7 +112,7 @@ export default function MethodsPage({ onBack }) {
 
       <Section title="Answer randomization">
         Every time a question is shown, its answer choices are shuffled independently. The underlying
-        correct answer never changes — only its on-screen position does — and your response is always
+        correct answer never changes, only its on-screen position does, and your response is always
         recorded against that stable, underlying answer, not whichever position it happened to appear in.
       </Section>
 
@@ -126,9 +126,9 @@ export default function MethodsPage({ onBack }) {
       <Section title="Your accuracy is your real answer record, not your self-rating">
         MCQ Practice asks two separate things after each question: which answer you picked (right there,
         immediately, graded against the real answer key), and then, separately, how well you personally
-        felt you recalled it — Again / Hard / Good / Easy — which only controls when Proximate schedules
+        felt you recalled it (Again / Hard / Good / Easy), which only controls when Proximate schedules
         that card again (see "Spaced repetition scheduling" below). Your displayed accuracy is computed
-        exclusively from the first of those — the actual multiple-choice answer you chose — never from the
+        exclusively from the first of those, the actual multiple-choice answer you chose, never from the
         second. Picking the wrong answer and later rating your recall "Good" (because you understood the
         explanation, say) does not, and cannot, make that question count as correct.
       </Section>
@@ -142,9 +142,9 @@ export default function MethodsPage({ onBack }) {
 
       <Section title={`"Consider completing N questions": how N is calculated`}>
         This number is a real, computed projection, not a fixed suggestion. It assumes you go on to answer
-        every future question in that domain at exactly {Math.round(TARGET_ACCURACY * 100)}% — the
+        every future question in that domain at exactly {Math.round(TARGET_ACCURACY * 100)}%, the
         conventional mastery-learning cut popularized by Benjamin Bloom's 1968 "Learning for Mastery" and
-        used in most criterion-referenced classroom testing since — and solves for the smallest number of
+        used in most criterion-referenced classroom testing since, and solves for the smallest number of
         additional questions that would pull your CUMULATIVE (running-average) accuracy in that domain up
         to {Math.round(TARGET_ACCURACY * 100)}%, as displayed (rounded to the nearest whole percent, same
         as every other accuracy number here).
@@ -158,15 +158,15 @@ export default function MethodsPage({ onBack }) {
           rounds to {Math.round(TARGET_ACCURACY * 100)}%.
         </p>
         <p className="mt-2">
-          This is a translation of John Carroll's 1963 "A Model of School Learning" — which frames mastery
+          This is a translation of John Carroll's 1963 "A Model of School Learning," which frames mastery
           as a function of how much further practice, at a learner's achievable performance level, it
-          takes to bring cumulative performance up to a criterion — from Carroll's original time axis onto
+          takes to bring cumulative performance up to a criterion, from Carroll's original time axis onto
           a question-count axis, the natural unit for a spaced-repetition question bank.
         </p>
         <p className="mt-2 text-amber-400/90">
           What this number is NOT: a prediction that your underlying knowledge will spontaneously improve,
           or a guarantee that answering that many questions will actually get you there. It's a completion
-          estimate under a stated best-case assumption — if your true performance going forward is below{" "}
+          estimate under a stated best-case assumption. If your true performance going forward is below{" "}
           {Math.round(TARGET_ACCURACY * 100)}%, no number of additional questions at that same (lower) rate
           will ever bring your average up to {Math.round(TARGET_ACCURACY * 100)}%; you'd need to actually
           study and improve, which is the entire point of the spaced-repetition system this number sits
@@ -190,15 +190,15 @@ export default function MethodsPage({ onBack }) {
         SuperMemo and, later, Anki), not a fixed daily quiz. Each question card moves through three phases:
         <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-300">
           <li>
-            <span className="text-slate-200">new</span> — never successfully reviewed yet; walks a short
+            <span className="text-slate-200">new</span>: never successfully reviewed yet; walks a short
             ladder (10 minutes, then 1 day) before graduating
           </li>
           <li>
-            <span className="text-slate-200">review</span> — the normal long-run interval, growing by your
+            <span className="text-slate-200">review</span>: the normal long-run interval, growing by your
             personal ease factor each time you rate it Good or Easy
           </li>
           <li>
-            <span className="text-slate-200">relearning</span> — a graduated card you just rated Again (a
+            <span className="text-slate-200">relearning</span>: a graduated card you just rated Again (a
             "lapse"); walks a short ladder again before returning to review at a reduced interval
           </li>
         </ul>
@@ -220,13 +220,13 @@ export default function MethodsPage({ onBack }) {
         Before you answer, Proximate estimates your chance of getting the question right by blending two
         real signals: how everyone else who has answered this specific question has done (community
         difficulty, weighted 60%), and your own recent overall accuracy (weighted 40%). If one of those
-        inputs doesn't exist yet — a brand-new question with no community responses, or a brand-new user
-        with no answer history — the estimate falls back to whichever real input is available, or a
+        inputs doesn't exist yet (a brand-new question with no community responses, or a brand-new user
+        with no answer history), the estimate falls back to whichever real input is available, or a
         neutral 65% if neither exists.
         <p className="mt-2">
           After you answer, both the prediction and the real outcome are logged, and Proximate's Progress
-          tab shows a real calibration curve (predicted vs. actual accuracy, bucketed in 10% bands) so you
-          — and Proximate's own maintainers — can see whether these predictions run over- or
+          tab shows a real calibration curve (predicted vs. actual accuracy, bucketed in 10% bands) so you,
+          and Proximate's own maintainers, can see whether these predictions run over- or
           under-confident, and where.
         </p>
       </Section>
@@ -245,24 +245,24 @@ export default function MethodsPage({ onBack }) {
           <li>no provider level saved (a guest, or "Other Healthcare Professional"): contributes nothing</li>
           <li>same level as the question: counts normally (1× either way)</li>
           <li>
-            one level below the question: a correct answer counts extra (1.5×) — a below-level provider
-            getting it right is stronger evidence the question is answerable — while a wrong answer isn't
-            held against it at all
+            one level below the question: a correct answer counts extra (1.5×), since a below-level
+            provider getting it right is stronger evidence the question is answerable, while a wrong answer
+            isn't held against it at all
           </li>
           <li>
             two or more levels below: correct answers count for even more (3×, capped there); wrong
             answers still aren't held against it
           </li>
           <li>
-            above the question's own level: a correct answer proves nothing (0×) — of course a paramedic
-            gets an EMT-level question right — while a wrong answer is weighted like two same-level misses,
-            since that's a stronger signal something is actually off with the question
+            above the question's own level: a correct answer proves nothing (0×), since of course a
+            paramedic gets an EMT-level question right, while a wrong answer is weighted like two
+            same-level misses, since that's a stronger signal something is actually off with the question
           </li>
         </ul>
         <p className="mt-2">
           A question's difficulty is treated as provisional, and heavily shrunk toward a neutral,
           medium-difficulty assumption, until it has at least {MIN_RESPONSES_FOR_DISPLAY} real weighted
-          responses behind it — so a brand-new question with two responses can't masquerade as
+          responses behind it, so a brand-new question with two responses can't masquerade as
           confidently easy or hard.
         </p>
       </Section>
@@ -270,7 +270,7 @@ export default function MethodsPage({ onBack }) {
       <Section title="Everyone's raw response count still moves the site-wide activity counter">
         Separately from difficulty weighting, Proximate's community-wide "questions answered" counter
         (shown on the dashboard) counts every real answer submitted by every user, regardless of provider
-        level — it's a plain engagement count, not a calibration signal, and is deliberately kept
+        level. It's a plain engagement count, not a calibration signal, and is deliberately kept
         independent of the weighting scheme above so an unset provider level never makes a real answer
         vanish from either number for the wrong reason.
       </Section>
