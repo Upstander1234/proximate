@@ -582,9 +582,7 @@ function ExamQuestion({ current, questionNumber, selectedDisplayIdx, answered, r
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between text-sm text-slate-400">
-        <span>
-          Question {questionNumber} <span className="text-slate-600">·</span> {question.domain}
-        </span>
+        <span>Question {questionNumber}</span>
         <span>
           {questionNumber >= MIN_QUESTIONS ? "eligible to conclude" : `min. ${MIN_QUESTIONS} questions`}
         </span>
