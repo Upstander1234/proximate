@@ -31,7 +31,7 @@ import { buildDialogueContext } from "./dialogue/dialogueContext.js";
 import { ACHIEVEMENTS, newlyUnlocked } from "./achievements.js";
 import { useVoiceCommands } from "./hooks/useVoiceCommands.js";
 import { isTaskBlocked, rollPartnerLimitation, LIMITATIONS } from "./limitations.js";
-import { CONDITION_INFO, groundTruthConditions, matchesCondition } from "./doctordle.js";
+import { CONDITION_INFO, groundTruthConditions, matchesCondition } from "./medicle.js";
 import { REFLECTION_PROMPTS, REFLECTION_PRIMARY_DELTA, REFLECTION_SECONDARY_DELTA, initializeCampaignNames,
   campaignName, campaignGender, CAMPAIGN_NAME_SLOTS,
   effectiveFitness, fitnessCostMult, campaignFumbleChance, PHYSICAL_ACTION_IDS, FATIGUE_PER_PHYSICAL_ACTION,

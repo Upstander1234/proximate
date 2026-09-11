@@ -19,7 +19,7 @@
 // as `condition`, unchanged from how a single key already worked.
 import { SCEN } from "./scenarios.js";
 import { CONDITIONS } from "../physio/conditions.js";
-import { CONDITION_INFO } from "../doctordle.js";
+import { CONDITION_INFO } from "../medicle.js";
 import { CONDITION_TAXONOMY } from "./conditionTaxonomy.js";
 
 // Reverse index: conditionKey -> {imps, clothing} pulled from the first

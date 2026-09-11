@@ -3,6 +3,7 @@
 // store.js/examStore.js, so it works offline and in guest mode too.
 
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";
+import { incrementGlobalCounter } from "./globalStats.js";
 
 const LS_PREFIX = "nremt_profile_";
 
@@ -75,8 +76,10 @@ export async function loadProfile(user) {
 // isStudent) never has to first re-fetch and re-send the rest.
 export async function saveProfile(user, patch) {
   if (!user) return;
+  const isFirstProfile = !cache.get(user.uid) && !loadLocal(user.uid) && patch.providerLevel;
   const merged = { ...(cache.get(user.uid) || {}), ...patch };
   cache.set(user.uid, merged);
+  if (isFirstProfile) incrementGlobalCounter("totalUsers");
   saveLocal(user.uid, merged);
   if (user.isGuest || !firebaseConfigured) return;
   try {

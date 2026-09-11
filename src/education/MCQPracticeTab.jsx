@@ -2,10 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { LEVELS, DOMAINS_BY_LEVEL } from "./questions.js";
 import { getQuestionPool, poolByLevel } from "./questionPool.js";
 import { blankCardState, schedule, isDue, previewIntervals, RATING } from "./srs.js";
-import { getItemStats, recordResponse, choicePercentages, MIN_RESPONSES_FOR_DISPLAY } from "./itemStats.js";
+import {
+  getItemStats,
+  recordResponse,
+  recordSrsSignal,
+  choicePercentages,
+  difficultyBand,
+  MIN_RESPONSES_FOR_DISPLAY,
+} from "./itemStats.js";
+import { difficultyFromStats } from "./adaptiveEngine.js";
 import { randomizePresentation } from "./randomize.js";
 import { ensureExposed } from "./exposure.js";
 import { reportingEnabled, submitReport, REPORT_REASONS } from "./reports.js";
+import { estimatePredictedProb, recordPrediction } from "./predictions.js";
 
 function shuffle(arr) {
   const a = [...arr];
@@ -242,6 +251,8 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.id]);
 
+  const predictedPct = useMemo(() => estimatePredictedProb(stats, null), [stats]);
+
   const choose = (i) => {
     if (revealed) return;
     setSelectedDisplayIdx(i);
@@ -250,6 +261,13 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
     const correct = canonicalIdx === q.answerIndex;
     onAnswered(correct);
     recordResponse(q, canonicalIdx, correct, user);
+    recordPrediction(user, {
+      questionId: q.id,
+      domain: q.domain,
+      level: q.level,
+      predictedPct,
+      actualCorrect: correct,
+    });
   };
 
   const cardState = progress[q.id] || blankCardState();
@@ -262,11 +280,13 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
   const rate = (rating) => {
     const nextState = schedule(cardState, rating);
     onUpdateCard(q.id, { ...nextState, exposed: true });
+    recordSrsSignal(q, rating, user);
     onRated();
   };
 
   const enoughData = (stats?.attempts || 0) >= MIN_RESPONSES_FOR_DISPLAY;
   const pcts = revealed && stats ? choicePercentages(stats, q.choices.length) : null;
+  const difficulty = stats ? difficultyFromStats(stats) : null;
 
   return (
     <div className="space-y-5">
@@ -292,6 +312,17 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
       {reportOpen && <ReportQuestionModal q={q} user={user} onClose={() => setReportOpen(false)} />}
 
       <div className="rounded-xl bg-slate-900 border border-slate-800 p-5">
+        <div className="flex items-center justify-between gap-3 mb-3 text-xs">
+          {!revealed && (
+            <span className="text-sky-400">Proximate predicts: {predictedPct}% chance correct</span>
+          )}
+          {stats && (
+            <span className="text-slate-500 ml-auto">
+              Difficulty: {difficultyBand(difficulty?.b)} ·{" "}
+              {Math.round((difficulty?.confidence || 0) * 100)}% confidence
+            </span>
+          )}
+        </div>
         <div className="text-lg font-medium mb-4">{q.question}</div>
         <div className="space-y-2">
           {display.displayChoices.map((c, i) => {

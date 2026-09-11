@@ -15,8 +15,19 @@ import {
   selectNextItem,
 } from "./adaptiveEngine.js";
 import { BLUEPRINT_CATEGORIES, blueprintCategoryOf } from "./contentBlueprint.js";
+import { incrementGlobalCounter } from "./globalStats.js";
 
 const LEVEL = "EMT"; // EMT-B only, this release
+
+// Fetches community item stats for every question in the pool concurrently
+// rather than one at a time — sequential awaits here used to mean one full
+// round trip per question (over a thousand for the EMT bank), which is
+// slow even on a healthy connection and can hang the whole exam load if
+// any single request is slow.
+async function loadStatsMap(levelPool) {
+  const entries = await Promise.all(levelPool.map(async (q) => [q.id, await getItemStats(q)]));
+  return new Map(entries);
+}
 
 // Pure decision function: given the exam's current state, decide what
 // happens next — stop with results, notify the bank is exhausted, or
@@ -138,10 +149,7 @@ export default function AdaptiveTestTab({ progress, onUpdateCard, onOpenMethods,
     setPhase("loading");
     const full = await getQuestionPool();
     const levelPool = poolByLevel(full, LEVEL);
-    const statsMap = new Map();
-    for (const q of levelPool) {
-      statsMap.set(q.id, await getItemStats(q));
-    }
+    const statsMap = await loadStatsMap(levelPool);
     setPool(levelPool);
     setItemStatsById(statsMap);
     setAdministered([]);
@@ -175,10 +183,7 @@ export default function AdaptiveTestTab({ progress, onUpdateCard, onOpenMethods,
     const full = await getQuestionPool();
     const levelPool = poolByLevel(full, LEVEL);
     const byId = new Map(levelPool.map((q) => [q.id, q]));
-    const statsMap = new Map();
-    for (const q of levelPool) {
-      statsMap.set(q.id, await getItemStats(q));
-    }
+    const statsMap = await loadStatsMap(levelPool);
 
     const rebuilt = [];
     for (const r of saved.administered) {
@@ -292,6 +297,7 @@ export default function AdaptiveTestTab({ progress, onUpdateCard, onOpenMethods,
 
   function finish(reason) {
     if (user) saveExamState(user, null); // the attempt is over — clear the saved snapshot
+    incrementGlobalCounter("totalExamsCompleted");
     setStoppedReason(reason);
     setPhase("results");
   }

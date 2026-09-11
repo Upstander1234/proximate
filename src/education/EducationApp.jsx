@@ -12,10 +12,19 @@ import MethodsPage from "./MethodsPage.jsx";
 import SubmitQuestionForm from "./SubmitQuestionForm.jsx";
 import AdminReviewTab from "./AdminReviewTab.jsx";
 import ProfileSettings from "./ProfileSettings.jsx";
+import EducationDashboard from "./EducationDashboard.jsx";
+import ProviderAssessmentTab from "./ProviderAssessmentTab.jsx";
+import DailyChallengeTab from "./DailyChallengeTab.jsx";
+import StatsTab from "./StatsTab.jsx";
+import GlobalStatsTab from "./GlobalStatsTab.jsx";
 
 const TABS = [
+  { key: "dashboard", label: "Dashboard" },
   { key: "mcq", label: "MCQ Practice" },
   { key: "adaptive", label: "Adaptive Exam" },
+  { key: "assessment", label: "Assessment" },
+  { key: "daily", label: "Daily Challenge" },
+  { key: "stats", label: "Progress" },
   { key: "lectures", label: "Lectures", badge: "WIP" },
   { key: "submit", label: "Submit a Question" },
 ];
@@ -23,7 +32,7 @@ const TABS = [
 export default function EducationApp({ onExit }) {
   const [user, setUser] = useState(null);
   const [progress, setProgress] = useState(null); // null = loading
-  const [tab, setTab] = useState("mcq");
+  const [tab, setTab] = useState("dashboard");
   const [showAuth, setShowAuth] = useState(false);
   const [showMethods, setShowMethods] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -122,10 +131,15 @@ export default function EducationApp({ onExit }) {
         ))}
       </nav>
 
+      {tab === "dashboard" && <EducationDashboard user={user} onNavigate={setTab} />}
       {tab === "mcq" && <MCQPracticeTab progress={progress} onUpdateCard={updateCard} user={user} />}
       {tab === "adaptive" && (
         <AdaptiveTestTab progress={progress} onUpdateCard={updateCard} onOpenMethods={() => setShowMethods(true)} user={user} />
       )}
+      {tab === "assessment" && <ProviderAssessmentTab user={user} />}
+      {tab === "daily" && <DailyChallengeTab user={user} />}
+      {tab === "stats" && <StatsTab user={user} />}
+      {tab === "global" && <GlobalStatsTab />}
       {tab === "lectures" && <LecturesTab onOpenPractice={() => setTab("mcq")} />}
       {tab === "submit" && <SubmitQuestionForm user={user} />}
       {tab === "admin" && admin && <AdminReviewTab user={user} />}

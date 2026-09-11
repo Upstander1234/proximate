@@ -16,6 +16,7 @@
 
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";
 import { loadProfile } from "./profile.js";
+import { incrementGlobalCounter } from "./globalStats.js";
 
 const LS_KEY = "nremt_local_item_stats";
 
@@ -125,6 +126,17 @@ function saveLocal(all) {
 // question's stats from Firestore repeatedly.
 const cache = new Map();
 
+// A slow or unreachable connection must never hang the caller forever — an
+// exam load that awaits this for hundreds of questions in a row (or in
+// parallel) needs a hard ceiling per read, after which it just falls back
+// to local/blank stats for that one question rather than blocking everyone
+// behind it.
+const FIRESTORE_READ_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, ms) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
+}
+
 export async function getItemStats(question) {
   if (cache.has(question.id)) return cache.get(question.id);
   let stats = null;
@@ -132,7 +144,7 @@ export async function getItemStats(question) {
     try {
       const db = await getFirebaseDb();
       const { doc, getDoc } = await import("firebase/firestore");
-      const snap = await getDoc(doc(db, "questionStats", question.id));
+      const snap = await withTimeout(getDoc(doc(db, "questionStats", question.id)), FIRESTORE_READ_TIMEOUT_MS);
       if (snap.exists()) {
         const d = snap.data();
         stats = {
@@ -195,6 +207,7 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
         },
         { merge: true }
       );
+      incrementGlobalCounter("totalQuestionsAnswered");
       return;
     } catch (e) {
       console.error("recordResponse: Firestore write failed, recording locally", e);
@@ -209,6 +222,75 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
   s.updatedAt = Date.now();
   local[question.id] = s;
   saveLocal(local);
+}
+
+// Maps an SRS rating (srs.js's RATING: 1=Again, 2=Hard, 3=Good, 4=Easy) to
+// how much of a "was this correct" signal it represents for DIFFICULTY
+// purposes — distinct from whether the quiz answer itself was right. A
+// user marking "Again" after a technically-correct answer means the
+// question was hard to retain, which should still push its difficulty
+// estimate up; "Easy" reinforces that it was genuinely easy.
+const SRS_GRADE_FACTOR = { 1: 0, 2: 0.35, 3: 0.7, 4: 1 };
+
+// Records the SRS rating a user gave a card as an ADDITIONAL, separate
+// behavioral signal feeding the same community attempts/correct totals
+// recordResponse() writes to — not a replacement for the raw correct/
+// incorrect signal, an addition to it (see itemParams()/difficultyFromStats
+// in adaptiveEngine.js, which read attempts/correct without caring which
+// signal contributed them). Weighted at half of an ordinary response's
+// weight so a single SRS rating can't dominate the estimate the way the
+// underlying quiz answer does.
+export async function recordSrsSignal(question, ratingValue, user) {
+  cache.delete(question.id);
+
+  let responderLevel;
+  if (user) {
+    try {
+      const profile = await loadProfile(user);
+      responderLevel = profile?.providerLevel;
+    } catch {
+      /* fall through with an unknown level */
+    }
+  }
+  const base = weightFor(responderLevel, question.level, true);
+  if (base.attemptsWeight === 0) return;
+
+  const grade = SRS_GRADE_FACTOR[ratingValue] ?? 0.5;
+  const attemptsWeight = base.attemptsWeight * 0.5;
+  const correctWeight = attemptsWeight * grade;
+
+  if (firebaseConfigured) {
+    try {
+      const db = await getFirebaseDb();
+      const { doc, setDoc, increment } = await import("firebase/firestore");
+      await setDoc(
+        doc(db, "questionStats", question.id),
+        { attempts: increment(attemptsWeight), correct: increment(correctWeight), updatedAt: Date.now() },
+        { merge: true }
+      );
+      incrementGlobalCounter("totalSrsReviews");
+      return;
+    } catch (e) {
+      console.error("recordSrsSignal: Firestore write failed, recording locally", e);
+    }
+  }
+
+  const local = loadLocal();
+  const s = local[question.id] || blankStats(question.choices.length);
+  s.attempts += attemptsWeight;
+  s.correct += correctWeight;
+  s.updatedAt = Date.now();
+  local[question.id] = s;
+  saveLocal(local);
+}
+
+// A plain 0-1 difficulty logit `b` (adaptiveEngine.js's own scale, higher =
+// harder) bucketed into a player-facing label.
+export function difficultyBand(b) {
+  if (b == null) return "Unknown";
+  if (b < -0.4) return "Easy";
+  if (b > 0.4) return "Hard";
+  return "Medium";
 }
 
 // Community difficulty, as a "% of attempts that were correct" figure for

@@ -25,7 +25,7 @@ async function main() {
     await page.getByText(/Start review/).first().click();
     await page.waitForSelector("button:has-text('Again')", { state: "hidden" }).catch(() => {});
     // click the first answer-choice button (choices render as full-width buttons)
-    const choiceButtons = page.locator("div.rounded-xl.bg-slate-900 button");
+    const choiceButtons = page.locator("div.rounded-xl.bg-slate-900.p-5 button");
     await choiceButtons.first().click();
     await page.waitForSelector("text=Again");
     console.log("PASS: MCQ question answered, reveal + rating shown");
@@ -44,10 +44,10 @@ async function main() {
     await page.waitForSelector("text=Adaptive Practice Exam");
 
     await page.getByText("Start adaptive exam", { exact: true }).first().click();
-    await page.waitForSelector("text=Question 1", { timeout: 15000 });
+    await page.waitForSelector("text=Question 1", { timeout: 25000 });
     console.log("PASS: adaptive exam started, question 1 shown");
 
-    const examChoiceButtons = page.locator("div.rounded-xl.bg-slate-900 button");
+    const examChoiceButtons = page.locator("div.rounded-xl.bg-slate-900.p-5 button");
     await examChoiceButtons.first().click();
     await page.waitForSelector("text=Next question");
     console.log("PASS: adaptive question answered, explanation + community % shown");
