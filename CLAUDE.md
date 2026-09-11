@@ -346,6 +346,140 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-10 — Queue item V2-24(b) CLOSED: real aortic regurgitation for aorticDissection, closing the second of item 41's three open sub-items; V2-6/V2-10/V2-26/V2-27/V2-29/V2-30 re-audited (all confirmed accurately described, no drift); V2-28 confirmed already shipped by a concurrent session
+
+**V2-24(b), the shipped piece.** Item 41 (see its own section-3 entry, and
+section 6's V2-24) left three sub-items open: (a) ischemic-MR consumption
+by the solver, (b) no shipped scenario declares valve disease, (c) AV
+dyssynchrony/pacemaker syndrome. This session closed (b). `updateValves`
+(cardiovascular.js) has always had a driver
+(`if (rf.aorticDissection) ... = Math.max(..., 0.5)`), and `chest`
+(the `aorticDissection` scenario) has always narrated "a soft blowing
+murmur in diastole... New diastolic murmur — aortic regurgitation" — but
+nothing ever set `riskFactors.aorticDissection`, so the murmur was pure
+narration with no physiology behind it, exactly the gap the hypercalcemia/
+saline fix (queue item 5) was found by and closed the same way.
+
+**A real measurement mistake was caught before trusting the fix, not
+after.** The uncalibrated 0.5 severity item 41 shipped-then-reverted lives
+in TWO places: `aiTarget` (feeding `pat.aorticRegurgFrac`, the LUMPED
+model's own composite, consumed only by the legacy SV formula that the
+authoritative full-loop ODE overwrites every tick per section 5's "two
+solvers" rule) and `arStructuralTarget` (feeding
+`pat.aorticRegurgStructural`, which the ODE's `derivative()` genuinely
+reads for its Qar regurgitant-flow term). A first pass swept only the
+`aiTarget` constant from 0.01 to 0.9 and found ef/pp/edv COMPLETELY
+insensitive to it — a real, confusing dead end, until reading `derivative()`
+directly confirmed `aorticRegurgFrac` was never the consumed field.
+Recalibrated to 0.35 instead of 0.5 (this function's own already-
+established "moderate AR" default, `rf.aorticRegurgSeverity ?? 0.35`,
+reused rather than a new invented number) on the REAL knob,
+`arStructuralTarget`, keeping the two constants in sync so a future direct
+reader of `aorticRegurgFrac` isn't left disagreeing with the ODE.
+
+**MEASURED against the real engine** (t=240s vs. a suppressed-risk-factor
+control, same scenario): pulse pressure 34 -> 51.9 mmHg (+17.9), LVEDV
+116.2 -> 147.3 mL (volume overload), forward EF 0.53 -> 0.35 —
+still a real, classic widened-pulse-pressure/volume-overload signature,
+just not severity 0.5's near-acute-heart-failure magnitude (item 41's own
+prior measurement: pp 34->59, EF 0.53->0.31). Because "chest" IS the
+`aorticDissection` condition, `mechanismWiring.mjs`'s takotsubo section
+(which used `chest` as its "matched normal-EF chest-pain control") was
+moved onto `acs` instead — troponin-positive but pre-necrosis chest pain,
+no valve lesion, EF ~0.50, still comfortably separated from takotsubo's
+own ~0.38.
+
+**A real mechanismWiring.mjs test-harness bug was found and fixed in a
+follow-up pass, per lesson 8 (verify the harness, don't trust a probe
+that happens to pass).** The new `[ACUTE AORTIC REGURGITATION from
+DISSECTION]` section's own suppressed-control arm used `settle:240,
+run:240` — but `probe()`'s own `mutate` callback only fires inside the
+run-phase loop (`settle+STEP` to `run`), which never executes at all when
+`settle===run`. Both arms therefore measured the SAME real (unsuppressed)
+state, silently passing at first only because the values happened to
+coincide by chance at review time — later found FAILING for real once
+re-run (pp/edv/ef bit-for-bit identical between "withAR" and "suppressed",
+`aorticRegurgStructural` stuck at 0.35 in the "suppressed" arm instead of
+0). Fixed by settling only 2s (before AR has time to build) and running
+the real 238s comparison window with `mutate` applied the whole time in
+the control arm, matching item 41's own original "Arm A suppresses the
+risk factor each tick" design. Re-verified via a standalone probe: pp
+34->51.9, edv 116->147, ef 0.53->0.35 with the risk factor on; both the
+suppressed control and a healthy `abdPain` control read exactly 0
+`aorticRegurgStructural`.
+
+**Verification.** `node --check`/`npx eslint` clean on all three touched
+files (`cardiovascular.js`, `conditions.js`, `mechanismWiring.mjs`) —
+zero findings beyond the pre-existing `App.jsx` baseline.
+`aorticRegurgStructural` was already tracked in `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists from item 41's own original work, so no
+sweep changes were needed. `node src/scripts/scenarioSweep.mjs` was run
+to completion and came back **183 scenarios, 20,833,820 checks, 915
+failed** — byte-identical to the last documented baseline (queue item 75's
+own entry, the confirmed PRE-EXISTING `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/
+`pvrWood`-undefined-at-t=2s defect on unmodified master), confirming zero
+regression. **`mechanismWiring.mjs` could NOT be run to completion in
+this session's shared, extremely contended multi-agent environment**
+(consistent with lesson 14's "container killed it seven times" — this
+session observed 5-7 concurrent `node.exe` processes throughout, and
+several full-run attempts either crashed silently partway through
+unrelated, far-downstream sections or made only slow, partial progress
+over 20-40+ minutes) — stated honestly, not assumed clean. Two independent
+partial runs each reached well past this session's own new section and
+the modified takotsubo section with 100% PASS on every assertion related
+to this change; the standalone probe above (lesson 8's sanctioned
+technique, copied against the suite's own probe/pinTraitsNeutral helpers)
+is this session's own real, measured regression evidence for the new
+mechanism specifically. A future session in a quieter environment should
+confirm the full suite passes clean, particularly given the concurrent,
+unrelated V2-13 hepatic-coagulopathy assertions another session was
+landing in the same file this session.
+
+**V2-27 confirmed CLOSED, no work needed.** Both slow-timescale states
+(`pat.lvHypertrophy`, `pat.vascularStiffness`) are shipped and verified
+per section 6's own text and the git history (commit "Queue item V2-27's
+remainder: real vascular-stiffness chronic adaptation") — read in full
+before starting this session's own work, confirmed current, nothing left
+to do under this item's own name (nephron loss / coronary atherosclerosis
+remain open but unclaimed by any item text as this session's scope).
+
+**V2-6/V2-10/V2-26/V2-29/V2-30 re-audited by reading the actual code
+against each item's own text, no drift found, no code changed.**
+- V2-6: `respiratory.js`'s shunt equation and the `o2ResponseTest` action
+  still match the documented scoped slice exactly; the full V/Q-compartment
+  population rewrite is still correctly unattempted (genuinely large,
+  high-blast-radius work, explicitly out of scope for a single batch).
+- V2-10: `renal.js`'s `proximalReabsorptionEff`/`distalReabsorptionEff`/
+  `segmentReabsorptionEff` are all present and unchanged; the full nephron
+  segment chain and a real diuretic drug are still genuinely unbuilt.
+- V2-26: confirmed by grep that no `histamineH1`/`histamineH2`/`serotonin`
+  receptor class exists anywhere in `drugs.js` — the item's own "still
+  genuinely open" claim holds exactly as written.
+- V2-29: `cardiovascular.js`'s CPR block still hardcodes
+  `mechAct = 0.17 * cpr` and `compressionRate = 110` — confirmed
+  unchanged by direct grep; depth/rate/duty independently moving that
+  floor remains real, unattempted mechanism work.
+- V2-30: `pat.monitoring` structure confirmed still deliberately unbuilt
+  (no real per-field consumer identified, would be decorative per section
+  1) — the item's own text is accurate as written.
+
+**V2-28 (pregnancy/fetal integration) — confirmed already shipped, by a
+concurrent session, not this one.** Grepped before starting any new work
+on it (lesson 16): `pat.fetalHR` is real and live (`obstetric.js`,
+git commit "Physiology: fetal heart rate driven by placental perfusion
+(queue item V2-28, scoped slice)"), with a real `fetalHeartTones` exam
+action (`actions.js`) reading it and `placentalAbruption` driving real
+fetal bradycardia through it. This item's own section-6 text is now stale
+(still describes the fetal compartment as unbuilt) and should be updated
+to reflect the shipped scoped slice — not done in this pass, to avoid
+colliding with whichever concurrent session is actively documenting that
+work in this same file.
+
+**Item 7 (the standing condition-library workstream) was not reached this
+session** — the repeated environment interruptions (session-limit resets,
+multi-agent CPU contention, and the mechanismWiring.mjs harness bug above)
+consumed the available time budget; stated honestly rather than claimed.
+
 ### 2026-09-09 — Education subsystem: MCQ Practice, an IRT-based Adaptive Practice Exam, a WIP Lectures tab, and crowdsourced-question submission/review, built on top of the pre-existing `src/education/` module (not the physiology engine — see the preface's own new pointer)
 
 **Not physiology-engine work.** Filed here only because section 3 is this
@@ -7654,13 +7788,25 @@ V2-23. **Multi-timescale physiology — largely already true by
    task, worth doing once several of the above are further along, not
    before.
 
-V2-24. **Advanced cardiovascular coupling.** Queue item 41 already closed
-   valvular regurgitation in the authoritative full-loop solver (a real,
-   large piece of exactly this ask) and left three explicit sub-items open
-   (ischemic-MR consumption by the solver, a shipped scenario declaring
-   valve disease, AV dyssynchrony/pacemaker syndrome) — read item 41's own
-   entry in full before starting here; this item is that same remaining
-   work, not a new one.
+V2-24. **PARTIALLY DONE — sub-item (b) CLOSED (2026-09-10), see section
+   3's newest entry.** Item 41 already closed valvular regurgitation in
+   the authoritative full-loop solver and left three explicit sub-items
+   open: (a) ischemic-MR consumption by the solver, (b) a shipped scenario
+   declaring valve disease, (c) AV dyssynchrony/pacemaker syndrome. (b) is
+   now real: `aorticDissection` sets `riskFactors.aorticDissection = true`,
+   and `updateValves`'s already-built driver (recalibrated from an
+   uncalibrated 0.5 down to 0.35, this engine's own existing "moderate AR"
+   default) makes the `chest` scenario's always-narrated diastolic murmur
+   physiologically real — measured pp 34->51.9 mmHg, LVEDV 116->147 mL,
+   EF 0.53->0.35. **STILL OPEN — (a) and (c), unchanged from item 41's own
+   entry**: (a) needs a proper controlled A/B against the ischemic family
+   before the ischemic-MR/annular-dilation regurgitation pathway can be
+   safely wired into the solver (a prior attempt measurably wrecked
+   `acs`/`unstableAngina`'s own cardiac output — see item 41's entry for
+   the full trace); (c) AV dyssynchrony/pacemaker syndrome has one obvious
+   lever (attenuating atrial kick for AV-dissociated rhythms) already on
+   record as tried and MEASURED WORSE — do not retry it blind. Read item
+   41's own entry in full before attempting either.
 
 V2-25. **DONE (this session) — the PVR->RV afterload->RV output->LV preload
    coupling was already real inside the authoritative full-loop ODE (a real
