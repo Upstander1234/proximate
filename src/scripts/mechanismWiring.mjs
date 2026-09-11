@@ -436,6 +436,7 @@ function snapshot(p) {
     // field (above), its coagulation/hemodynamic one via `co` (below).
     burnTbsaFraction: p.burnTbsaFraction || 0,
     factorII: p.factorII ?? 100,
+    factorX: p.factorX ?? 100,
     fibrinogen: p.fibrinogen ?? 3,
     // Agitation / psychiatric-crisis severity (queue items 51/52): the
     // condition-declared source magnitude, the derived real-time severity,
@@ -5514,8 +5515,20 @@ console.log("[ACUTE AORTIC REGURGITATION from DISSECTION — queue item V2-24(b)
   // (mutate) rather than a different scenario, since "chest" IS this
   // condition — there is no separate healthy analog with the same
   // hemorrhage trajectory to compare against.
-  const withAR = probe({ scen: "chest", settle: 240, run: 240 });
-  const suppressed = probe({ scen: "chest", settle: 240, run: 240, mutate: (p) => { p.riskFactors.aorticDissection = false; } });
+  //
+  // A real test-harness bug was found and fixed here (lesson 8): probe()'s
+  // own `mutate` callback is applied starting right after `settle`, never
+  // during it — so with settle=240 both arms let the condition's real
+  // riskFactors.aorticDissection=true (set at construction) drive AR all
+  // the way to its target DURING settle, and since run===settle the run-phase
+  // loop body never executes at all, so mutate never fires even once. The
+  // "suppressed" arm therefore measured the SAME withAR state. Fixed by
+  // settling only 2s (before AR has had time to build) and running the
+  // real comparison window (238s) afterward, with mutate suppressing the
+  // whole time in the control arm — matching item 41's own original
+  // "Arm A suppresses the risk factor each tick" design.
+  const withAR = probe({ scen: "chest", settle: 2, run: 240 });
+  const suppressed = probe({ scen: "chest", settle: 2, run: 240, mutate: (p) => { p.riskFactors.aorticDissection = false; } });
 
   assertVersus("aorticDissection AR widens pulse pressure", withAR, suppressed, "pp", "up", 10);
   assertVersus("aorticDissection AR raises LVEDV (volume overload)", withAR, suppressed, "edv", "up", 15);
