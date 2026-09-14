@@ -346,6 +346,102 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from queue item 45b) was found in the course of tracing them.
+
+**Blocked on the run properly, not assumed.** Launched in the background
+with a PID file, then blocked in a single foreground call polling the log
+via `tail --pid=$PID -f` up to the tool's own timeout; the run outlived that
+window and continued unattended through a session-limit reset, and was
+found complete on the next check (`113 passed, 2 failed, 115 total. TIER:
+FULL — all assertions ran.`) — a real full-tier completion, not a truncated
+partial (per section 2's own "a truncated run is not a pass" warning).
+
+**Diffed the failure SET against the documented baseline (115 passed, 0
+failed), per section 4's own explicit instruction — not just the count.**
+Both failures are new:
+- `[OPIOID DEPRESSION] morphine 4 mg -> PaCO2 rise`: measured 3.83-3.86
+  mmHg against a required [4, 10] mmHg band — a real, small, reproducible
+  shortfall (confirmed reproducible via direct re-invocation of the same
+  section, not a one-off draw).
+- `[SEIZURE LIMB] midazolam terminates moderate seizure`: measured 100% of
+  late ticks still seizing against a required [0, 15]% — a full,
+  non-borderline failure, not noise.
+
+**Root-caused both, not patched blind, per lesson 8 (instrument before
+trusting a hypothesis).** A standalone probe replicating the suite's own
+`makePatient()`/`S()`/tick-loop helpers verbatim confirmed BOTH failures are
+fully deterministic across repeated constructions (identical to 4 decimal
+places on 5 separate patient instances) — ruling out queue item 50's own
+per-patient trait randomization (`baroreflexGain`/`metabolicRate`/etc.,
+unpinned in this suite's own `makePatient()`, unlike `mechanismWiring.mjs`'s
+`pinTraitsNeutral()`) as the cause, which was the first, and wrong,
+hypothesis. The real cause, traced directly:
+
+- **Midazolam's own real anticonvulsant intensity is measurably lower than
+  the coefficient's own in-code comment claims.** `drugs.js`'s `midazolam`
+  entry states "a standard 5 mg dose (measured intensity 0.534) suppresses
+  ~48% of the drive" (`anticonvulsant: 0.9`, so 0.9*0.534≈0.48). Direct
+  instrumentation of the real engine for the identical dose/timing this
+  suite's own `seizureRun()` helper uses shows peak `pat.anticonvulsant`
+  plateauing at 0.3905 — an implied intensity of 0.434, not 0.534, a ~19%
+  shortfall from the cited figure. At the suite's own glu=35 "moderate"
+  severity (`metabolic` drive = 0.25), `rawDrive = 0.25*(1-0.39) = 0.1525`,
+  which sits just ABOVE the 0.15 sustain threshold `neuro.js`'s own
+  `SUSTAIN` constant uses to decide whether a seizure terminates — a
+  genuine, measured near-miss, not a logic bug. Whatever intensity
+  computation or PK parameter the `0.534` comment was originally measured
+  against no longer reproduces that figure; this is a real, unexplained
+  drift between a drug's own documented calibration and its current
+  behavior, most likely from an unrelated PK/Emax-formula change in one of
+  the many intervening sessions' batches. NOT fixed blind this session
+  (would mean either recalibrating a shared intensity computation or
+  raising midazolam's own coefficient without knowing which is the "wrong"
+  side) — filed as new queue item 77.
+- Morphine's own shortfall (3.83-3.86 vs the required floor of 4) is a
+  small, ~4% miss on a similarly-shaped calibration comment
+  (`drugs.js`: "RE-IDENTIFIED: PaCO2 +6.3 mmHg after 4 mg IV" against a
+  documented 5-8 mmHg range, with the suite's own threshold set at a
+  narrower 4-10) — plausibly the same class of drift as midazolam's, on a
+  different receptor pathway (`respDriveSuppression` vs `anticonvulsant`).
+  Filed alongside item 77 rather than separately, since both may share a
+  common root cause in whatever shared PK/intensity code changed.
+
+**A real, separate, previously-undocumented dead-field defect was found
+while investigating the trait-randomization hypothesis above, before it
+was ruled out.** Queue item 45b's own receptor-desensitization mechanism
+(`pat.opioidDesens`/`gabaDesens`/`beta2Desens`, `pk.js`) computes and
+decays all three fields correctly every tick (confirmed via direct probe:
+`gabaDesens` climbs from 0 to ~0.39 over a 30-minute midazolam exposure,
+exactly as that item's own section-3 entry describes) — but grepping every
+file in `src/` for a READ of any of the three names outside `pk.js` itself
+and `patient.js`'s constructor default and `scenarioSweep.mjs`'s tracked-
+field lists returns nothing: **the whole mechanism is computed, decayed,
+and never multiplied into `intensity` anywhere.** This is section 1's own
+third rule (a field can be written, read by nothing, and still look
+finished) — confirmed this is NOT the cause of either failure above
+(desensitization starts at 0 and only climbs from continued exposure; a
+single, non-repeated dose in both failing assertions has negligible
+`gabaDesens`/`opioidDesens` by the time either measurement is taken), so
+it was not fixed blind here either — filed as new queue item 78, since
+wiring it in (multiplying `intensity` by `(1 - desensitization)` at the
+per-instance loop in `pk.js`, per that item's own original design intent)
+would itself need its own re-verification against every drug/condition
+combination that reaches sustained-exposure territory, not a one-line
+patch to slip into an unrelated verification session.
+
+**Verification, complete for this session's own scope.** No production
+code was changed this session beyond CLAUDE.md itself — every finding
+above was investigation-only, using throwaway probe scripts (a small
+number, each printing `pat.anticonvulsant`/`gabaDesens`/etc. against the
+real `Patient` class, matching `physiologyValidation.mjs`'s own
+`makePatient()`/`S()`/`STEP` helpers verbatim per lesson 8) that were
+stripped before this entry was written — confirmed via a directory listing
+showing no `_probe_*`/`_tmp_*` files remain under `src/scripts/`. Item 7
+(the standing condition-library workstream) was not reached this session —
+the physiologyValidation.mjs block-and-poll cycle, the session-limit reset
+that occurred mid-wait, and the root-cause investigation of both failures
+consumed the available time budget; stated honestly rather than claimed.
+
 ### 2026-09-10 — Queue item V2-24(b) CLOSED: real aortic regurgitation for aorticDissection, closing the second of item 41's three open sub-items; V2-6/V2-10/V2-26/V2-27/V2-29/V2-30 re-audited (all confirmed accurately described, no drift); V2-28 confirmed already shipped by a concurrent session
 
 **V2-24(b), the shipped piece.** Item 41 (see its own section-3 entry, and
@@ -10639,6 +10735,75 @@ plausible but not fitted to trial data.
     start/end deltas), and needs re-verification against every scenario's
     OWN baseline vitals at t=0 (a change here moves the resting point every
     scenario in the game launches from).
+
+77. **NEW, filed 2026-09-13 — a real, measured drift between midazolam's
+    (and possibly morphine's) own documented calibration comment and its
+    CURRENT engine behavior, found by running `physiologyValidation.mjs`
+    to completion for the first time in many sessions.** `drugs.js`'s
+    `midazolam` entry states "a standard 5 mg dose (measured intensity
+    0.534) suppresses ~48% of the drive" — but direct instrumentation of
+    the real engine, replicating `physiologyValidation.mjs`'s own
+    `[SEIZURE LIMB] midazolam terminates moderate seizure` assertion
+    exactly (settle 2 ticks, dose at t=300s, glucose forced to 35), shows
+    peak `pat.anticonvulsant` plateauing at 0.3905 across five independent,
+    freshly-constructed patients (bit-for-bit identical, confirming this is
+    NOT queue item 50's per-patient trait randomization) — an implied
+    intensity of 0.434, ~19% below the cited 0.534. At the suite's own
+    "moderate" hypoglycemic severity (glu=35, metabolic drive=0.25), the
+    resulting `rawDrive = 0.25*(1-0.39) = 0.1525` sits just ABOVE
+    `neuro.js`'s own 0.15 sustain threshold, so the seizure the suite
+    expects midazolam to terminate does not terminate — measured 100% of
+    late-window ticks still seizing against a required [0,15]% band.
+    `morphine`'s own PaCO2-rise assertion shows a smaller, same-shape
+    shortfall (measured 3.83-3.86 mmHg, reproducible across repeated runs,
+    against a documented "PaCO2 +6.3 mmHg" comment and a required [4,10]
+    mmHg band) — plausibly the same underlying drift on a different
+    receptor pathway (`respDriveSuppression` instead of `anticonvulsant`).
+
+    **NOT fixed this session, deliberately** — the fix requires first
+    determining WHICH side of the discrepancy moved: either the shared
+    intensity/Emax computation in `pk.js` was recalibrated by an unrelated
+    session sometime after these comments were written (in which case the
+    coefficients `0.9`/`0.25` should be re-identified against the new,
+    correct intensity), or the coefficients themselves need raising to
+    restore the documented intensity. Either fix touches shared,
+    engine-wide PK code (`pk.js`'s per-drug intensity computation) that
+    every drug in the formulary passes through, and needs its own
+    dedicated batch with a fresh measurement of EVERY drug's own cited
+    calibration figure against current behavior, not a one-drug patch
+    slipped into an unrelated verification session. A future session
+    picking this up should: (1) grep every `drugs.js` comment citing a
+    specific "measured intensity X" or "measured effect Y" figure, (2)
+    re-measure each against the current engine via the same
+    `physiologyValidation.mjs`/`mechanismWiring.mjs` probe idiom, (3)
+    determine whether the drift is common to all drugs (shared intensity
+    formula regression) or isolated to these two (per-drug coefficient
+    drift), before touching any code.
+
+78. **NEW, filed 2026-09-13 — queue item 45b's receptor-desensitization
+    fields (`pat.opioidDesens`/`gabaDesens`/`beta2Desens`) are computed and
+    decayed correctly every tick but are NEVER READ anywhere, a real
+    "written, decayed, and still inert" defect per section 1's own third
+    rule, found while investigating item 77 above.** Confirmed by grep
+    across all of `src/`: `pk.js` computes and updates all three fields
+    (verified live via probe: `gabaDesens` climbs from 0 toward ~0.39 over
+    a real 30-minute sustained midazolam exposure, exactly matching that
+    item's own section-3 write-up), and `patient.js`/`scenarioSweep.mjs`
+    declare/track them — but no code anywhere multiplies `intensity` (or
+    any other consumer) by `(1 - desensitization)`, the mechanism these
+    fields were built to express. Confirmed this is NOT the cause of
+    either item-77 failure (both failing assertions use a single,
+    non-repeated dose, and desensitization starts at exactly 0 with
+    negligible buildup by the time either measurement is taken — this is a
+    real, independent, second defect, not a contributing cause of the
+    first). Not fixed here: wiring the multiplication in at `pk.js`'s
+    per-drug-instance intensity computation is a real, small code change,
+    but verifying it doesn't silently alter every already-calibrated
+    drug's own therapeutic-dose behavior (since `intensity` currently
+    reaches its full, un-desensitized value on every first dose of every
+    drug in the formulary) needs its own dedicated batch re-running
+    `mechanismWiring.mjs`/`scenarioSweep.mjs` to completion afterward, not
+    a same-session addition on top of an unrelated verification pass.
 
 ---
 
