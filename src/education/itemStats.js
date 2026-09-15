@@ -139,6 +139,14 @@ function withTimeout(promise, ms) {
 
 export async function getItemStats(question) {
   if (cache.has(question.id)) return cache.get(question.id);
+  // choiceCounts is a per-choice-index array — only meaningful for
+  // itemTypes with a `choices` array (multiple_choice/multiple_response).
+  // build_list/drag_drop/options_table have no such array at all; sizing
+  // it to 0 rather than crashing lets ANY question flow through this
+  // function safely (community stats for those types are real future
+  // work — see itemTypes.js's own header — not a reason to make loading
+  // the exam bank/practice pool a hard crash in the meantime).
+  const numChoices = question.choices?.length || 0;
   let stats = null;
   if (firebaseConfigured) {
     try {
@@ -150,7 +158,7 @@ export async function getItemStats(question) {
         stats = {
           attempts: d.attempts || 0,
           correct: d.correct || 0,
-          choiceCounts: d.choiceCounts || new Array(question.choices.length).fill(0),
+          choiceCounts: d.choiceCounts || new Array(numChoices).fill(0),
           updatedAt: d.updatedAt || 0,
           source: "community",
         };
@@ -161,23 +169,43 @@ export async function getItemStats(question) {
   }
   if (!stats) {
     const local = loadLocal();
-    const s = local[question.id] || blankStats(question.choices.length);
+    const s = local[question.id] || blankStats(numChoices);
     stats = { ...s, source: firebaseConfigured ? "community" : "local" };
   }
   cache.set(question.id, stats);
   return stats;
 }
 
-// Records one real response against a question's community stats. Must be
-// called with the CANONICAL choice index (never the randomized display
-// index) so stats stay correctly associated with the underlying choice
-// regardless of how any individual presentation was shuffled.
+// Extracts every CANONICAL choice index a response touches, for the
+// per-choice `choiceCounts` breakdown — never the randomized display
+// index, so stats stay correctly associated with the underlying choice
+// regardless of how any individual presentation was shuffled. Returns []
+// for an item type with no natural "which choice(s) did they pick"
+// concept (build_list/drag_drop/options_table) — attempts/correct are
+// still recorded for those (see recordResponse below), just not a
+// per-choice breakdown.
+function canonicalIndicesTouched(response) {
+  if (typeof response === "number") return [response]; // multiple_choice
+  if (Array.isArray(response) && response.every((v) => typeof v === "number")) return response; // multiple_response
+  return [];
+}
+
+// Records one real response against a question's community stats. `response`
+// is whatever evaluateResponse.js's own canonical response shape is for
+// this question's itemType (a single canonical index, an array of
+// canonical indices, or a non-index shape like a drag_drop placement map —
+// see canonicalIndicesTouched above for how each is handled). attempts/
+// correct are recorded for EVERY item type — this is the one thing
+// adaptiveEngine.js's IRT difficulty estimation (itemParams/
+// difficultyFromStats, both itemType-agnostic already) actually needs;
+// the per-choice `choiceCounts` breakdown is the smaller, MCQ/
+// multiple_response-specific extra on top.
 //
 // `user`, if given, supplies the responder's provider level so the
 // contribution can be weighted per weightFor() above (see that function's
 // own comment for the full rule). No user / no saved provider level / a
 // guest with nothing set all fall back to weightFor's "unknown" treatment.
-export async function recordResponse(question, canonicalChoiceIndex, wasCorrect, user) {
+export async function recordResponse(question, response, wasCorrect, user) {
   cache.delete(question.id); // force a fresh read next time it's needed
 
   let responderLevel;
@@ -200,21 +228,24 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
   const { attemptsWeight, correctWeight } = weightFor(responderLevel, question.level, wasCorrect);
   if (attemptsWeight === 0) return; // this response is defined to count for nothing
 
+  const touchedIndices = canonicalIndicesTouched(response);
+
   if (firebaseConfigured) {
     try {
       const db = await getFirebaseDb();
       const { doc, setDoc, increment } = await import("firebase/firestore");
-      const choiceField = `choiceCounts.${canonicalChoiceIndex}`;
-      await setDoc(
-        doc(db, "questionStats", question.id),
-        {
-          attempts: increment(attemptsWeight),
-          correct: increment(correctWeight),
-          [choiceField]: increment(attemptsWeight),
-          updatedAt: Date.now(),
-        },
-        { merge: true }
-      );
+      const update = {
+        attempts: increment(attemptsWeight),
+        correct: increment(correctWeight),
+        updatedAt: Date.now(),
+      };
+      // One increment() per touched index — real for both a single MCQ
+      // pick and a multiple_response set (2-3 indices at once); a plain
+      // object literal happily takes several `choiceCounts.N` field paths
+      // in one setDoc call, so a multi-select response updates every
+      // selected choice's own count atomically alongside attempts/correct.
+      for (const idx of touchedIndices) update[`choiceCounts.${idx}`] = increment(attemptsWeight);
+      await setDoc(doc(db, "questionStats", question.id), update, { merge: true });
       return;
     } catch (e) {
       console.error("recordResponse: Firestore write failed, recording locally", e);
@@ -222,10 +253,13 @@ export async function recordResponse(question, canonicalChoiceIndex, wasCorrect,
   }
 
   const local = loadLocal();
-  const s = local[question.id] || blankStats(question.choices.length);
+  const s = local[question.id] || blankStats(question.choices?.length || 0);
   s.attempts += attemptsWeight;
   s.correct += correctWeight;
-  s.choiceCounts[canonicalChoiceIndex] = (s.choiceCounts[canonicalChoiceIndex] || 0) + attemptsWeight;
+  for (const idx of touchedIndices) {
+    if (!s.choiceCounts) s.choiceCounts = [];
+    s.choiceCounts[idx] = (s.choiceCounts[idx] || 0) + attemptsWeight;
+  }
   s.updatedAt = Date.now();
   local[question.id] = s;
   saveLocal(local);
@@ -283,7 +317,7 @@ export async function recordSrsSignal(question, ratingValue, user) {
   }
 
   const local = loadLocal();
-  const s = local[question.id] || blankStats(question.choices.length);
+  const s = local[question.id] || blankStats(question.choices?.length || 0);
   s.attempts += attemptsWeight;
   s.correct += correctWeight;
   s.updatedAt = Date.now();

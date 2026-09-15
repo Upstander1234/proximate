@@ -15,6 +15,8 @@ import { randomizePresentation } from "./randomize.js";
 import { ensureExposed } from "./exposure.js";
 import { reportingEnabled, submitReport, REPORT_REASONS } from "./reports.js";
 import { estimatePredictedProb, recordPrediction } from "./predictions.js";
+import { itemTypeOf } from "./itemTypes.js";
+import QuestionRenderer from "./QuestionRenderer.jsx";
 
 function shuffle(arr) {
   const a = [...arr];
@@ -239,7 +241,9 @@ function Practice({ pool, progress, level, domainFilter, onUpdateCard, onDone, u
 }
 
 function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated, onExit, user }) {
-  const display = useMemo(() => randomizePresentation(q), [q]);
+  const itemType = itemTypeOf(q);
+  const isMcq = itemType === "multiple_choice";
+  const display = useMemo(() => (isMcq ? randomizePresentation(q) : null), [q, isMcq]);
   const [stats, setStats] = useState(null);
   const [selectedDisplayIdx, setSelectedDisplayIdx] = useState(null);
   const [revealed, setRevealed] = useState(false);
@@ -247,18 +251,32 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
 
   useEffect(() => {
     ensureExposed(progress, q.id, onUpdateCard);
-    getItemStats(q).then(setStats);
+    // itemStats.js's blankStats() is sized off question.choices.length —
+    // real for multiple_choice/multiple_response (both have a choices
+    // array), meaningless for build_list/drag_drop/options_table, which
+    // have no such array at all. Community stats for those item types are
+    // itemStats.js's `getItemStats`/`recordResponse`/`recordSrsSignal` are
+    // all safe for any item type now (a question with no `choices` array
+    // just gets an empty per-choice breakdown) — still skipped here for
+    // question types with no `choices` at all, since fetching community
+    // stats nothing will ever display (choicePercentages needs a real
+    // choices array) would just be a wasted read, not a correctness issue.
+    if (Array.isArray(q.choices)) getItemStats(q).then(setStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.id]);
 
   const predictedPct = useMemo(() => estimatePredictedProb(stats, null), [stats]);
 
-  const choose = (i) => {
-    if (revealed) return;
-    setSelectedDisplayIdx(i);
-    setRevealed(true);
-    const canonicalIdx = display.toCanonical[i];
-    const correct = canonicalIdx === q.answerIndex;
+  // Shared by every item type: updates SRS card progress, community
+  // response stats, and the prediction log. `response` is whichever
+  // canonical shape evaluateResponse.js produced for this question's own
+  // itemType (a plain index for multiple_choice, an array of indices for
+  // multiple_response, or a non-index shape — e.g. a drag_drop placement
+  // map — for the rest); recordResponse (itemStats.js) is itself
+  // itemType-aware now, recording attempts/correct for every type and a
+  // per-choice breakdown only where the response actually maps to real
+  // choice indices.
+  const commitAnswer = (correct, response) => {
     onAnswered(correct);
     const cs = progress[q.id] || blankCardState();
     onUpdateCard(q.id, {
@@ -266,7 +284,7 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
       answered: (cs.answered || 0) + 1,
       answeredCorrect: (cs.answeredCorrect || 0) + (correct ? 1 : 0),
     });
-    recordResponse(q, canonicalIdx, correct, user);
+    recordResponse(q, response, correct, user);
     recordPrediction(user, {
       questionId: q.id,
       domain: q.domain,
@@ -274,6 +292,20 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
       predictedPct,
       actualCorrect: correct,
     });
+  };
+
+  const choose = (i) => {
+    if (revealed) return;
+    setSelectedDisplayIdx(i);
+    setRevealed(true);
+    const canonicalIdx = display.toCanonical[i];
+    const correct = canonicalIdx === q.answerIndex;
+    commitAnswer(correct, canonicalIdx);
+  };
+
+  const onNonMcqAnswered = (correct, response) => {
+    setRevealed(true);
+    commitAnswer(correct, response);
   };
 
   const cardState = progress[q.id] || blankCardState();
@@ -291,7 +323,7 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
   };
 
   const enoughData = (stats?.attempts || 0) >= MIN_RESPONSES_FOR_DISPLAY;
-  const pcts = revealed && stats ? choicePercentages(stats, q.choices.length) : null;
+  const pcts = isMcq && revealed && stats ? choicePercentages(stats, q.choices.length) : null;
   const difficulty = stats ? difficultyFromStats(stats) : null;
 
   return (
@@ -329,37 +361,50 @@ function QuestionView({ q, progress, onUpdateCard, position, onAnswered, onRated
             </span>
           )}
         </div>
-        <div className="text-lg font-medium mb-4">{q.question}</div>
-        <div className="space-y-2">
-          {display.displayChoices.map((c, i) => {
-            let cls = "border-slate-700 hover:border-slate-500";
-            if (revealed) {
-              if (i === display.displayAnswerIndex) cls = "border-emerald-500 bg-emerald-950/40";
-              else if (i === selectedDisplayIdx) cls = "border-red-500 bg-red-950/30";
-              else cls = "border-slate-800 opacity-60";
-            }
-            return (
-              <button
-                key={i}
-                onClick={() => choose(i)}
-                className={`w-full text-left px-4 py-3 rounded-lg border transition ${cls}`}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <span>{c}</span>
-                  {revealed && (
-                    <span className="text-xs text-slate-400 shrink-0">
-                      {enoughData ? `${pcts[display.toCanonical[i]]}%` : "—"}
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        {revealed && !enoughData && (
-          <div className="text-xs text-slate-500 mt-2">
-            Answer-choice percentages are based on limited data for this question so far.
-          </div>
+        {isMcq ? (
+          <>
+            <div className="text-lg font-medium mb-4">{q.question}</div>
+            <div className="space-y-2">
+              {display.displayChoices.map((c, i) => {
+                let cls = "border-slate-700 hover:border-slate-500";
+                if (revealed) {
+                  if (i === display.displayAnswerIndex) cls = "border-emerald-500 bg-emerald-950/40";
+                  else if (i === selectedDisplayIdx) cls = "border-red-500 bg-red-950/30";
+                  else cls = "border-slate-800 opacity-60";
+                }
+                return (
+                  <button
+                    key={i}
+                    onClick={() => choose(i)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border transition ${cls}`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <span>{c}</span>
+                      {revealed && (
+                        <span className="text-xs text-slate-400 shrink-0">
+                          {enoughData ? `${pcts[display.toCanonical[i]]}%` : "—"}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {revealed && !enoughData && (
+              <div className="text-xs text-slate-500 mt-2">
+                Answer-choice percentages are based on limited data for this question so far.
+              </div>
+            )}
+          </>
+        ) : (
+          // Non-MCQ item types (multiple_response/build_list/drag_drop/
+          // options_table/graphical) render through the shared
+          // QuestionRenderer — see its own header for why each type's
+          // interaction is tap-based rather than native drag-and-drop.
+          // showExplanation is false here since this component's own
+          // explanation block (right below, shared by every item type)
+          // already renders it once revealed.
+          <QuestionRenderer question={q} showExplanation={false} onAnswered={onNonMcqAnswered} />
         )}
       </div>
 

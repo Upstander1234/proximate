@@ -437,6 +437,7 @@ function snapshot(p) {
     burnTbsaFraction: p.burnTbsaFraction || 0,
     factorII: p.factorII ?? 100,
     factorX: p.factorX ?? 100,
+    factorVIII: p.factorVIII ?? 100,
     fibrinogen: p.fibrinogen ?? 3,
     // Agitation / psychiatric-crisis severity (queue items 51/52): the
     // condition-declared source magnitude, the derived real-time severity,

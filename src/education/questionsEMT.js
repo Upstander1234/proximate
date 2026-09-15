@@ -2,9 +2,15 @@
 // header comment for the shared question-object shape and rules for adding one.
 // This file holds only level: "EMT" entries.
 
+import { BATCH as EMT_AIRWAY_BATCH } from "./_genbatch/emt_airway.js";
+import { BATCH as EMT_CARDIOLOGY_BATCH } from "./_genbatch/emt_cardiology.js";
+import { BATCH as EMT_MEDICAL_BATCH } from "./_genbatch/emt_medical.js";
+import { BATCH as EMT_OPS_BATCH } from "./_genbatch/emt_ops.js";
+import { BATCH as EMT_TRAUMA_BATCH } from "./_genbatch/emt_trauma.js";
+
 export const EMT_QUESTIONS = [
   {
-    id: "airway-001",
+    id: "emt-airway-001",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22,7 +28,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-002",
+    id: "emt-airway-002",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -40,7 +46,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-003",
+    id: "emt-airway-003",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -58,7 +64,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-004",
+    id: "emt-airway-004",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -76,7 +82,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-005",
+    id: "emt-airway-005",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -94,7 +100,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardio-001",
+    id: "emt-cardiology-001",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -107,7 +113,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardio-002",
+    id: "emt-cardiology-002",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -125,7 +131,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardio-003",
+    id: "emt-cardiology-003",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -143,7 +149,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardio-004",
+    id: "emt-cardiology-004",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -161,7 +167,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardio-005",
+    id: "emt-cardiology-005",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -179,7 +185,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-001",
+    id: "emt-trauma-001",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -197,7 +203,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-002",
+    id: "emt-trauma-002",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -215,7 +221,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-003",
+    id: "emt-trauma-003",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -233,7 +239,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-004",
+    id: "emt-trauma-004",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -251,7 +257,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-005",
+    id: "emt-trauma-005",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "operations",
@@ -264,7 +270,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-001",
+    id: "emt-medical-001",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -282,7 +288,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-002",
+    id: "emt-medical-002",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -295,7 +301,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-003",
+    id: "emt-medical-003",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -308,7 +314,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-004",
+    id: "emt-medical-004",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -326,7 +332,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-005",
+    id: "emt-medical-005",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -344,7 +350,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-006",
+    id: "emt-medical-006",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -362,7 +368,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "obgyn-001",
+    id: "emt-medical-007",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -380,7 +386,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "obgyn-002",
+    id: "emt-medical-008",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -398,7 +404,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "obgyn-003",
+    id: "emt-medical-009",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -416,7 +422,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-001",
+    id: "emt-ops-001",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -434,7 +440,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-002",
+    id: "emt-ops-002",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -452,7 +458,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-003",
+    id: "emt-ops-003",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -470,7 +476,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-004",
+    id: "emt-ops-004",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -488,7 +494,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-005",
+    id: "emt-ops-005",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -506,7 +512,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-006",
+    id: "emt-ops-006",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -524,7 +530,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-006",
+    id: "emt-airway-006",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -542,7 +548,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-cardiology-001",
+    id: "emt-cardiology-006",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -558,7 +564,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-endocrine-001",
+    id: "emt-medical-010",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -574,7 +580,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-trauma-001",
+    id: "emt-trauma-006",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -590,7 +596,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-medical-obgyn-001",
+    id: "emt-medical-011",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -606,7 +612,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-airway-001",
+    id: "emt-airway-007",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -622,7 +628,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-cardiology-002",
+    id: "emt-cardiology-007",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -638,7 +644,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-trauma-002",
+    id: "emt-trauma-007",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -654,7 +660,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "nremt-emt-trauma-003",
+    id: "emt-trauma-008",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -670,7 +676,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-  id: "nremt-emt-obgyn-001",
+  id: "emt-medical-012",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -686,7 +692,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-007",
+  id: "emt-airway-008",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -704,7 +710,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-008",
+  id: "emt-airway-009",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -722,7 +728,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-009",
+  id: "emt-airway-010",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -740,7 +746,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-010",
+  id: "emt-airway-011",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -758,7 +764,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-011",
+  id: "emt-airway-012",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -776,7 +782,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-012",
+  id: "emt-airway-013",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -794,7 +800,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-013",
+  id: "emt-airway-014",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -812,7 +818,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-014",
+  id: "emt-airway-015",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -830,7 +836,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-015",
+  id: "emt-airway-016",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -848,7 +854,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-016",
+  id: "emt-airway-017",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -866,7 +872,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-017",
+  id: "emt-airway-018",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -884,7 +890,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-018",
+  id: "emt-airway-019",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -902,7 +908,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-019",
+  id: "emt-airway-020",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -920,7 +926,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-020",
+  id: "emt-airway-021",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -938,7 +944,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-021",
+  id: "emt-airway-022",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -956,7 +962,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-022",
+  id: "emt-airway-023",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -974,7 +980,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-023",
+  id: "emt-airway-024",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -992,7 +998,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-024",
+  id: "emt-airway-025",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1010,7 +1016,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-025",
+  id: "emt-airway-026",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1028,7 +1034,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-026",
+  id: "emt-airway-027",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1046,7 +1052,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-027",
+  id: "emt-airway-028",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1064,7 +1070,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-028",
+  id: "emt-airway-029",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1082,7 +1088,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-029",
+  id: "emt-airway-030",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1100,7 +1106,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-030",
+  id: "emt-airway-031",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1118,7 +1124,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-031",
+  id: "emt-airway-032",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "operations",
@@ -1136,7 +1142,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-032",
+  id: "emt-airway-033",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1154,7 +1160,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-033",
+  id: "emt-airway-034",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1172,7 +1178,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-034",
+  id: "emt-airway-035",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1190,7 +1196,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-035",
+  id: "emt-airway-036",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1208,7 +1214,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-036",
+  id: "emt-airway-037",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1226,7 +1232,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-037",
+  id: "emt-airway-038",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1244,7 +1250,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-038",
+  id: "emt-airway-039",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1262,7 +1268,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-039",
+  id: "emt-airway-040",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1280,7 +1286,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-040",
+  id: "emt-airway-041",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1298,7 +1304,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-041",
+  id: "emt-airway-042",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1316,7 +1322,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-042",
+  id: "emt-airway-043",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1334,7 +1340,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-043",
+  id: "emt-airway-044",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1352,7 +1358,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-044",
+  id: "emt-airway-045",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1370,7 +1376,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-045",
+  id: "emt-airway-046",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1388,7 +1394,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-046",
+  id: "emt-airway-047",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1406,7 +1412,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-047",
+  id: "emt-airway-048",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1424,7 +1430,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "airway-048",
+  id: "emt-airway-049",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1442,7 +1448,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-001",
+  id: "emt-cardiology-008",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1460,7 +1466,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-002",
+  id: "emt-cardiology-009",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1478,7 +1484,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-003",
+  id: "emt-cardiology-010",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1496,7 +1502,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-004",
+  id: "emt-cardiology-011",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1514,7 +1520,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-005",
+  id: "emt-cardiology-012",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1532,7 +1538,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-006",
+  id: "emt-cardiology-013",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1550,7 +1556,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-007",
+  id: "emt-cardiology-014",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1568,7 +1574,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-008",
+  id: "emt-cardiology-015",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1586,7 +1592,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-009",
+  id: "emt-cardiology-016",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1604,7 +1610,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-010",
+  id: "emt-cardiology-017",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1622,7 +1628,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-011",
+  id: "emt-cardiology-018",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1640,7 +1646,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-012",
+  id: "emt-cardiology-019",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1658,7 +1664,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-013",
+  id: "emt-cardiology-020",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1676,7 +1682,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-014",
+  id: "emt-cardiology-021",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1694,7 +1700,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-015",
+  id: "emt-cardiology-022",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1712,7 +1718,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-016",
+  id: "emt-cardiology-023",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1730,7 +1736,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-017",
+  id: "emt-cardiology-024",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1748,7 +1754,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-018",
+  id: "emt-cardiology-025",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1766,7 +1772,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-019",
+  id: "emt-cardiology-026",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1784,7 +1790,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardiology-020",
+  id: "emt-cardiology-027",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1802,7 +1808,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-006",
+  id: "emt-trauma-009",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -1820,7 +1826,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-007",
+  id: "emt-trauma-010",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1838,7 +1844,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-008",
+  id: "emt-trauma-011",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1856,7 +1862,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-009",
+  id: "emt-trauma-012",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1874,7 +1880,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-010",
+  id: "emt-trauma-013",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1892,7 +1898,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-011",
+  id: "emt-trauma-014",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -1910,7 +1916,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-012",
+  id: "emt-trauma-015",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1928,7 +1934,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-013",
+  id: "emt-trauma-016",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1946,7 +1952,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-014",
+  id: "emt-trauma-017",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -1964,7 +1970,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-015",
+  id: "emt-trauma-018",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -1982,7 +1988,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-016",
+  id: "emt-trauma-019",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2000,7 +2006,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-017",
+  id: "emt-trauma-020",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -2018,7 +2024,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-018",
+  id: "emt-trauma-021",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -2036,7 +2042,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-019",
+  id: "emt-trauma-022",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2054,7 +2060,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-020",
+  id: "emt-trauma-023",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2072,7 +2078,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-021",
+  id: "emt-trauma-024",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2090,7 +2096,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-022",
+  id: "emt-trauma-025",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2108,7 +2114,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-023",
+  id: "emt-trauma-026",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2126,7 +2132,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-024",
+  id: "emt-trauma-027",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2144,7 +2150,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-025",
+  id: "emt-trauma-028",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2162,7 +2168,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-026",
+  id: "emt-trauma-029",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2180,7 +2186,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-027",
+  id: "emt-trauma-030",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2198,7 +2204,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "trauma-028",
+  id: "emt-trauma-031",
   domain: "Trauma",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -2216,7 +2222,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "resp-adv-001",
+  id: "emt-airway-050",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2234,7 +2240,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardio-adv-001",
+  id: "emt-cardiology-028",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2252,7 +2258,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-adv-001",
+  id: "emt-ops-007",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2270,7 +2276,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "resp-adv-002",
+  id: "emt-airway-051",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2288,7 +2294,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardio-adv-002",
+  id: "emt-cardiology-029",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2306,7 +2312,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-adv-002",
+  id: "emt-ops-008",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2324,7 +2330,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "resp-adv-003",
+  id: "emt-airway-052",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2342,7 +2348,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardio-adv-003",
+  id: "emt-cardiology-030",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2360,7 +2366,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-adv-003",
+  id: "emt-ops-009",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2378,7 +2384,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "resp-adv-004",
+  id: "emt-airway-053",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -2396,7 +2402,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardio-adv-004",
+  id: "emt-cardiology-031",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2414,7 +2420,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-adv-004",
+  id: "emt-ops-010",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2432,7 +2438,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "resp-adv-005",
+  id: "emt-airway-054",
   domain: "Airway",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2450,7 +2456,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "cardio-adv-005",
+  id: "emt-cardiology-032",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -2468,7 +2474,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-adv-005",
+  id: "emt-ops-011",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2486,7 +2492,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-007",
+  id: "emt-ops-012",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2504,7 +2510,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-008",
+  id: "emt-ops-013",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2522,7 +2528,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-009",
+  id: "emt-ops-014",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2540,7 +2546,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-010",
+  id: "emt-ops-015",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2558,7 +2564,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-011",
+  id: "emt-ops-016",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2576,7 +2582,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-012",
+  id: "emt-ops-017",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2594,7 +2600,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-013",
+  id: "emt-ops-018",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2612,7 +2618,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-014",
+  id: "emt-ops-019",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2630,7 +2636,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-015",
+  id: "emt-ops-020",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2648,7 +2654,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-016",
+  id: "emt-ops-021",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2666,7 +2672,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-017",
+  id: "emt-ops-022",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2684,7 +2690,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-018",
+  id: "emt-ops-023",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2702,7 +2708,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-019",
+  id: "emt-ops-024",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2720,7 +2726,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-020",
+  id: "emt-ops-025",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2738,7 +2744,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-021",
+  id: "emt-ops-026",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2756,7 +2762,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-022",
+  id: "emt-ops-027",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2774,7 +2780,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-023",
+  id: "emt-ops-028",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2792,7 +2798,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-024",
+  id: "emt-ops-029",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2810,7 +2816,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-025",
+  id: "emt-ops-030",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2828,7 +2834,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-026",
+  id: "emt-ops-031",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2846,7 +2852,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-027",
+  id: "emt-ops-032",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2864,7 +2870,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-028",
+  id: "emt-ops-033",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2882,7 +2888,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-029",
+  id: "emt-ops-034",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2900,7 +2906,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-030",
+  id: "emt-ops-035",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2918,7 +2924,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-031",
+  id: "emt-ops-036",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -2936,7 +2942,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-032",
+  id: "emt-ops-037",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2954,7 +2960,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-033",
+  id: "emt-ops-038",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2972,7 +2978,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-034",
+  id: "emt-ops-039",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -2990,7 +2996,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-035",
+  id: "emt-ops-040",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3008,7 +3014,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-036",
+  id: "emt-ops-041",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3026,7 +3032,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-037",
+  id: "emt-ops-042",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3044,7 +3050,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-038",
+  id: "emt-ops-043",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3062,7 +3068,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-039",
+  id: "emt-ops-044",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3080,7 +3086,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-040",
+  id: "emt-ops-045",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3098,7 +3104,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-041",
+  id: "emt-ops-046",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3116,7 +3122,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-042",
+  id: "emt-ops-047",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3134,7 +3140,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-043",
+  id: "emt-ops-048",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3152,7 +3158,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-044",
+  id: "emt-ops-049",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -3170,7 +3176,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-045",
+  id: "emt-ops-050",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -3188,7 +3194,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-046",
+  id: "emt-ops-051",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3206,7 +3212,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-047",
+  id: "emt-ops-052",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3224,7 +3230,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-048",
+  id: "emt-ops-053",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3242,7 +3248,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-049",
+  id: "emt-ops-054",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3260,7 +3266,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-050",
+  id: "emt-ops-055",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3278,7 +3284,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-051",
+  id: "emt-ops-056",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3296,7 +3302,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-052",
+  id: "emt-ops-057",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3314,7 +3320,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-053",
+  id: "emt-ops-058",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3332,7 +3338,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-054",
+  id: "emt-ops-059",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3350,7 +3356,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-055",
+  id: "emt-ops-060",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3368,7 +3374,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-056",
+  id: "emt-ops-061",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3386,7 +3392,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-057",
+  id: "emt-ops-062",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3404,7 +3410,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-058",
+  id: "emt-ops-063",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3422,7 +3428,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-059",
+  id: "emt-ops-064",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3440,7 +3446,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-060",
+  id: "emt-ops-065",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3458,7 +3464,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-061",
+  id: "emt-ops-066",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3476,7 +3482,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-062",
+  id: "emt-ops-067",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3494,7 +3500,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-063",
+  id: "emt-ops-068",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -3512,7 +3518,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-064",
+  id: "emt-ops-069",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3530,7 +3536,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-065",
+  id: "emt-ops-070",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3548,7 +3554,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-066",
+  id: "emt-ops-071",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3566,7 +3572,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-067",
+  id: "emt-ops-072",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3584,7 +3590,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-068",
+  id: "emt-ops-073",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3602,7 +3608,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-069",
+  id: "emt-ops-074",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3620,7 +3626,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-070",
+  id: "emt-ops-075",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3638,7 +3644,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-071",
+  id: "emt-ops-076",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3656,7 +3662,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-072",
+  id: "emt-ops-077",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3674,7 +3680,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-073",
+  id: "emt-ops-078",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3692,7 +3698,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-074",
+  id: "emt-ops-079",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3710,7 +3716,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-075",
+  id: "emt-ops-080",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3728,7 +3734,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-076",
+  id: "emt-ops-081",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3746,7 +3752,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-077",
+  id: "emt-ops-082",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3764,7 +3770,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-078",
+  id: "emt-ops-083",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3782,7 +3788,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-079",
+  id: "emt-ops-084",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3800,7 +3806,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-080",
+  id: "emt-ops-085",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -3818,7 +3824,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-081",
+  id: "emt-ops-086",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3836,7 +3842,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-082",
+  id: "emt-ops-087",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3854,7 +3860,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-083",
+  id: "emt-ops-088",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3872,7 +3878,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-084",
+  id: "emt-ops-089",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3890,7 +3896,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-085",
+  id: "emt-ops-090",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3908,7 +3914,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-086",
+  id: "emt-ops-091",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3926,7 +3932,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-087",
+  id: "emt-ops-092",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3944,7 +3950,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-088",
+  id: "emt-ops-093",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3962,7 +3968,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-089",
+  id: "emt-ops-094",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3980,7 +3986,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-090",
+  id: "emt-ops-095",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -3998,7 +4004,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-091",
+  id: "emt-ops-096",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4016,7 +4022,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-092",
+  id: "emt-ops-097",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4034,7 +4040,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-093",
+  id: "emt-ops-098",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4052,7 +4058,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-094",
+  id: "emt-ops-099",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4070,7 +4076,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-095",
+  id: "emt-ops-100",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4088,7 +4094,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-096",
+  id: "emt-ops-101",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4106,7 +4112,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-097",
+  id: "emt-ops-102",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4124,7 +4130,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-098",
+  id: "emt-ops-103",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4142,7 +4148,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-099",
+  id: "emt-ops-104",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4160,7 +4166,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-100",
+  id: "emt-ops-105",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4178,7 +4184,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-101",
+  id: "emt-ops-106",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4196,7 +4202,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-102",
+  id: "emt-ops-107",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4214,7 +4220,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-103",
+  id: "emt-ops-108",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4232,7 +4238,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-104",
+  id: "emt-ops-109",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4250,7 +4256,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-105",
+  id: "emt-ops-110",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4268,7 +4274,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-106",
+  id: "emt-ops-111",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4286,7 +4292,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-107",
+  id: "emt-ops-112",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4304,7 +4310,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-108",
+  id: "emt-ops-113",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4322,7 +4328,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-109",
+  id: "emt-ops-114",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4340,7 +4346,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-110",
+  id: "emt-ops-115",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4358,7 +4364,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-111",
+  id: "emt-ops-116",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4376,7 +4382,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-112",
+  id: "emt-ops-117",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4394,7 +4400,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-113",
+  id: "emt-ops-118",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4412,7 +4418,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-114",
+  id: "emt-ops-119",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4430,7 +4436,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-115",
+  id: "emt-ops-120",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4448,7 +4454,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-116",
+  id: "emt-ops-121",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4466,7 +4472,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-117",
+  id: "emt-ops-122",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4484,7 +4490,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-118",
+  id: "emt-ops-123",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4502,7 +4508,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-119",
+  id: "emt-ops-124",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4520,7 +4526,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-120",
+  id: "emt-ops-125",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4538,7 +4544,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-121",
+  id: "emt-ops-126",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4556,7 +4562,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-122",
+  id: "emt-ops-127",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4574,7 +4580,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-123",
+  id: "emt-ops-128",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4592,7 +4598,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-124",
+  id: "emt-ops-129",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4610,7 +4616,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-125",
+  id: "emt-ops-130",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4628,7 +4634,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-126",
+  id: "emt-ops-131",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4646,7 +4652,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-127",
+  id: "emt-ops-132",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4664,7 +4670,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-128",
+  id: "emt-ops-133",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4682,7 +4688,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-129",
+  id: "emt-ops-134",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4700,7 +4706,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-130",
+  id: "emt-ops-135",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4718,7 +4724,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-131",
+  id: "emt-ops-136",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4736,7 +4742,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-132",
+  id: "emt-ops-137",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4754,7 +4760,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-133",
+  id: "emt-ops-138",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4772,7 +4778,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-134",
+  id: "emt-ops-139",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4790,7 +4796,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-135",
+  id: "emt-ops-140",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4808,7 +4814,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-136",
+  id: "emt-ops-141",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4826,7 +4832,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-137",
+  id: "emt-ops-142",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4844,7 +4850,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-138",
+  id: "emt-ops-143",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4862,7 +4868,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-139",
+  id: "emt-ops-144",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4880,7 +4886,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-140",
+  id: "emt-ops-145",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -4898,7 +4904,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-141",
+  id: "emt-ops-146",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4916,7 +4922,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-142",
+  id: "emt-ops-147",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4934,7 +4940,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-143",
+  id: "emt-ops-148",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4952,7 +4958,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-144",
+  id: "emt-ops-149",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -4970,7 +4976,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-145",
+  id: "emt-ops-150",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -4988,7 +4994,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-146",
+  id: "emt-ops-151",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5006,7 +5012,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-147",
+  id: "emt-ops-152",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5024,7 +5030,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-148",
+  id: "emt-ops-153",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5042,7 +5048,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-149",
+  id: "emt-ops-154",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5060,7 +5066,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-150",
+  id: "emt-ops-155",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5078,7 +5084,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-151",
+  id: "emt-ops-156",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5096,7 +5102,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-152",
+  id: "emt-ops-157",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5114,7 +5120,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-153",
+  id: "emt-ops-158",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5132,7 +5138,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-154",
+  id: "emt-ops-159",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5150,7 +5156,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-155",
+  id: "emt-ops-160",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5168,7 +5174,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-156",
+  id: "emt-ops-161",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5186,7 +5192,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-157",
+  id: "emt-ops-162",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5204,7 +5210,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-158",
+  id: "emt-ops-163",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5222,7 +5228,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-159",
+  id: "emt-ops-164",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5240,7 +5246,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-160",
+  id: "emt-ops-165",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5258,7 +5264,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-161",
+  id: "emt-ops-166",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5276,7 +5282,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-162",
+  id: "emt-ops-167",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5294,7 +5300,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-163",
+  id: "emt-ops-168",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5312,7 +5318,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-164",
+  id: "emt-ops-169",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5330,7 +5336,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-165",
+  id: "emt-ops-170",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -5348,7 +5354,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-166",
+  id: "emt-ops-171",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5366,7 +5372,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-167",
+  id: "emt-ops-172",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5384,7 +5390,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-168",
+  id: "emt-ops-173",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5402,7 +5408,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-169",
+  id: "emt-ops-174",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5420,7 +5426,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-170",
+  id: "emt-ops-175",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5438,7 +5444,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-171",
+  id: "emt-ops-176",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5456,7 +5462,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-172",
+  id: "emt-ops-177",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5474,7 +5480,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-173",
+  id: "emt-ops-178",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5492,7 +5498,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-174",
+  id: "emt-ops-179",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5510,7 +5516,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-175",
+  id: "emt-ops-180",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5528,7 +5534,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-176",
+  id: "emt-ops-181",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5546,7 +5552,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-177",
+  id: "emt-ops-182",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5564,7 +5570,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-178",
+  id: "emt-ops-183",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5582,7 +5588,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-179",
+  id: "emt-ops-184",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5600,7 +5606,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-180",
+  id: "emt-ops-185",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5618,7 +5624,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-181",
+  id: "emt-ops-186",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5636,7 +5642,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-182",
+  id: "emt-ops-187",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5654,7 +5660,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-183",
+  id: "emt-ops-188",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5672,7 +5678,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-184",
+  id: "emt-ops-189",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5690,7 +5696,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-185",
+  id: "emt-ops-190",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5708,7 +5714,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-186",
+  id: "emt-ops-191",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "operations",
@@ -5726,7 +5732,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-187",
+  id: "emt-ops-192",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5744,7 +5750,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-188",
+  id: "emt-ops-193",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5762,7 +5768,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "ops-189",
+  id: "emt-ops-194",
   domain: "EMS Operations",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -5780,7 +5786,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-    id: "ops-190",
+    id: "emt-ops-195",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -5798,7 +5804,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-191",
+    id: "emt-ops-196",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -5816,7 +5822,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-192",
+    id: "emt-ops-197",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -5834,7 +5840,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-193",
+    id: "emt-ops-198",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -5852,7 +5858,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-194",
+    id: "emt-ops-199",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -5870,7 +5876,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-195",
+    id: "emt-ops-200",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -5888,7 +5894,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-196",
+    id: "emt-ops-201",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -5906,7 +5912,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-197",
+    id: "emt-ops-202",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -5924,7 +5930,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-198",
+    id: "emt-ops-203",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -5942,7 +5948,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-199",
+    id: "emt-ops-204",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -5960,7 +5966,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-200",
+    id: "emt-ops-205",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -5978,7 +5984,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-338",
+    id: "emt-ops-206",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -5996,7 +6002,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-339",
+    id: "emt-ops-207",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6014,7 +6020,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-340",
+    id: "emt-ops-208",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6032,7 +6038,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-341",
+    id: "emt-ops-209",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6050,7 +6056,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-342",
+    id: "emt-ops-210",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6068,7 +6074,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-343",
+    id: "emt-ops-211",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6086,7 +6092,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-344",
+    id: "emt-ops-212",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6104,7 +6110,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-345",
+    id: "emt-ops-213",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6122,7 +6128,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-346",
+    id: "emt-ops-214",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6140,7 +6146,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-347",
+    id: "emt-ops-215",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6158,7 +6164,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-348",
+    id: "emt-ops-216",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6176,7 +6182,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-349",
+    id: "emt-ops-217",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6194,7 +6200,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-350",
+    id: "emt-ops-218",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6212,7 +6218,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-351",
+    id: "emt-ops-219",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -6230,7 +6236,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-352",
+    id: "emt-ops-220",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -6248,7 +6254,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-353",
+    id: "emt-ops-221",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6266,7 +6272,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-354",
+    id: "emt-ops-222",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6284,7 +6290,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-355",
+    id: "emt-ops-223",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6302,7 +6308,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-356",
+    id: "emt-ops-224",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6320,7 +6326,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-357",
+    id: "emt-ops-225",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6338,7 +6344,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-358",
+    id: "emt-ops-226",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6356,7 +6362,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-359",
+    id: "emt-ops-227",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6374,7 +6380,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-360",
+    id: "emt-ops-228",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6392,7 +6398,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-361",
+    id: "emt-ops-229",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6410,7 +6416,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-362",
+    id: "emt-ops-230",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6428,7 +6434,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-363",
+    id: "emt-ops-231",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6446,7 +6452,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-364",
+    id: "emt-ops-232",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6464,7 +6470,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-365",
+    id: "emt-ops-233",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6482,7 +6488,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-366",
+    id: "emt-ops-234",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6500,7 +6506,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-367",
+    id: "emt-ops-235",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6518,7 +6524,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-368",
+    id: "emt-ops-236",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6536,7 +6542,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-369",
+    id: "emt-ops-237",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6554,7 +6560,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-370",
+    id: "emt-ops-238",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6572,7 +6578,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-371",
+    id: "emt-ops-239",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6590,7 +6596,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-372",
+    id: "emt-ops-240",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6608,7 +6614,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-373",
+    id: "emt-ops-241",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6626,7 +6632,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-374",
+    id: "emt-ops-242",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6644,7 +6650,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-375",
+    id: "emt-ops-243",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6662,7 +6668,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-376",
+    id: "emt-ops-244",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6680,7 +6686,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-377",
+    id: "emt-ops-245",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6698,7 +6704,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-378",
+    id: "emt-ops-246",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6716,7 +6722,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-379",
+    id: "emt-ops-247",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6734,7 +6740,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-380",
+    id: "emt-ops-248",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6752,7 +6758,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-381",
+    id: "emt-ops-249",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6770,7 +6776,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-382",
+    id: "emt-ops-250",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6788,7 +6794,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-383",
+    id: "emt-ops-251",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6806,7 +6812,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-384",
+    id: "emt-ops-252",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6824,7 +6830,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-385",
+    id: "emt-ops-253",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6842,7 +6848,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-386",
+    id: "emt-ops-254",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -6860,7 +6866,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-387",
+    id: "emt-ops-255",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6878,7 +6884,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-388",
+    id: "emt-ops-256",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6896,7 +6902,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-389",
+    id: "emt-ops-257",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6914,7 +6920,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-390",
+    id: "emt-ops-258",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6932,7 +6938,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-254",
+    id: "emt-ops-259",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6950,7 +6956,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-255",
+    id: "emt-ops-260",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -6968,7 +6974,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-256",
+    id: "emt-ops-261",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -6986,7 +6992,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-257",
+    id: "emt-ops-262",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7004,7 +7010,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-258",
+    id: "emt-ops-263",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7022,7 +7028,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-259",
+    id: "emt-ops-264",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7040,7 +7046,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-260",
+    id: "emt-ops-265",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7058,7 +7064,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-261",
+    id: "emt-ops-266",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7076,7 +7082,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-262",
+    id: "emt-ops-267",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7094,7 +7100,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-263",
+    id: "emt-ops-268",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7112,7 +7118,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-264",
+    id: "emt-ops-269",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7130,7 +7136,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-265",
+    id: "emt-ops-270",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7148,7 +7154,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-266",
+    id: "emt-ops-271",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7166,7 +7172,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-267",
+    id: "emt-ops-272",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7184,7 +7190,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-268",
+    id: "emt-ops-273",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7202,7 +7208,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-269",
+    id: "emt-ops-274",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7220,7 +7226,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-270",
+    id: "emt-ops-275",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7238,7 +7244,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-271",
+    id: "emt-ops-276",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7256,7 +7262,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-272",
+    id: "emt-ops-277",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7274,7 +7280,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-273",
+    id: "emt-ops-278",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7292,7 +7298,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-274",
+    id: "emt-ops-279",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7310,7 +7316,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-275",
+    id: "emt-ops-280",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7328,7 +7334,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-276",
+    id: "emt-ops-281",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7346,7 +7352,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-277",
+    id: "emt-ops-282",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -7364,7 +7370,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-278",
+    id: "emt-ops-283",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7382,7 +7388,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-279",
+    id: "emt-ops-284",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7400,7 +7406,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-007",
+    id: "emt-medical-013",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -7418,7 +7424,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-008",
+    id: "emt-medical-014",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -7436,7 +7442,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-280",
+    id: "emt-ops-285",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7454,7 +7460,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-281",
+    id: "emt-ops-286",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -7472,7 +7478,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-282",
+    id: "emt-ops-287",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7490,7 +7496,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-283",
+    id: "emt-ops-288",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7508,7 +7514,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-284",
+    id: "emt-ops-289",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7526,7 +7532,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-285",
+    id: "emt-ops-290",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7544,7 +7550,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-021",
+    id: "emt-cardiology-033",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -7562,7 +7568,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-022",
+    id: "emt-cardiology-034",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -7580,7 +7586,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-009",
+    id: "emt-medical-015",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -7598,7 +7604,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-010",
+    id: "emt-medical-016",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -7616,7 +7622,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-286",
+    id: "emt-ops-291",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7634,7 +7640,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-287",
+    id: "emt-ops-292",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7652,7 +7658,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-288",
+    id: "emt-ops-293",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7670,7 +7676,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-289",
+    id: "emt-ops-294",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7688,7 +7694,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-290",
+    id: "emt-ops-295",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7706,7 +7712,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-291",
+    id: "emt-ops-296",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7724,7 +7730,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-292",
+    id: "emt-ops-297",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7742,7 +7748,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-293",
+    id: "emt-ops-298",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7760,7 +7766,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-294",
+    id: "emt-ops-299",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7778,7 +7784,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-295",
+    id: "emt-ops-300",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7796,7 +7802,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-296",
+    id: "emt-ops-301",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7814,7 +7820,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-297",
+    id: "emt-ops-302",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7832,7 +7838,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-298",
+    id: "emt-ops-303",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7850,7 +7856,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-299",
+    id: "emt-ops-304",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7868,7 +7874,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-300",
+    id: "emt-ops-305",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7886,7 +7892,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-301",
+    id: "emt-ops-306",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7904,7 +7910,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-302",
+    id: "emt-ops-307",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7922,7 +7928,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-303",
+    id: "emt-ops-308",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7940,7 +7946,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-304",
+    id: "emt-ops-309",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7958,7 +7964,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-305",
+    id: "emt-ops-310",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7976,7 +7982,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-306",
+    id: "emt-ops-311",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -7994,7 +8000,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-307",
+    id: "emt-ops-312",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8012,7 +8018,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-308",
+    id: "emt-ops-313",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8030,7 +8036,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-309",
+    id: "emt-ops-314",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8048,7 +8054,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-310",
+    id: "emt-ops-315",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8066,7 +8072,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-311",
+    id: "emt-ops-316",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8084,7 +8090,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-312",
+    id: "emt-ops-317",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8102,7 +8108,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-313",
+    id: "emt-ops-318",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8120,7 +8126,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-314",
+    id: "emt-ops-319",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8138,7 +8144,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-315",
+    id: "emt-ops-320",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8156,7 +8162,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-316",
+    id: "emt-ops-321",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8174,7 +8180,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-317",
+    id: "emt-ops-322",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8192,7 +8198,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-318",
+    id: "emt-ops-323",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8210,7 +8216,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-319",
+    id: "emt-ops-324",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -8228,7 +8234,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-049",
+    id: "emt-airway-055",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8246,7 +8252,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-050",
+    id: "emt-airway-056",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8264,7 +8270,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-051",
+    id: "emt-airway-057",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8282,7 +8288,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-052",
+    id: "emt-airway-058",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -8300,7 +8306,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-053",
+    id: "emt-airway-059",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8318,7 +8324,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-054",
+    id: "emt-airway-060",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8336,7 +8342,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-055",
+    id: "emt-airway-061",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -8354,7 +8360,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-056",
+    id: "emt-airway-062",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8372,7 +8378,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-057",
+    id: "emt-airway-063",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8390,7 +8396,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-058",
+    id: "emt-airway-064",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8408,7 +8414,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-059",
+    id: "emt-airway-065",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8426,7 +8432,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-060",
+    id: "emt-airway-066",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8444,7 +8450,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-061",
+    id: "emt-airway-067",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8462,7 +8468,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-062",
+    id: "emt-airway-068",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8480,7 +8486,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-063",
+    id: "emt-airway-069",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8498,7 +8504,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-064",
+    id: "emt-airway-070",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8516,7 +8522,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-065",
+    id: "emt-airway-071",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8534,7 +8540,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-066",
+    id: "emt-airway-072",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8552,7 +8558,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-067",
+    id: "emt-airway-073",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8570,7 +8576,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-068",
+    id: "emt-airway-074",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8588,7 +8594,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-069",
+    id: "emt-airway-075",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8606,7 +8612,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-023",
+    id: "emt-cardiology-035",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8624,7 +8630,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-024",
+    id: "emt-cardiology-036",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8642,7 +8648,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-025",
+    id: "emt-cardiology-037",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8660,7 +8666,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-026",
+    id: "emt-cardiology-038",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8678,7 +8684,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-027",
+    id: "emt-cardiology-039",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8696,7 +8702,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-028",
+    id: "emt-cardiology-040",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8714,7 +8720,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-029",
+    id: "emt-cardiology-041",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8732,7 +8738,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-030",
+    id: "emt-cardiology-042",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8750,7 +8756,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-031",
+    id: "emt-cardiology-043",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8768,7 +8774,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-032",
+    id: "emt-cardiology-044",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8786,7 +8792,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-033",
+    id: "emt-cardiology-045",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8804,7 +8810,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-034",
+    id: "emt-cardiology-046",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8822,7 +8828,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-035",
+    id: "emt-cardiology-047",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8840,7 +8846,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-036",
+    id: "emt-cardiology-048",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8858,7 +8864,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-037",
+    id: "emt-cardiology-049",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8876,7 +8882,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-038",
+    id: "emt-cardiology-050",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8894,7 +8900,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-039",
+    id: "emt-cardiology-051",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -8912,7 +8918,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-040",
+    id: "emt-cardiology-052",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8930,7 +8936,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-041",
+    id: "emt-cardiology-053",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8948,7 +8954,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-042",
+    id: "emt-cardiology-054",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8966,7 +8972,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-011",
+    id: "emt-medical-017",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -8984,7 +8990,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-012",
+    id: "emt-medical-018",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -9002,7 +9008,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-013",
+    id: "emt-medical-019",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -9020,7 +9026,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-014",
+    id: "emt-medical-020",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -9038,7 +9044,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-015",
+    id: "emt-medical-021",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9056,7 +9062,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-016",
+    id: "emt-medical-022",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9074,7 +9080,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-017",
+    id: "emt-medical-023",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9092,7 +9098,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-018",
+    id: "emt-medical-024",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9110,7 +9116,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-019",
+    id: "emt-medical-025",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9128,7 +9134,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-320",
+    id: "emt-ops-325",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -9146,7 +9152,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-321",
+    id: "emt-ops-326",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -9164,7 +9170,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-322",
+    id: "emt-ops-327",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -9182,7 +9188,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-323",
+    id: "emt-ops-328",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -9200,7 +9206,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-324",
+    id: "emt-ops-329",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -9218,7 +9224,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-070",
+    id: "emt-airway-076",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9236,7 +9242,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-071",
+    id: "emt-airway-077",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9254,7 +9260,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-072",
+    id: "emt-airway-078",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9272,7 +9278,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-073",
+    id: "emt-airway-079",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9290,7 +9296,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-043",
+    id: "emt-cardiology-055",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9308,7 +9314,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-044",
+    id: "emt-cardiology-056",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9326,7 +9332,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-045",
+    id: "emt-cardiology-057",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9344,7 +9350,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-046",
+    id: "emt-cardiology-058",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9362,7 +9368,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-020",
+    id: "emt-medical-026",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9380,7 +9386,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-021",
+    id: "emt-medical-027",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9398,7 +9404,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-022",
+    id: "emt-medical-028",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9416,7 +9422,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-023",
+    id: "emt-medical-029",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9434,7 +9440,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-024",
+    id: "emt-medical-030",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9452,7 +9458,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-025",
+    id: "emt-medical-031",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -9470,7 +9476,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-026",
+    id: "emt-medical-032",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -9488,7 +9494,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-027",
+    id: "emt-medical-033",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9505,7 +9511,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-028",
+    id: "emt-medical-034",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9522,7 +9528,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-029",
+    id: "emt-medical-035",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9539,7 +9545,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-030",
+    id: "emt-medical-036",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9556,7 +9562,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-031",
+    id: "emt-medical-037",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9573,7 +9579,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-032",
+    id: "emt-medical-038",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9590,7 +9596,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-033",
+    id: "emt-medical-039",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9607,7 +9613,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-034",
+    id: "emt-medical-040",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9624,7 +9630,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-035",
+    id: "emt-medical-041",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9641,7 +9647,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-036",
+    id: "emt-medical-042",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9658,7 +9664,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-037",
+    id: "emt-medical-043",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9675,7 +9681,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-038",
+    id: "emt-medical-044",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9692,7 +9698,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-039",
+    id: "emt-medical-045",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9709,7 +9715,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-040",
+    id: "emt-medical-046",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9726,7 +9732,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-041",
+    id: "emt-medical-047",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9743,7 +9749,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-042",
+    id: "emt-medical-048",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9760,7 +9766,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-043",
+    id: "emt-medical-049",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9777,7 +9783,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-044",
+    id: "emt-medical-050",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9794,7 +9800,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-029",
+    id: "emt-trauma-032",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9812,7 +9818,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-030",
+    id: "emt-trauma-033",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -9829,7 +9835,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-031",
+    id: "emt-trauma-034",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -9846,7 +9852,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-032",
+    id: "emt-trauma-035",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -9863,7 +9869,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-033",
+    id: "emt-cardiology-059",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -9880,7 +9886,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-034",
+    id: "emt-cardiology-060",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -9897,7 +9903,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-035",
+    id: "emt-medical-051",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9914,7 +9920,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-036",
+    id: "emt-medical-052",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -9931,7 +9937,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-037",
+    id: "emt-airway-080",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9949,7 +9955,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-038",
+    id: "emt-airway-081",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -9967,7 +9973,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-039",
+    id: "emt-trauma-036",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -9984,7 +9990,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-040",
+    id: "emt-trauma-037",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10001,7 +10007,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-041",
+    id: "emt-medical-053",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10018,7 +10024,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-042",
+    id: "emt-medical-054",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10035,7 +10041,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-043",
+    id: "emt-medical-055",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10052,7 +10058,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-044",
+    id: "emt-medical-056",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10069,7 +10075,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-047",
+    id: "emt-medical-057",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10086,7 +10092,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-048",
+    id: "emt-medical-058",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10103,7 +10109,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-049",
+    id: "emt-cardiology-061",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10120,7 +10126,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-050",
+    id: "emt-cardiology-062",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10137,7 +10143,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-051",
+    id: "emt-cardiology-063",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10154,7 +10160,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-052",
+    id: "emt-cardiology-064",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10171,7 +10177,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-053",
+    id: "emt-cardiology-065",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10188,7 +10194,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-054",
+    id: "emt-cardiology-066",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10205,7 +10211,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-055",
+    id: "emt-cardiology-067",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10222,7 +10228,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-056",
+    id: "emt-cardiology-068",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10239,7 +10245,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-045",
+    id: "emt-trauma-038",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10256,7 +10262,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-046",
+    id: "emt-trauma-039",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10273,7 +10279,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-325",
+    id: "emt-ops-330",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -10290,7 +10296,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-326",
+    id: "emt-ops-331",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -10307,7 +10313,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-045",
+    id: "emt-medical-059",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10324,7 +10330,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-046",
+    id: "emt-medical-060",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10341,7 +10347,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-047",
+    id: "emt-medical-061",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10358,7 +10364,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-048",
+    id: "emt-medical-062",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10375,7 +10381,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-049",
+    id: "emt-medical-063",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10392,7 +10398,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-050",
+    id: "emt-medical-064",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10409,7 +10415,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-051",
+    id: "emt-medical-065",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10426,7 +10432,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-052",
+    id: "emt-medical-066",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10443,7 +10449,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-053",
+    id: "emt-medical-067",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10460,7 +10466,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-054",
+    id: "emt-medical-068",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10477,7 +10483,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-074",
+    id: "emt-airway-082",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -10495,7 +10501,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-075",
+    id: "emt-airway-083",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -10513,7 +10519,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-055",
+    id: "emt-medical-069",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10530,7 +10536,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-056",
+    id: "emt-medical-070",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10547,7 +10553,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-057",
+    id: "emt-medical-071",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10564,7 +10570,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-058",
+    id: "emt-medical-072",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10581,7 +10587,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-059",
+    id: "emt-medical-073",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10598,7 +10604,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-060",
+    id: "emt-medical-074",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10615,7 +10621,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-061",
+    id: "emt-cardiology-069",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10632,7 +10638,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-062",
+    id: "emt-cardiology-070",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10649,7 +10655,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-047",
+    id: "emt-trauma-040",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10666,7 +10672,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-048",
+    id: "emt-trauma-041",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10683,7 +10689,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-049",
+    id: "emt-trauma-042",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10700,7 +10706,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-050",
+    id: "emt-trauma-043",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10717,7 +10723,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-057",
+    id: "emt-cardiology-071",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10734,7 +10740,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-058",
+    id: "emt-cardiology-072",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10751,7 +10757,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-051",
+    id: "emt-trauma-044",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10768,7 +10774,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-052",
+    id: "emt-trauma-045",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10785,7 +10791,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-063",
+    id: "emt-medical-075",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10802,7 +10808,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-064",
+    id: "emt-medical-076",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10819,7 +10825,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-059",
+    id: "emt-cardiology-073",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10836,7 +10842,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-060",
+    id: "emt-cardiology-074",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10853,7 +10859,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-065",
+    id: "emt-medical-077",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10870,7 +10876,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-066",
+    id: "emt-medical-078",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10887,7 +10893,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-067",
+    id: "emt-medical-079",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10904,7 +10910,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-068",
+    id: "emt-medical-080",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -10921,7 +10927,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-053",
+    id: "emt-trauma-046",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10938,7 +10944,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-054",
+    id: "emt-trauma-047",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -10955,7 +10961,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-061",
+    id: "emt-cardiology-075",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10972,7 +10978,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-062",
+    id: "emt-cardiology-076",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -10989,7 +10995,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-069",
+    id: "emt-medical-081",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11006,7 +11012,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-070",
+    id: "emt-medical-082",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11023,7 +11029,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-071",
+    id: "emt-medical-083",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11040,7 +11046,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-072",
+    id: "emt-medical-084",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11057,7 +11063,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-076",
+    id: "emt-airway-084",
     domain: "Airway",
     level: "EMT",
     question:
@@ -11074,7 +11080,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-077",
+    id: "emt-airway-085",
     domain: "Airway",
     level: "EMT",
     question:
@@ -11091,7 +11097,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-073",
+    id: "emt-medical-085",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11108,7 +11114,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-074",
+    id: "emt-medical-086",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11125,7 +11131,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-075",
+    id: "emt-medical-087",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11142,7 +11148,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-076",
+    id: "emt-medical-088",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11159,7 +11165,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-077",
+    id: "emt-medical-089",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11176,7 +11182,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-078",
+    id: "emt-medical-090",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11193,7 +11199,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-055",
+    id: "emt-trauma-048",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11210,7 +11216,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-056",
+    id: "emt-trauma-049",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11227,7 +11233,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-079",
+    id: "emt-medical-091",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11244,7 +11250,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-080",
+    id: "emt-medical-092",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11261,7 +11267,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-081",
+    id: "emt-medical-093",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11278,7 +11284,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-082",
+    id: "emt-medical-094",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11295,7 +11301,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-083",
+    id: "emt-medical-095",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11312,7 +11318,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-084",
+    id: "emt-medical-096",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11329,7 +11335,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-085",
+    id: "emt-medical-097",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11346,7 +11352,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-086",
+    id: "emt-medical-098",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11363,7 +11369,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-087",
+    id: "emt-medical-099",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11380,7 +11386,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-088",
+    id: "emt-medical-100",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11397,7 +11403,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-057",
+    id: "emt-trauma-050",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11414,7 +11420,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-058",
+    id: "emt-trauma-051",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11431,7 +11437,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-089",
+    id: "emt-medical-101",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11448,7 +11454,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-090",
+    id: "emt-medical-102",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11465,7 +11471,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-063",
+    id: "emt-cardiology-077",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11482,7 +11488,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-064",
+    id: "emt-cardiology-078",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11499,7 +11505,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-091",
+    id: "emt-medical-103",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11516,7 +11522,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-092",
+    id: "emt-medical-104",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11533,7 +11539,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-065",
+    id: "emt-cardiology-079",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11550,7 +11556,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-066",
+    id: "emt-cardiology-080",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11567,7 +11573,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-067",
+    id: "emt-cardiology-081",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11584,7 +11590,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-068",
+    id: "emt-cardiology-082",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11601,7 +11607,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-069",
+    id: "emt-cardiology-083",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11618,7 +11624,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-070",
+    id: "emt-cardiology-084",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11635,7 +11641,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-071",
+    id: "emt-cardiology-085",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11652,7 +11658,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-072",
+    id: "emt-cardiology-086",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -11669,7 +11675,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-073",
+    id: "emt-cardiology-087",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -11687,7 +11693,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-074",
+    id: "emt-cardiology-088",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -11705,7 +11711,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-059",
+    id: "emt-trauma-052",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11722,7 +11728,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-060",
+    id: "emt-trauma-053",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11739,7 +11745,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-093",
+    id: "emt-medical-105",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11756,7 +11762,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-094",
+    id: "emt-medical-106",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11773,7 +11779,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-095",
+    id: "emt-medical-107",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11790,7 +11796,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-096",
+    id: "emt-medical-108",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11807,7 +11813,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-097",
+    id: "emt-medical-109",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11824,7 +11830,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-098",
+    id: "emt-medical-110",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11841,7 +11847,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-099",
+    id: "emt-medical-111",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11858,7 +11864,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-100",
+    id: "emt-medical-112",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11875,7 +11881,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-061",
+    id: "emt-trauma-054",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11892,7 +11898,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-062",
+    id: "emt-trauma-055",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11909,7 +11915,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-101",
+    id: "emt-medical-113",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11926,7 +11932,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-102",
+    id: "emt-medical-114",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -11943,7 +11949,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-063",
+    id: "emt-trauma-056",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11960,7 +11966,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-064",
+    id: "emt-trauma-057",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11977,7 +11983,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-065",
+    id: "emt-trauma-058",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -11994,7 +12000,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-066",
+    id: "emt-trauma-059",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12011,7 +12017,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-103",
+    id: "emt-medical-115",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12028,7 +12034,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-104",
+    id: "emt-medical-116",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12045,7 +12051,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-105",
+    id: "emt-medical-117",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12062,7 +12068,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-106",
+    id: "emt-medical-118",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12079,7 +12085,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-078",
+    id: "emt-airway-086",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -12097,7 +12103,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-079",
+    id: "emt-airway-087",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -12115,7 +12121,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-107",
+    id: "emt-medical-119",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12132,7 +12138,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-108",
+    id: "emt-medical-120",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12149,7 +12155,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-109",
+    id: "emt-medical-121",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12166,7 +12172,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-110",
+    id: "emt-medical-122",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12183,7 +12189,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-067",
+    id: "emt-trauma-060",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12200,7 +12206,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-068",
+    id: "emt-trauma-061",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12217,7 +12223,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-111",
+    id: "emt-medical-123",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12234,7 +12240,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-112",
+    id: "emt-medical-124",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12251,7 +12257,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-327",
+    id: "emt-ops-332",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -12268,7 +12274,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-328",
+    id: "emt-ops-333",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -12285,7 +12291,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-075",
+    id: "emt-cardiology-089",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12302,7 +12308,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-076",
+    id: "emt-cardiology-090",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12319,7 +12325,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-069",
+    id: "emt-trauma-062",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12336,7 +12342,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-070",
+    id: "emt-trauma-063",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12353,7 +12359,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-071",
+    id: "emt-trauma-064",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12370,7 +12376,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-072",
+    id: "emt-trauma-065",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12387,7 +12393,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-073",
+    id: "emt-trauma-066",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12404,7 +12410,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-074",
+    id: "emt-trauma-067",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12421,7 +12427,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-075",
+    id: "emt-trauma-068",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12438,7 +12444,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-076",
+    id: "emt-trauma-069",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12455,7 +12461,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-113",
+    id: "emt-medical-125",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12472,7 +12478,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-114",
+    id: "emt-medical-126",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12489,7 +12495,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-115",
+    id: "emt-medical-127",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12506,7 +12512,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-116",
+    id: "emt-medical-128",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12523,7 +12529,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-077",
+    id: "emt-trauma-070",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12540,7 +12546,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-078",
+    id: "emt-trauma-071",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12557,7 +12563,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-117",
+    id: "emt-medical-129",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12574,7 +12580,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-118",
+    id: "emt-medical-130",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12591,7 +12597,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-119",
+    id: "emt-medical-131",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12608,7 +12614,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-120",
+    id: "emt-medical-132",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12625,7 +12631,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-121",
+    id: "emt-medical-133",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12642,7 +12648,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-122",
+    id: "emt-medical-134",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12659,7 +12665,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-077",
+    id: "emt-cardiology-091",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12676,7 +12682,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-078",
+    id: "emt-cardiology-092",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12693,7 +12699,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-079",
+    id: "emt-cardiology-093",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12710,7 +12716,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-080",
+    id: "emt-cardiology-094",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12727,7 +12733,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-123",
+    id: "emt-medical-135",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12744,7 +12750,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-124",
+    id: "emt-medical-136",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12761,7 +12767,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-081",
+    id: "emt-cardiology-095",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12778,7 +12784,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-082",
+    id: "emt-cardiology-096",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12795,7 +12801,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-125",
+    id: "emt-medical-137",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12812,7 +12818,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-126",
+    id: "emt-medical-138",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12829,7 +12835,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-079",
+    id: "emt-trauma-072",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12846,7 +12852,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-080",
+    id: "emt-trauma-073",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12863,7 +12869,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-127",
+    id: "emt-medical-139",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12880,7 +12886,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-128",
+    id: "emt-medical-140",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -12897,7 +12903,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-081",
+    id: "emt-trauma-074",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12914,7 +12920,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-082",
+    id: "emt-trauma-075",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -12931,7 +12937,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-080",
+    id: "emt-airway-088",
     domain: "Airway",
     level: "EMT",
     question:
@@ -12948,7 +12954,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-081",
+    id: "emt-airway-089",
     domain: "Airway",
     level: "EMT",
     question:
@@ -12965,7 +12971,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-083",
+    id: "emt-cardiology-097",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12982,7 +12988,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-084",
+    id: "emt-cardiology-098",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -12999,7 +13005,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-083",
+    id: "emt-trauma-076",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13016,7 +13022,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-084",
+    id: "emt-trauma-077",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13033,7 +13039,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-085",
+    id: "emt-trauma-078",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13050,7 +13056,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-086",
+    id: "emt-trauma-079",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13067,7 +13073,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-085",
+    id: "emt-cardiology-099",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13084,7 +13090,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-086",
+    id: "emt-cardiology-100",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13101,7 +13107,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-087",
+    id: "emt-trauma-080",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13118,7 +13124,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-088",
+    id: "emt-trauma-081",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13135,7 +13141,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-087",
+    id: "emt-cardiology-101",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13152,7 +13158,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-088",
+    id: "emt-cardiology-102",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13169,7 +13175,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-089",
+    id: "emt-trauma-082",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13186,7 +13192,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-090",
+    id: "emt-trauma-083",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13203,7 +13209,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-129",
+    id: "emt-medical-141",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13220,7 +13226,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-130",
+    id: "emt-medical-142",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13237,7 +13243,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-131",
+    id: "emt-medical-143",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13254,7 +13260,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-132",
+    id: "emt-medical-144",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13271,7 +13277,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-329",
+    id: "emt-ops-334",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -13288,7 +13294,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-330",
+    id: "emt-ops-335",
     domain: "EMS Operations",
     level: "EMT",
     question:
@@ -13305,7 +13311,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-133",
+    id: "emt-medical-145",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13322,7 +13328,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-134",
+    id: "emt-medical-146",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13339,7 +13345,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-091",
+    id: "emt-trauma-084",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13356,7 +13362,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-092",
+    id: "emt-trauma-085",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13373,7 +13379,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-089",
+    id: "emt-cardiology-103",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13390,7 +13396,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-090",
+    id: "emt-cardiology-104",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13407,7 +13413,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-135",
+    id: "emt-medical-147",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13424,7 +13430,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-136",
+    id: "emt-medical-148",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13441,7 +13447,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-091",
+    id: "emt-cardiology-105",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13458,7 +13464,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-092",
+    id: "emt-cardiology-106",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13475,7 +13481,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-082",
+    id: "emt-airway-090",
     domain: "Airway",
     level: "EMT",
     question:
@@ -13492,7 +13498,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-083",
+    id: "emt-airway-091",
     domain: "Airway",
     level: "EMT",
     question:
@@ -13509,7 +13515,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-137",
+    id: "emt-medical-149",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13526,7 +13532,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-138",
+    id: "emt-medical-150",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13543,7 +13549,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-139",
+    id: "emt-medical-151",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13560,7 +13566,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-140",
+    id: "emt-medical-152",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13577,7 +13583,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-141",
+    id: "emt-medical-153",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13594,7 +13600,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-142",
+    id: "emt-medical-154",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13611,7 +13617,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-143",
+    id: "emt-medical-155",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13628,7 +13634,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-144",
+    id: "emt-medical-156",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13645,7 +13651,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-145",
+    id: "emt-medical-157",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13662,7 +13668,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-146",
+    id: "emt-medical-158",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13679,7 +13685,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-084",
+    id: "emt-airway-092",
     domain: "Airway",
     level: "EMT",
     question:
@@ -13696,7 +13702,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-085",
+    id: "emt-airway-093",
     domain: "Airway",
     level: "EMT",
     question:
@@ -13713,7 +13719,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-093",
+    id: "emt-cardiology-107",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13730,7 +13736,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-093",
+    id: "emt-trauma-086",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13747,7 +13753,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-147",
+    id: "emt-medical-159",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13764,7 +13770,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-148",
+    id: "emt-medical-160",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13781,7 +13787,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-094",
+    id: "emt-cardiology-108",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13798,7 +13804,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-149",
+    id: "emt-medical-161",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13815,7 +13821,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-094",
+    id: "emt-trauma-087",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13832,7 +13838,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-150",
+    id: "emt-medical-162",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13849,7 +13855,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-151",
+    id: "emt-medical-163",
     domain: "Medical + OBGYN",
     level: "EMT",
     question:
@@ -13866,7 +13872,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-095",
+    id: "emt-cardiology-109",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13883,7 +13889,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-001",
+    id: "emt-cardiology-110",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13900,7 +13906,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-002",
+    id: "emt-cardiology-111",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13917,7 +13923,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-003",
+    id: "emt-cardiology-112",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13934,7 +13940,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-004",
+    id: "emt-cardiology-113",
     domain: "Cardiology",
     level: "EMT",
     question:
@@ -13951,7 +13957,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-005",
+    id: "emt-trauma-088",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13968,7 +13974,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "anatomy-006",
+    id: "emt-trauma-089",
     domain: "Trauma",
     level: "EMT",
     question:
@@ -13985,7 +13991,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-096",
+    id: "emt-cardiology-114",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14003,7 +14009,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-097",
+    id: "emt-cardiology-115",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14021,7 +14027,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-098",
+    id: "emt-cardiology-116",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14039,7 +14045,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-099",
+    id: "emt-cardiology-117",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14057,7 +14063,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-100",
+    id: "emt-cardiology-118",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14075,7 +14081,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-101",
+    id: "emt-cardiology-119",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14093,7 +14099,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-102",
+    id: "emt-cardiology-120",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14111,7 +14117,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-103",
+    id: "emt-cardiology-121",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14129,7 +14135,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-104",
+    id: "emt-cardiology-122",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14147,7 +14153,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-105",
+    id: "emt-cardiology-123",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14165,7 +14171,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-106",
+    id: "emt-cardiology-124",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14183,7 +14189,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-107",
+    id: "emt-cardiology-125",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14201,7 +14207,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-108",
+    id: "emt-cardiology-126",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14219,7 +14225,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-109",
+    id: "emt-cardiology-127",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14237,7 +14243,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-110",
+    id: "emt-cardiology-128",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14255,7 +14261,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-111",
+    id: "emt-cardiology-129",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14273,7 +14279,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-112",
+    id: "emt-cardiology-130",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14291,7 +14297,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-113",
+    id: "emt-cardiology-131",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14309,7 +14315,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-114",
+    id: "emt-cardiology-132",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14327,7 +14333,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-115",
+    id: "emt-cardiology-133",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14345,7 +14351,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-116",
+    id: "emt-cardiology-134",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14363,7 +14369,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-117",
+    id: "emt-cardiology-135",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14381,7 +14387,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-118",
+    id: "emt-cardiology-136",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14399,7 +14405,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-119",
+    id: "emt-cardiology-137",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14417,7 +14423,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-120",
+    id: "emt-cardiology-138",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14435,7 +14441,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-121",
+    id: "emt-cardiology-139",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14453,7 +14459,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-122",
+    id: "emt-cardiology-140",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14471,7 +14477,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-123",
+    id: "emt-cardiology-141",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14489,7 +14495,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-124",
+    id: "emt-cardiology-142",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14507,7 +14513,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-125",
+    id: "emt-cardiology-143",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14525,7 +14531,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-126",
+    id: "emt-cardiology-144",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14543,7 +14549,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-127",
+    id: "emt-cardiology-145",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14561,7 +14567,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-128",
+    id: "emt-cardiology-146",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14579,7 +14585,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-129",
+    id: "emt-cardiology-147",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14597,7 +14603,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-130",
+    id: "emt-cardiology-148",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14615,7 +14621,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-131",
+    id: "emt-cardiology-149",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14633,7 +14639,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-132",
+    id: "emt-cardiology-150",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14651,7 +14657,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-133",
+    id: "emt-cardiology-151",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14669,7 +14675,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-134",
+    id: "emt-cardiology-152",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14687,7 +14693,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-135",
+    id: "emt-cardiology-153",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14705,7 +14711,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-136",
+    id: "emt-cardiology-154",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -14723,7 +14729,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-137",
+    id: "emt-cardiology-155",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14741,7 +14747,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-138",
+    id: "emt-cardiology-156",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14759,7 +14765,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-139",
+    id: "emt-cardiology-157",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14777,7 +14783,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-140",
+    id: "emt-cardiology-158",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14795,7 +14801,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-141",
+    id: "emt-cardiology-159",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14813,7 +14819,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-142",
+    id: "emt-cardiology-160",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14831,7 +14837,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-143",
+    id: "emt-cardiology-161",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14849,7 +14855,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-144",
+    id: "emt-cardiology-162",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14867,7 +14873,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-145",
+    id: "emt-cardiology-163",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14885,7 +14891,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-146",
+    id: "emt-cardiology-164",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14903,7 +14909,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-147",
+    id: "emt-cardiology-165",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14921,7 +14927,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-148",
+    id: "emt-cardiology-166",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14939,7 +14945,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-149",
+    id: "emt-cardiology-167",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14957,7 +14963,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-150",
+    id: "emt-cardiology-168",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -14975,7 +14981,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-151",
+    id: "emt-cardiology-169",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -14993,7 +14999,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-152",
+    id: "emt-cardiology-170",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15011,7 +15017,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-153",
+    id: "emt-cardiology-171",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15029,7 +15035,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-154",
+    id: "emt-cardiology-172",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15047,7 +15053,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-155",
+    id: "emt-cardiology-173",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15065,7 +15071,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-156",
+    id: "emt-cardiology-174",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15083,7 +15089,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-157",
+    id: "emt-cardiology-175",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -15101,7 +15107,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-158",
+    id: "emt-cardiology-176",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15119,7 +15125,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-159",
+    id: "emt-cardiology-177",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15137,7 +15143,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-001",
+    id: "emt-cardiology-178",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15155,7 +15161,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-002",
+    id: "emt-cardiology-179",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15173,7 +15179,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-003",
+    id: "emt-cardiology-180",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15191,7 +15197,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-004",
+    id: "emt-cardiology-181",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15209,7 +15215,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-005",
+    id: "emt-cardiology-182",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15227,7 +15233,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-006",
+    id: "emt-cardiology-183",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15245,7 +15251,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-007",
+    id: "emt-cardiology-184",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15263,7 +15269,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-008",
+    id: "emt-cardiology-185",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15281,7 +15287,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-009",
+    id: "emt-cardiology-186",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15299,7 +15305,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-010",
+    id: "emt-cardiology-187",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15317,7 +15323,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-011",
+    id: "emt-cardiology-188",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15335,7 +15341,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-012",
+    id: "emt-cardiology-189",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15353,7 +15359,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-013",
+    id: "emt-cardiology-190",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15371,7 +15377,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-014",
+    id: "emt-cardiology-191",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -15389,7 +15395,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-015",
+    id: "emt-cardiology-192",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15407,7 +15413,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-016",
+    id: "emt-cardiology-193",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15425,7 +15431,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-017",
+    id: "emt-cardiology-194",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15443,7 +15449,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-018",
+    id: "emt-cardiology-195",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15461,7 +15467,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-019",
+    id: "emt-cardiology-196",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15479,7 +15485,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-020",
+    id: "emt-cardiology-197",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15497,7 +15503,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-021",
+    id: "emt-cardiology-198",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15515,7 +15521,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-022",
+    id: "emt-cardiology-199",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15533,7 +15539,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-023",
+    id: "emt-cardiology-200",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15551,7 +15557,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-024",
+    id: "emt-cardiology-201",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15569,7 +15575,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-025",
+    id: "emt-cardiology-202",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15587,7 +15593,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-026",
+    id: "emt-cardiology-203",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15605,7 +15611,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-027",
+    id: "emt-cardiology-204",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15623,7 +15629,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-028",
+    id: "emt-cardiology-205",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15641,7 +15647,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-029",
+    id: "emt-cardiology-206",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15659,7 +15665,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-030",
+    id: "emt-cardiology-207",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15677,7 +15683,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-031",
+    id: "emt-cardiology-208",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15695,7 +15701,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-032",
+    id: "emt-cardiology-209",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15713,7 +15719,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-033",
+    id: "emt-cardiology-210",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15731,7 +15737,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-034",
+    id: "emt-cardiology-211",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15749,7 +15755,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-035",
+    id: "emt-cardiology-212",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -15767,7 +15773,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-036",
+    id: "emt-cardiology-213",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15785,7 +15791,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-037",
+    id: "emt-cardiology-214",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15803,7 +15809,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-038",
+    id: "emt-cardiology-215",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15821,7 +15827,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-039",
+    id: "emt-cardiology-216",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15839,7 +15845,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-reverse-040",
+    id: "emt-cardiology-217",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -15857,7 +15863,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-160",
+    id: "emt-cardiology-218",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15875,7 +15881,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-161",
+    id: "emt-cardiology-219",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15893,7 +15899,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-162",
+    id: "emt-cardiology-220",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -15911,7 +15917,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-163",
+    id: "emt-cardiology-221",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15929,7 +15935,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-164",
+    id: "emt-cardiology-222",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15947,7 +15953,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-165",
+    id: "emt-cardiology-223",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -15965,7 +15971,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-166",
+    id: "emt-cardiology-224",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -15983,7 +15989,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-167",
+    id: "emt-cardiology-225",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16001,7 +16007,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-168",
+    id: "emt-cardiology-226",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16019,7 +16025,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-169",
+    id: "emt-cardiology-227",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16037,7 +16043,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-170",
+    id: "emt-cardiology-228",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16055,7 +16061,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-171",
+    id: "emt-cardiology-229",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16073,7 +16079,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-172",
+    id: "emt-cardiology-230",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16091,7 +16097,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-173",
+    id: "emt-cardiology-231",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16109,7 +16115,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-174",
+    id: "emt-cardiology-232",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16127,7 +16133,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-175",
+    id: "emt-cardiology-233",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16145,7 +16151,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-176",
+    id: "emt-cardiology-234",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16163,7 +16169,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-177",
+    id: "emt-cardiology-235",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16181,7 +16187,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-178",
+    id: "emt-cardiology-236",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16199,7 +16205,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-179",
+    id: "emt-cardiology-237",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16217,7 +16223,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-180",
+    id: "emt-cardiology-238",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16235,7 +16241,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-181",
+    id: "emt-cardiology-239",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16253,7 +16259,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-182",
+    id: "emt-cardiology-240",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16271,7 +16277,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-183",
+    id: "emt-cardiology-241",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16289,7 +16295,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-184",
+    id: "emt-cardiology-242",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16307,7 +16313,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-185",
+    id: "emt-cardiology-243",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16325,7 +16331,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-186",
+    id: "emt-cardiology-244",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16343,7 +16349,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-187",
+    id: "emt-cardiology-245",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -16361,7 +16367,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-188",
+    id: "emt-cardiology-246",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16379,7 +16385,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-189",
+    id: "emt-cardiology-247",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16397,7 +16403,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-190",
+    id: "emt-cardiology-248",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16415,7 +16421,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-191",
+    id: "emt-cardiology-249",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16433,7 +16439,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-192",
+    id: "emt-cardiology-250",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16451,7 +16457,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-193",
+    id: "emt-cardiology-251",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16469,7 +16475,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-194",
+    id: "emt-cardiology-252",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16487,7 +16493,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-195",
+    id: "emt-cardiology-253",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16505,7 +16511,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-196",
+    id: "emt-cardiology-254",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16523,7 +16529,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-197",
+    id: "emt-cardiology-255",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16541,7 +16547,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-198",
+    id: "emt-cardiology-256",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16559,7 +16565,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-199",
+    id: "emt-cardiology-257",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16577,7 +16583,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-200",
+    id: "emt-cardiology-258",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16595,7 +16601,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-201",
+    id: "emt-cardiology-259",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16613,7 +16619,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-202",
+    id: "emt-cardiology-260",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16631,7 +16637,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-203",
+    id: "emt-cardiology-261",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16649,7 +16655,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-204",
+    id: "emt-cardiology-262",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16667,7 +16673,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-205",
+    id: "emt-cardiology-263",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16685,7 +16691,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-206",
+    id: "emt-cardiology-264",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16703,7 +16709,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-207",
+    id: "emt-cardiology-265",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16721,7 +16727,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-208",
+    id: "emt-cardiology-266",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16739,7 +16745,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-209",
+    id: "emt-cardiology-267",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16757,7 +16763,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-210",
+    id: "emt-cardiology-268",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16775,7 +16781,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-211",
+    id: "emt-cardiology-269",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16793,7 +16799,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-212",
+    id: "emt-cardiology-270",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16811,7 +16817,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-213",
+    id: "emt-cardiology-271",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16829,7 +16835,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-214",
+    id: "emt-cardiology-272",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16847,7 +16853,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-215",
+    id: "emt-cardiology-273",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16865,7 +16871,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-216",
+    id: "emt-cardiology-274",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16883,7 +16889,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-217",
+    id: "emt-cardiology-275",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16901,7 +16907,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-218",
+    id: "emt-cardiology-276",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16919,7 +16925,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-219",
+    id: "emt-cardiology-277",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16937,7 +16943,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-220",
+    id: "emt-cardiology-278",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16955,7 +16961,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-221",
+    id: "emt-cardiology-279",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -16973,7 +16979,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-222",
+    id: "emt-cardiology-280",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -16991,7 +16997,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-223",
+    id: "emt-cardiology-281",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17009,7 +17015,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-224",
+    id: "emt-cardiology-282",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17027,7 +17033,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-225",
+    id: "emt-cardiology-283",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17045,7 +17051,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-226",
+    id: "emt-cardiology-284",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17063,7 +17069,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-227",
+    id: "emt-cardiology-285",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17081,7 +17087,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-228",
+    id: "emt-cardiology-286",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17099,7 +17105,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-229",
+    id: "emt-cardiology-287",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17117,7 +17123,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-230",
+    id: "emt-cardiology-288",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17135,7 +17141,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-231",
+    id: "emt-cardiology-289",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17153,7 +17159,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-232",
+    id: "emt-cardiology-290",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17171,7 +17177,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-233",
+    id: "emt-cardiology-291",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17189,7 +17195,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-234",
+    id: "emt-cardiology-292",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17207,7 +17213,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-235",
+    id: "emt-cardiology-293",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17225,7 +17231,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-236",
+    id: "emt-cardiology-294",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17243,7 +17249,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-237",
+    id: "emt-cardiology-295",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17261,7 +17267,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-238",
+    id: "emt-cardiology-296",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17279,7 +17285,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-239",
+    id: "emt-cardiology-297",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17297,7 +17303,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-240",
+    id: "emt-cardiology-298",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17315,7 +17321,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-241",
+    id: "emt-cardiology-299",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17333,7 +17339,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-242",
+    id: "emt-cardiology-300",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17351,7 +17357,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-243",
+    id: "emt-cardiology-301",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17369,7 +17375,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-244",
+    id: "emt-cardiology-302",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17387,7 +17393,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-245",
+    id: "emt-cardiology-303",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17405,7 +17411,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-246",
+    id: "emt-cardiology-304",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17423,7 +17429,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-247",
+    id: "emt-cardiology-305",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17441,7 +17447,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-248",
+    id: "emt-cardiology-306",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17459,7 +17465,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-249",
+    id: "emt-cardiology-307",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17477,7 +17483,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-250",
+    id: "emt-cardiology-308",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17495,7 +17501,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-251",
+    id: "emt-cardiology-309",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17513,7 +17519,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-252",
+    id: "emt-cardiology-310",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17531,7 +17537,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-253",
+    id: "emt-cardiology-311",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17549,7 +17555,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-254",
+    id: "emt-cardiology-312",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17567,7 +17573,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-255",
+    id: "emt-cardiology-313",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17585,7 +17591,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-256",
+    id: "emt-cardiology-314",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17603,7 +17609,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-257",
+    id: "emt-cardiology-315",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17621,7 +17627,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-258",
+    id: "emt-cardiology-316",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17639,7 +17645,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-259",
+    id: "emt-cardiology-317",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17657,7 +17663,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-152",
+    id: "emt-medical-164",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17675,7 +17681,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-153",
+    id: "emt-medical-165",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17693,7 +17699,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-154",
+    id: "emt-medical-166",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17711,7 +17717,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-155",
+    id: "emt-medical-167",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17729,7 +17735,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-156",
+    id: "emt-medical-168",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17747,7 +17753,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-157",
+    id: "emt-medical-169",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17765,7 +17771,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-158",
+    id: "emt-medical-170",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17783,7 +17789,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-159",
+    id: "emt-medical-171",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17801,7 +17807,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-160",
+    id: "emt-medical-172",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17819,7 +17825,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-161",
+    id: "emt-medical-173",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17837,7 +17843,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-260",
+    id: "emt-cardiology-318",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17855,7 +17861,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-261",
+    id: "emt-cardiology-319",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17873,7 +17879,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-262",
+    id: "emt-cardiology-320",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -17891,7 +17897,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-086",
+    id: "emt-airway-094",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17909,7 +17915,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-087",
+    id: "emt-airway-095",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17927,7 +17933,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-088",
+    id: "emt-airway-096",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17945,7 +17951,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-162",
+    id: "emt-medical-174",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -17963,7 +17969,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-163",
+    id: "emt-medical-175",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17981,7 +17987,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-164",
+    id: "emt-medical-176",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -17999,7 +18005,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-165",
+    id: "emt-medical-177",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18017,7 +18023,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-166",
+    id: "emt-medical-178",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18035,7 +18041,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-167",
+    id: "emt-medical-179",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18053,7 +18059,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-168",
+    id: "emt-medical-180",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18071,7 +18077,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-169",
+    id: "emt-medical-181",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18089,7 +18095,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-170",
+    id: "emt-medical-182",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18107,7 +18113,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-171",
+    id: "emt-medical-183",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18125,7 +18131,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-172",
+    id: "emt-medical-184",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18143,7 +18149,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-173",
+    id: "emt-medical-185",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18161,7 +18167,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-174",
+    id: "emt-medical-186",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18179,7 +18185,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-175",
+    id: "emt-medical-187",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18197,7 +18203,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-176",
+    id: "emt-medical-188",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18215,7 +18221,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-177",
+    id: "emt-medical-189",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18233,7 +18239,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-178",
+    id: "emt-medical-190",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18251,7 +18257,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-179",
+    id: "emt-medical-191",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18269,7 +18275,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-180",
+    id: "emt-medical-192",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18287,7 +18293,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-181",
+    id: "emt-medical-193",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18305,7 +18311,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-182",
+    id: "emt-medical-194",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18323,7 +18329,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-183",
+    id: "emt-medical-195",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18341,7 +18347,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-184",
+    id: "emt-medical-196",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18359,7 +18365,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-185",
+    id: "emt-medical-197",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18377,7 +18383,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-186",
+    id: "emt-medical-198",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18395,7 +18401,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-187",
+    id: "emt-medical-199",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18413,7 +18419,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-188",
+    id: "emt-airway-097",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18431,7 +18437,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-331",
+    id: "emt-ops-336",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -18449,7 +18455,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-332",
+    id: "emt-ops-337",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -18467,7 +18473,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-189",
+    id: "emt-medical-200",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18485,7 +18491,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-190",
+    id: "emt-medical-201",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18503,7 +18509,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-191",
+    id: "emt-medical-202",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18521,7 +18527,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-333",
+    id: "emt-ops-338",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18539,7 +18545,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-334",
+    id: "emt-ops-339",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18557,7 +18563,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-192",
+    id: "emt-medical-203",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18575,7 +18581,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-193",
+    id: "emt-medical-204",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18593,7 +18599,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-194",
+    id: "emt-medical-205",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -18611,7 +18617,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-195",
+    id: "emt-medical-206",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18629,7 +18635,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-196",
+    id: "emt-medical-207",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18647,7 +18653,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-197",
+    id: "emt-airway-098",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -18665,7 +18671,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-198",
+    id: "emt-medical-208",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18683,7 +18689,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-199",
+    id: "emt-medical-209",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18701,7 +18707,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-200",
+    id: "emt-medical-210",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18719,7 +18725,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-201",
+    id: "emt-medical-211",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18737,7 +18743,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-202",
+    id: "emt-medical-212",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18755,7 +18761,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-203",
+    id: "emt-medical-213",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18773,7 +18779,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-204",
+    id: "emt-medical-214",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18791,7 +18797,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-205",
+    id: "emt-airway-099",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18809,7 +18815,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-206",
+    id: "emt-airway-100",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18827,7 +18833,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-207",
+    id: "emt-airway-101",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18845,7 +18851,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-208",
+    id: "emt-medical-215",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18863,7 +18869,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-089",
+    id: "emt-airway-102",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18881,7 +18887,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-209",
+    id: "emt-medical-216",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18899,7 +18905,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-210",
+    id: "emt-medical-217",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18917,7 +18923,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-211",
+    id: "emt-medical-218",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18935,7 +18941,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-335",
+    id: "emt-ops-340",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -18953,7 +18959,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-336",
+    id: "emt-ops-341",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18971,7 +18977,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-337",
+    id: "emt-ops-342",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -18989,7 +18995,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-001",
+    id: "emt-medical-219",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19007,7 +19013,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-002",
+    id: "emt-medical-220",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19025,7 +19031,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-003",
+    id: "emt-medical-221",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19043,7 +19049,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-004",
+    id: "emt-medical-222",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19061,7 +19067,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-005",
+    id: "emt-medical-223",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19079,7 +19085,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-006",
+    id: "emt-medical-224",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19097,7 +19103,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-007",
+    id: "emt-medical-225",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19115,7 +19121,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-008",
+    id: "emt-medical-226",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19133,7 +19139,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-009",
+    id: "emt-medical-227",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19151,7 +19157,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-010",
+    id: "emt-medical-228",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -19169,7 +19175,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-011",
+    id: "emt-medical-229",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -19187,7 +19193,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-012",
+    id: "emt-medical-230",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -19205,7 +19211,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-013",
+    id: "emt-airway-103",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -19223,7 +19229,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-014",
+    id: "emt-airway-104",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -19241,7 +19247,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-015",
+    id: "emt-airway-105",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -19259,7 +19265,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-016",
+    id: "emt-medical-231",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -19277,7 +19283,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-017",
+    id: "emt-medical-232",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19295,7 +19301,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-018",
+    id: "emt-medical-233",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19313,7 +19319,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-019",
+    id: "emt-medical-234",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19331,7 +19337,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-020",
+    id: "emt-airway-106",
     domain: "Airway",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -19349,7 +19355,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-021",
+    id: "emt-medical-235",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19367,7 +19373,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-022",
+    id: "emt-medical-236",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19385,7 +19391,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-023",
+    id: "emt-medical-237",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19403,7 +19409,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-024",
+    id: "emt-ops-343",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -19421,7 +19427,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "reverse-025",
+    id: "emt-ops-344",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -19439,7 +19445,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-  id: "med-001",
+  id: "emt-medical-238",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -19457,7 +19463,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-002",
+  id: "emt-medical-239",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -19475,7 +19481,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-003",
+  id: "emt-medical-240",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19493,7 +19499,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-004",
+  id: "emt-medical-241",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19511,7 +19517,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-005",
+  id: "emt-medical-242",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -19529,7 +19535,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-006",
+  id: "emt-medical-243",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -19547,7 +19553,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-007",
+  id: "emt-medical-244",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19565,7 +19571,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-008",
+  id: "emt-medical-245",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19583,7 +19589,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-009",
+  id: "emt-medical-246",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19601,7 +19607,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-010",
+  id: "emt-medical-247",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19619,7 +19625,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-011",
+  id: "emt-medical-248",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19637,7 +19643,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-012",
+  id: "emt-medical-249",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19655,7 +19661,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-013",
+  id: "emt-medical-250",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -19673,7 +19679,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-014",
+  id: "emt-medical-251",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -19691,7 +19697,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-015",
+  id: "emt-medical-252",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19709,7 +19715,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-016",
+  id: "emt-medical-253",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19727,7 +19733,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-017",
+  id: "emt-medical-254",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19745,7 +19751,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-018",
+  id: "emt-medical-255",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19763,7 +19769,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-019",
+  id: "emt-medical-256",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19781,7 +19787,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-020",
+  id: "emt-medical-257",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19799,7 +19805,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-021",
+  id: "emt-medical-258",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19817,7 +19823,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-022",
+  id: "emt-medical-259",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19835,7 +19841,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-023",
+  id: "emt-medical-260",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -19853,7 +19859,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-024",
+  id: "emt-medical-261",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -19871,7 +19877,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-025",
+  id: "emt-medical-262",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19889,7 +19895,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-026",
+  id: "emt-medical-263",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19907,7 +19913,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-027",
+  id: "emt-medical-264",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19925,7 +19931,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-028",
+  id: "emt-medical-265",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19943,7 +19949,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-029",
+  id: "emt-medical-266",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19961,7 +19967,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-030",
+  id: "emt-medical-267",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19979,7 +19985,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-031",
+  id: "emt-medical-268",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -19997,7 +20003,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-032",
+  id: "emt-medical-269",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20015,7 +20021,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-033",
+  id: "emt-medical-270",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20033,7 +20039,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-034",
+  id: "emt-medical-271",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20051,7 +20057,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-035",
+  id: "emt-medical-272",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20069,7 +20075,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-036",
+  id: "emt-medical-273",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20087,7 +20093,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-037",
+  id: "emt-medical-274",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20105,7 +20111,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-038",
+  id: "emt-medical-275",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20123,7 +20129,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-039",
+  id: "emt-medical-276",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -20141,7 +20147,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-040",
+  id: "emt-medical-277",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -20159,7 +20165,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-041",
+  id: "emt-medical-278",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -20177,7 +20183,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-042",
+  id: "emt-medical-279",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -20195,7 +20201,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "med-043",
+  id: "emt-medical-280",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -20213,7 +20219,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-    id: "ops-391",
+    id: "emt-ops-345",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20231,7 +20237,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-392",
+    id: "emt-ops-346",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20249,7 +20255,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-393",
+    id: "emt-ops-347",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20267,7 +20273,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-394",
+    id: "emt-ops-348",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20285,7 +20291,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-395",
+    id: "emt-ops-349",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20303,7 +20309,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-396",
+    id: "emt-ops-350",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20321,7 +20327,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-397",
+    id: "emt-ops-351",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20339,7 +20345,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-398",
+    id: "emt-ops-352",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20357,7 +20363,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-399",
+    id: "emt-ops-353",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20375,7 +20381,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-400",
+    id: "emt-ops-354",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20393,7 +20399,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-401",
+    id: "emt-ops-355",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20411,7 +20417,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-402",
+    id: "emt-ops-356",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20429,7 +20435,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-403",
+    id: "emt-ops-357",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20447,7 +20453,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-404",
+    id: "emt-ops-358",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20465,7 +20471,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-405",
+    id: "emt-ops-359",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20483,7 +20489,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-406",
+    id: "emt-ops-360",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20501,7 +20507,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-407",
+    id: "emt-ops-361",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20519,7 +20525,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-408",
+    id: "emt-ops-362",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20537,7 +20543,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-409",
+    id: "emt-ops-363",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20555,7 +20561,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-410",
+    id: "emt-ops-364",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20573,7 +20579,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-411",
+    id: "emt-ops-365",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20591,7 +20597,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-412",
+    id: "emt-ops-366",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20609,7 +20615,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-413",
+    id: "emt-ops-367",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20627,7 +20633,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-414",
+    id: "emt-ops-368",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20645,7 +20651,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-415",
+    id: "emt-ops-369",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20663,7 +20669,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-416",
+    id: "emt-ops-370",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20681,7 +20687,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-417",
+    id: "emt-ops-371",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20699,7 +20705,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-418",
+    id: "emt-ops-372",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20717,7 +20723,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-419",
+    id: "emt-ops-373",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20735,7 +20741,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-420",
+    id: "emt-ops-374",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20753,7 +20759,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-421",
+    id: "emt-ops-375",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20771,7 +20777,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-422",
+    id: "emt-ops-376",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20789,7 +20795,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-423",
+    id: "emt-ops-377",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20807,7 +20813,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-424",
+    id: "emt-ops-378",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20825,7 +20831,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-425",
+    id: "emt-ops-379",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20843,7 +20849,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-426",
+    id: "emt-ops-380",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20861,7 +20867,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-427",
+    id: "emt-ops-381",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20879,7 +20885,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-428",
+    id: "emt-ops-382",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20897,7 +20903,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-429",
+    id: "emt-ops-383",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -20915,7 +20921,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-430",
+    id: "emt-ops-384",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -20933,7 +20939,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-431",
+    id: "emt-ops-385",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20951,7 +20957,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-432",
+    id: "emt-ops-386",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -20969,7 +20975,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-433",
+    id: "emt-ops-387",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -20987,7 +20993,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-434",
+    id: "emt-ops-388",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21005,7 +21011,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-435",
+    id: "emt-ops-389",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21023,7 +21029,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-436",
+    id: "emt-ops-390",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21041,7 +21047,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-437",
+    id: "emt-ops-391",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21059,7 +21065,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-438",
+    id: "emt-ops-392",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21077,7 +21083,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-439",
+    id: "emt-ops-393",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21095,7 +21101,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-440",
+    id: "emt-ops-394",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21113,7 +21119,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-441",
+    id: "emt-ops-395",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21131,7 +21137,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-442",
+    id: "emt-ops-396",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21149,7 +21155,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-443",
+    id: "emt-ops-397",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21167,7 +21173,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-444",
+    id: "emt-ops-398",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21185,7 +21191,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-445",
+    id: "emt-ops-399",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21203,7 +21209,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-446",
+    id: "emt-ops-400",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21221,7 +21227,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-447",
+    id: "emt-ops-401",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21239,7 +21245,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-448",
+    id: "emt-ops-402",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21257,7 +21263,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-449",
+    id: "emt-ops-403",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21275,7 +21281,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-450",
+    id: "emt-ops-404",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21293,7 +21299,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-451",
+    id: "emt-ops-405",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21311,7 +21317,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-452",
+    id: "emt-ops-406",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21329,7 +21335,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-453",
+    id: "emt-ops-407",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21347,7 +21353,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-454",
+    id: "emt-ops-408",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21365,7 +21371,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-455",
+    id: "emt-ops-409",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21383,7 +21389,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-456",
+    id: "emt-ops-410",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21401,7 +21407,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-457",
+    id: "emt-ops-411",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21419,7 +21425,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-458",
+    id: "emt-ops-412",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21437,7 +21443,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-459",
+    id: "emt-ops-413",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21455,7 +21461,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-460",
+    id: "emt-ops-414",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21473,7 +21479,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-461",
+    id: "emt-ops-415",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21491,7 +21497,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-462",
+    id: "emt-ops-416",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21509,7 +21515,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-463",
+    id: "emt-ops-417",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21527,7 +21533,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-464",
+    id: "emt-ops-418",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21545,7 +21551,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-465",
+    id: "emt-ops-419",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21563,7 +21569,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-466",
+    id: "emt-ops-420",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21581,7 +21587,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-467",
+    id: "emt-ops-421",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21599,7 +21605,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-468",
+    id: "emt-ops-422",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21617,7 +21623,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-469",
+    id: "emt-ops-423",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21635,7 +21641,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-470",
+    id: "emt-ops-424",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21653,7 +21659,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-471",
+    id: "emt-ops-425",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21671,7 +21677,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-472",
+    id: "emt-ops-426",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21689,7 +21695,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-473",
+    id: "emt-ops-427",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21707,7 +21713,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-474",
+    id: "emt-ops-428",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -21725,7 +21731,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-475",
+    id: "emt-ops-429",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -21743,7 +21749,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-476",
+    id: "emt-ops-430",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21761,7 +21767,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-477",
+    id: "emt-ops-431",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "operations",
@@ -21779,7 +21785,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-478",
+    id: "emt-ops-432",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21797,7 +21803,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-479",
+    id: "emt-ops-433",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21815,7 +21821,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "ops-480",
+    id: "emt-ops-434",
     domain: "EMS Operations",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -21833,7 +21839,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-  id: "medlegal-001",
+  id: "emt-medical-281",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -21851,7 +21857,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-002",
+  id: "emt-medical-282",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "operations",
@@ -21869,7 +21875,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-003",
+  id: "emt-medical-283",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -21887,7 +21893,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-004",
+  id: "emt-medical-284",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -21905,7 +21911,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-005",
+  id: "emt-medical-285",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "operations",
@@ -21923,7 +21929,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-006",
+  id: "emt-medical-286",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -21941,7 +21947,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-007",
+  id: "emt-medical-287",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "operations",
@@ -21959,7 +21965,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-008",
+  id: "emt-medical-288",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -21977,7 +21983,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-009",
+  id: "emt-medical-289",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -21995,7 +22001,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medlegal-010",
+  id: "emt-medical-290",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "operations",
@@ -22013,7 +22019,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-212",
+  id: "emt-medical-291",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22031,7 +22037,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-213",
+  id: "emt-medical-292",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22049,7 +22055,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-214",
+  id: "emt-medical-293",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22067,7 +22073,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-215",
+  id: "emt-medical-294",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22085,7 +22091,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-216",
+  id: "emt-medical-295",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22103,7 +22109,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-217",
+  id: "emt-medical-296",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22121,7 +22127,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-218",
+  id: "emt-medical-297",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22139,7 +22145,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-219",
+  id: "emt-medical-298",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22157,7 +22163,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-220",
+  id: "emt-medical-299",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22175,7 +22181,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-221",
+  id: "emt-medical-300",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22193,7 +22199,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-222",
+  id: "emt-medical-301",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22211,7 +22217,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-223",
+  id: "emt-medical-302",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22229,7 +22235,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-224",
+  id: "emt-medical-303",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22247,7 +22253,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-225",
+  id: "emt-medical-304",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22265,7 +22271,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-226",
+  id: "emt-medical-305",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22283,7 +22289,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-227",
+  id: "emt-medical-306",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22301,7 +22307,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-228",
+  id: "emt-medical-307",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22319,7 +22325,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-229",
+  id: "emt-medical-308",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22337,7 +22343,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-230",
+  id: "emt-medical-309",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22355,7 +22361,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-231",
+  id: "emt-medical-310",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -22373,7 +22379,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-232",
+  id: "emt-medical-311",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22391,7 +22397,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-233",
+  id: "emt-medical-312",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22409,7 +22415,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-234",
+  id: "emt-medical-313",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22427,7 +22433,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-235",
+  id: "emt-medical-314",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22445,7 +22451,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-236",
+  id: "emt-medical-315",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22463,7 +22469,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-237",
+  id: "emt-medical-316",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22481,7 +22487,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-238",
+  id: "emt-medical-317",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22499,7 +22505,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-239",
+  id: "emt-medical-318",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22517,7 +22523,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-240",
+  id: "emt-medical-319",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22535,7 +22541,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-241",
+  id: "emt-medical-320",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -22553,7 +22559,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-    id: "airway-090",
+    id: "emt-airway-107",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22570,7 +22576,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-091",
+    id: "emt-airway-108",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22587,7 +22593,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-092",
+    id: "emt-airway-109",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22604,7 +22610,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-093",
+    id: "emt-airway-110",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22621,7 +22627,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-094",
+    id: "emt-airway-111",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22638,7 +22644,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-095",
+    id: "emt-airway-112",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22655,7 +22661,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-096",
+    id: "emt-airway-113",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22672,7 +22678,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-097",
+    id: "emt-airway-114",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22689,7 +22695,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-098",
+    id: "emt-airway-115",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22706,7 +22712,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "airway-099",
+    id: "emt-airway-116",
     domain: "Airway",
     level: "EMT",
     question:
@@ -22723,7 +22729,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-  id: "medical-242",
+  id: "emt-medical-321",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -22741,7 +22747,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-243",
+  id: "emt-medical-322",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22759,7 +22765,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-244",
+  id: "emt-medical-323",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22777,7 +22783,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-245",
+  id: "emt-medical-324",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22795,7 +22801,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-246",
+  id: "emt-medical-325",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22813,7 +22819,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-247",
+  id: "emt-medical-326",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "sceneSafety",
@@ -22831,7 +22837,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-248",
+  id: "emt-medical-327",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22849,7 +22855,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-249",
+  id: "emt-medical-328",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22867,7 +22873,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-250",
+  id: "emt-medical-329",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22885,7 +22891,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-251",
+  id: "emt-medical-330",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -22902,7 +22908,7 @@ export const EMT_QUESTIONS = [
     "The Glasgow Coma Scale evaluates eye opening, verbal response, and motor response and produces an adult total from 3 to 15. AVPU is a faster categorical assessment of responsiveness rather than a numerical scale."
 },
 
-  {    id: "medical-252",
+  {    id: "emt-medical-331",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22920,7 +22926,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-253",
+    id: "emt-medical-332",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22938,7 +22944,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-254",
+    id: "emt-medical-333",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22956,7 +22962,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-255",
+    id: "emt-medical-334",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22974,7 +22980,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-256",
+    id: "emt-medical-335",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -22992,7 +22998,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-257",
+    id: "emt-medical-336",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23010,7 +23016,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-258",
+    id: "emt-medical-337",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23028,7 +23034,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-259",
+    id: "emt-medical-338",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23046,7 +23052,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-095",
+    id: "emt-trauma-090",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -23064,7 +23070,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-096",
+    id: "emt-trauma-091",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -23082,7 +23088,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-  id: "medical-260",
+  id: "emt-medical-339",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -23100,7 +23106,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-261",
+  id: "emt-medical-340",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -23118,7 +23124,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-262",
+  id: "emt-cardiology-321",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -23136,7 +23142,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-263",
+  id: "emt-cardiology-322",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -23154,7 +23160,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-264",
+  id: "emt-cardiology-323",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -23172,7 +23178,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-265",
+  id: "emt-cardiology-324",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -23190,7 +23196,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-266",
+  id: "emt-medical-341",
   domain: "Medical + OBGYN",
   level: "EMT",
   blueprintCategory: "secondaryAssessment",
@@ -23208,7 +23214,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-267",
+  id: "emt-cardiology-325",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -23226,7 +23232,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-268",
+  id: "emt-cardiology-326",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "treatmentTransport",
@@ -23244,7 +23250,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-  id: "medical-269",
+  id: "emt-cardiology-327",
   domain: "Cardiology",
   level: "EMT",
   blueprintCategory: "primaryAssessment",
@@ -23262,7 +23268,7 @@ export const EMT_QUESTIONS = [
 },
 
   {
-    id: "trauma-097",
+    id: "emt-trauma-092",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -23280,7 +23286,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-098",
+    id: "emt-trauma-093",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "sceneSafety",
@@ -23298,7 +23304,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-099",
+    id: "emt-trauma-094",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -23316,7 +23322,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-100",
+    id: "emt-trauma-095",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "treatmentTransport",
@@ -23334,7 +23340,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-101",
+    id: "emt-trauma-096",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23352,7 +23358,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-102",
+    id: "emt-trauma-097",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23370,7 +23376,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-103",
+    id: "emt-trauma-098",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23388,7 +23394,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-104",
+    id: "emt-trauma-099",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "secondaryAssessment",
@@ -23406,7 +23412,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-105",
+    id: "emt-trauma-100",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23424,7 +23430,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "trauma-106",
+    id: "emt-trauma-101",
     domain: "Trauma",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23442,7 +23448,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-270",
+    id: "emt-medical-342",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23460,7 +23466,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-271",
+    id: "emt-medical-343",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23478,7 +23484,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-272",
+    id: "emt-medical-344",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23496,7 +23502,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-263",
+    id: "emt-cardiology-328",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23514,7 +23520,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-264",
+    id: "emt-cardiology-329",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23532,7 +23538,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-273",
+    id: "emt-medical-345",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23550,7 +23556,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-274",
+    id: "emt-medical-346",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23568,7 +23574,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-275",
+    id: "emt-medical-347",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23586,7 +23592,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-265",
+    id: "emt-cardiology-330",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23604,7 +23610,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "cardiology-266",
+    id: "emt-cardiology-331",
     domain: "Cardiology",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23622,7 +23628,7 @@ export const EMT_QUESTIONS = [
   },
 
   {
-    id: "medical-276",
+    id: "emt-medical-348",
     domain: "Medical + OBGYN",
     level: "EMT",
     blueprintCategory: "primaryAssessment",
@@ -23638,4 +23644,2898 @@ export const EMT_QUESTIONS = [
     explanation:
       "Persistent apnea or a heart rate below 100/min after the initial steps calls for positive-pressure ventilation. Chest compressions are considered when the heart rate remains below 60/min despite effective ventilation. Routine suctioning is not the default intervention for every newborn.",
   },
+
+  {
+    id: "emt-airway-117",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You are preparing an airway adjunct for an unresponsive adult with no gag reflex. Which measurement is most appropriate when selecting an oropharyngeal airway?",
+    choices: [
+      "From the nostril to the earlobe",
+      "From the corner of the mouth to the angle of the jaw",
+      "From the chin to the sternum",
+      "From the forehead to the tip of the nose"
+    ],
+    answerIndex: 1,
+    explanation: "An OPA is generally sized from the corner of the mouth to the angle of the jaw. A properly sized device helps keep the tongue from obstructing the pharynx without extending too deeply. Measuring from the nose to the earlobe is associated with NPA sizing."
+  },
+
+  {
+    id: "emt-airway-118",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unconscious patient immediately gags when you begin inserting an OPA. What is the best interpretation of this finding?",
+    choices: [
+      "The OPA is too short and should be replaced with a larger one",
+      "The patient's gag reflex is intact, so an OPA should not be used",
+      "The patient requires a supraglottic airway immediately",
+      "The patient should receive an OPA while being placed supine"
+    ],
+    answerIndex: 1,
+    explanation: "An intact gag reflex is a contraindication to OPA placement because stimulation can cause vomiting and aspiration. An NPA may be appropriate when tolerated and not otherwise contraindicated. Airway management should remain within the EMT's scope and local protocol."
+  },
+
+  {
+    id: "emt-airway-119",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which patient is the best candidate for an oropharyngeal airway?",
+    choices: [
+      "An alert patient with a strong gag reflex",
+      "A semiconscious patient who repeatedly coughs when the airway is touched",
+      "An unresponsive patient without a gag reflex",
+      "A patient who is awake and vomiting"
+    ],
+    answerIndex: 2,
+    explanation: "An OPA is intended for an unconscious or deeply unresponsive patient who lacks an intact gag reflex. Patients who are conscious or have an active gag reflex may vomit or aspirate when an OPA is inserted."
+  },
+
+  {
+    id: "emt-airway-120",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient with depressed consciousness has a patent airway but cannot tolerate an OPA because of a gag reflex. Which adjunct may be considered instead?",
+    choices: [
+      "Nasopharyngeal airway",
+      "Larger OPA",
+      "Smaller OPA",
+      "Bite block"
+    ],
+    answerIndex: 0,
+    explanation: "An NPA is generally better tolerated by patients who retain a gag reflex. It should only be used when there is no contraindication, such as significant nasal trauma or certain suspected skull-base injuries."
+  },
+
+  {
+    id: "emt-airway-121",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "During suctioning of an adult patient's airway, the patient becomes increasingly cyanotic. What is the most appropriate immediate response?",
+    choices: [
+      "Continue suctioning until all secretions are removed",
+      "Increase suction pressure and continue",
+      "Stop suctioning and provide oxygenation or ventilation as indicated",
+      "Place the patient prone and resume suctioning"
+    ],
+    answerIndex: 2,
+    explanation: "Suctioning can remove oxygen and should be performed for limited periods. If hypoxia develops, stop the procedure and restore oxygenation or ventilation. Removing every secretion is less important than maintaining adequate oxygenation."
+  },
+
+  {
+    id: "emt-airway-122",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An adult with a pulse is apneic but has a palpable carotid pulse. At what approximate rate should an EMT provide rescue breaths with a BVM?",
+    choices: [
+      "One breath every 2 seconds",
+      "One breath every 4 seconds",
+      "One breath every 6 seconds",
+      "One breath every 12 seconds"
+    ],
+    answerIndex: 2,
+    explanation: "For an adult who is not breathing normally but has a pulse, current AHA guidance supports approximately one breath every 6 seconds. Each breath should be delivered over about 1 second and should produce visible chest rise. Excessive ventilation can increase intrathoracic pressure and reduce venous return."
+  },
+
+  {
+    id: "emt-airway-123",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You are ventilating an apneic adult with a BVM. Which observation provides the strongest evidence that air is reaching the lungs?",
+    choices: [
+      "The reservoir bag remains completely full",
+      "The abdomen visibly expands",
+      "The chest visibly rises with the ventilation",
+      "The pop-off valve opens with every breath"
+    ],
+    answerIndex: 2,
+    explanation: "Visible chest rise is the primary bedside indicator that a BVM ventilation is producing effective lung expansion. Abdominal distention suggests gastric insufflation, while excessive pressure or valve activation does not demonstrate effective ventilation."
+  },
+
+  {
+    id: "emt-airway-124",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which patient would be least appropriate for CPAP?",
+    choices: [
+      "An alert patient with acute pulmonary edema who is breathing adequately",
+      "An alert patient with severe respiratory distress who can follow commands",
+      "A patient who is apneic and requires assisted ventilation",
+      "An alert patient with severe bronchospasm who can cooperate with treatment"
+    ],
+    answerIndex: 2,
+    explanation: "CPAP supports a patient's spontaneous breathing and therefore is not a substitute for ventilation in an apneic patient. A patient who cannot maintain adequate spontaneous ventilation requires assisted ventilation with a BVM or another appropriate intervention."
+  },
+
+  {
+    id: "emt-airway-125",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with severe respiratory distress is alert, cooperative, breathing spontaneously, and has adequate tidal volume. Which feature makes CPAP potentially appropriate when permitted by protocol?",
+    choices: [
+      "The patient is unable to protect the airway",
+      "The patient can cooperate with the mask and continue spontaneous breathing",
+      "The patient is apneic",
+      "The patient has no respiratory effort"
+    ],
+    answerIndex: 1,
+    explanation: "CPAP requires a patient who can cooperate with the device and generate spontaneous respirations. It can improve oxygenation and reduce the work of breathing in selected patients with respiratory distress."
+  },
+
+  {
+    id: "emt-airway-126",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A trauma patient is unresponsive after a high-speed collision. Which airway-opening maneuver should initially be considered when spinal injury is suspected?",
+    choices: [
+      "Jaw thrust",
+      "Head-tilt, chin-lift only",
+      "Blind finger sweep",
+      "Abdominal thrusts"
+    ],
+    answerIndex: 0,
+    explanation: "A jaw-thrust maneuver can open the airway while minimizing movement of the cervical spine. However, airway patency takes priority, and if a jaw thrust does not adequately open the airway, an appropriately performed head-tilt, chin-lift may be necessary."
+  },
+
+  {
+    id: "emt-airway-127",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unresponsive adult has occasional irregular gasps but no normal breathing. How should you interpret these respirations?",
+    choices: [
+      "Adequate spontaneous ventilation",
+      "Agonal respirations that should not be considered normal breathing",
+      "Hyperventilation caused by anxiety",
+      "A mild partial airway obstruction"
+    ],
+    answerIndex: 1,
+    explanation: "Gasping or agonal respirations are not normal breathing. In an unresponsive adult, they should prompt an immediate pulse assessment and preparation for resuscitation rather than reassurance that the patient is ventilating adequately."
+  },
+
+  {
+    id: "emt-airway-128",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A child with suspected upper-airway swelling produces a harsh, high-pitched sound primarily during inspiration. What does this finding suggest?",
+    choices: [
+      "Lower-airway bronchospasm",
+      "Upper-airway narrowing",
+      "Fluid in the alveoli",
+      "Normal turbulent airflow"
+    ],
+    answerIndex: 1,
+    explanation: "Stridor is generally caused by turbulent airflow through a narrowed upper airway. It can occur with conditions such as croup, upper-airway swelling, foreign bodies, or other causes of obstruction. It should be treated as a potentially serious airway finding."
+  },
+
+  {
+    id: "emt-airway-129",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which assessment finding is most consistent with lower-airway narrowing rather than upper-airway obstruction?",
+    choices: [
+      "Inspiratory stridor",
+      "Expiratory wheezing",
+      "Snoring respirations",
+      "Gurgling secretions"
+    ],
+    answerIndex: 1,
+    explanation: "Wheezing is commonly associated with narrowed lower airways, such as in asthma or bronchospasm. Stridor suggests upper-airway narrowing, while snoring often indicates partial obstruction from the tongue and gurgling suggests fluid or secretions."
+  },
+
+  {
+    id: "emt-airway-130",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unresponsive overdose patient is breathing adequately and has no evidence of trauma. Which position can help protect the airway while awaiting transport?",
+    choices: [
+      "Lateral recovery position",
+      "Prone with the head straight ahead",
+      "Supine with both legs elevated",
+      "Standing with assistance"
+    ],
+    answerIndex: 0,
+    explanation: "A lateral recovery position can help maintain airway patency and allow secretions or vomitus to drain from the mouth in an unresponsive patient who is breathing adequately and has no reason to remain supine."
+  },
+
+  {
+    id: "emt-airway-131",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient with suspected spinal trauma becomes apneic after a failed jaw-thrust maneuver. What principle should guide your next airway intervention?",
+    choices: [
+      "Never move the head under any circumstances",
+      "Airway and ventilation take priority, so an effective airway-opening maneuver should be performed",
+      "Wait for a cervical collar before ventilating",
+      "Place the patient prone before attempting ventilation"
+    ],
+    answerIndex: 1,
+    explanation: "Maintaining a patent airway and adequate ventilation is immediately life-saving. Spinal precautions are important, but they should not prevent an EMT from correcting a life-threatening airway or ventilation problem."
+
+
+  },
+
+  {
+    id: "emt-cardiology-332",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "During adult CPR, which compression rate should an EMT target?",
+    choices: [
+      "60 to 80 per minute",
+      "80 to 100 per minute",
+      "100 to 120 per minute",
+      "140 to 160 per minute"
+    ],
+    answerIndex: 2,
+    explanation: "Current AHA guidance recommends a compression rate of 100 to 120 per minute for adult cardiac arrest. Slower rates may provide inadequate perfusion, while excessively rapid compressions can reduce depth and recoil."
+  },
+
+  {
+    id: "emt-cardiology-333",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "What compression depth is appropriate for an average adult during CPR?",
+    choices: [
+      "At least 1 inch but less than 1.5 inches",
+      "At least 2 inches while avoiding depths greater than 2.4 inches",
+      "Approximately 3 inches",
+      "About one-half the anterior-posterior chest diameter"
+    ],
+    answerIndex: 1,
+    explanation: "For an average adult, AHA guidance recommends a depth of at least 2 inches (5 cm) while avoiding excessive depths greater than 2.4 inches (6 cm). Adequate depth is necessary for effective blood flow."
+  },
+
+  {
+    id: "emt-cardiology-334",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Where should an EMT position the hands when performing adult chest compressions?",
+    choices: [
+      "Over the left lateral chest",
+      "Over the xiphoid process",
+      "On the lower half of the sternum in the center of the chest",
+      "On the upper third of the sternum"
+    ],
+    answerIndex: 2,
+    explanation: "Adult compressions are performed in the center of the chest on the lower half of the sternum. This allows the rescuer to generate effective compression of the heart while avoiding direct pressure on the xiphoid process."
+  },
+
+  {
+    id: "emt-cardiology-335",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Why should the chest be allowed to fully recoil between adult compressions?",
+    choices: [
+      "It allows the rescuer to rest between compressions",
+      "It promotes venous return and cardiac filling",
+      "It prevents all rib fractures",
+      "It increases the patient's blood oxygen concentration"
+    ],
+    answerIndex: 1,
+    explanation: "Complete chest recoil lowers intrathoracic pressure and allows blood to return to the heart. Leaning on the chest can impair venous return and reduce coronary and cerebral perfusion."
+  },
+
+  {
+    id: "emt-cardiology-336",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "During adult CPR without an advanced airway, which compression-to-ventilation ratio should be used by a trained EMS provider?",
+    choices: [
+      "15:2",
+      "30:2",
+      "5:1",
+      "Continuous compressions with one breath every 6 seconds"
+    ],
+    answerIndex: 1,
+    explanation: "For adult CPR without an advanced airway, trained rescuers use 30 compressions followed by 2 ventilations. Continuous compressions with asynchronous ventilations apply when an advanced airway is in place."
+  },
+
+  {
+    id: "emt-cardiology-337",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You arrive while another EMT is performing CPR on an adult. What should you do with an AED that has just arrived?",
+    choices: [
+      "Turn on the AED and follow its prompts",
+      "Stop CPR and perform a pulse check before touching the AED",
+      "Wait until two minutes of CPR have passed",
+      "Analyze the rhythm manually before turning on the AED"
+    ],
+    answerIndex: 0,
+    explanation: "The AED should be turned on promptly and its prompts followed. The team should minimize interruptions in compressions while the pads are applied and prepare for rhythm analysis."
+  },
+
+  {
+    id: "emt-cardiology-338",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An AED announces that it is analyzing the patient's rhythm. What should the resuscitation team do?",
+    choices: [
+      "Continue compressions during the analysis",
+      "Ventilate while holding the patient's shoulders",
+      "Ensure nobody is touching the patient",
+      "Perform a carotid pulse check throughout the analysis"
+    ],
+    answerIndex: 2,
+    explanation: "The patient must not be touched during AED rhythm analysis because movement can create electrical artifact and interfere with rhythm interpretation. This is one of the necessary brief interruptions in CPR."
+  },
+
+  {
+    id: "emt-cardiology-339",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "The AED delivers a shock for a shockable rhythm. What is the next priority?",
+    choices: [
+      "Immediately resume chest compressions",
+      "Wait for the AED to announce the next rhythm",
+      "Check the carotid pulse for 20 seconds",
+      "Perform a complete secondary assessment"
+    ],
+    answerIndex: 0,
+    explanation: "After a shock, CPR should resume immediately, beginning with chest compressions. The AED will prompt another rhythm analysis after the next CPR interval."
+  },
+
+  {
+    id: "emt-cardiology-340",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Two EMTs are performing CPR on a 4-year-old child without an advanced airway. Which ratio should they use?",
+    choices: [
+      "30:2",
+      "15:2",
+      "5:1",
+      "3:1"
+    ],
+    answerIndex: 1,
+    explanation: "For two-rescuer CPR on an infant or child without an advanced airway, the compression-to-ventilation ratio is 15:2. A lone rescuer generally uses 30:2."
+  },
+
+  {
+    id: "emt-cardiology-341",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Approximately how deep should compressions be delivered to an infant during CPR?",
+    choices: [
+      "About 0.5 inch",
+      "About 1 inch",
+      "At least one-third of the chest depth, approximately 1.5 inches",
+      "At least 2.5 inches"
+    ],
+    answerIndex: 2,
+    explanation: "Infant compressions should be approximately one-third of the anterior-posterior chest diameter, which is roughly 1.5 inches (4 cm). The depth should be sufficient to produce effective circulation without using adult-sized compression depth."
+  },
+
+  {
+    id: "emt-cardiology-342",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Two rescuers are performing CPR on an infant. Which technique is preferred for the rescuer providing compressions?",
+    choices: [
+      "Two-finger compressions with the other hand behind the head",
+      "Two-thumb encircling-hands technique",
+      "Two adult-style hands stacked over the sternum",
+      "One-hand compressions over the left chest"
+    ],
+    answerIndex: 1,
+    explanation: "When two rescuers are present, the two-thumb encircling-hands technique is preferred for infant CPR. The rescuer's hands encircle the chest while the thumbs compress the lower half of the sternum."
+  },
+
+  {
+    id: "emt-cardiology-343",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "During a prolonged resuscitation, when should two rescuers generally consider switching the compressor?",
+    choices: [
+      "Every 15 seconds",
+      "Approximately every 2 minutes",
+      "Only after the compressor becomes unable to continue",
+      "Every 10 minutes"
+    ],
+    answerIndex: 1,
+    explanation: "Compression quality can decline with rescuer fatigue. Switching approximately every 2 minutes, preferably during a planned rhythm-analysis pause, helps maintain effective compressions without creating an unnecessary interruption."
+  },
+
+  {
+    id: "emt-cardiology-344",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected acute coronary syndrome has a known severe aspirin allergy. Medical direction asks whether aspirin should be given. What should you report?",
+    choices: [
+      "The aspirin should be given because allergy is irrelevant during ACS",
+      "The known aspirin allergy is a contraindication that must be reported",
+      "Only the heart rate matters before administration",
+      "Aspirin should be replaced with oral glucose"
+    ],
+    answerIndex: 1,
+    explanation: "A known aspirin allergy is an important contraindication to aspirin administration. EMTs should verify allergies and follow their authorized protocol or medical direction."
+  },
+
+  {
+    id: "emt-cardiology-345",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with prescribed nitroglycerin has chest discomfort and a systolic blood pressure of 86 mm Hg. What is the most appropriate action?",
+    choices: [
+      "Assist with nitroglycerin because the pain is severe",
+      "Withhold nitroglycerin and follow medical direction or protocol",
+      "Give two doses simultaneously",
+      "Have the patient stand before administering it"
+    ],
+    answerIndex: 1,
+    explanation: "Nitroglycerin can lower blood pressure. Significant hypotension is a reason to withhold it and seek appropriate medical direction or follow the applicable protocol. The exact blood-pressure threshold can vary by authorized protocol."
+  },
+
+  {
+    id: "emt-cardiology-346",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which patient has a higher likelihood of presenting with ACS without classic crushing chest pain?",
+    choices: [
+      "A healthy 19-year-old with no risk factors",
+      "An older adult with diabetes",
+      "A healthy 30-year-old athlete",
+      "A teenager with an isolated ankle injury"
+    ],
+    answerIndex: 1,
+    explanation: "Older adults and people with diabetes are among those who may have atypical or less obvious ACS presentations. Symptoms can include dyspnea, weakness, nausea, fatigue, or epigastric discomfort rather than classic chest pain."
+  },
+
+  {
+    id: "emt-cardiology-347",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which change during CPR would most directly indicate that the rescuer is allowing appropriate chest recoil?",
+    choices: [
+      "The rescuer's hands remain continuously pressed against the sternum",
+      "The chest returns to its normal position between compressions",
+      "The compression rate increases above 140 per minute",
+      "The rescuer stops ventilating"
+    ],
+    answerIndex: 1,
+    explanation: "Complete recoil means the chest returns to its normal position after each compression. This helps maintain venous return and cardiac filling."
+  },
+
+  {
+    id: "emt-cardiology-348",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An AED pad would otherwise be positioned directly over a visible implanted pacemaker below the clavicle. What should the EMT do?",
+    choices: [
+      "Place the pad directly over the device",
+      "Do not use the AED",
+      "Position the pad so it is not directly over the implanted device",
+      "Wait for a physician before applying the pads"
+    ],
+    answerIndex: 2,
+    explanation: "An implanted pacemaker or defibrillator is not a reason to withhold defibrillation. The AED pad should not be placed directly over the implanted device. Move the pad to an appropriate nearby position while maintaining effective pad placement."
+  },
+
+  {
+    id: "emt-cardiology-349",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which action is most likely to reduce coronary perfusion during CPR?",
+    choices: [
+      "Allowing full recoil",
+      "Maintaining a rate of 100 to 120 compressions per minute",
+      "Leaning on the patient's chest between compressions",
+      "Minimizing pauses"
+    ],
+    answerIndex: 2,
+    explanation: "Leaning on the chest prevents full recoil and can increase intrathoracic pressure, reducing venous return and coronary perfusion. Full recoil is therefore an important component of high-quality CPR."
+  },
+
+  {
+    id: "emt-cardiology-350",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An adult in cardiac arrest has a shock advised by the AED. Which action would be inappropriate immediately after the shock?",
+    choices: [
+      "Resuming chest compressions",
+      "Continuing CPR according to the AED prompts",
+      "Pausing for an extended pulse check before restarting CPR",
+      "Maintaining attention to the AED's next instruction"
+    ],
+    answerIndex: 2,
+    explanation: "An extended pulse check after a shock unnecessarily interrupts CPR. Compressions should resume promptly, and the AED will guide the next rhythm analysis."
+  },
+
+  {
+    id: "emt-cardiology-351",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which situation best demonstrates the importance of minimizing interruptions during adult CPR?",
+    choices: [
+      "Stopping compressions for an extended period to reposition equipment",
+      "Performing a brief pause only when the AED requires rhythm analysis",
+      "Stopping CPR whenever a rescuer becomes curious about the rhythm",
+      "Checking the pulse every 30 seconds"
+    ],
+    answerIndex: 1,
+    explanation: "Interruptions should be limited to actions that are necessary and supported by resuscitation guidance. AED rhythm analysis is one of the brief interruptions that cannot be performed safely while compressions continue."
+
+
+  },
+
+  {
+    id: "emt-trauma-102",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient has a deep thigh laceration with severe bleeding that continues despite firm direct pressure. What is the most appropriate next hemorrhage-control intervention?",
+    choices: [
+      "Apply an extremity tourniquet",
+      "Apply ice and elevate the limb",
+      "Wait several minutes before reassessing",
+      "Apply a loose dressing and continue the secondary assessment"
+    ],
+    answerIndex: 0,
+    explanation: "Life-threatening extremity hemorrhage that cannot be controlled with direct pressure should be treated with a tourniquet when available and appropriate. Rapid hemorrhage control takes priority over completing a routine assessment."
+  },
+
+  {
+    id: "emt-trauma-103",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Where should an extremity tourniquet generally be positioned when the wound location is clearly identifiable?",
+    choices: [
+      "Directly over the wound",
+      "Distal to the wound",
+      "Proximal to the wound and not directly over a joint",
+      "Around the wrist regardless of wound location"
+    ],
+    answerIndex: 2,
+    explanation: "A tourniquet is positioned proximal to the wound so it can occlude arterial blood flow to the injured area. It should not be placed directly over a joint. Commercial tourniquets should be used according to their instructions."
+  },
+
+  {
+    id: "emt-trauma-104",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "After applying a tourniquet to life-threatening extremity bleeding, which finding indicates that the intervention is working?",
+    choices: [
+      "The patient reports increasing pain",
+      "Bleeding from the wound has stopped",
+      "The extremity becomes warmer",
+      "The patient's heart rate immediately returns to normal"
+    ],
+    answerIndex: 1,
+    explanation: "The primary objective of a tourniquet is to stop life-threatening hemorrhage. The tourniquet should be tightened sufficiently to control bleeding, and its application time should be documented."
+  },
+
+  {
+    id: "emt-trauma-105",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient has a penetrating chest wound with air moving through the wound during inspiration. Which intervention is most appropriate?",
+    choices: [
+      "Pack the wound deeply with gauze",
+      "Apply an appropriate occlusive chest dressing",
+      "Leave the wound completely uncovered",
+      "Apply a tourniquet around the chest"
+    ],
+    answerIndex: 1,
+    explanation: "An open chest wound should be covered with an appropriate occlusive dressing or commercially available chest seal according to training and protocol. The goal is to limit air entering the pleural space through the wound while monitoring for worsening respiratory compromise."
+  },
+
+  {
+    id: "emt-trauma-106",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "After an open chest wound is sealed, the patient develops worsening respiratory distress and increasing difficulty with ventilation. What complication should you suspect?",
+    choices: [
+      "Simple ankle fracture",
+      "Tension pneumothorax",
+      "Isolated abdominal contusion",
+      "Hypoglycemia"
+    ],
+    answerIndex: 1,
+    explanation: "Worsening respiratory distress after sealing an open chest wound can indicate increasing intrathoracic pressure and development of tension physiology. The patient requires immediate reassessment and management according to the EMT's authorized scope and protocol."
+  },
+
+  {
+    id: "emt-trauma-107",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient has a knife embedded in the abdomen. Which action is generally appropriate?",
+    choices: [
+      "Remove the knife to inspect the wound",
+      "Stabilize the object and transport the patient",
+      "Push the object farther into the abdomen to stop bleeding",
+      "Cut the object out immediately regardless of transport concerns"
+    ],
+    answerIndex: 1,
+    explanation: "An impaled object should generally be stabilized in place rather than removed because it may be limiting bleeding. Removal can cause catastrophic hemorrhage or further tissue injury. Exceptions depend on whether the object interferes with essential care or transport."
+  },
+
+  {
+    id: "emt-trauma-108",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A trauma patient is anxious, pale, cool, and tachycardic, but still has a measurable blood pressure. What does this combination most strongly suggest?",
+    choices: [
+      "Compensated shock",
+      "Normal physiologic response to exercise",
+      "Complete cardiovascular collapse",
+      "Isolated hypothermia"
+    ],
+    answerIndex: 0,
+    explanation: "Tachycardia, peripheral vasoconstriction, and anxiety or restlessness can be early manifestations of compensated shock. Blood pressure may remain normal until compensatory mechanisms begin to fail."
+  },
+
+  {
+    id: "emt-trauma-109",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which finding is generally more concerning for progressing hemorrhagic shock?",
+    choices: [
+      "Normal mental status with warm skin",
+      "Increasing confusion accompanied by weak peripheral pulses",
+      "Mild thirst after a long day",
+      "A normal pulse rate with normal skin color"
+    ],
+    answerIndex: 1,
+    explanation: "Progressive altered mental status and weak peripheral pulses can indicate worsening tissue hypoperfusion. EMTs should recognize shock early rather than waiting for severe hypotension."
+  },
+
+  {
+    id: "emt-trauma-110",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient has abdominal organs protruding through a traumatic wound. Which intervention is appropriate?",
+    choices: [
+      "Push the organs back into the abdomen",
+      "Cover the exposed organs with an appropriate sterile dressing and protect them from drying",
+      "Scrub the organs with antiseptic solution",
+      "Apply firm direct pressure directly onto the organs"
+    ],
+    answerIndex: 1,
+    explanation: "Eviscerated abdominal organs should not be pushed back into the abdominal cavity in the field. They should be protected with an appropriate sterile dressing, commonly kept moist according to EMS teaching and protocol, and the patient should be transported promptly."
+  },
+
+  {
+    id: "emt-trauma-111",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "An adult sustains a fall from a height greater than 10 feet. Which statement is most accurate?",
+    choices: [
+      "The mechanism alone proves the patient has a major injury",
+      "The mechanism should increase suspicion for significant trauma",
+      "A normal initial pulse eliminates the need for trauma assessment",
+      "The patient can be discharged if there is no visible bleeding"
+    ],
+    answerIndex: 1,
+    explanation: "Current field-triage guidance uses mechanisms such as falls from significant height as factors that can increase concern for serious injury. Mechanism alone does not establish an injury diagnosis, so the patient's actual findings and overall presentation remain important."
+  },
+
+  {
+    id: "emt-trauma-112",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "After blunt chest trauma, a segment of the chest wall moves inward during inspiration while the remainder of the chest moves outward. What does this finding represent?",
+    choices: [
+      "Flail chest",
+      "Cardiac tamponade",
+      "Simple abdominal trauma",
+      "Isolated clavicle fracture"
+    ],
+    answerIndex: 0,
+    explanation: "Paradoxical movement of a chest-wall segment is characteristic of a flail segment. Significant underlying pulmonary injury may accompany the rib fractures, so respiratory status must be closely monitored."
+  },
+
+  {
+    id: "emt-trauma-113",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "An adult has partial-thickness burns involving one entire arm and the anterior trunk. Approximately what percentage of body surface area is burned using the adult rule of nines?",
+    choices: [
+      "9%",
+      "18%",
+      "27%",
+      "36%"
+    ],
+    answerIndex: 2,
+    explanation: "Using the adult rule of nines, one entire arm represents approximately 9% and the anterior trunk approximately 18%. Together they represent about 27% of total body surface area."
+
+
+  },
+
+  {
+    id: "emt-medical-349",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which three findings are assessed by the Cincinnati Prehospital Stroke Scale?",
+    choices: [
+      "Pupil size, blood pressure, and pulse",
+      "Facial symmetry, arm drift, and speech",
+      "Gait, grip strength, and memory",
+      "Headache, nausea, and blood glucose"
+    ],
+    answerIndex: 1,
+    explanation: "The Cincinnati stroke assessment evaluates facial droop, arm drift, and abnormal speech. An abnormal finding can indicate a possible stroke and should prompt rapid evaluation and transport."
+  },
+
+  {
+    id: "emt-medical-350",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "A patient suddenly develops facial weakness and difficulty speaking. Which historical detail is especially important to determine?",
+    choices: [
+      "The patient's favorite food",
+      "The last time the patient was known to be at their normal neurologic baseline",
+      "The patient's blood type",
+      "Whether the patient exercised that morning"
+    ],
+    answerIndex: 1,
+    explanation: "The last-known-well time is critical in suspected stroke because hospital treatment decisions depend heavily on when the patient was last known to be neurologically normal. EMS should obtain the most precise time available."
+  },
+
+  {
+    id: "emt-medical-351",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A confused patient has no known medical history. Which simple diagnostic assessment can identify a rapidly reversible cause of altered mental status?",
+    choices: [
+      "Blood glucose measurement",
+      "Carotid auscultation",
+      "Abdominal percussion",
+      "Visual acuity testing"
+    ],
+    answerIndex: 0,
+    explanation: "Hypoglycemia can cause altered mental status and can mimic neurologic emergencies. Blood glucose assessment is therefore an important early component of evaluating altered mental status when available within the provider's scope."
+  },
+
+  {
+    id: "emt-medical-352",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient took their usual insulin but did not eat afterward. Which presentation would most strongly suggest hypoglycemia?",
+    choices: [
+      "Gradual thirst and frequent urination",
+      "Rapid confusion with diaphoresis and cool skin",
+      "Several days of deep respirations and fruity breath",
+      "Slowly developing ankle swelling"
+    ],
+    answerIndex: 1,
+    explanation: "Insulin can lower blood glucose rapidly when food is not consumed. Hypoglycemia commonly produces altered behavior or mental status along with sympathetic findings such as sweating, pallor, and tachycardia."
+  },
+
+  {
+    id: "emt-medical-353",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which patient should not receive oral glucose because airway protection is inadequate?",
+    choices: [
+      "An alert patient who can swallow normally",
+      "A confused patient who follows commands and can swallow",
+      "An unresponsive patient who cannot protect the airway",
+      "A patient who is sweating but fully alert"
+    ],
+    answerIndex: 2,
+    explanation: "Oral glucose requires adequate consciousness and the ability to swallow safely. Giving material by mouth to a patient who cannot protect the airway creates an aspiration risk."
+  },
+
+  {
+    id: "emt-medical-354",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "A patient with diabetes reports several days of excessive thirst and urination and now has vomiting, deep rapid respirations, and fruity-smelling breath. Which condition is most consistent with this presentation?",
+    choices: [
+      "Hypoglycemia",
+      "Diabetic ketoacidosis",
+      "Isolated opioid intoxication",
+      "Simple anxiety"
+    ],
+    answerIndex: 1,
+    explanation: "The combination of prolonged hyperglycemic symptoms, vomiting, deep rapid respirations, and fruity breath is characteristic of diabetic ketoacidosis. The deep respirations represent respiratory compensation for metabolic acidosis."
+  },
+
+  {
+    id: "emt-medical-355",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with a severe allergic reaction develops wheezing and a sensation of throat tightness. What should the EMT recognize?",
+    choices: [
+      "A mild localized reaction",
+      "A potentially life-threatening anaphylactic reaction",
+      "A normal response to anxiety",
+      "An isolated dermatologic condition"
+    ],
+    answerIndex: 1,
+    explanation: "Airway or breathing involvement after an allergen exposure is concerning for anaphylaxis. Epinephrine is the first-line treatment for anaphylaxis when indicated and authorized."
+  },
+
+  {
+    id: "emt-medical-356",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Where should an epinephrine auto-injector generally be administered?",
+    choices: [
+      "Lateral thigh",
+      "Forearm",
+      "Abdomen",
+      "Upper back"
+    ],
+    answerIndex: 0,
+    explanation: "Epinephrine auto-injectors are designed for intramuscular administration into the lateral thigh. The device's instructions should be followed, and administration through clothing may be possible with many auto-injectors."
+  },
+
+  {
+    id: "emt-medical-357",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You arrive while a patient is actively experiencing a generalized seizure. What should you do first?",
+    choices: [
+      "Force a bite block between the teeth",
+      "Restrain the patient's limbs",
+      "Protect the patient from nearby hazards and injury",
+      "Immediately give the patient oral medication"
+    ],
+    answerIndex: 2,
+    explanation: "During an active seizure, the priority is preventing injury. Clear dangerous objects, protect the patient's head, and monitor the airway and duration of the seizure. Do not restrain the patient or place objects in the mouth."
+  },
+
+  {
+    id: "emt-medical-358",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A generalized seizure continues for more than 5 minutes. Why is this especially concerning?",
+    choices: [
+      "It is always caused by hypoglycemia",
+      "It meets a common clinical definition of status epilepticus and requires urgent treatment",
+      "It means the seizure is almost certainly psychogenic",
+      "It is expected and can safely be observed indefinitely"
+    ],
+    answerIndex: 1,
+    explanation: "A seizure lasting 5 minutes or longer is commonly treated as status epilepticus, a medical emergency requiring rapid intervention. EMT priorities include airway and breathing support, monitoring, rapid transport, and early ALS involvement when appropriate."
+  },
+
+  {
+    id: "emt-medical-359",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unresponsive patient has pinpoint pupils and respirations of 6 per minute. Drug paraphernalia is nearby. What is the immediate priority?",
+    choices: [
+      "Perform a detailed medication history",
+      "Provide effective ventilation and support the airway",
+      "Place the patient in a recovery position without intervention",
+      "Wait for naloxone to work before ventilating"
+    ],
+    answerIndex: 1,
+    explanation: "Severe respiratory depression is immediately life-threatening. In suspected opioid poisoning, ventilation and oxygenation take priority because naloxone does not replace the need for effective ventilation while the patient remains hypoventilating."
+  },
+
+  {
+    id: "emt-medical-360",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A pregnant patient in late gestation becomes pale and hypotensive while lying supine. What mechanism should you suspect?",
+    choices: [
+      "Compression of the inferior vena cava by the gravid uterus",
+      "A sudden increase in cerebral blood flow",
+      "Compression of the carotid arteries",
+      "An isolated upper-airway obstruction"
+    ],
+    answerIndex: 0,
+    explanation: "In late pregnancy, the gravid uterus can compress major abdominal vessels when the patient lies supine, reducing venous return and cardiac output. Repositioning to reduce this compression can improve maternal circulation."
+
+
+  },
+
+  {
+    id: "emt-medical-361",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A woman at term has contractions every two minutes and the baby's head is visible at the vaginal opening. What does the visible presenting part indicate?",
+    choices: [
+      "Delivery is likely imminent",
+      "The first stage of labor has just begun",
+      "The patient should always be transported before delivery",
+      "The contractions are not productive"
+    ],
+    answerIndex: 0,
+    explanation: "Visible crowning indicates that delivery is imminent. The EMT should prepare for an on-scene delivery rather than attempting to delay or unnecessarily transport a delivery that is already occurring."
+  },
+
+  {
+    id: "emt-medical-362",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which sequence correctly describes the three stages of labor?",
+    choices: [
+      "Contractions to cervical dilation, delivery of the infant, delivery of the placenta",
+      "Delivery of the placenta, cervical dilation, delivery of the infant",
+      "Crowning, contractions, delivery of the placenta",
+      "Rupture of membranes, delivery of the placenta, cervical dilation"
+    ],
+    answerIndex: 0,
+    explanation: "The first stage involves cervical dilation from the onset of regular labor. The second stage extends from complete dilation through delivery of the infant. The third stage ends with delivery of the placenta."
+  },
+
+  {
+    id: "emt-medical-363",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "During delivery, you notice that the umbilical cord is loosely wrapped around the newborn's neck. What should you attempt first?",
+    choices: [
+      "Push the baby's head back into the birth canal",
+      "Gently slip the cord over the baby's head",
+      "Immediately pull on the cord",
+      "Clamp and cut the cord before attempting anything else"
+    ],
+    answerIndex: 1,
+    explanation: "If the cord is loose enough, it can generally be gently slipped over the newborn's head. If it cannot be reduced and is compromising delivery, management should follow obstetric emergency protocols."
+  },
+
+  {
+    id: "emt-medical-364",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A newborn remains apneic after being dried, warmed, and stimulated. What is the next major resuscitation priority?",
+    choices: [
+      "Wait several more minutes for spontaneous breathing",
+      "Begin appropriate positive-pressure ventilation",
+      "Immediately begin adult-style chest compressions",
+      "Give oral glucose"
+    ],
+    answerIndex: 1,
+    explanation: "Effective ventilation is the central intervention for a newborn who remains apneic after initial steps. Positive-pressure ventilation should be initiated according to neonatal resuscitation guidance, with escalation based on the newborn's heart rate and response."
+  },
+
+
+  {
+    id: "emt-ops-435",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "You are dispatched to a reported overdose. As you approach the location, you hear shouting and breaking glass inside. What should you do?",
+    choices: [
+      "Enter immediately because the patient may be critically ill",
+      "Enter through a different door without notifying anyone",
+      "Stage at a safe location and request appropriate law-enforcement assistance",
+      "Send one EMT inside alone to assess the patient"
+    ],
+    answerIndex: 2,
+    explanation: "Scene safety takes priority over patient contact. An active or potentially violent scene should be secured before EMS personnel enter. An injured EMS provider cannot provide care and creates an additional emergency."
+  },
+
+  {
+    id: "emt-ops-436",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "At a multiple-casualty incident, you direct all patients who can walk to a designated location. In START triage, these patients are initially categorized as:",
+    choices: [
+      "Immediate",
+      "Delayed",
+      "Minor",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "START begins by identifying ambulatory patients and directing them to a designated area. They are initially categorized as minor or green, although they still require reassessment because their conditions can change."
+  },
+
+  {
+    id: "emt-ops-437",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "During START triage, an adult patient is breathing 34 times per minute. How should the patient initially be categorized?",
+    choices: [
+      "Minor",
+      "Delayed",
+      "Immediate",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "Traditional START triage classifies an adult respiratory rate greater than 30 per minute as immediate. This is part of the rapid RPM approach used to identify patients requiring priority treatment."
+  },
+
+  {
+    id: "emt-ops-438",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "An unconscious patient has no family present and cannot provide consent. Which principle generally permits emergency treatment when immediate care is necessary?",
+    choices: [
+      "Expressed consent",
+      "Implied consent",
+      "Good Samaritan protection",
+      "A witness signature"
+    ],
+    answerIndex: 1,
+    explanation: "Implied consent allows EMS providers to provide necessary emergency care when a patient is unable to provide informed consent and circumstances indicate that a reasonable person would generally want treatment. Good Samaritan laws address liability protection rather than serving as the source of consent."
+  },
+
+  {
+    id: "emt-ops-439",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "A competent adult with chest pain refuses transport after you explain the potential consequences. What is the most important consideration before accepting the refusal?",
+    choices: [
+      "Whether the patient's neighbor approves",
+      "Whether the patient has decision-making capacity and understands the risks",
+      "Whether a police officer signs the refusal",
+      "Whether the patient promises to call a family member"
+    ],
+    answerIndex: 1,
+    explanation: "A competent adult generally has the right to refuse care or transport. EMS must determine whether the patient has decision-making capacity, provide appropriate information about risks and alternatives, follow applicable protocol, and document the refusal."
+  },
+
+  {
+    id: "emt-ops-440",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "An EMT begins treating a patient and then leaves without obtaining a valid refusal or transferring care to an appropriate provider. Which legal concept is most directly involved?",
+    choices: [
+      "Abandonment",
+      "Libel",
+      "Battery",
+      "False imprisonment"
+    ],
+    answerIndex: 0,
+    explanation: "Abandonment occurs when an EMS provider terminates an established duty of care without appropriate transfer, refusal, or another legally recognized basis. Once care begins, the provider must ensure an appropriate disposition."
+  },
+
+  {
+    id: "emt-ops-441",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which combination represents the traditional four elements that must be established for a negligence claim?",
+    choices: [
+      "Duty, breach of duty, damages, and proximate cause",
+      "Consent, transport, diagnosis, and treatment",
+      "Licensure, medical direction, certification, and documentation",
+      "Intent, arrest, restraint, and injury"
+    ],
+    answerIndex: 0,
+    explanation: "Negligence generally requires a duty, a breach of the applicable standard of care, damages, and a causal connection between the breach and damages. Exact legal standards vary by jurisdiction, but these are the classic four elements taught in EMS education."
+  },
+
+  {
+    id: "emt-ops-442",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "While lifting a loaded stretcher, which technique best reduces the risk of back injury?",
+    choices: [
+      "Bend primarily at the waist",
+      "Keep the load far away from the body",
+      "Use the legs while maintaining a stable, neutral back position",
+      "Twist while lifting to turn toward the stretcher"
+    ],
+    answerIndex: 2,
+    explanation: "Safe lifting involves a stable stance, maintaining the load close to the body, using the legs, and avoiding twisting while lifting. Coordinating the movement with the partner is also important."
+  },
+
+  {
+    id: "emt-ops-443",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "An EMT discovers an error in a paper patient care report. What is the appropriate way to correct the documentation?",
+    choices: [
+      "Erase the original entry completely",
+      "Use correction fluid to cover the error",
+      "Preserve the original entry and make the correction according to agency documentation policy",
+      "Destroy the original report and create a replacement"
+    ],
+    answerIndex: 2,
+    explanation: "Legal medical documentation should preserve the original information and maintain a clear audit trail. For paper records, agencies commonly require a single line through the error with the correction and initials or other required notation. Electronic systems generally use formal correction or addendum functions."
+  },
+
+  {
+    id: "emt-ops-444",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which person would generally be an appropriate recipient of a patient's protected medical information after transport?",
+    choices: [
+      "A reporter who heard about the call",
+      "A curious neighbor",
+      "The receiving emergency department team involved in the patient's care",
+      "The EMT's friends"
+    ],
+    answerIndex: 2,
+    explanation: "Patient information may be shared with appropriate members of the healthcare team for legitimate care purposes. EMS providers should not disclose patient information to curious bystanders, friends, or media simply because they are interested in the incident."
+  },
+
+  {
+    id: "emt-ops-445",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "At a mass-casualty incident, an adult patient remains apneic after one airway-opening attempt. Under traditional START methodology, how is the patient categorized?",
+    choices: [
+      "Immediate",
+      "Delayed",
+      "Minor",
+      "Expectant"
+    ],
+    answerIndex: 3,
+    explanation: "Traditional START uses a single airway-opening attempt for an apneic adult. If the patient remains apneic, the patient is categorized as expectant under the traditional system, allowing responders to move on to patients who may benefit more immediately from limited resources."
+  },
+
+  {
+    id: "emt-ops-446",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "Which action best demonstrates appropriate scene-size-up practice at an unknown hazardous scene?",
+    choices: [
+      "Begin patient contact before identifying hazards",
+      "Determine hazards, use appropriate PPE, identify the number of patients, and request resources as needed",
+      "Ignore bystanders because they cannot provide useful information",
+      "Assume the scene is safe once the ambulance is parked"
+    ],
+    answerIndex: 1,
+    explanation: "Scene size-up involves identifying hazards, selecting appropriate PPE, determining the number of patients, considering mechanism or nature of illness, and requesting additional resources when necessary. Scene safety must be reassessed throughout the call."
+  },
+
+  {
+    id: "emt-ops-447",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which statement best describes the purpose of the National Registry's EMT examination blueprint?",
+    choices: [
+      "It establishes the exact treatment protocol used in every state",
+      "It identifies the major domains and job-related content used to construct the certification examination",
+      "It replaces all state EMS protocols",
+      "It determines the medications every EMT may administer regardless of jurisdiction"
+    ],
+    answerIndex: 1,
+    explanation: "The National Registry test plan identifies the content domains and job-related knowledge and skills assessed on the certification examination. State and local authorities remain responsible for scope and protocols within their jurisdictions."
+  },
+
+  {
+    id: "emt-airway-132",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient is breathing 6 times per minute with shallow chest movement and has a pulse. Which intervention addresses the immediate physiologic problem?",
+    choices: [
+      "Apply a nasal cannula and reassess in 15 minutes",
+      "Provide assisted ventilations with a BVM",
+      "Place the patient in a recovery position and wait",
+      "Encourage the patient to breathe faster"
+    ],
+    answerIndex: 1,
+    explanation: "The problem is inadequate ventilation, not simply low oxygen concentration. A patient with severe hypoventilation requires assisted ventilation. Supplemental oxygen alone does not adequately correct insufficient alveolar ventilation."
+  },
+
+  {
+    id: "emt-airway-133",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient receiving BVM ventilation develops obvious abdominal distention. Which change may reduce this complication?",
+    choices: [
+      "Ventilate more rapidly",
+      "Use excessive ventilation pressure",
+      "Deliver controlled ventilations that produce visible chest rise without excessive volume or force",
+      "Stop monitoring the chest and focus only on the oxygen cylinder"
+    ],
+    answerIndex: 2,
+    explanation: "Excessive ventilation pressure or volume can force air into the stomach. Controlled ventilations that produce visible chest rise while avoiding unnecessary pressure reduce the likelihood of gastric insufflation."
+  },
+
+  {
+    id: "emt-cardiology-352",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient is unresponsive and has only occasional gasping respirations. You cannot definitely palpate a pulse within the initial assessment period. What should you do?",
+    choices: [
+      "Treat the gasps as normal breathing",
+      "Begin CPR and use the AED as soon as available",
+      "Place the patient in a recovery position",
+      "Give oral glucose"
+    ],
+    answerIndex: 1,
+    explanation: "Agonal gasps are not effective normal breathing. When an adult is unresponsive and not breathing normally and a definite pulse cannot be identified promptly, the patient should be treated as being in cardiac arrest and resuscitation should begin."
+  },
+
+  {
+    id: "emt-cardiology-353",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which action should be avoided during AED rhythm analysis?",
+    choices: [
+      "Standing clear of the patient",
+      "Following the AED's verbal instructions",
+      "Continuing chest compressions",
+      "Preparing to resume CPR"
+    ],
+    answerIndex: 2,
+    explanation: "The patient must remain motionless during AED rhythm analysis. Compressions and other physical contact can introduce artifact and interfere with rhythm interpretation."
+  },
+
+  {
+    id: "emt-trauma-114",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A trauma patient becomes increasingly restless and pale while the blood pressure remains within the normal range. Why should the EMT remain concerned?",
+    choices: [
+      "Shock always causes hypertension",
+      "Compensated shock can initially preserve blood pressure",
+      "Normal blood pressure rules out internal bleeding",
+      "Restlessness proves the patient has a psychiatric disorder"
+    ],
+    answerIndex: 1,
+    explanation: "The body can maintain blood pressure temporarily through vasoconstriction and increased heart rate. Restlessness, pallor, cool skin, and tachycardia may therefore provide earlier evidence of shock than hypotension."
+  },
+
+  {
+    id: "emt-trauma-115",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with a severe extremity hemorrhage has a commercial tourniquet applied, but bleeding continues. What should the EMT consider?",
+    choices: [
+      "Loosen the tourniquet repeatedly",
+      "Ensure the tourniquet is appropriately tightened and consider additional tourniquet application according to training and protocol",
+      "Remove the tourniquet and use ice",
+      "Cover the tourniquet with a loose dressing without reassessing bleeding"
+    ],
+    answerIndex: 1,
+    explanation: "Persistent life-threatening bleeding indicates inadequate hemorrhage control. The EMT should reassess tourniquet placement and tension and follow current hemorrhage-control training, which may include adding a second tourniquet when appropriate."
+  },
+
+  {
+    id: "emt-medical-365",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient with a suspected opioid overdose is breathing adequately after initial assessment. Which finding would indicate deterioration requiring immediate ventilatory support?",
+    choices: [
+      "Respiratory rate falls to 6 per minute with shallow respirations",
+      "The patient becomes more alert",
+      "The patient begins speaking clearly",
+      "The patient maintains normal chest movement"
+    ],
+    answerIndex: 0,
+    explanation: "A respiratory rate of 6 with shallow respirations represents inadequate ventilation. If respiratory effort is insufficient, the EMT must support ventilation rather than relying on positioning or supplemental oxygen alone."
+  },
+
+  {
+    id: "emt-medical-366",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which finding would favor hypoglycemia over diabetic ketoacidosis?",
+    choices: [
+      "Several days of excessive thirst",
+      "Deep rapid respirations",
+      "Rapid onset of sweating, confusion, and altered behavior",
+      "Fruity breath odor"
+    ],
+    answerIndex: 2,
+    explanation: "Hypoglycemia often develops rapidly and can produce sweating, altered behavior, confusion, and other sympathetic findings. DKA generally develops over a longer period and is associated with hyperglycemia, dehydration, metabolic acidosis, and compensatory deep respirations."
+  },
+
+  {
+    id: "emt-medical-367",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient develops hives after a bee sting but has normal breathing, normal blood pressure, and no airway swelling. Which finding would most clearly indicate progression to anaphylaxis?",
+    choices: [
+      "Localized redness around the sting",
+      "Mild itching confined to the arm",
+      "Wheezing and respiratory distress",
+      "A heart rate of 84 per minute"
+    ],
+    answerIndex: 2,
+    explanation: "Anaphylaxis is concerning when systemic allergic involvement produces airway, breathing, or circulatory compromise. Wheezing and respiratory distress indicate lower-airway involvement and require urgent treatment."
+  },
+
+  {
+    id: "emt-medical-368",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient has just stopped having generalized convulsions and is unresponsive with noisy respirations. What should the EMT prioritize?",
+    choices: [
+      "Detailed questioning about the patient's diet",
+      "Airway assessment and support",
+      "Immediate oral medication",
+      "Forcing the patient to sit upright"
+    ],
+    answerIndex: 1,
+    explanation: "The postictal patient may have reduced airway protective reflexes and retained secretions. Airway assessment, positioning, suction as indicated, oxygenation, and ventilation support take priority after the seizure."
+  },
+
+  {
+    id: "emt-medical-369",
+    domain: "Medical + OBGYN",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A newborn's heart rate remains below 100/min after initial warming, drying, and stimulation. What intervention should be prioritized?",
+    choices: [
+      "Positive-pressure ventilation",
+      "Immediate oral feeding",
+      "Adult-dose epinephrine",
+      "Waiting another five minutes"
+    ],
+    answerIndex: 0,
+    explanation: "A newborn with apnea, gasping, or a heart rate below 100/min after initial steps generally requires positive-pressure ventilation. Effective ventilation is the key intervention in neonatal resuscitation."
+  },
+
+  {
+    id: "emt-ops-448",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "sceneSafety",
+    question: "At a hazardous scene, a bystander tells you that there may be a second patient inside a damaged vehicle. What should you do?",
+    choices: [
+      "Enter immediately regardless of hazards",
+      "Assess the hazards and request the appropriate specialized resources before entering when necessary",
+      "Ignore the information because the first patient is already being treated",
+      "Send an unprotected bystander into the vehicle"
+    ],
+    answerIndex: 1,
+    explanation: "Scene size-up includes identifying hazards, determining the number of patients, and requesting resources appropriate to the situation. EMS providers should not enter a hazardous environment without appropriate protection and resources."
+  },
+
+  {
+    id: "emt-ops-449",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which action best protects patient confidentiality after an EMS call?",
+    choices: [
+      "Discuss the call with friends without using the patient's name",
+      "Post an unusual case on social media without identifying the patient",
+      "Share relevant patient information with the receiving healthcare team",
+      "Tell curious bystanders the patient's diagnosis"
+    ],
+    answerIndex: 2,
+    explanation: "Patient information should be disclosed only for legitimate purposes, such as continuity of care or another legally authorized reason. Removing a name does not necessarily make a case impossible to identify."
+  },
+
+  {
+    id: "emt-cardiology-354",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You arrive to find a 6-year-old in cardiac arrest. Your AED has only standard adult pads and no pediatric dose attenuator. What is the most appropriate action?",
+    choices: [
+      "Do not use the AED because adult pads are contraindicated in children",
+      "Cut the adult pads into smaller pieces before applying them",
+      "Apply the adult pads even if they overlap on the child's chest",
+      "Use the adult pads, positioning them so they do not touch each other"
+    ],
+    answerIndex: 3,
+    explanation: "When pediatric pads or an attenuator are unavailable, an AED with adult pads should still be used for a child in cardiac arrest. The pads must not overlap or touch. If necessary because of the child's size, an anterior-posterior configuration can help keep the pads separated. Pads should never be cut or modified."
+  },
+
+  {
+    id: "emt-cardiology-355",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "An AED arrives while CPR is being performed on a small child. Which consideration is most important when selecting pad placement?",
+    choices: [
+      "The pads should be placed directly over the sternum and spine",
+      "The pads should be positioned so they do not touch or overlap",
+      "The pads should always be placed on the abdomen and upper chest",
+      "The pads should be cut to match the child's chest size"
+    ],
+    answerIndex: 1,
+    explanation: "Defibrillation pads must be positioned so the electrical current can pass through the heart without the pads touching or overlapping. Pediatric pads or an attenuator are preferred when available, but adult pads should be used rather than delaying defibrillation when pediatric equipment is unavailable."
+  },
+
+  {
+    id: "emt-cardiology-356",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "You assess an unresponsive infant who is not breathing normally. Which pulse site should an EMT use to assess circulation?",
+    choices: [
+      "Radial artery",
+      "Carotid artery",
+      "Brachial artery",
+      "Dorsalis pedis artery"
+    ],
+    answerIndex: 2,
+    explanation: "For an infant, the brachial pulse is the recommended pulse site for healthcare-provider assessment. The carotid pulse is used for older children and adults. Peripheral pulses such as the radial or dorsalis pedis pulse may be difficult to detect during poor perfusion."
+  },
+
+  {
+    id: "emt-cardiology-357",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Why is the brachial artery commonly used when assessing the pulse of an infant?",
+    choices: [
+      "It is normally the strongest pulse in every infant",
+      "It can be located relatively easily on the medial upper arm",
+      "The carotid artery is never palpable in infants",
+      "Peripheral pulses cannot exist in infants"
+    ],
+    answerIndex: 1,
+    explanation: "The brachial artery on the medial upper arm provides a practical central pulse location in infants. The neck is small and the carotid pulse can be more difficult to locate reliably."
+  },
+
+  {
+    id: "emt-cardiology-358",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unresponsive adult is not breathing normally. You cannot immediately determine whether a carotid pulse is present. How long should you spend checking before beginning CPR?",
+    choices: [
+      "No more than 10 seconds",
+      "Approximately 20 seconds",
+      "Approximately 30 seconds",
+      "As long as necessary to be completely certain"
+    ],
+    answerIndex: 0,
+    explanation: "A healthcare provider should check for a pulse for no more than 10 seconds. If a definite pulse is not felt within that period, CPR should begin. Prolonged pulse checks delay chest compressions."
+  },
+
+  {
+    id: "emt-cardiology-359",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "During a cardiac arrest assessment, the EMT spends 25 seconds trying to determine whether a carotid pulse is present. What is the primary problem with this action?",
+    choices: [
+      "The EMT may cause a carotid artery injury",
+      "The patient may become hypertensive",
+      "Chest compressions are being unnecessarily delayed",
+      "A pulse check longer than 10 seconds causes ventricular fibrillation"
+    ],
+    answerIndex: 2,
+    explanation: "The major concern is delay in CPR. Current resuscitation guidance emphasizes rapid recognition of cardiac arrest and minimizing interruptions in chest compressions."
+  },
+
+  {
+    id: "emt-cardiology-360",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An unresponsive adult has occasional irregular gasps separated by long pauses. How should the EMT interpret this breathing pattern?",
+    choices: [
+      "Normal breathing",
+      "Adequate hypoventilation",
+      "Agonal respirations",
+      "A mild airway obstruction"
+    ],
+    answerIndex: 2,
+    explanation: "Gasping, irregular, ineffective respirations in an unresponsive patient are agonal respirations and should not be mistaken for normal breathing. An unresponsive patient with abnormal breathing should be evaluated promptly for cardiac arrest."
+  },
+
+  {
+    id: "emt-cardiology-361",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Why can agonal respirations be especially dangerous if an EMT mistakes them for normal breathing?",
+    choices: [
+      "They indicate severe asthma but usually preserve circulation",
+      "They can cause the EMT to delay CPR for a patient in cardiac arrest",
+      "They indicate that the patient has regained a pulse",
+      "They are evidence of adequate oxygenation"
+    ],
+    answerIndex: 1,
+    explanation: "Agonal gasps can occur during the early minutes of cardiac arrest. Treating them as normal breathing can delay recognition of arrest and initiation of CPR."
+  },
+
+  {
+    id: "emt-cardiology-362",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which patient presentation should cause an EMT to maintain the highest suspicion for acute coronary syndrome?",
+    choices: [
+      "Sharp pain reproducible by palpation after lifting a heavy object",
+      "Substernal pressure accompanied by diaphoresis and nausea",
+      "Localized rib pain after a direct blow to the chest",
+      "Brief pain occurring only when taking a deep breath"
+    ],
+    answerIndex: 1,
+    explanation: "Pressure, squeezing, heaviness, or discomfort in the chest accompanied by symptoms such as diaphoresis, nausea, dyspnea, or radiation is concerning for ACS. Other presentations can have different causes, although no single symptom completely excludes ACS."
+  },
+
+  {
+    id: "emt-cardiology-363",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "A patient reports vague nausea, unusual fatigue, and shortness of breath without chest pain. Which history would most increase your concern for an atypical myocardial infarction?",
+    choices: [
+      "Age 22 with no medical history",
+      "History of seasonal allergies",
+      "Older age and diabetes mellitus",
+      "History of an uncomplicated ankle fracture"
+    ],
+    answerIndex: 2,
+    explanation: "Older adults and patients with diabetes can experience atypical or less painful myocardial ischemia. Women also have a higher likelihood of atypical ACS presentations. Absence of classic chest pain does not exclude ACS."
+  },
+
+  {
+    id: "emt-cardiology-364",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which symptom combination could represent an atypical acute coronary syndrome presentation even without chest pressure?",
+    choices: [
+      "Sudden unusual fatigue, nausea, and dyspnea",
+      "Itching after exposure to poison ivy",
+      "Localized pain after twisting an ankle",
+      "Nasal congestion and seasonal sneezing"
+    ],
+    answerIndex: 0,
+    explanation: "ACS can present with dyspnea, nausea, weakness, fatigue, syncope, or other nonspecific symptoms, particularly in older adults, women, and people with diabetes. EMTs should maintain clinical suspicion rather than relying exclusively on classic chest pain."
+  },
+
+  {
+    id: "emt-cardiology-365",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected ACS has no aspirin allergy or active bleeding, and your local protocol permits aspirin administration. Which dose is generally recommended?",
+    choices: [
+      "40 mg swallowed whole",
+      "81 mg placed under the tongue",
+      "160 to 325 mg chewed",
+      "650 mg swallowed whole"
+    ],
+    answerIndex: 2,
+    explanation: "Aspirin for suspected ACS is commonly administered at 160 to 325 mg and should be chewed when appropriate to facilitate absorption. Exact EMS protocols should be followed."
+  },
+
+  {
+    id: "emt-cardiology-366",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Why is aspirin given to a patient with suspected acute coronary syndrome?",
+    choices: [
+      "It rapidly dissolves the coronary clot",
+      "It reduces platelet aggregation and limits thrombus growth",
+      "It directly increases myocardial contractility",
+      "It lowers blood glucose"
+    ],
+    answerIndex: 1,
+    explanation: "Aspirin inhibits platelet aggregation, helping limit progression of a coronary thrombus. It does not directly dissolve an established clot or function as a positive inotrope."
+  },
+
+  {
+    id: "emt-cardiology-367",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which finding is a clear reason to withhold aspirin when evaluating a patient for suspected ACS?",
+    choices: [
+      "A history of coronary artery disease",
+      "A previous coronary stent",
+      "A true aspirin allergy",
+      "Daily use of low-dose aspirin"
+    ],
+    answerIndex: 2,
+    explanation: "A known aspirin allergy is a contraindication. Active significant bleeding may also preclude administration. A history of coronary disease or prior stenting is not itself a reason to withhold aspirin."
+  },
+
+  {
+    id: "emt-cardiology-368",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected ACS reports that he takes aspirin 81 mg every morning. Your protocol permits an ACS aspirin dose and no contraindications are present. Which statement is most accurate?",
+    choices: [
+      "The patient's daily aspirin automatically prohibits another dose",
+      "Aspirin should be given only after nitroglycerin",
+      "The patient's existing aspirin use does not automatically preclude the protocol dose",
+      "Aspirin should never be given to patients with coronary disease"
+    ],
+    answerIndex: 2,
+    explanation: "Daily low-dose aspirin use does not automatically contraindicate administration of the protocol-directed ACS dose. The EMT should follow local protocol and assess for allergy, active bleeding, and other contraindications."
+  },
+
+  {
+    id: "emt-cardiology-369",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with chest pressure has prescribed nitroglycerin. His systolic blood pressure is 82 mmHg. What is the most appropriate action?",
+    choices: [
+      "Assist with nitroglycerin because chest pain is severe",
+      "Double the nitroglycerin dose",
+      "Withhold the nitroglycerin and follow medical direction or protocol",
+      "Have the patient stand to improve circulation before taking it"
+    ],
+    answerIndex: 2,
+    explanation: "Nitroglycerin causes vasodilation and can further lower blood pressure. A systolic pressure of 82 mmHg is clearly too low for routine nitroglycerin administration. The exact protocol threshold varies by EMS system."
+  },
+
+  {
+    id: "emt-cardiology-370",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which medication history is most important to identify before assisting a patient with prescribed nitroglycerin?",
+    choices: [
+      "Recent use of a phosphodiesterase-5 inhibitor",
+      "Use of an over-the-counter multivitamin",
+      "Use of topical antibiotic ointment",
+      "A remote history of seasonal allergies"
+    ],
+    answerIndex: 0,
+    explanation: "PDE-5 inhibitors such as sildenafil and tadalafil can significantly potentiate the hypotensive effects of nitrates. The appropriate withholding interval depends on the medication and local protocol."
+  },
+
+  {
+    id: "emt-cardiology-371",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected ACS reports taking tadalafil recently. His blood pressure is currently adequate. What should the EMT do regarding nitroglycerin?",
+    choices: [
+      "Give nitroglycerin at half the usual dose",
+      "Give nitroglycerin because his blood pressure is normal",
+      "Withhold nitroglycerin and follow protocol or contact medical direction",
+      "Give two doses simultaneously to overcome the interaction"
+    ],
+    answerIndex: 2,
+    explanation: "PDE-5 inhibitors can produce dangerous hypotension when combined with nitrates. The EMT should not attempt to compensate by giving a reduced nitrate dose. The appropriate withholding interval depends on the specific drug and protocol."
+  },
+
+  {
+    id: "emt-cardiology-372",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "What cardiovascular effect is most directly responsible for nitroglycerin's ability to reduce myocardial oxygen demand?",
+    choices: [
+      "Increased venous return",
+      "Reduced preload through venodilation",
+      "Increased ventricular contractility",
+      "Activation of the vagus nerve"
+    ],
+    answerIndex: 1,
+    explanation: "Nitroglycerin causes vascular smooth-muscle relaxation, with prominent venodilation that reduces venous return and preload. This lowers cardiac workload and myocardial oxygen demand."
+  },
+
+  {
+    id: "emt-cardiology-373",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient develops a headache shortly after receiving prescribed nitroglycerin. Which explanation is most appropriate?",
+    choices: [
+      "Nitroglycerin commonly causes vasodilation that can produce headache",
+      "The headache proves that the patient is having a stroke",
+      "Nitroglycerin causes severe hypoglycemia",
+      "The headache indicates that the medication has failed"
+    ],
+    answerIndex: 0,
+    explanation: "Headache is a common effect of nitrate-induced vasodilation. The EMT should still monitor blood pressure and the patient's overall condition."
+  },
+
+  {
+    id: "emt-cardiology-374",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient receives a dose of nitroglycerin for suspected ACS. Which assessment should be repeated before another dose if additional dosing is permitted?",
+    choices: [
+      "Blood pressure",
+      "Visual acuity only",
+      "Body temperature only",
+      "Pupil size only"
+    ],
+    answerIndex: 0,
+    explanation: "Nitroglycerin can lower blood pressure, so blood pressure must be reassessed before additional doses according to local protocol. The exact dosing schedule and maximum number of doses are protocol-dependent."
+  },
+
+  {
+    id: "emt-cardiology-375",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding provides the strongest evidence that a patient in cardiac arrest has achieved ROSC?",
+    choices: [
+      "The AED displays a normal rhythm but no pulse is checked",
+      "The patient has a definite pulse and begins breathing spontaneously",
+      "The patient's pupils become smaller",
+      "The chest rises during BVM ventilation"
+    ],
+    answerIndex: 1,
+    explanation: "ROSC means that spontaneous circulation has returned. A definite pulse together with spontaneous breathing or other signs of life strongly supports ROSC. Chest rise during BVM ventilation only demonstrates that ventilation is occurring."
+  },
+
+  {
+    id: "emt-cardiology-376",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A cardiac arrest patient regains a definite pulse but remains unresponsive. What is the priority during continued care?",
+    choices: [
+      "Immediately remove all monitoring equipment",
+      "Perform a lengthy secondary assessment before transport",
+      "Continue close monitoring and support airway, breathing, and circulation",
+      "Hyperventilate the patient to eliminate carbon dioxide as quickly as possible"
+    ],
+    answerIndex: 2,
+    explanation: "Patients immediately after ROSC remain unstable and can deteriorate or re-arrest. The EMT should support airway and breathing, monitor circulation and vital signs, avoid excessive ventilation, and transport appropriately."
+  },
+
+  {
+    id: "emt-cardiology-377",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Why should an AED generally remain available after a patient achieves ROSC in the field?",
+    choices: [
+      "ROSC guarantees that the patient cannot arrest again",
+      "The patient may experience recurrent cardiac arrest",
+      "The AED is needed to measure blood glucose",
+      "The AED must remain attached for aspirin administration"
+    ],
+    answerIndex: 1,
+    explanation: "Post-cardiac-arrest patients remain unstable and may re-arrest. Monitoring and readiness to resume resuscitation are therefore important."
+  },
+
+  {
+    id: "emt-cardiology-378",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "An adult cardiac arrest patient has an advanced airway placed by an appropriately trained provider. Which CPR pattern is generally used?",
+    choices: [
+      "30 compressions followed by 2 ventilations with a pause",
+      "Continuous chest compressions with asynchronous ventilations",
+      "Two minutes of ventilation followed by two minutes of compressions",
+      "Ventilations only until a pulse returns"
+    ],
+    answerIndex: 1,
+    explanation: "With an advanced airway in place during adult cardiac arrest, chest compressions continue without pauses for ventilation. Ventilations are delivered asynchronously at the guideline-recommended rate. Exact advanced-airway procedures depend on provider level and system protocol."
+  },
+
+  {
+    id: "emt-cardiology-379",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "What is the primary reason excessive ventilation should be avoided during cardiac arrest?",
+    choices: [
+      "It increases venous return and improves circulation too much",
+      "It can increase intrathoracic pressure and reduce venous return",
+      "It guarantees gastric distention in every patient",
+      "It causes the AED to malfunction"
+    ],
+    answerIndex: 1,
+    explanation: "Excessive ventilation raises intrathoracic pressure, which can impede venous return to the heart and reduce cardiac output during CPR. High-quality CPR therefore emphasizes controlled ventilation."
+  },
+
+  {
+    id: "emt-cardiology-380",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which action is part of the early response to a suspected out-of-hospital cardiac arrest?",
+    choices: [
+      "Delay activation of EMS until a full medical history is obtained",
+      "Recognize the arrest and activate the emergency response system",
+      "Transport the patient before beginning CPR",
+      "Wait for an AED before determining whether the patient is responsive"
+    ],
+    answerIndex: 1,
+    explanation: "Early recognition of cardiac arrest and activation of the emergency response system are essential components of the chain of survival. Current 2025 AHA guidance uses a unified Chain of Survival across adult and pediatric cardiac arrest rather than relying on the older separate chain terminology."
+  },
+
+  {
+    id: "emt-cardiology-381",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient is unresponsive and gasping but has no definite pulse after a rapid pulse check. What should happen next?",
+    choices: [
+      "Provide only supplemental oxygen and reassess in five minutes",
+      "Begin CPR",
+      "Place the patient in the recovery position",
+      "Give oral fluids"
+    ],
+    answerIndex: 1,
+    explanation: "Gasping is abnormal breathing and can occur during cardiac arrest. If the patient is unresponsive, has abnormal breathing, and no definite pulse is detected within the appropriate assessment period, CPR should begin."
+  },
+
+  // ============================================================
+  // AIRWAY
+  // ============================================================
+
+  {
+    id: "emt-airway-134",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A 9-month-old suddenly becomes unable to cry or cough after choking on food. What should the EMT do?",
+    choices: [
+      "Perform abdominal thrusts",
+      "Alternate 5 back blows with 5 chest thrusts",
+      "Perform blind finger sweeps",
+      "Give water to help move the food"
+    ],
+    answerIndex: 1,
+    explanation: "For a responsive infant with severe foreign-body airway obstruction, current guidance recommends repeated cycles of 5 back blows followed by 5 chest thrusts. Abdominal thrusts are not used in infants, and blind finger sweeps should be avoided."
+  },
+
+  {
+    id: "emt-airway-135",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Why are abdominal thrusts avoided in infants with severe foreign-body airway obstruction?",
+    choices: [
+      "Infants have no diaphragm",
+      "Abdominal thrusts can cause significant internal injury in an infant",
+      "Abdominal thrusts are ineffective in all age groups",
+      "Infants cannot develop complete airway obstruction"
+    ],
+    answerIndex: 1,
+    explanation: "Because of an infant's anatomy, abdominal thrusts carry a significant risk of internal injury. Current pediatric guidance recommends back blows and chest thrusts instead."
+  },
+
+  {
+    id: "emt-airway-136",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A responsive adult suddenly cannot speak or produce an effective cough after choking. According to current AHA guidance, which intervention sequence is appropriate?",
+    choices: [
+      "Five abdominal thrusts followed by five back blows",
+      "Five back blows followed by five abdominal thrusts",
+      "Blind finger sweeps followed by water",
+      "Chest compressions while the patient remains standing"
+    ],
+    answerIndex: 1,
+    explanation: "The 2025 AHA guidelines recommend alternating 5 back blows with 5 abdominal thrusts for a conscious adult with severe foreign-body airway obstruction, beginning with back blows."
+  },
+
+  {
+    id: "emt-airway-137",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A restaurant patron is coughing forcefully and can speak in complete sentences after choking on food. What is the best initial action?",
+    choices: [
+      "Immediately perform abdominal thrusts",
+      "Encourage continued coughing and monitor for deterioration",
+      "Perform five back blows",
+      "Give the patient water"
+    ],
+    answerIndex: 1,
+    explanation: "An effective cough and ability to speak indicate that air is still moving. The patient should be encouraged to continue coughing while being closely observed. Interventions are indicated if the obstruction becomes severe."
+  },
+
+  {
+    id: "emt-airway-138",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding most strongly indicates a severe foreign-body airway obstruction in a conscious adult?",
+    choices: [
+      "Forceful coughing with a strong voice",
+      "Ability to speak normally",
+      "Inability to speak or produce an effective cough",
+      "Mild throat irritation"
+    ],
+    answerIndex: 2,
+    explanation: "Severe airway obstruction is characterized by ineffective or absent air movement, inability to speak, and inability to produce an effective cough. A forceful cough indicates that air is still moving."
+  },
+
+  {
+    id: "emt-airway-139",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A conscious adult with severe airway obstruction becomes unresponsive. What should the EMT do next?",
+    choices: [
+      "Continue abdominal thrusts while the patient lies supine",
+      "Begin CPR, starting with chest compressions",
+      "Perform repeated blind finger sweeps",
+      "Wait for an advanced airway provider"
+    ],
+    answerIndex: 1,
+    explanation: "When a choking patient becomes unresponsive, CPR should be initiated beginning with chest compressions. When the airway is opened for ventilation, a visible foreign body may be removed, but blind finger sweeps should not be performed."
+  },
+
+  {
+    id: "emt-airway-140",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "During CPR for an unresponsive choking patient, when should an EMT remove a foreign body from the mouth?",
+    choices: [
+      "Whenever the EMT suspects one is present",
+      "Only when the object is visible and can be removed safely",
+      "Before every compression cycle regardless of whether it is visible",
+      "By sweeping the mouth with a finger"
+    ],
+    answerIndex: 1,
+    explanation: "A visible foreign body should be removed when encountered. Blind finger sweeps are avoided because they can push an object farther into the airway."
+  },
+
+  // ============================================================
+  // TRAUMA
+  // ============================================================
+
+  {
+    id: "emt-trauma-116",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "An adult has bright red blood spurting from a deep thigh wound. Firm direct pressure has not controlled the hemorrhage. What is the most appropriate next intervention?",
+    choices: [
+      "Elevate the leg and reassess",
+      "Apply a commercial tourniquet proximal to the wound",
+      "Apply ice over the wound",
+      "Wait for the bleeding to slow before treating it"
+    ],
+    answerIndex: 1,
+    explanation: "Life-threatening extremity hemorrhage that is not rapidly controlled with direct pressure should be treated with a commercial tourniquet when appropriate. Elevation and pressure-point techniques should not delay definitive hemorrhage control."
+  },
+
+  {
+    id: "emt-trauma-117",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Where should a tourniquet generally be positioned on an extremity when the wound location permits?",
+    choices: [
+      "Directly over the nearest joint",
+      "Distal to the wound",
+      "Proximal to the wound and not over a joint",
+      "Around the patient's abdomen"
+    ],
+    answerIndex: 2,
+    explanation: "A tourniquet should be placed proximal to the life-threatening extremity wound and not over a joint. The device is tightened until the hemorrhage is controlled."
+  },
+
+  {
+    id: "emt-trauma-118",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A properly applied tourniquet has stopped the bleeding from a traumatic leg wound. Which action is appropriate?",
+    choices: [
+      "Loosen it every 10 minutes",
+      "Remove it once the patient becomes comfortable",
+      "Record the application time and leave it in place",
+      "Cover it completely so the receiving team cannot see it"
+    ],
+    answerIndex: 2,
+    explanation: "Once a tourniquet has been properly applied for life-threatening hemorrhage, it should not be routinely loosened or removed in the field. The application time should be documented and communicated to the receiving team."
+  },
+
+  {
+    id: "emt-trauma-119",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Severe bleeding continues despite a correctly tightened tourniquet. What is the most appropriate next step?",
+    choices: [
+      "Loosen the first tourniquet",
+      "Remove the first tourniquet and restart direct pressure",
+      "Apply a second tourniquet adjacent to the first",
+      "Apply ice to the extremity"
+    ],
+    answerIndex: 2,
+    explanation: "If significant bleeding continues despite a properly applied tourniquet, a second tourniquet can be placed adjacent to the first, as appropriate to the device and bleeding-control guidance. The first tourniquet should not be loosened."
+  },
+
+  {
+    id: "emt-trauma-120",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient has life-threatening hemorrhage from a deep groin wound where a tourniquet cannot be effectively applied. What is the most appropriate treatment?",
+    choices: [
+      "Pack the wound and apply firm, sustained pressure",
+      "Place an occlusive dressing without pressure",
+      "Apply an ice pack directly to the wound",
+      "Wait for a surgical team before treating the wound"
+    ],
+    answerIndex: 0,
+    explanation: "Junctional hemorrhage in areas such as the groin requires wound packing and firm direct pressure. Hemostatic gauze may be used when available and appropriate, with plain gauze as an alternative."
+  },
+
+  {
+    id: "emt-trauma-121",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which wound is most appropriate for wound packing rather than tourniquet application?",
+    choices: [
+      "Deep axillary wound",
+      "Bleeding wound on the mid-forearm",
+      "Bleeding wound on the lower leg",
+      "Bleeding wound on the upper arm"
+    ],
+    answerIndex: 0,
+    explanation: "The axilla is a junctional area where a standard extremity tourniquet may not be effective. The wound should be packed and firm pressure applied."
+  },
+
+  {
+    id: "emt-trauma-122",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A trauma patient is pale, cool, anxious, tachycardic, and tachypneic after significant blood loss. His blood pressure remains 118/76 mmHg. What does this presentation most strongly suggest?",
+    choices: [
+      "Compensated shock",
+      "Irreversible shock",
+      "Neurogenic shock",
+      "No shock because the blood pressure is normal"
+    ],
+    answerIndex: 0,
+    explanation: "Tachycardia, tachypnea, anxiety, and cool pale skin can occur during compensated shock while the body maintains blood pressure through vasoconstriction and increased cardiac activity. Normal blood pressure does not rule out serious shock."
+  },
+
+  {
+    id: "emt-trauma-123",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which change would most strongly indicate worsening hemorrhagic shock?",
+    choices: [
+      "Persistent mild anxiety",
+      "Cool skin",
+      "A progressively falling systolic blood pressure",
+      "Heart rate of 108 beats/minute"
+    ],
+    answerIndex: 2,
+    explanation: "Hypotension is a late and concerning sign of shock because compensatory mechanisms may maintain blood pressure until significant physiologic deterioration has occurred."
+  },
+
+  {
+    id: "emt-trauma-124",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A child with significant traumatic blood loss has a normal blood pressure but is tachycardic and pale. What should the EMT conclude?",
+    choices: [
+      "The child cannot be in shock because the blood pressure is normal",
+      "The normal blood pressure may reflect effective compensation",
+      "The child has definitely developed neurogenic shock",
+      "The tachycardia rules out hemorrhage"
+    ],
+    answerIndex: 1,
+    explanation: "Children can compensate for significant blood loss through tachycardia and vasoconstriction and may maintain a normal blood pressure until late deterioration. A normal pediatric blood pressure therefore does not exclude serious hemorrhage."
+  },
+
+  {
+    id: "emt-trauma-125",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A trauma patient has had significant external bleeding controlled and remains in shock. Which intervention is appropriate during transport?",
+    choices: [
+      "Give the patient water by mouth",
+      "Place the patient in Trendelenburg position",
+      "Prevent heat loss and transport promptly",
+      "Delay transport for a complete secondary examination"
+    ],
+    answerIndex: 2,
+    explanation: "Hemorrhagic shock requires continued monitoring, hemorrhage control, prevention of hypothermia, appropriate oxygenation and ventilation support, and timely transport. Oral fluids are inappropriate for an unstable trauma patient."
+  },
+
+  {
+    id: "emt-trauma-126",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient with blunt chest trauma has a section of the chest wall that moves inward during inspiration and outward during expiration. What injury should the EMT suspect?",
+    choices: [
+      "Flail chest",
+      "Simple pneumothorax",
+      "Cardiac tamponade",
+      "Hemothorax"
+    ],
+    answerIndex: 0,
+    explanation: "Paradoxical movement of a chest-wall segment is characteristic of flail chest, which results from multiple rib fractures creating a free segment of the chest wall. Significant underlying pulmonary injury may also be present."
+  },
+
+  {
+    id: "emt-trauma-127",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Why is a patient with a flail chest at increased risk for respiratory compromise?",
+    choices: [
+      "The injury can interfere with effective chest-wall mechanics and may be associated with pulmonary contusion",
+      "The ribs become stronger and prevent lung expansion",
+      "The injury always causes cardiac tamponade",
+      "Flail chest prevents blood from reaching the brain"
+    ],
+    answerIndex: 0,
+    explanation: "A flail segment disrupts normal chest-wall mechanics, and the force that caused the fractures may also produce pulmonary contusion. The patient's respiratory status must therefore be monitored closely."
+  },
+
+  {
+    id: "emt-trauma-128",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "An EMT applies a nonvented occlusive dressing to an open chest wound. The patient's respiratory distress and hypotension rapidly worsen. What should the EMT consider doing immediately?",
+    choices: [
+      "Reinforce the seal more tightly",
+      "Lift an edge of the dressing to allow air to escape",
+      "Apply a second dressing over the first",
+      "Give the patient oral fluids"
+    ],
+    answerIndex: 1,
+    explanation: "Worsening respiratory distress and shock after sealing an open chest wound may indicate tension physiology. Temporarily lifting an edge of the dressing can allow trapped air to escape. The patient requires urgent reassessment and rapid transport."
+  },
+
+  {
+    id: "emt-trauma-129",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "What is the primary purpose of an occlusive dressing over an open chest wound?",
+    choices: [
+      "To prevent air from entering the pleural space through the wound",
+      "To absorb all blood from the chest cavity",
+      "To immobilize the cervical spine",
+      "To reduce internal bleeding from the heart"
+    ],
+    answerIndex: 0,
+    explanation: "An open chest wound can allow air to enter the pleural space. An occlusive dressing helps seal the wound. A vented dressing can allow air to escape while limiting additional air entry."
+  },
+
+  {
+    id: "emt-trauma-130",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding is generally considered a late sign of tension pneumothorax rather than an early finding?",
+    choices: [
+      "Increasing respiratory distress",
+      "Tachycardia",
+      "Unilateral diminished breath sounds",
+      "Tracheal deviation"
+    ],
+    answerIndex: 3,
+    explanation: "Tracheal deviation is a late and unreliable finding of tension pneumothorax. EMTs should act on the overall clinical picture rather than waiting for tracheal deviation."
+  },
+
+  {
+    id: "emt-trauma-131",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A trauma patient develops severe respiratory distress, tachycardia, hypotension, and markedly diminished breath sounds on one side. What condition should be strongly suspected?",
+    choices: [
+      "Tension pneumothorax",
+      "Isolated rib fracture",
+      "Hypoglycemia",
+      "Simple ankle fracture"
+    ],
+    answerIndex: 0,
+    explanation: "The combination of severe respiratory distress, unilateral diminished breath sounds, and hemodynamic deterioration is highly concerning for tension pneumothorax."
+  },
+
+  {
+    id: "emt-trauma-132",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which trauma patient most clearly meets a common indication for spinal motion restriction?",
+    choices: [
+      "Alert patient with isolated paraspinal muscle soreness and a normal neurologic exam",
+      "Alert patient with midline cervical tenderness after a significant fall",
+      "Alert patient with no neck pain and a normal examination after a minor incident",
+      "Alert patient with a superficial forearm abrasion"
+    ],
+    answerIndex: 1,
+    explanation: "Midline spinal tenderness is a major indication for spinal motion restriction in commonly used national criteria. Exact implementation depends on the EMS system and protocol."
+  },
+
+  {
+    id: "emt-trauma-133",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding would increase concern for spinal injury after trauma?",
+    choices: [
+      "Focal neurologic deficit",
+      "Normal sensation and strength",
+      "No spinal tenderness",
+      "No distracting injuries and a completely reliable examination"
+    ],
+    answerIndex: 0,
+    explanation: "A focal neurologic deficit is a major concerning finding after trauma and supports spinal motion restriction and further evaluation."
+  },
+
+  {
+    id: "emt-trauma-134",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient meets criteria for spinal motion restriction. Which statement about the long backboard is most consistent with modern EMS practice?",
+    choices: [
+      "It should routinely remain under the patient throughout transport",
+      "It is primarily a device for extrication and movement rather than routine transport",
+      "It eliminates the need for ongoing neurologic assessment",
+      "It should be used for every patient with back pain"
+    ],
+    answerIndex: 1,
+    explanation: "Modern EMS practice generally treats the long backboard primarily as an extrication and movement tool. Patients requiring spinal motion restriction can generally be secured to the ambulance stretcher using appropriate methods."
+  },
+
+  {
+    id: "emt-trauma-135",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "A trauma patient opens her eyes when spoken to, speaks in confused sentences, and obeys commands. What is her GCS score?",
+    choices: [
+      "11",
+      "12",
+      "13",
+      "14"
+    ],
+    answerIndex: 2,
+    explanation: "Eye opening to voice is 3, confused verbal response is 4, and obeying commands is 6. The total is 13."
+  },
+
+  {
+    id: "emt-trauma-136",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which GCS component receives a score of 6?",
+    choices: [
+      "Spontaneous eye opening",
+      "Confused verbal response",
+      "Obeys commands",
+      "Withdraws from pain"
+    ],
+    answerIndex: 2,
+    explanation: "The maximum motor score is 6 for obeying commands. Spontaneous eye opening is 4 and confused verbal response is 4."
+  },
+
+  {
+    id: "emt-trauma-137",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A severely injured patient has hypertension, bradycardia, and irregular respirations. What does this combination suggest?",
+    choices: [
+      "Hypovolemic shock",
+      "Elevated intracranial pressure",
+      "Simple dehydration",
+      "Isolated femur fracture"
+    ],
+    answerIndex: 1,
+    explanation: "Hypertension, bradycardia, and abnormal respirations are classically associated with Cushing's response and markedly increased intracranial pressure. This is an ominous finding that may indicate impending herniation."
+  },
+
+  {
+    id: "emt-trauma-138",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which change would be most concerning in a patient with a severe head injury?",
+    choices: [
+      "Increasing level of alertness",
+      "Improved orientation",
+      "Progressive decline in mental status",
+      "Decreased pain after splinting"
+    ],
+    answerIndex: 2,
+    explanation: "A declining level of consciousness after head trauma may indicate worsening intracranial pathology and requires prompt reassessment and appropriate transport."
+  },
+
+  {
+    id: "emt-trauma-139",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "An adult has burns involving the entire right arm and the entire anterior trunk. Approximately what percentage of total body surface area is burned using the adult rule of nines?",
+    choices: [
+      "18%",
+      "27%",
+      "36%",
+      "45%"
+    ],
+    answerIndex: 1,
+    explanation: "Using the adult rule of nines, one entire arm represents 9% and the anterior trunk represents 18%, producing an estimated total of 27% TBSA."
+  },
+
+  {
+    id: "emt-trauma-140",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which burn location is particularly concerning even when the total burned surface area is relatively small?",
+    choices: [
+      "Small superficial burn on the thigh",
+      "Full-thickness burn involving the hand",
+      "Small superficial burn on the abdomen",
+      "Minor partial-thickness burn on the calf"
+    ],
+    answerIndex: 1,
+    explanation: "Burns involving functionally important areas such as the hands can require specialized evaluation even when the total TBSA is small. Burn-center referral criteria should be followed when applicable."
+  },
+
+  {
+    id: "emt-trauma-141",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient has extensive thermal burns after the burning process has been stopped. Which field treatment is most appropriate?",
+    choices: [
+      "Apply ice directly to all burned areas",
+      "Cover the burns appropriately and actively prevent hypothermia",
+      "Keep the patient continuously soaked in cold water during transport",
+      "Apply a thick layer of ointment to all burns"
+    ],
+    answerIndex: 1,
+    explanation: "Extensive burns can cause major heat loss. Appropriate covering and prevention of hypothermia are important. Ice can worsen tissue injury, prolonged wet dressings can promote hypothermia, and ointments are generally not part of initial field management of extensive burns."
+  },
+
+  {
+    id: "emt-trauma-142",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Why is preventing hypothermia especially important in a patient with extensive burns?",
+    choices: [
+      "Burned skin loses its normal ability to regulate heat and extensive exposure increases heat loss",
+      "Hypothermia immediately causes all burns to become full thickness",
+      "Warmth increases the depth of every burn",
+      "Burn patients cannot develop hypothermia"
+    ],
+    answerIndex: 0,
+    explanation: "Extensive burns disrupt the skin's barrier and thermoregulatory functions, increasing heat loss. Hypothermia is therefore an important secondary complication to prevent."
+  },
+
+  {
+    id: "emt-trauma-143",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "What should an EMT assess before and after splinting a fractured extremity?",
+    choices: [
+      "Distal circulation, sensation, and motor function",
+      "Only the patient's blood pressure",
+      "Only the pulse proximal to the injury",
+      "The patient's ability to actively move the injured joint"
+    ],
+    answerIndex: 0,
+    explanation: "Distal pulse or perfusion, sensation, and motor function should be assessed before and after splinting. This helps identify neurovascular compromise caused by the injury or the splint."
+  },
+
+  {
+    id: "emt-trauma-144",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A forearm fracture is splinted. The hand was warm and had normal sensation before splinting but is now pale and numb. What should the EMT suspect?",
+    choices: [
+      "Improved circulation",
+      "Neurovascular compromise related to the injury or splint",
+      "Normal post-splinting physiology",
+      "A resolved fracture"
+    ],
+    answerIndex: 1,
+    explanation: "New changes in distal perfusion or sensation after splinting indicate possible neurovascular compromise. The splint should be reassessed and adjusted according to protocol while maintaining fracture support."
+  },
+
+  {
+    id: "emt-trauma-145",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which injury is the classic indication for a traction splint when no contraindications are present?",
+    choices: [
+      "Isolated midshaft femur fracture",
+      "Isolated ankle fracture",
+      "Hip dislocation",
+      "Unstable pelvic fracture"
+    ],
+    answerIndex: 0,
+    explanation: "Traction splints are designed primarily for isolated midshaft femur fractures. Associated injuries to the pelvis, hip, knee, or lower leg can contraindicate their use."
+  },
+
+  {
+    id: "emt-trauma-146",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "Which finding would make a traction splint inappropriate for a suspected femur fracture?",
+    choices: [
+      "Isolated midshaft femur deformity",
+      "Significant knee injury on the same extremity",
+      "Pain and swelling in the mid-thigh",
+      "Closed midshaft femur fracture without other lower-extremity injury"
+    ],
+    answerIndex: 1,
+    explanation: "Traction splints may be contraindicated when there is an injury involving the knee or other structures used to support or apply traction. Local protocols should be followed."
+  },
+
+  {
+    id: "emt-trauma-147",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A severely angulated forearm fracture is associated with a pulseless, pale hand. What is the priority concern?",
+    choices: [
+      "Cosmetic appearance of the limb",
+      "Restoring and preserving distal circulation",
+      "Determining whether the patient can walk",
+      "Applying a traction splint"
+    ],
+    answerIndex: 1,
+    explanation: "A pulseless, poorly perfused extremity represents a limb-threatening neurovascular emergency. EMS management should follow current local protocols for gentle realignment when indicated, followed by splinting and reassessment."
+  },
+
+  {
+    id: "emt-trauma-148",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "When is gentle realignment of a severely deformed extremity most strongly considered during EMT care?",
+    choices: [
+      "Whenever the deformity looks unusual",
+      "When distal circulation is absent and protocol permits an attempt to restore perfusion",
+      "Only after the patient reaches the hospital",
+      "To make every fracture look anatomically normal"
+    ],
+    answerIndex: 1,
+    explanation: "If a severely deformed extremity has absent distal circulation, current EMS education commonly teaches gentle realignment when permitted by protocol, followed by splinting and reassessment. The goal is restoration of perfusion, not cosmetic correction."
+  },
+
+  // ============================================================
+  // EMS OPERATIONS
+  // ============================================================
+
+  {
+    id: "emt-ops-450",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "During START triage, an adult casualty is not walking and has a respiratory rate of 34/min after the airway is opened. Which triage category is appropriate?",
+    choices: [
+      "Minor",
+      "Delayed",
+      "Immediate",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "Under the traditional START adult algorithm, a respiratory rate greater than 30/min is an Immediate finding. START is a mass-casualty triage system designed to rapidly prioritize patients."
+  },
+
+  {
+    id: "emt-ops-451",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "In traditional START triage, an adult who is not breathing remains apneic after the airway is repositioned. What category is assigned?",
+    choices: [
+      "Minor",
+      "Delayed",
+      "Immediate",
+      "Expectant"
+    ],
+    answerIndex: 3,
+    explanation: "In the traditional START algorithm, an adult who remains apneic after airway repositioning is categorized as Expectant/deceased. Pediatric triage systems such as JumpSTART use different considerations."
+  },
+
+  {
+    id: "emt-ops-452",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "A nonambulatory adult in a START triage situation has a respiratory rate of 24/min but no palpable radial pulse. What category is assigned?",
+    choices: [
+      "Minor",
+      "Delayed",
+      "Immediate",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "The patient passes the respiratory-rate criterion but fails the perfusion assessment because the radial pulse is absent. In traditional START, failure at any major assessment step results in an Immediate category."
+  },
+
+  {
+    id: "emt-ops-453",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "In the traditional START system, which sequence best describes the major assessment priorities?",
+    choices: [
+      "Pain, temperature, blood glucose",
+      "Respirations, perfusion, mental status",
+      "Blood pressure, ECG, temperature",
+      "History, medications, allergies"
+    ],
+    answerIndex: 1,
+    explanation: "START is commonly remembered using RPM: respirations, perfusion, and mental status. It is designed for rapid triage rather than comprehensive individual assessment."
+  },
+
+  {
+    id: "emt-ops-454",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "During traditional START triage, an adult can walk to a designated safe area after a mass-casualty incident. What initial category is assigned?",
+    choices: [
+      "Immediate",
+      "Delayed",
+      "Minor",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "Ambulatory patients are initially directed to a designated area and categorized as Minor in traditional START. They may still require reassessment because triage status can change."
+  },
+
+  {
+    id: "emt-ops-455",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "A START-triaged adult has a respiratory rate below the traditional threshold and an adequate radial pulse but cannot follow simple commands. What category should be assigned?",
+    choices: [
+      "Minor",
+      "Delayed",
+      "Immediate",
+      "Expectant"
+    ],
+    answerIndex: 2,
+    explanation: "Failure of the mental-status portion of the traditional START assessment results in an Immediate category. START prioritizes patients based on rapid identification of physiologic compromise."
+  },
+
+  {
+    id: "emt-ops-456",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Why is mass-casualty triage different from a routine patient assessment?",
+    choices: [
+      "It attempts to identify the most comfortable patients first",
+      "It prioritizes limited resources toward patients who are most likely to benefit from immediate intervention",
+      "It eliminates the need to reassess patients",
+      "It is intended to provide definitive hospital diagnoses"
+    ],
+    answerIndex: 1,
+    explanation: "Mass-casualty triage is designed to prioritize limited resources when the number of patients exceeds available resources. Patients must be reassessed because their condition can change."
+  },
+
+  {
+    id: "emt-ops-457",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which statement best describes the purpose of the NREMT-oriented EMS education standards?",
+    choices: [
+      "They replace every state's EMS protocol",
+      "They establish national educational expectations for EMS provider preparation",
+      "They prescribe the exact treatment protocol for every EMS agency",
+      "They eliminate the need for medical direction"
+    ],
+    answerIndex: 1,
+    explanation: "National EMS Education Standards establish educational expectations for EMS provider preparation. They do not replace state scope-of-practice rules, local protocols, or medical direction."
+  },
+
+  {
+    id: "emt-ops-458",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "An EMT encounters a treatment decision whose exact medication dose is determined by the local EMS medical director. Which approach is most appropriate?",
+    choices: [
+      "Assume every EMS system uses the same dose",
+      "Follow the applicable local protocol and medical direction",
+      "Use a dose found on an unrelated online question bank",
+      "Choose whichever dose produces the strongest effect"
+    ],
+    answerIndex: 1,
+    explanation: "National education standards describe core knowledge, but many operational details are determined by state scope, local protocol, and medical direction. EMTs must practice within their authorized system."
+  },
+
+  // ============================================================
+  // ADDITIONAL CROSS-CONCEPT QUESTIONS
+  // ============================================================
+
+  {
+    id: "emt-cardiology-382",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which statement best distinguishes cardiac arrest from myocardial infarction?",
+    choices: [
+      "Cardiac arrest is a failure of effective circulation, while myocardial infarction involves myocardial tissue injury from inadequate blood flow",
+      "Cardiac arrest and myocardial infarction are two names for the same condition",
+      "Myocardial infarction always causes immediate cardiac arrest",
+      "Cardiac arrest is caused only by coronary artery blockage"
+    ],
+    answerIndex: 0,
+    explanation: "Cardiac arrest is a state in which the heart is not producing effective circulation. Myocardial infarction results from inadequate coronary blood flow causing myocardial injury and can lead to cardiac arrest but does not always do so."
+  },
+
+  {
+    id: "emt-cardiology-383",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding would make an EMT most concerned that chest discomfort is potentially cardiac rather than simply musculoskeletal?",
+    choices: [
+      "Pain that is completely reproducible by pressing one small area of the chest",
+      "Substernal pressure accompanied by diaphoresis and dyspnea",
+      "Pain that occurs only when turning the torso",
+      "Pain immediately following a direct blow to a rib"
+    ],
+    answerIndex: 1,
+    explanation: "Substernal pressure accompanied by autonomic or respiratory symptoms is concerning for ACS. Although reproducible or movement-related pain may suggest a musculoskeletal cause, no single feature completely rules ACS in or out."
+  },
+
+  {
+    id: "emt-cardiology-384",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected ACS has a normal oxygen saturation and no signs of respiratory distress. Which statement is most appropriate regarding oxygen?",
+    choices: [
+      "Oxygen must always be given to every patient with chest pain",
+      "Oxygen should be given routinely regardless of saturation",
+      "Oxygen should be administered when indicated by hypoxemia or respiratory compromise and according to protocol",
+      "Oxygen should never be given to a cardiac patient"
+    ],
+    answerIndex: 2,
+    explanation: "Routine oxygen for every ACS patient is not recommended when oxygenation is adequate. Oxygen is appropriate when hypoxemia or respiratory compromise is present, consistent with current guidance and local protocol."
+  },
+
+  {
+    id: "emt-cardiology-385",
+    domain: "Cardiology",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with suspected ACS has an oxygen saturation of 98%, normal work of breathing, and no respiratory distress. What should guide the EMT's oxygen decision?",
+    choices: [
+      "Chest pain alone automatically requires high-flow oxygen",
+      "The patient's oxygenation and clinical condition",
+      "The patient's age alone",
+      "Whether the patient requests oxygen"
+    ],
+    answerIndex: 1,
+    explanation: "Oxygen therapy should be guided by oxygenation and clinical need rather than chest pain alone. Unnecessary oxygen can expose patients to treatment without a clear indication."
+  },
+
+  {
+    id: "emt-airway-141",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which action should an EMT avoid when treating a conscious infant with severe foreign-body airway obstruction?",
+    choices: [
+      "Supporting the infant's head and neck",
+      "Delivering back blows",
+      "Delivering chest thrusts",
+      "Performing a blind finger sweep"
+    ],
+    answerIndex: 3,
+    explanation: "Blind finger sweeps should not be performed because they can push the foreign body deeper into the airway. Current pediatric guidance recommends repeated cycles of back blows and chest thrusts for severe infant FBAO."
+  },
+
+  {
+    id: "emt-airway-142",
+    domain: "Airway",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "An infant with severe choking becomes unresponsive. Which statement is correct?",
+    choices: [
+      "Continue only back blows until the object comes out",
+      "Begin CPR, starting with chest compressions",
+      "Perform abdominal thrusts while the infant is supine",
+      "Perform a blind finger sweep before every compression"
+    ],
+    answerIndex: 1,
+    explanation: "When an infant with severe FBAO becomes unresponsive, CPR is initiated beginning with chest compressions. A visible foreign body may be removed when encountered, but blind sweeps are avoided."
+  },
+
+  {
+    id: "emt-trauma-149",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "A patient with major hemorrhage is initially alert and anxious with a normal blood pressure. Which interpretation is most appropriate?",
+    choices: [
+      "The patient cannot be seriously injured because the blood pressure is normal",
+      "Compensatory mechanisms may temporarily preserve blood pressure",
+      "The patient definitely has neurogenic shock",
+      "The patient has irreversible shock"
+    ],
+    answerIndex: 1,
+    explanation: "Early hemorrhagic shock may be compensated by tachycardia and vasoconstriction, allowing blood pressure to remain normal. Normal blood pressure should not falsely reassure the EMT."
+  },
+
+  {
+    id: "emt-trauma-150",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "primaryAssessment",
+    question: "Which finding would be least reassuring in a child after significant blood loss?",
+    choices: [
+      "Normal blood pressure with persistent tachycardia",
+      "Normal mental status and normal skin findings",
+      "Improving heart rate after hemorrhage control",
+      "Warm skin with normal perfusion and improving vital signs"
+    ],
+    answerIndex: 0,
+    explanation: "A child can maintain blood pressure despite significant blood loss. Persistent tachycardia, especially with other signs of poor perfusion, can indicate compensated shock despite a normal blood pressure."
+  },
+
+  {
+    id: "emt-trauma-151",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "treatmentTransport",
+    question: "A patient with an open chest wound is being transported after an occlusive dressing has been applied. Which change should prompt immediate reassessment of the dressing and chest condition?",
+    choices: [
+      "Improved respiratory effort",
+      "Improved skin color",
+      "Sudden worsening respiratory distress and hypotension",
+      "A decrease in anxiety"
+    ],
+    answerIndex: 2,
+    explanation: "Sudden deterioration after sealing an open chest wound raises concern for tension physiology. The dressing should be reassessed and appropriate emergency measures taken according to protocol."
+  },
+
+  {
+    id: "emt-trauma-152",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "A trauma patient has eye opening to pain, inappropriate words, and localizes painful stimuli. What is the GCS score?",
+    choices: [
+      "8",
+      "9",
+      "10",
+      "11"
+    ],
+    answerIndex: 2,
+    explanation: "Eye opening to pain is 2, inappropriate words are 3, and localizing pain is 5. The total is 10."
+  },
+
+  {
+    id: "emt-trauma-153",
+    domain: "Trauma",
+    level: "EMT",
+    blueprintCategory: "secondaryAssessment",
+    question: "Which GCS finding represents the best possible motor response?",
+    choices: [
+      "Withdraws from pain",
+      "Localizes pain",
+      "Obeys commands",
+      "Abnormal flexion"
+    ],
+    answerIndex: 2,
+    explanation: "Obeying commands is the maximum motor response and receives a score of 6."
+  },
+
+  {
+    id: "emt-ops-459",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Why should a mass-casualty triage category not be considered permanent?",
+    choices: [
+      "Triage categories are based on a patient's condition at a particular point in time",
+      "Patients are reassigned randomly",
+      "Triage categories are determined only by age",
+      "The first category is always incorrect"
+    ],
+    answerIndex: 0,
+    explanation: "Triage is dynamic. A patient's condition can improve or deteriorate, so reassessment is necessary as resources and circumstances permit."
+  },
+
+  {
+    id: "emt-ops-460",
+    domain: "EMS Operations",
+    level: "EMT",
+    blueprintCategory: "operations",
+    question: "Which statement best describes why an EMT should distinguish national EMS education from local protocol?",
+    choices: [
+      "National education standards are irrelevant after certification",
+      "Local protocols may specify treatments and operational details that vary between EMS systems",
+      "Local protocols can authorize any procedure regardless of scope",
+      "National standards require every EMS agency to use identical medication doses"
+    ],
+    answerIndex: 1,
+    explanation: "National education establishes core expectations, while state scope, agency protocols, and medical direction determine what a provider may actually perform in a particular system."
+  },
+  ...EMT_AIRWAY_BATCH,
+  ...EMT_CARDIOLOGY_BATCH,
+  ...EMT_MEDICAL_BATCH,
+  ...EMT_OPS_BATCH,
+  ...EMT_TRAUMA_BATCH,
 ];

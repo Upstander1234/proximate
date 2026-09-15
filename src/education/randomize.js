@@ -30,3 +30,54 @@ export function randomizePresentation(question) {
     displayAnswerIndex: order.indexOf(question.answerIndex),
   };
 }
+
+// multiple_response uses the identical mechanism as multiple_choice — same
+// `choices` array, same canonical-index grading contract — just with
+// several correct answers instead of one. Reused here rather than
+// duplicated so the two item types can never drift apart in how they
+// shuffle.
+export function randomizeMultipleResponsePresentation(question) {
+  const order = shuffledIndices(question.choices.length);
+  return {
+    displayChoices: order.map((canonicalIdx) => question.choices[canonicalIdx]),
+    toCanonical: order,
+  };
+}
+
+// build_list: shuffles which on-screen SLOT each step starts in. A player
+// then reorders the displayed steps; grading must map the player's
+// resulting display-order sequence back through `toCanonical` before
+// comparing against `question.correctOrder` (evaluateResponse.js expects
+// canonical indices, not display positions).
+export function randomizeBuildListPresentation(question) {
+  const order = shuffledIndices(question.steps.length);
+  return {
+    displaySteps: order.map((canonicalIdx) => question.steps[canonicalIdx]),
+    toCanonical: order,
+  };
+}
+
+// drag_drop: only the ITEMS need shuffling (categories stay in their
+// authored order — they're the fixed targets, not the things being
+// classified). Returns items in canonical order already; a UI wanting a
+// shuffled item tray should permute this array's own presentation, but the
+// items themselves (id/label/correctCategory) are never display-indexed,
+// so there is no toCanonical mapping needed here — grading in
+// evaluateResponse.js keys by item.id directly.
+export function randomizeDragDropItemOrder(question) {
+  const order = shuffledIndices(question.items.length);
+  return order.map((i) => question.items[i]);
+}
+
+// options_table: shuffles row order (findings are id-keyed, so no mapping
+// is needed for grading) and, optionally, the shared option-column order
+// when every row uses the same `question.options` list. Per-row option
+// lists are left in their authored order — remapping a per-row
+// correctOptionIndex through a shuffle isn't worth the complexity for a
+// table where the columns are usually a fixed, named classification set
+// (e.g. "Immediate life threat / Not immediate") rather than arbitrary
+// choices.
+export function randomizeOptionsTableRowOrder(question) {
+  const order = shuffledIndices(question.rows.length);
+  return order.map((i) => question.rows[i]);
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchPendingQuestions, reviewQuestion } from "./crowdsource.js";
 import { fetchPendingReports, resolveReport } from "./reports.js";
+import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
 
 export default function AdminReviewTab({ user }) {
   const [tab, setTab] = useState("submissions"); // submissions | reports
@@ -48,7 +49,7 @@ function SubmissionsReview({ user }) {
   const decide = async (q, decision) => {
     setBusyId(q.id);
     try {
-      await reviewQuestion(q.id, decision, user, notes[q.id] || "");
+      await reviewQuestion(q, decision, user, notes[q.id] || "");
       setPending((p) => p.filter((x) => x.id !== q.id));
     } catch (e) {
       alert(e.message || "Review failed.");
@@ -72,53 +73,143 @@ function SubmissionsReview({ user }) {
           Nothing pending review right now.
         </div>
       ) : (
-        pending.map((q) => (
-          <div key={q.id} className="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-3">
-            <div className="text-xs text-slate-500">
-              {q.domain} · submitted by {q.submittedByName || "unknown"}
-            </div>
-            <div className="font-medium">{q.question}</div>
-            <div className="space-y-1">
-              {q.choices.map((c, i) => (
-                <div
-                  key={i}
-                  className={`px-3 py-2 rounded-lg border text-sm ${
-                    i === q.answerIndex ? "border-emerald-600 bg-emerald-950/30" : "border-slate-800"
-                  }`}
-                >
-                  {c}
+        pending.map((q) => {
+          const shapeCheck = validateItemTypeShape(q);
+          return (
+            <div key={q.id} className="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+              <div className="text-xs text-slate-500 flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">{itemTypeOf(q)}</span>
+                <span>
+                  {q.domain} · submitted by {q.submittedByName || "unknown"}
+                </span>
+              </div>
+              <div className="font-medium">{q.question}</div>
+
+              <QuestionPreview q={q} />
+
+              <div className="text-sm text-slate-400">{q.explanation}</div>
+
+              {!shapeCheck.valid && (
+                <div className="rounded-lg border border-red-700 bg-red-950/30 p-3 text-xs text-red-300">
+                  <div className="font-semibold mb-1">Not well-formed — cannot approve:</div>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    {shapeCheck.errors.map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
+              )}
+
+              <textarea
+                placeholder="Review notes (optional)"
+                value={notes[q.id] || ""}
+                onChange={(e) => setNotes((n) => ({ ...n, [q.id]: e.target.value }))}
+                rows={2}
+                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <button
+                  disabled={busyId === q.id || !shapeCheck.valid}
+                  title={!shapeCheck.valid ? "Fix or reject — this submission isn't well-formed" : undefined}
+                  onClick={() => decide(q, "approved")}
+                  className="flex-1 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 font-medium disabled:opacity-50"
+                >
+                  Approve
+                </button>
+                <button
+                  disabled={busyId === q.id}
+                  onClick={() => decide(q, "rejected")}
+                  className="flex-1 py-2.5 rounded-lg bg-red-800 hover:bg-red-700 font-medium disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
-            <div className="text-sm text-slate-400">{q.explanation}</div>
-            <textarea
-              placeholder="Review notes (optional)"
-              value={notes[q.id] || ""}
-              onChange={(e) => setNotes((n) => ({ ...n, [q.id]: e.target.value }))}
-              rows={2}
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
-            />
-            <div className="flex gap-2">
-              <button
-                disabled={busyId === q.id}
-                onClick={() => decide(q, "approved")}
-                className="flex-1 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 font-medium disabled:opacity-50"
-              >
-                Approve
-              </button>
-              <button
-                disabled={busyId === q.id}
-                onClick={() => decide(q, "rejected")}
-                className="flex-1 py-2.5 rounded-lg bg-red-800 hover:bg-red-700 font-medium disabled:opacity-50"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );
+}
+
+// A lightweight, non-interactive answer-key preview per item type — an
+// admin needs to see what the correct answer(s) actually are, not play
+// through the item the way a candidate would. multiple_choice keeps the
+// original rich preview; every other type gets a compact but real (not a
+// raw JSON dump) summary of its own answer key.
+function QuestionPreview({ q }) {
+  const type = itemTypeOf(q);
+  if (type === "multiple_choice") {
+    if (!Array.isArray(q.choices)) return null;
+    return (
+      <div className="space-y-1">
+        {q.choices.map((c, i) => (
+          <div key={i} className={`px-3 py-2 rounded-lg border text-sm ${i === q.answerIndex ? "border-emerald-600 bg-emerald-950/30" : "border-slate-800"}`}>
+            {c}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "multiple_response") {
+    if (!Array.isArray(q.choices)) return null;
+    const correct = new Set(q.correctIndices || []);
+    return (
+      <div className="space-y-1">
+        {q.choices.map((c, i) => (
+          <div key={i} className={`px-3 py-2 rounded-lg border text-sm ${correct.has(i) ? "border-emerald-600 bg-emerald-950/30" : "border-slate-800"}`}>
+            {c}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "build_list") {
+    if (!Array.isArray(q.steps) || !Array.isArray(q.correctOrder)) return null;
+    return (
+      <div className="space-y-1">
+        {q.correctOrder.map((stepIdx, i) => (
+          <div key={i} className="px-3 py-2 rounded-lg border border-slate-800 text-sm">
+            {i + 1}. {q.steps[stepIdx]}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "drag_drop") {
+    if (!Array.isArray(q.categories) || !Array.isArray(q.items)) return null;
+    return (
+      <div className="grid sm:grid-cols-2 gap-2">
+        {q.categories.map((cat) => (
+          <div key={cat.id} className="rounded-lg border border-slate-800 p-2">
+            <div className="text-xs font-semibold text-slate-400 mb-1">{cat.label}</div>
+            {q.items.filter((it) => it.correctCategory === cat.id).map((it) => (
+              <div key={it.id} className="text-xs px-2 py-1 rounded border border-emerald-700 bg-emerald-950/20 mb-1">
+                {it.label}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "options_table") {
+    if (!Array.isArray(q.rows)) return null;
+    return (
+      <div className="space-y-1">
+        {q.rows.map((row) => {
+          const options = row.options || q.options || [];
+          return (
+            <div key={row.id} className="px-3 py-2 rounded-lg border border-slate-800 text-sm flex justify-between gap-3">
+              <span>{row.finding}</span>
+              <span className="text-emerald-400 shrink-0">{options[row.correctOptionIndex]}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return null;
 }
 
 function ReportsReview({ user }) {

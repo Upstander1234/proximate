@@ -1,22 +1,31 @@
 // Adaptive Test Mode's item-response engine: a real, if intentionally
 // simple, IRT-style (2-parameter logistic) computerized-adaptive-testing
 // implementation, inspired by publicly described CAT principles and the
-// publicly described structure of the NREMT EMT cognitive exam. It is NOT
-// a reproduction of NREMT's own proprietary scoring/selection algorithm —
-// Proximate has no access to that and doesn't claim to.
+// publicly described structure of NREMT's own certification exams. It is
+// NOT a reproduction of NREMT's own proprietary scoring/selection
+// algorithm — Proximate has no access to that and doesn't claim to.
 //
-// Core concepts, kept explicitly distinct throughout (never conflated):
+// Core concepts, kept explicitly distinct throughout (never conflated —
+// see contentBlueprint.js's own header comment for the blueprint/clinical-
+// judgment half of this same discipline):
 //   - user ABILITY estimate (theta) + its standard error — this file
 //   - item DIFFICULTY (b) and DISCRIMINATION (a) — derived from community
 //     response data (itemStats.js), never from one user's own performance
 //   - item DIFFICULTY CONFIDENCE — how much community data backs that b
 //   - question QUALITY — a manual approval decision (crowdsource.js),
 //     unrelated to any of the above
+//   - NREMT BLUEPRINT — a content-distribution CONSTRAINT (contentBlueprint.js)
+//   - CLINICAL JUDGMENT — a cross-cutting cognitive dimension, AEMT/
+//     Paramedic only (contentBlueprint.js)
+//   - SRS / practice history — longitudinal learning data (srs.js,
+//     userStats.js); contributes to question NOVELTY (everSeenIds) but
+//     never to this exam's own blueprint exposure counts, which are always
+//     derived from THIS exam's administered-item list alone
 //
 // See MethodsPage.jsx for the player-facing explanation of all of this.
 
 import { pctCorrect } from "./itemStats.js";
-import { BLUEPRINT_CATEGORIES, blueprintCategoryOf } from "./contentBlueprint.js";
+import { blueprintForLevel, blueprintCategoryOf, clinicalJudgmentOf } from "./contentBlueprint.js";
 
 export const MIN_QUESTIONS = 70;
 export const MAX_QUESTIONS = 120;
@@ -127,13 +136,184 @@ export function meetsStoppingConfidence(se) {
   return CI_Z * se <= CI_MAX_HALFWIDTH;
 }
 
+// ---------------------------------------------------------------------
+// Blueprint-aware selection support
+// ---------------------------------------------------------------------
+
+// How long the exam is assumed to run, FOR PLANNING PURPOSES ONLY, as of
+// `questionsAdministered` questions in. Deliberately conservative rather
+// than optimistic: while under the hard minimum, assume the exam ends at
+// exactly that minimum (the earliest it legally can) — the worst case for
+// "do I still have room to fix a deficit" — so blueprint pressure starts
+// building from question 1, not only once the exam is already running
+// long. Once past the minimum, assume the exam could end on the VERY NEXT
+// question (questionsAdministered itself), which is again the worst case:
+// it forces the engine to treat every remaining pick as possibly the last
+// chance to correct course, exactly the "don't discover a bad distribution
+// near the end" behavior this system exists to prevent. This never
+// prevents the exam from actually running past MIN_QUESTIONS when the
+// ability estimate needs more data — it only governs how urgently
+// blueprint balancing behaves while that's happening.
+export function estimateExamLength(questionsAdministered) {
+  return clamp(Math.max(MIN_QUESTIONS, questionsAdministered), MIN_QUESTIONS, MAX_QUESTIONS);
+}
+
+// For one blueprint row (a content category OR the clinical-judgment
+// dimension), computes: target/min/max question counts for the assumed
+// final exam length, how many have actually been delivered so far, the
+// deficit (positive = underrepresented, negative = overrepresented), the
+// PROJECTED final count/pct if the current per-question rate continues for
+// the rest of the exam, and whether the category can still possibly reach
+// its floor at all (the "if I continue selecting this way, can I still
+// finish within the blueprint?" question) even in the best case where
+// every single remaining question goes to it.
+function blueprintRow(rangeDef, have, questionsAdministered, estimatedTotalLength) {
+  const targetCount = rangeDef.target * estimatedTotalLength;
+  const minCount = rangeDef.min * estimatedTotalLength;
+  const maxCount = rangeDef.max * estimatedTotalLength;
+  const deficit = targetCount - have;
+
+  const remaining = Math.max(estimatedTotalLength - questionsAdministered, 0);
+  const rateSoFar = questionsAdministered > 0 ? have / questionsAdministered : rangeDef.target;
+  const projectedFinal = have + rateSoFar * remaining;
+  const projectedPct = estimatedTotalLength > 0 ? projectedFinal / estimatedTotalLength : 0;
+
+  const bestCaseFinal = have + remaining; // every remaining question goes to this category
+  const canStillReachMin = bestCaseFinal >= minCount - 1e-9;
+
+  return {
+    key: rangeDef.key,
+    label: rangeDef.label,
+    min: rangeDef.min,
+    target: rangeDef.target,
+    max: rangeDef.max,
+    have,
+    havePct: questionsAdministered > 0 ? have / questionsAdministered : 0,
+    targetCount,
+    minCount,
+    maxCount,
+    deficit,
+    projectedFinal,
+    projectedPct,
+    projectedUnderMin: projectedFinal < minCount - 0.5,
+    projectedOverMax: projectedFinal > maxCount + 0.5,
+    canStillReachMin,
+  };
+}
+
+// The full, per-category (and, where applicable, clinical-judgment)
+// snapshot the selection algorithm and any debug/dev UI both read from —
+// see item 14's dev-panel requirement and item 7's "answer the question:
+// if I continue selecting this way, can I still finish within the
+// blueprint?" requirement. `domainCounts` and `clinicalJudgmentPresented`
+// must be derived from THIS EXAM's own administered-item list only — never
+// from SRS/practice history (see this file's own header note).
+export function computeBlueprintProgress({ level, domainCounts, clinicalJudgmentPresented, questionsAdministered }) {
+  const bp = blueprintForLevel(level);
+  const estimatedTotalLength = estimateExamLength(questionsAdministered);
+
+  const categories = bp.categories.map((c) =>
+    blueprintRow(c, domainCounts?.[c.key] || 0, questionsAdministered, estimatedTotalLength)
+  );
+
+  const clinicalJudgment = bp.clinicalJudgment
+    ? blueprintRow(bp.clinicalJudgment, clinicalJudgmentPresented || 0, questionsAdministered, estimatedTotalLength)
+    : null;
+
+  return { level, estimatedTotalLength, questionsAdministered, categories, clinicalJudgment };
+}
+
+// Proximate's own selection-weight constants (design choices, not
+// published NREMT values). Kept small relative to Fisher information's
+// typical range (0 to ~0.25 at a=1) so ability/difficulty targeting always
+// remains the dominant signal — blueprint and clinical-judgment pressure
+// only tip the balance between otherwise-similarly-informative candidates,
+// never override a badly-mismatched-difficulty item just to hit a quota.
+const BLUEPRINT_DEFICIT_WEIGHT = 0.12;
+const BLUEPRINT_URGENT_BONUS = 0.35; // added only when the category can no longer reach its floor any other way
+const CLINICAL_JUDGMENT_DEFICIT_WEIGHT = 0.1;
+const CLINICAL_JUDGMENT_URGENT_BONUS = 0.25;
+const DIFFICULTY_CONFIDENCE_BONUS = 0.05; // small, soft preference for well-calibrated items over untested ones
+
+// questionPriority (conceptually, per the project's own design brief):
+//   abilityNeed + difficultyAppropriateness   -> itemInformation(theta,a,b)
+//                                                 (the standard IRT
+//                                                 selection criterion
+//                                                 already blends both: it
+//                                                 peaks exactly at b=theta
+//                                                 and falls off the more
+//                                                 mismatched the item is)
+//   + blueprintDeficit                        -> deficit-weighted, with an
+//                                                 urgency bonus only when
+//                                                 the category can no
+//                                                 longer be salvaged any
+//                                                 other way
+//   + clinicalJudgmentDeficit                 -> same shape, applied only
+//                                                 to questions with a
+//                                                 KNOWN (non-null)
+//                                                 clinicalJudgment value,
+//                                                 and only for levels whose
+//                                                 blueprint has that
+//                                                 dimension at all
+//   - overexposurePenalty                     -> falls out for free: a
+//                                                 negative deficit (already
+//                                                 over target) makes the
+//                                                 deficit term itself
+//                                                 negative
+//   + novelty                                 -> handled upstream by the
+//                                                 never-seen/seen-elsewhere
+//                                                 tiering in selectNextItem,
+//                                                 which is a STRONGER
+//                                                 guarantee than a soft
+//                                                 bonus would be (novelty
+//                                                 must never be traded away
+//                                                 for a blueprint deficit —
+//                                                 see item 13)
+export function scoreCandidate({ q, params, theta, level, progress }) {
+  const info = itemInformation(theta, params.a, params.b);
+
+  const category = blueprintCategoryOf(q, level);
+  const catRow = progress.categories.find((c) => c.key === category);
+  let blueprintScore = 0;
+  if (catRow) {
+    blueprintScore = catRow.deficit * BLUEPRINT_DEFICIT_WEIGHT;
+    if (!catRow.canStillReachMin) blueprintScore += BLUEPRINT_URGENT_BONUS;
+  }
+
+  let cjScore = 0;
+  if (progress.clinicalJudgment) {
+    const cj = clinicalJudgmentOf(q);
+    if (cj !== null) {
+      const cjRow = progress.clinicalJudgment;
+      // A clinical-judgment question is pulled toward the CJ deficit
+      // exactly like a content-category question is pulled toward its own
+      // deficit. A KNOWN non-clinical-judgment question gets the mirrored,
+      // smaller pull: choosing it is slightly LESS attractive while CJ is
+      // underrepresented, and slightly MORE attractive once CJ is already
+      // over target — a soft push toward balance without ever excluding
+      // the vast majority of ordinary factual questions.
+      cjScore = (cj ? cjRow.deficit : -cjRow.deficit) * CLINICAL_JUDGMENT_DEFICIT_WEIGHT;
+      if (cj && !cjRow.canStillReachMin) cjScore += CLINICAL_JUDGMENT_URGENT_BONUS;
+    }
+  }
+
+  const confidenceBonus = params.difficultyConfidence >= 0.5 ? DIFFICULTY_CONFIDENCE_BONUS : 0;
+
+  return info + blueprintScore + cjScore + confidenceBonus;
+}
+
 // Picks the next item to administer.
-//   pool            — full eligible question objects (approved, level EMT)
+//   pool             — full eligible question objects (approved, this level)
 //   itemStatsById    — Map<questionId, communityStats>
-//   administeredIds — Set of question ids already given THIS exam
+//   administeredIds  — Set of question ids already given THIS exam
 //   everSeenIds      — Set of question ids the user has ever seen (any mode)
 //   theta            — running ability estimate
-//   domainCounts     — { [blueprintKey]: countSoFarThisExam }
+//   level            — certification level being tested (EMR/EMT/AEMT/Paramedic)
+//   domainCounts     — { [blueprintCategoryKey]: countSoFarThisExam } —
+//                       THIS EXAM ONLY, never SRS/practice history
+//   clinicalJudgmentPresented — count of clinical-judgment questions
+//                       presented THIS EXAM ONLY (0 for a level with no
+//                       clinical-judgment dimension; harmless either way)
 //   questionNumber   — 1-indexed number of the item about to be picked
 //   allowReuse       — once the never-seen pool is exhausted, allow re-picking
 //                       an already-seen-by-this-user question
@@ -143,7 +323,9 @@ export function selectNextItem({
   administeredIds,
   everSeenIds,
   theta,
+  level,
   domainCounts,
+  clinicalJudgmentPresented,
   questionNumber,
   allowReuse,
 }) {
@@ -155,7 +337,9 @@ export function selectNextItem({
   // required question count, which means eventually allowing a question
   // to be repeated within the SAME exam, not only reused from a different
   // session — the min-70 floor is a hard requirement and must never be
-  // cut short by running out of "fresh" candidates.
+  // cut short by running out of "fresh" candidates. This tiering is NEVER
+  // overridden by blueprint/clinical-judgment scoring below (see item 13:
+  // novelty/exclusion rules must not be defeated by blueprint balancing).
   const neverSeenAnywhere = pool.filter((q) => !administeredIds.has(q.id) && !everSeenIds.has(q.id));
   const seenElsewhereNotThisExam = pool.filter((q) => !administeredIds.has(q.id) && everSeenIds.has(q.id));
 
@@ -171,38 +355,25 @@ export function selectNextItem({
   }
   if (candidates.length === 0) return null;
 
-  // Content-blueprint targeting: pick the category with the largest
-  // deficit relative to its proportional target for a test of this length
-  // so far, then restrict candidates to that category if any exist there.
-  const targetLen = MAX_QUESTIONS; // normalize proportional targets against the max possible length
-  let bestCategory = null;
-  let bestDeficit = -Infinity;
-  for (const cat of BLUEPRINT_CATEGORIES) {
-    const targetPct = (cat.minPct + cat.maxPct) / 2;
-    const target = (targetPct / 100) * Math.max(questionNumber, targetLen * 0.1);
-    const have = domainCounts[cat.key] || 0;
-    const deficit = target - have;
-    if (deficit > bestDeficit) {
-      bestDeficit = deficit;
-      bestCategory = cat.key;
-    }
-  }
-  let scoped = candidates.filter((q) => blueprintCategoryOf(q) === bestCategory);
-  if (scoped.length === 0) scoped = candidates; // that category has nothing eligible right now — don't block the exam over it
-
-  // Among the scoped candidates: prefer items with reliable difficulty
-  // data, then maximize Fisher information at the current ability
-  // estimate (the actual "target useful information, not blind
-  // hardest/easiest" selection rule) — never seen first (already
-  // enforced above), reliable-difficulty next, information last.
-  const withParams = scoped.map((q) => {
-    const stats = itemStatsById.get(q.id);
-    const params = itemParams(q, stats);
-    return { q, params, info: itemInformation(theta, params.a, params.b) };
+  const progress = computeBlueprintProgress({
+    level,
+    domainCounts,
+    clinicalJudgmentPresented,
+    questionsAdministered: Math.max(questionNumber - 1, 0),
   });
 
-  const reliable = withParams.filter((x) => x.params.difficultyConfidence >= 0.5);
-  const rankPool = reliable.length > 0 ? reliable : withParams;
-  rankPool.sort((x, y) => y.info - x.info);
-  return rankPool[0].q;
+  // Soft, weighted scoring across the WHOLE eligible candidate set — never
+  // a hard filter down to "the one deficient category." An underrepresented
+  // category gets a higher chance of winning, never a guarantee that
+  // overrides a badly-mismatched-difficulty item; see scoreCandidate's own
+  // comment for exactly how ability/difficulty stay dominant.
+  const scored = candidates.map((q) => {
+    const stats = itemStatsById.get(q.id);
+    const params = itemParams(q, stats);
+    const priority = scoreCandidate({ q, params, theta, level, progress });
+    return { q, params, priority };
+  });
+
+  scored.sort((x, y) => y.priority - x.priority);
+  return scored[0].q;
 }

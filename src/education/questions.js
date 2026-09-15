@@ -5,7 +5,18 @@
 //
 // {
 //   id: "unique-string-id",       // never reuse/change once a card exists,
-//                                  // it's the key progress is tracked under
+//                                  // it's the key progress is tracked under.
+//                                  // Must be unique across ALL level files
+//                                  // (questionsEMR.js, questionsEMT.js,
+//                                  // questionsAEMT.js, questionsParamedic.js,
+//                                  // questionsOther.js combined), not just
+//                                  // within one file -- QUESTIONS below is
+//                                  // their concatenation, and a duplicate id
+//                                  // in two files makes those cards share
+//                                  // progress state. Prefix ids with the
+//                                  // level (e.g. "emr-airway-001") if there's
+//                                  // any chance another file reuses the same
+//                                  // domain-based scheme.
 //   domain: "Airway",              // must be one of DOMAINS_BY_LEVEL[level] below
 //   level: "EMT",                  // one of LEVELS below: EMR, EMT, AEMT, Paramedic, Other
 //   question: "...",
@@ -48,7 +59,7 @@ export const DOMAINS = [...new Set(Object.values(DOMAINS_BY_LEVEL).flat())];
 //                                    // for the prefix each domain uses)
 //   domain: "Airway",                // must match a value in DOMAINS_BY_LEVEL
 //   level: "EMT",                    // EMR, EMT, AEMT, Paramedic, or Other
-//   blueprintCategory: "primaryAssessment", // optional — one of the keys in
+//   blueprintCategory: "primaryAssessment", //One of the keys in
 //                                    // contentBlueprint.js's BLUEPRINT_CATEGORIES
 //                                    // (sceneSafety/primaryAssessment/
 //                                    // secondaryAssessment/treatmentTransport/
@@ -58,6 +69,25 @@ export const DOMAINS = [...new Set(Object.values(DOMAINS_BY_LEVEL).flat())];
 //                                    // question (e.g. a Cardiology question
 //                                    // that's actually testing scene safety).
 //                                    // Omit to fall back to the heuristic.
+//   clinicalJudgment: true,          // optional, AEMT/Paramedic only — a
+//                                    // CROSS-CUTTING attribute, not a
+//                                    // category of its own (see
+//                                    // contentBlueprint.js's header
+//                                    // comment). Set true only if the
+//                                    // question genuinely requires
+//                                    // interpreting a presentation,
+//                                    // prioritizing findings, choosing the
+//                                    // next action, recognizing
+//                                    // deterioration, integrating multiple
+//                                    // findings, distinguishing competing
+//                                    // diagnoses/actions, or making a
+//                                    // transport/disposition decision —
+//                                    // NOT simple factual recall. Set
+//                                    // false if you've reviewed it and it
+//                                    // is plain recall. Omit entirely if
+//                                    // you aren't sure — an omitted value
+//                                    // is treated as "unclassified," never
+//                                    // guessed at or defaulted to false.
 //   question:
 //     "Full text of the question stem goes here.",
 //   choices: [
@@ -71,6 +101,121 @@ export const DOMAINS = [...new Set(Object.values(DOMAINS_BY_LEVEL).flat())];
 //     "Explain why the correct answer is right and, briefly, why the other " +
 //     "choices are wrong. This is shown to the user after they answer.",
 // },
+// ----------------------------------------------------------------------------
+//
+// NON-MULTIPLE-CHOICE ITEM TYPES — full field reference in
+// src/education/itemTypes.js. Add `itemType` (omit for plain multiple
+// choice) plus the fields that type needs. Every base-schema field above
+// (id/domain/level/blueprintCategory/clinicalJudgment/explanation) still
+// applies unchanged.
+//
+// DO NOT force a question into one of these just for format variety — use
+// the type that actually measures the competency:
+//   sequencing            -> build_list
+//   categorization         -> drag_drop
+//   classifying several findings at once -> options_table
+//   "select all that apply" -> multiple_response
+//   waveform/image interpretation -> graphical (a MODIFIER, see below)
+//   evolving multi-step reasoning -> scenario (scenarioId/scenarioStage)
+// If plain multiple choice already measures it, leave itemType out.
+//
+// --- multiple_response: 5 or 6 choices, 2 or 3 correct, no partial credit.
+// {
+//   ...base fields...,
+//   itemType: "multiple_response",
+//   question: "Which findings require immediate intervention?",
+//   choices: ["Choice A", "Choice B", "Choice C", "Choice D", "Choice E"],
+//   correctIndices: [0, 2],           // 2 or 3 of the 0-based choice indices
+//   explanation: "...",
+// },
+//
+// --- build_list: ordering/sequencing. Exact sequence required.
+// {
+//   ...base fields...,
+//   itemType: "build_list",
+//   question: "Place the following actions in the order they should be performed.",
+//   steps: ["First step", "Second step", "Third step"],   // authored, canonical order
+//   correctOrder: [0, 1, 2],          // usually [0,1,2,...] if steps is already
+//                                      // written in the correct order — the UI
+//                                      // shuffles the DISPLAY order, not this array
+//   explanation: "...",
+// },
+//
+// --- drag_drop: categorization into 2+ named categories. No partial credit.
+// {
+//   ...base fields...,
+//   itemType: "drag_drop",
+//   question: "Place each finding into the correct category.",
+//   categories: [
+//     { id: "immediate", label: "Immediate Life Threat" },
+//     { id: "nonImmediate", label: "Non-Immediate Finding" },
+//   ],
+//   items: [
+//     { id: "unique-item-id", label: "Finding text", correctCategory: "immediate" },
+//     { id: "unique-item-id-2", label: "Finding text", correctCategory: "nonImmediate" },
+//   ],
+//   explanation: "...",
+// },
+//
+// --- options_table: a row-by-row classification table. Dichotomous overall
+//     (every row must be correct).
+// {
+//   ...base fields...,
+//   itemType: "options_table",
+//   question: "For each finding, identify whether it represents X or Y.",
+//   options: ["Classification A", "Classification B"],   // shared by every row
+//   rows: [
+//     { id: "row-1", finding: "Finding text", correctOptionIndex: 0 },
+//     { id: "row-2", finding: "Finding text", correctOptionIndex: 1 },
+//   ],
+//   explanation: "...",
+// },
+//
+// --- graphical: a MODIFIER, composed with any type above (never standalone).
+//     Add a `graphic` field to a multiple_choice/multiple_response/
+//     options_table/etc. question — do not set itemType to "graphical".
+// {
+//   ...base fields..., itemType: "multiple_choice" (or any other type),
+//   graphic: {
+//     kind: "ecg" | "capnography" | "image" | "chart" | "label",
+//     src: "/assets/education/graphics/....svg",   // a reference, not inline
+//                                                    // image data
+//     alt: "A plain-text description of what the graphic shows, for a11y "
+//        + "and for any text-only fallback.",
+//   },
+//   choices: [...], answerIndex: 0,
+//   explanation: "...",
+// },
+//
+// --- scenario: links several items (any of the types above, mixed) under
+//     one shared clinical case. Every linked item gets the SAME scenarioId;
+//     scenarioStage marks where in the call this item occurs.
+// {
+//   ...base fields..., itemType: "multiple_choice" (or any other type),
+//   scenarioId: "scenario-short-name-001",   // shared across every item in
+//                                             // this case
+//   scenarioStage: "en_route" | "scene" | "post_scene",
+//   question: "...",   // include enough of the scenario's shared context
+//                       // (dispatch info, findings so far) that this item
+//                       // stands on its own
+//   choices: [...], answerIndex: 0,
+//   explanation: "...",
+// },
+//
+// --- clinical judgment framework (AEMT/Paramedic-focused, optional, ADDS
+//     to any item type above — never its own itemType):
+//   clinicalJudgment: true,           // see the CROSS-CUTTING note further
+//                                      // above in this comment
+//   clinicalJudgmentStep:             // one of the six NREMT steps, only
+//                                      // when the question maps cleanly
+//                                      // onto one:
+//     "recognize_cues" | "analyze_cues" | "define_hypothesis"
+//     | "generate_solutions" | "take_action" | "evaluation"
+// A genuine clinical-judgment item requires the candidate to INTEGRATE
+// information and DECIDE, not just recall a fact — see this file's own
+// `clinicalJudgment` guidance above. It can be multiple_choice,
+// multiple_response, build_list, drag_drop, or options_table; it is a tag
+// on top of one of those, not a sixth format.
 // ----------------------------------------------------------------------------
 
 import { EMR_QUESTIONS } from "./questionsEMR.js";
