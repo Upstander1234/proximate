@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { fetchPendingQuestions, reviewQuestion } from "./crowdsource.js";
 import { fetchPendingReports, resolveReport } from "./reports.js";
 import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
+import MedicdleReviewPanel from "./MedicdleReviewPanel.jsx";
 
 export default function AdminReviewTab({ user }) {
-  const [tab, setTab] = useState("submissions"); // submissions | reports
+  const [tab, setTab] = useState("submissions"); // submissions | reports | medicdles
 
   return (
     <div className="space-y-6">
@@ -26,9 +27,19 @@ export default function AdminReviewTab({ user }) {
         >
           Reported Questions
         </button>
+<button
+          onClick={() => setTab("medicdles")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+            tab === "medicdles" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          Medicdle Submissions
+        </button>
       </nav>
 
-      {tab === "submissions" ? <SubmissionsReview user={user} /> : <ReportsReview user={user} />}
+      {tab === "submissions" && <SubmissionsReview user={user} />}
+      {tab === "reports" && <ReportsReview user={user} />}
+      {tab === "medicdles" && <MedicdleReviewPanel user={user} />}
     </div>
   );
 }

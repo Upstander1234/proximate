@@ -7,6 +7,10 @@
 // file's max id first. Renumber down when doing a final consolidation pass.
 
 import { BATCH as AEMT_CARDIOLOGY_BATCH } from "./_genbatch/aemt_cardiology.js";
+import { BATCH as AEMT_AIRWAY_BATCH } from "./_genbatch/aemt_airway.js";
+import { BATCH as AEMT_TRAUMA_BATCH } from "./_genbatch/aemt_trauma.js";
+import { BATCH as AEMT_MEDICAL_BATCH } from "./_genbatch/aemt_medical.js";
+import { BATCH as AEMT_OPS_BATCH } from "./_genbatch/aemt_ops.js";
 
 export const AEMT_QUESTIONS = [
   {
@@ -199,4 +203,8 @@ export const AEMT_QUESTIONS = [
       "IV access follows a set sequence: select the site and apply the tourniquet, cleanse the site, insert and confirm flashback, advance the catheter while releasing the tourniquet and connecting the line, then secure and document. Skipping or reordering these steps (e.g., cleansing after insertion) increases infection risk and reduces first-attempt success.",
   },
   ...AEMT_CARDIOLOGY_BATCH,
+  ...AEMT_AIRWAY_BATCH,
+  ...AEMT_TRAUMA_BATCH,
+  ...AEMT_MEDICAL_BATCH,
+  ...AEMT_OPS_BATCH,
 ];

@@ -4,8 +4,15 @@
 // no restructuring of the Dashboard or this registry itself.
 
 import MedicdleTab from "./MedicdleTab.jsx";
+import QuestionOfTheDayTab from "./QuestionOfTheDayTab.jsx";
 
 export const DAILY_CHALLENGES = [
+  {
+    key: "qotd",
+    label: "Question of the Day",
+    description: "One question, the same for everyone, once a day.",
+    Component: QuestionOfTheDayTab,
+  },
   {
     key: "medicdle",
     label: "Medicdle",

@@ -5,6 +5,7 @@ import { loadPredictionLog } from "./predictions.js";
 import { computeUserStats } from "./userStats.js";
 import { loadGlobalStats } from "./globalStats.js";
 import { firebaseConfigured } from "./firebase.js";
+import { loadDiagnosticResults } from "./diagnosticStore.js";
 
 const TILES = [
   { key: "mcq", label: "Practice Questions", desc: "Spaced-repetition MCQ practice by domain." },
@@ -17,9 +18,10 @@ const TILES = [
   { key: "methods", label: "Methods", desc: "Every calculation behind these numbers, explained plainly." },
 ];
 
-export default function EducationDashboard({ user, onNavigate }) {
+export default function EducationDashboard({ user, onNavigate, onStartStudy }) {
   const [stats, setStats] = useState(null);
   const [global, setGlobal] = useState(undefined);
+  const [latestDiagnostic, setLatestDiagnostic] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -29,6 +31,7 @@ export default function EducationDashboard({ user, onNavigate }) {
       }
     );
     loadGlobalStats().then((g) => active && setGlobal(g));
+    loadDiagnosticResults(user).then((results) => active && setLatestDiagnostic(results.at(-1) || null));
     return () => {
       active = false;
     };
@@ -50,9 +53,24 @@ export default function EducationDashboard({ user, onNavigate }) {
         </div>
       )}
 
+      {latestDiagnostic && (
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4 text-sm">
+          <div className="text-slate-400">Latest diagnostic (educational estimate)</div>
+          <div className="font-semibold text-sky-400 mt-1">{latestDiagnostic.estimatedLevel} · {latestDiagnostic.confidence}% confidence</div>
+          {latestDiagnostic.belowAreas?.length > 0 && <div className="text-slate-300 mt-1">Suggested focus: {latestDiagnostic.belowAreas.join(", ")}</div>}
+        </div>
+      )}
       {stats?.suggestion && (
         <div className="rounded-xl bg-sky-950/30 border border-sky-900 p-4 text-sm text-sky-200">
-          {stats.suggestion}
+{stats.suggestion}
+          {stats.weakestDomain && onStartStudy && (
+            <button
+              onClick={() => onStartStudy("weakest")}
+              className="mt-3 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium"
+            >
+              Start Weakest-Area Quiz
+            </button>
+          )}
         </div>
       )}
 

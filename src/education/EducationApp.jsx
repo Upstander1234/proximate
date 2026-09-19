@@ -6,10 +6,12 @@ import { isAdminUser } from "./adminConfig.js";
 import { loadProfile } from "./profile.js";
 import AuthScreen from "./AuthScreen.jsx";
 import MCQPracticeTab from "./MCQPracticeTab.jsx";
+import StudyTab from "./StudyTab.jsx";
 import AdaptiveTestTab from "./AdaptiveTestTab.jsx";
 import LecturesTab from "./LecturesTab.jsx";
 import MethodsPage from "./MethodsPage.jsx";
 import SubmitQuestionForm from "./SubmitQuestionForm.jsx";
+import SubmitMedicdleForm from "./SubmitMedicdleForm.jsx";
 import AdminReviewTab from "./AdminReviewTab.jsx";
 import ProfileSettings from "./ProfileSettings.jsx";
 import EducationDashboard from "./EducationDashboard.jsx";
@@ -21,12 +23,14 @@ import GlobalStatsTab from "./GlobalStatsTab.jsx";
 const TABS = [
   { key: "dashboard", label: "Dashboard" },
   { key: "mcq", label: "MCQ Practice" },
+  { key: "study", label: "Study" },
   { key: "adaptive", label: "Adaptive Exam" },
   { key: "assessment", label: "Assessment" },
   { key: "daily", label: "Daily Challenge" },
   { key: "stats", label: "Progress" },
   { key: "lectures", label: "Lectures", badge: "WIP" },
   { key: "submit", label: "Submit a Question" },
+  { key: "submitMedicdle", label: "Submit a Medicdle" },
   { key: "methods", label: "Methods" },
 ];
 
@@ -38,6 +42,22 @@ export default function EducationApp({ onExit }) {
   const [showMethods, setShowMethods] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profileVersion, setProfileVersion] = useState(0);
+const [submitPrefillLevel, setSubmitPrefillLevel] = useState(null);
+  const [studyLaunch, setStudyLaunch] = useState(null);
+  const [dailyLaunch, setDailyLaunch] = useState(null);
+
+  const requestSubmit = (level) => {
+    setSubmitPrefillLevel(level);
+    setTab("submit");
+  };
+  const requestStudy = (mode, level, opts) => {
+    setStudyLaunch({ mode, level, domain: opts?.domain, id: Date.now() });
+    setTab("study");
+  };
+  const requestDaily = (challenge) => {
+    setDailyLaunch({ challenge, id: Date.now() });
+    setTab("daily");
+  };
 
   useEffect(() => {
     let unsub = () => {};
@@ -132,17 +152,38 @@ export default function EducationApp({ onExit }) {
         ))}
       </nav>
 
-      {tab === "dashboard" && <EducationDashboard user={user} onNavigate={setTab} />}
-      {tab === "mcq" && <MCQPracticeTab progress={progress} onUpdateCard={updateCard} user={user} />}
+      {tab === "dashboard" && <EducationDashboard user={user} onNavigate={setTab} onStartStudy={requestStudy} />}
+      {tab === "mcq" && (
+        <MCQPracticeTab progress={progress} onUpdateCard={updateCard} user={user} onRequestSubmit={requestSubmit} />
+      )}
+      {tab === "study" && (
+        <StudyTab
+          key={studyLaunch?.id || "browse"}
+          progress={progress}
+          onUpdateCard={updateCard}
+          user={user}
+          initialMode={studyLaunch?.mode}
+          initialLevel={studyLaunch?.level}
+          initialDomain={studyLaunch?.domain}
+        />
+      )}
       {tab === "adaptive" && (
         <AdaptiveTestTab progress={progress} onUpdateCard={updateCard} onOpenMethods={() => setShowMethods(true)} user={user} />
       )}
-      {tab === "assessment" && <ProviderAssessmentTab user={user} />}
-      {tab === "daily" && <DailyChallengeTab user={user} />}
-      {tab === "stats" && <StatsTab user={user} />}
+      {tab === "assessment" && <ProviderAssessmentTab user={user} onStartStudy={requestStudy} />}
+      {tab === "stats" && <StatsTab user={user} onStartStudy={requestStudy} onNavigate={setTab} onStartDaily={requestDaily} onOpenSubmit={requestSubmit} />}
+      {tab === "daily" && (
+        <DailyChallengeTab
+          user={user}
+          initialChallenge={dailyLaunch?.challenge}
+          launchId={dailyLaunch?.id}
+          onOpenMedicdleSubmit={() => setTab("submitMedicdle")}
+        />
+      )}
       {tab === "global" && <GlobalStatsTab />}
       {tab === "lectures" && <LecturesTab onOpenPractice={() => setTab("mcq")} />}
-      {tab === "submit" && <SubmitQuestionForm user={user} />}
+      {tab === "submit" && <SubmitQuestionForm user={user} initialLevel={submitPrefillLevel} />}
+      {tab === "submitMedicdle" && <SubmitMedicdleForm user={user} />}
       {tab === "methods" && <MethodsPage onBack={() => setTab("dashboard")} />}
       {tab === "admin" && admin && <AdminReviewTab user={user} />}
     </ScreenShell>

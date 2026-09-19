@@ -2,6 +2,12 @@
 // header comment for the shared question-object shape and rules for adding one.
 // This file holds only level: "EMR" entries.
 
+import { BATCH as EMR_AIRWAY_BATCH } from "./_genbatch/emr_airway.js";
+import { BATCH as EMR_CARDIOLOGY_BATCH } from "./_genbatch/emr_cardiology.js";
+import { BATCH as EMR_MEDICAL_BATCH } from "./_genbatch/emr_medical.js";
+import { BATCH as EMR_TRAUMA_BATCH } from "./_genbatch/emr_trauma.js";
+import { BATCH as EMR_OPS_BATCH } from "./_genbatch/emr_ops.js";
+
 export const EMR_QUESTIONS = [
   {
     id: "emr-airway-001",
@@ -2016,7 +2022,7 @@ export const EMR_QUESTIONS = [
       "Attempt to disarm the threatening person.",
       "Wait for the scene to be secured before providing routine patient care."
     ],
-    correctIndices: [0, 1, 3, 5],
+    correctIndices: [0, 1, 3],
     explanation: "Scene safety comes before routine patient care. Maintaining distance, requesting appropriate assistance, preserving an escape route, and waiting for appropriate scene security are appropriate. EMS personnel should not attempt to disarm an armed threat."
   },
 
@@ -2035,7 +2041,7 @@ export const EMR_QUESTIONS = [
       "Increasing fatigue.",
       "Comfortable breathing without visible effort."
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Accessory muscle use, tripod positioning, difficulty speaking, and fatigue can all indicate significant respiratory compromise. Normal, comfortable respiratory effort is not itself a sign of distress."
   },
 
@@ -2054,7 +2060,7 @@ export const EMR_QUESTIONS = [
       "Signs of poor perfusion.",
       "A completely unrelated superficial scratch."
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Mechanism, evolving clinical findings, abdominal abnormalities, and signs of poor perfusion can all increase concern for internal injury. Normal initial vital signs do not exclude significant trauma, but they are not themselves evidence of occult bleeding."
   },
 
@@ -2255,7 +2261,7 @@ export const EMR_QUESTIONS = [
       "Transport the amputated part with the patient when possible.",
       "Scrub the amputated tissue aggressively."
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 4],
     explanation: "The patient's immediate life threats take priority. The amputated part should be protected, kept cool without direct ice contact, and transported with the patient when possible. Aggressive cleaning can damage tissue and is not appropriate."
   },
 
@@ -2400,7 +2406,7 @@ export const EMR_QUESTIONS = [
       "A downed electrical line.",
       "A routine medical complaint in a secured environment."
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Active fire, violence, hazardous materials, and electrical hazards can create immediate threats to responders. EMS should not enter until appropriate safety measures and resources are in place."
   },
 
@@ -2563,7 +2569,7 @@ export const EMR_QUESTIONS = [
       "Coordinate operations through the incident-management structure.",
       "Ignore patients who initially appear minor even if their condition changes."
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "MCI management requires resource awareness, early activation of additional resources, ongoing reassessment, and coordinated incident operations. Patients should not be permanently ignored based on an initial category."
   },
 
@@ -3178,7 +3184,7 @@ export const EMR_QUESTIONS = [
       "Improving skin color and mental status",
       "A worsening trend in vital signs"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Increasing respiratory effort, new confusion, weaker pulses, and worsening vital-sign trends can all indicate deterioration. Improvement in skin color and mental status suggests the opposite."
   },
 
@@ -3241,7 +3247,7 @@ export const EMR_QUESTIONS = [
       "Provide prolonged definitive treatment to the first patient found",
       "Reassess patients as their conditions change"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "MCI management requires ongoing triage, rapid life-saving interventions, resource requests, and reassessment. Spending disproportionate time on one patient can compromise overall incident management."
   },
   {
@@ -5250,6 +5256,7 @@ export const EMR_QUESTIONS = [
     level: "EMR",
     blueprintCategory: "sceneSafety",
     itemType: "multiple_response",
+    question: "Which scene types may require specialized resources or scene control before an EMR provides routine care? Select all that apply.",
     choices: [
       "Downed electrical lines",
       "An unsecured violent person",
@@ -5257,7 +5264,7 @@ export const EMR_QUESTIONS = [
       "An unknown chemical release",
       "A confined-space rescue"
     ],
-    correctIndices: [0, 1, 3, 4],
+    correctIndices: [0, 1, 3],
     explanation: "Downed electrical lines, unsecured violence, unknown chemical releases, and confined-space rescues can require specialized scene control or resources. A routine fall in a hazard-free environment does not inherently require specialized hazard resources."
   },
 
@@ -5284,6 +5291,7 @@ export const EMR_QUESTIONS = [
     level: "EMR",
     blueprintCategory: "primaryAssessment",
     itemType: "multiple_response",
+    question: "Which findings suggest that a medical patient's perfusion status is worsening? Select all that apply.",
     choices: [
       "Cool, pale, clammy skin",
       "Increasing confusion",
@@ -5291,7 +5299,7 @@ export const EMR_QUESTIONS = [
       "Improving mental status with normal appearance",
       "Worsening weakness"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Cool clammy skin, altered mental status, a weak rapid pulse, and worsening weakness can all be concerning signs of impaired perfusion or deterioration. Improving mental status with normal appearance is comparatively reassuring."
   },
 
@@ -5308,7 +5316,7 @@ export const EMR_QUESTIONS = [
       "Normal depth with comfortable speech",
       "Declining level of responsiveness"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Shallow breathing, severe work of breathing, cyanosis, and declining responsiveness can indicate inadequate respiratory function. Comfortable speech with normal depth is generally reassuring."
   },
 
@@ -10579,7 +10587,7 @@ export const EMR_QUESTIONS = [
     "Follow applicable documentation and medical-direction requirements",
     "Threaten the patient with arrest solely because they declined transport"
   ],
-  correctIndices: [0, 1, 2, 3],
+  correctIndices: [0, 1, 3],
   explanation: "A refusal requires more than simply accepting the patient's 'no.' The EMR should assess capacity, explain relevant risks, encourage appropriate care, follow local procedures and medical direction requirements, and document the encounter."
 },
 
@@ -10652,7 +10660,7 @@ export const EMR_QUESTIONS = [
     "Additional resources that appear necessary",
     "The favorite food of the first patient encountered"
   ],
-  correctIndices: [0, 1, 2, 3],
+  correctIndices: [0, 1, 2],
   explanation: "Early MCI communications should give responders enough information to understand the incident, recognize hazards, estimate patient burden, and identify needed resources."
 },
 
@@ -10827,7 +10835,7 @@ export const EMR_QUESTIONS = [
     "A stable finding that remains unchanged",
     "A new inability to maintain the airway"
   ],
-  correctIndices: [0, 1, 2, 4],
+  correctIndices: [0, 1, 2],
   explanation: "New or worsening abnormalities in mental status, breathing, perfusion, or airway protection can indicate deterioration. Stable findings that remain unchanged do not by themselves indicate worsening."
 },
 
@@ -10863,7 +10871,7 @@ export const EMR_QUESTIONS = [
     "Clear airway with normal breathing",
     "Obvious obstruction by secretions"
   ],
-  correctIndices: [0, 1, 2, 4],
+  correctIndices: [0, 2, 4],
   explanation: "Gurgling, vomitus, secretions, and abnormal or absent breathing can indicate airway compromise or inadequate ventilation. A clear airway with normal breathing is not itself evidence of an airway emergency."
 },
 
@@ -10917,7 +10925,7 @@ export const EMR_QUESTIONS = [
     "Increasing weakness",
     "Normal conversation with no other concerning findings"
   ],
-  correctIndices: [0, 1, 2, 3],
+  correctIndices: [0, 1, 2],
   explanation: "Shock and poor perfusion can manifest through skin, mental status, and overall patient condition before peripheral pulses become absent. A normal conversation without other concerning findings is not itself evidence of shock."
 },
 
@@ -10971,7 +10979,7 @@ export const EMR_QUESTIONS = [
     "Electrical hazards",
     "No hazards because there are no longer visible flames"
   ],
-  correctIndices: [0, 1, 2, 3],
+  correctIndices: [0, 1, 2],
   explanation: "Fire scenes can remain dangerous after visible flames are gone. Structural damage, toxic gases, heat, electrical hazards, and other hazards may persist."
 },
 
@@ -11868,7 +11876,7 @@ export const EMR_QUESTIONS = [
     "New seizure activity",
     "A request for a blanket"
   ],
-  correctIndices: [0, 1, 3, 4],
+  correctIndices: [0, 1, 4],
   explanation: "Airway compromise, focal neurologic deficits, severe respiratory difficulty, and seizures can all represent immediately dangerous causes of altered mental status. A normal baseline and a request for comfort are not, by themselves, indicators of a life threat."
 },
 
@@ -12470,7 +12478,7 @@ export const EMR_QUESTIONS = [
       "Perform a lengthy secondary assessment before beginning compressions",
       "Minimize unnecessary interruptions in chest compressions"
     ],
-    correctIndices: [0, 1, 2, 5],
+    correctIndices: [0, 1, 2],
     explanation: "Recognition of cardiac arrest should lead promptly to activation of the emergency response system, CPR, and AED use when available. A complete history and secondary assessment are not prerequisites for beginning resuscitation. Current adult BLS guidance emphasizes rapid CPR, early defibrillation when indicated, and minimizing interruptions. :contentReference[oaicite:1]{index=1}"
   },
 
@@ -12717,7 +12725,7 @@ export const EMR_QUESTIONS = [
       "Signs of severe respiratory effort or fatigue",
       "Normal skin color and behavior with no respiratory complaints"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 4],
     explanation: "Inadequate breathing may be recognized through abnormal rate or pattern, poor chest movement, altered mental status, and severe respiratory effort or fatigue. Normal speech and normal appearance without distress are less concerning findings. The principle is to assess ventilation and overall patient function rather than respiratory rate alone."
   },
 
@@ -12884,7 +12892,7 @@ export const EMR_QUESTIONS = [
       "The physical environment",
       "An unrelated person's opinion about what probably happened"
     ],
-    correctIndices: [0, 1, 2, 3, 4],
+    correctIndices: [2, 3, 4],
     explanation: "When the patient cannot provide information, responders can gather history from family, caregivers, witnesses, medications, medical identification, and scene clues. Information should be treated according to its reliability rather than assuming every statement is equally accurate."
   },
 
@@ -13146,7 +13154,7 @@ export const EMR_QUESTIONS = [
       "Motor function when appropriate",
       "The patient's favorite food"
     ],
-    correctIndices: [0, 1, 2, 3, 4],
+    correctIndices: [1, 2, 3],
     explanation: "Circulation and neurologic function distal to an injury can be assessed through findings such as color, temperature, pulse, sensation, and motor function when appropriate. These findings can change if swelling or other injury compromises circulation or nerves."
   },
 
@@ -13361,7 +13369,7 @@ export const EMR_QUESTIONS = [
       "Help maintain awareness of hazards",
       "Coordinate patient movement with the established system"
     ],
-    correctIndices: [0, 1, 2, 4, 5],
+    correctIndices: [0, 1, 4],
     explanation: "Safe MCI operations depend on coordinated command, communication, role discipline, hazard awareness, and organized patient movement. Leaving an assignment without coordination can disrupt the incident response."
   },
 
@@ -13460,7 +13468,7 @@ export const EMR_QUESTIONS = [
       "Respect the patient's concerns",
       "Remain calm when the patient is anxious"
     ],
-    correctIndices: [0, 1, 2, 4, 5],
+    correctIndices: [0, 1, 4],
     explanation: "Professional communication includes identifying yourself, communicating clearly, listening, respecting concerns, and maintaining calm behavior. Promising outcomes that cannot be guaranteed is inappropriate."
   },
 
@@ -13675,7 +13683,7 @@ export const EMR_QUESTIONS = [
       "Adequate rest and readiness",
       "Personal protective equipment"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 2],
     explanation: "Fatigue, illness, impairment, and severe emotional distress can interfere with judgment, physical performance, and safety. Adequate readiness and appropriate PPE support safe operations rather than impairing them."
   },
 
@@ -13954,7 +13962,7 @@ choices: [
 "A normal respiratory pattern with appropriate rate and effort",
 "Irregular gasping without effective ventilation"
 ],
-correctIndices: [0, 2, 3, 5],
+correctIndices: [0, 3, 5],
 explanation: "Agonal gasps, absent chest movement, cyanosis associated with inadequate breathing, and ineffective irregular gasping are concerning findings. Normal regular chest movement with an appropriate respiratory pattern indicates effective breathing and is therefore not selected."
 },
 
@@ -14102,7 +14110,7 @@ choices: [
 "Changes in the patient's condition during care",
 "Care already provided and the patient's response"
 ],
-correctIndices: [0, 1, 2, 4, 5],
+correctIndices: [0, 2, 5],
 explanation: "Symptom onset, symptom characteristics, associated findings, changes in condition, interventions, and response all contribute to an effective handoff. Irrelevant personal details should not replace clinically important information."
 },
 
@@ -14217,7 +14225,7 @@ choices: [
 "Weakness or loss of function in an extremity",
 "Increasingly pale, cool, or clammy skin with other signs of poor perfusion"
 ],
-correctIndices: [0, 1, 2, 4, 5],
+correctIndices: [0, 1, 5],
 explanation: "Altered mental status, uncontrolled hemorrhage, respiratory difficulty, neurologic deficits, and signs of poor perfusion can indicate serious injury or physiologic deterioration. A small isolated bruise without other concerning findings is not by itself evidence of a critical injury."
 },
 
@@ -14506,7 +14514,7 @@ choices: [
 "Onset and progression of the current complaint",
 "Pertinent associated symptoms"
 ],
-correctIndices: [0, 1, 2, 4, 5],
+correctIndices: [0, 4, 5],
 explanation: "Medications, allergies, medical history, symptom onset and progression, and associated symptoms can directly affect assessment and care. Irrelevant personal preferences do not substitute for clinically useful history."
 },
 
@@ -14637,7 +14645,7 @@ choices: [
 "Requesting specialized resources when the situation exceeds available capabilities",
 "Communicating significant changes to the appropriate incident authority"
 ],
-correctIndices: [0, 1, 2, 4, 5],
+correctIndices: [0, 1, 5],
 explanation: "Scene safety is dynamic. Responders should reassess hazards, use appropriate PPE, maintain situational awareness and an escape route, request needed resources, and communicate important changes. Beginning patient care does not make a hazardous scene safe."
 },
 
@@ -15082,7 +15090,7 @@ choices: [
 "Compressing only when the rescuer feels comfortable",
 "Providing appropriate ventilations"
 ],
-correctIndices: [0, 1, 2, 3, 5],
+correctIndices: [0, 1, 3],
 explanation: "High-quality CPR includes appropriate compression rate and depth, complete recoil, minimal interruptions, and appropriate ventilation. CPR quality should follow current resuscitation guidance and responder training."
 },
 
@@ -15181,7 +15189,7 @@ choices: [
 "Provide relevant assessment findings and patient response to care",
 "Use established communication pathways"
 ],
-correctIndices: [0, 1, 2, 4, 5],
+correctIndices: [0, 1, 4],
 explanation: "Clear communication includes relevant findings, changes, interventions, response, and appropriate confirmation of critical information. Failed or ineffective interventions may also be clinically relevant and should not be concealed."
 },
 
@@ -15475,7 +15483,7 @@ choices: [
 "How severe it is",
 "How it has changed over time"
 ],
-correctIndices: [0, 1, 2, 3, 4, 5],
+correctIndices: [0, 3, 4],
 explanation: "A structured symptom history explores onset, provoking or relieving factors, quality, location or radiation, severity, and timing or progression. It organizes the patient's description rather than replacing the broader assessment."
 },
 
@@ -15631,7 +15639,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "The patient becomes easier to arouse and breathing improves",
       "The airway device or oxygen equipment becomes displaced"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Worsening mental status, increased respiratory effort, worsening skin findings, or displaced equipment can indicate that respiratory support is inadequate or compromised. Improvement is a favorable response rather than a reason to escalate care."
   },
 
@@ -15819,7 +15827,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Syncope or near-syncope",
       "Pain that is always relieved immediately by changing position"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 2, 3],
     explanation: "Chest pressure, dyspnea, diaphoresis, and syncope or near-syncope can accompany serious cardiovascular conditions. A symptom that is consistently and immediately relieved by changing position is less specifically suggestive of an acute coronary emergency, although no single symptom should be used to rule one out."
   },
 
@@ -15938,7 +15946,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Changes after an intervention",
       "The patient's favorite color"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 3],
     explanation: "Distal circulation, sensation, movement, and changes following treatment are clinically relevant to extremity assessment and handoff. A patient's favorite color does not contribute to neurovascular assessment."
   },
 
@@ -16238,7 +16246,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Severe shortness of breath",
       "Mild hunger before a scheduled meal"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 2],
     explanation: "Significant bleeding, severe pain, syncope or near-syncope, and severe respiratory symptoms can indicate serious maternal or obstetric problems. Mild hunger without other concerning findings is not itself a major emergency indicator."
   },
 
@@ -16410,7 +16418,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Perform only the tasks appropriate to the responder's assignment and training",
       "Independently redirect ambulances without authorization"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 3],
     explanation: "Accurate information, appropriate resource requests, incident organization, and adherence to assigned roles help coordinate an MCI. Independently redirecting system resources can interfere with command and patient distribution."
   },
 
@@ -16526,7 +16534,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Treat potentially infectious body fluids as exposure risks",
       "Reuse contaminated disposable PPE between unrelated patients"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 3],
     explanation: "PPE, hand hygiene, appropriate equipment decontamination, and standard precautions reduce exposure and transmission risks. Disposable contaminated PPE should not simply be reused between patients."
   },
 
@@ -16682,7 +16690,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Syncope or near-syncope",
       "A request to adjust the room temperature"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 2, 4],
     explanation: "Altered mental status, cool or pale skin, worsening dyspnea, and syncope can indicate inadequate perfusion or worsening cardiovascular instability. Appetite and room-temperature preferences are not useful indicators of cardiac deterioration."
   },
 
@@ -17186,7 +17194,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Communicate relevant hazards to incoming responders",
       "Allow unprotected bystanders to enter the work area"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 4],
     explanation: "Scene assessment includes identifying hazards, using appropriate PPE, determining resource needs, and communicating hazards to other responders. Entering an uncontrolled hazard area or allowing unnecessary people into it increases risk."
   },
   {
@@ -18120,7 +18128,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "The patient's last vacation destination",
       "The color and temperature of the extremity"
     ],
-    correctIndices: [0, 1, 2, 5],
+    correctIndices: [0, 1, 5],
     explanation: "Distal circulation or perfusion, sensation, motor function when appropriate, and the extremity's color and temperature help identify neurovascular compromise. Personal preferences and unrelated history do not assess distal neurovascular status."
   },
 
@@ -18952,7 +18960,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "A patient whose symptoms are rapidly changing",
       "A patient who is simply waiting for paperwork"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 4],
     explanation: "Patients who are unstable, deteriorating, rapidly changing, or have received treatment for a serious problem warrant close reassessment. A completely stable patient generally requires less frequent reassessment, while paperwork does not determine clinical monitoring frequency."
   },
   {
@@ -21126,7 +21134,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "The patient thanks the crew",
       "Traffic begins moving into the treatment area"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 4],
     explanation: "Scenes are dynamic. Violence, fire, hazardous materials, and traffic can develop or worsen after the initial size-up. Patient gratitude is not itself a safety hazard."
   },
   {
@@ -21159,7 +21167,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Altered mental status associated with respiratory compromise",
       "Easy speech in complete sentences with normal effort"
     ],
-    correctIndices: [0, 1, 2, 3],
+    correctIndices: [0, 1, 3],
     explanation: "Inadequate breathing may manifest through severe work of breathing, poor chest movement, altered mental status, and signs of inadequate oxygenation. Speaking comfortably in complete sentences with normal effort is generally reassuring rather than evidence of inadequate breathing."
   },
   {
@@ -21246,7 +21254,7 @@ explanation: "A structured symptom history explores onset, provoking or relievin
       "Isolated mild itching without other symptoms",
       "Altered mental status associated with poor perfusion"
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation: "Anaphylaxis can produce airway edema, bronchospasm, hypotension, and altered mental status from poor perfusion. Mild isolated itching is an allergic finding but does not by itself indicate severe anaphylaxis."
   },
   {
@@ -21353,6 +21361,11 @@ explanation: "A structured symptom history explores onset, provoking or relievin
     ],
     answerIndex: 0,
     explanation: "A patient with severe bronchospasm may initially wheeze loudly but develop minimal air movement as obstruction worsens. A quiet chest in a severely distressed patient can therefore be an ominous sign."
-  }
+  },
+  ...EMR_AIRWAY_BATCH,
+  ...EMR_CARDIOLOGY_BATCH,
+  ...EMR_MEDICAL_BATCH,
+  ...EMR_TRAUMA_BATCH,
+  ...EMR_OPS_BATCH,
 ];
 

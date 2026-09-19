@@ -670,7 +670,7 @@ export const BATCH = [
       "Bradycardia with normal blood pressure as a consistent early finding",
       "Progressive hypotension and respiratory distress",
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation:
       "JVD, tracheal deviation away from the affected side, absent/diminished breath sounds on the affected side, and progressive hypotension with respiratory distress are all classic findings of tension pneumothorax. Tachycardia, not bradycardia with normal blood pressure, is the more typical early finding as the patient compensates for worsening physiology.",
   },
@@ -953,7 +953,7 @@ export const BATCH = [
       "A patient who is alert, sober, and pain-free after a very low-energy mechanism with no tenderness",
       "A distracting painful injury elsewhere on the body",
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation:
       "Midline spinal tenderness, focal neurological deficits, intoxication that impairs reliable assessment, and a distracting painful injury are all red flags that indicate spinal motion restriction should be applied under selective clearance criteria. A fully alert, sober, pain-free patient with no tenderness after a low-energy mechanism generally does not require spinal motion restriction.",
   },
@@ -1248,7 +1248,7 @@ export const BATCH = [
       "A strong, bounding pulse with warm skin as the first sign",
       "Pallor and a tense, swollen compartment",
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation:
       "Pain out of proportion, pain with passive stretch, paresthesia, and pallor with tense swelling are early to intermediate signs of compartment syndrome. A strong, bounding pulse with warm skin is not a described early sign; pulselessness is actually a very late finding, and early compartment syndrome does not typically present with warm, well-perfused-appearing skin as its hallmark.",
   },
@@ -1808,7 +1808,7 @@ export const BATCH = [
       "A single, minor superficial abrasion with normal vital signs and no other findings",
       "Flail chest on exam",
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation:
       "A GCS of 12 (Step 1 physiologic), systolic blood pressure under 90 (Step 1 physiologic), a significant fall height (Step 3 mechanism), and flail chest (Step 2 anatomic) all independently meet CDC field triage criteria for trauma center transport. A single minor superficial abrasion with otherwise normal findings does not meet any of these criteria on its own.",
   },
@@ -2090,7 +2090,7 @@ export const BATCH = [
       "Submerge the amputated part directly in ice water with no protective wrapping",
       "Keep the sealed bag cool by placing it in a container with ice, avoiding direct tissue contact with ice",
     ],
-    correctIndices: [0, 1, 2, 4],
+    correctIndices: [0, 1, 2],
     explanation:
       "Gently rinsing gross debris (per protocol), wrapping in saline-moistened sterile gauze, sealing in a plastic bag, and keeping the bag cool in a container with ice while avoiding direct ice contact with the tissue are all correct steps to preserve amputated tissue viability. Submerging the part directly in ice water without protective wrapping risks tissue damage from direct cold exposure and maceration.",
   },
@@ -2420,7 +2420,7 @@ export const BATCH = [
       "Monitor closely for airway compromise from expanding hematoma or direct airway injury",
       "Maintain a high index of suspicion for associated major vascular or airway injury given the neck's anatomy",
     ],
-    correctIndices: [0, 1, 3, 4],
+    correctIndices: [0, 1, 3],
     explanation:
       "Direct pressure (avoiding simultaneous bilateral carotid compression, which could cause cerebral ischemia), an occlusive dressing over an open wound near major neck vessels (to help prevent air embolism through an open venous injury), close airway monitoring, and high suspicion for major vascular/airway injury are all appropriate given the neck's dense concentration of critical structures. Aggressively probing the wound risks worsening injury to underlying vital structures and should never be done.",
   },

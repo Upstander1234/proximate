@@ -29,6 +29,7 @@
 
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";
 import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
+import { LEVELS } from "./questions.js";
 
 export const crowdsourceEnabled = firebaseConfigured;
 
@@ -49,7 +50,12 @@ export async function submitQuestion(user, draft) {
     question: (draft.question || "").trim(),
     explanation: (draft.explanation || "").trim(),
     domain: draft.domain,
-    level: "EMT", // EMT-B only for this release, regardless of what the form is later extended to accept
+    // Any real level the form offers (core EMS or an Other Provider
+    // Practice level) — validated here rather than trusted from the
+    // client, same discipline as validateItemTypeShape below. Falls back
+    // to EMT if the client somehow sent something unrecognized rather than
+    // silently accepting an arbitrary string into the pool filters.
+    level: LEVELS.includes(draft.level) ? draft.level : "EMT",
     status: "pending",
     submittedBy: user.uid,
     submittedByName: user.name,

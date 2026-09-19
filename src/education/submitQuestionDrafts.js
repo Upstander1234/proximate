@@ -4,7 +4,7 @@
 // only ever exercised live through a signed-in Firebase auth flow this
 // environment has no way to script headlessly.
 
-import { DOMAINS_BY_LEVEL } from "./questions.js";
+import { DOMAINS_BY_LEVEL, LEVELS } from "./questions.js";
 
 export const ITEM_TYPE_LABELS = {
   multiple_choice: "Multiple Choice",
@@ -14,11 +14,18 @@ export const ITEM_TYPE_LABELS = {
   options_table: "Options Table (classify each row)",
 };
 
-const EMPTY_BASE = { domain: DOMAINS_BY_LEVEL.EMT[0], question: "", explanation: "" };
+function blankBaseFor(level) {
+  const lvl = LEVELS.includes(level) ? level : "EMT";
+  return { level: lvl, domain: DOMAINS_BY_LEVEL[lvl][0], question: "", explanation: "" };
+}
 
 // One blank starting draft per item type — see itemTypes.js's own header
-// for the full field reference each of these shapes follows.
-export function blankDraftFor(itemType) {
+// for the full field reference each of these shapes follows. `level`
+// defaults to "EMT" but the caller (SubmitQuestionForm) can start a draft
+// pre-targeted at any real level, e.g. an "Other Provider Practice" level
+// whose empty bank pointed the contributor here.
+export function blankDraftFor(itemType, level) {
+  const EMPTY_BASE = blankBaseFor(level);
   switch (itemType) {
     case "multiple_response":
       return { ...EMPTY_BASE, itemType, choices: ["", "", "", "", ""], correctIndices: [] };

@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DAILY_CHALLENGES } from "./dailyChallenge.js";
 
-export default function DailyChallengeTab({ user }) {
-  const [active, setActive] = useState(DAILY_CHALLENGES[0]?.key || null);
+// initialChallenge/launchId let recommendations deep-link straight to a
+// specific daily game (e.g. QOTD or Medicdle). onOpenMedicdleSubmit opens the
+// "Submit a Medicdle" form from the Medicdle community-stats footer.
+export default function DailyChallengeTab({ user, initialChallenge, launchId, onOpenMedicdleSubmit }) {
+  const validKeys = new Set(DAILY_CHALLENGES.map((c) => c.key));
+  const [active, setActive] = useState(() =>
+    initialChallenge && validKeys.has(initialChallenge) ? initialChallenge : DAILY_CHALLENGES[0]?.key || null
+  );
+
+  // launchId changes only when a recommendation explicitly asked for a
+  // different game, so this event-driven sync is the supported pattern (the
+  // same "setTimeout in effect" shape MedicdleCommunityStats.jsx already
+  // uses to satisfy react-hooks/set-state-in-effect).
+  useEffect(() => {
+    if (!launchId) return;
+    if (initialChallenge && validKeys.has(initialChallenge)) {
+      const t = setTimeout(() => setActive(initialChallenge), 0);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchId]);
 
   if (DAILY_CHALLENGES.length === 0) {
     return <div className="text-slate-400 text-center py-20">No daily challenges available yet.</div>;
@@ -27,7 +46,12 @@ export default function DailyChallengeTab({ user }) {
           ))}
         </div>
       )}
-      {activeChallenge && <activeChallenge.Component user={user} />}
+      {activeChallenge && (
+        <activeChallenge.Component
+          user={user}
+          {...(activeChallenge.key === "medicdle" ? { onOpenSubmit: onOpenMedicdleSubmit } : {})}
+        />
+      )}
     </div>
   );
 }

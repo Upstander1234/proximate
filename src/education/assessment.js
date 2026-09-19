@@ -9,7 +9,7 @@
 // Reuses the existing question pool/randomization/itemStats machinery —
 // no separate question data, no new physiology/content.
 
-import { LEVELS } from "./questions.js";
+import { CORE_LEVELS } from "./questions.js";
 import { poolByLevel } from "./questionPool.js";
 
 export const DISCLAIMER =
@@ -21,7 +21,12 @@ export const DISCLAIMER =
 // low to credit, i.e. "not there yet."
 export const LADDER = ["Layperson", "EMR", "EMT", "AEMT", "Paramedic", "Other"];
 
-const QUESTION_LEVELS = LEVELS.filter((l) => l !== "Other"); // "Other" has no bank questions today
+// The diagnostic ladder walk only ever covers the four core EMS levels —
+// Other Provider Practice levels (Wilderness First Responder, etc.) are a
+// separate, non-ladder category (questions.js's OTHER_PROVIDER_LEVELS) and
+// were never part of this progression, even back when they were all
+// collapsed into one "Other" bank-level string.
+const QUESTION_LEVELS = CORE_LEVELS;
 const PER_LEVEL = 6;
 const PASS_ACCURACY = 0.7;
 const MIN_LEVEL_SAMPLE = 3;

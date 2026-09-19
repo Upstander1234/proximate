@@ -1,0 +1,15 @@
+[BABEL] Note: The code generator has deoptimised the styling of C:\Users\trana\proximate\.claude\worktrees\agent-a75b746611150ec05\src\App.jsx as it exceeds the max of 500KB.
+[BABEL] Note: The code generator has deoptimised the styling of C:\Users\trana\proximate\src\App.jsx as it exceeds the max of 500KB.
+
+C:\Users\trana\proximate\.claude\worktrees\agent-a75b746611150ec05\src\App.jsx
+   106:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   385:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  1235:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\trana\proximate\src\App.jsx
+   106:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   385:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  1234:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 6 problems (6 errors, 0 warnings)
+

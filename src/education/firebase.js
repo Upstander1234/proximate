@@ -32,13 +32,16 @@
 //
 // Restart `npm run dev` after adding the .env.local file.
 
+// `import.meta.env` only exists under Vite. Node-based verification scripts
+// import modules that (transitively) import this file — optional chaining
+// keeps that working (no Firebase config under plain Node: guest/local mode).
 const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env?.VITE_FIREBASE_APP_ID,
 };
 
 export const firebaseConfigured = Boolean(config.apiKey && config.projectId);

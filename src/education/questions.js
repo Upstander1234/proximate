@@ -30,20 +30,41 @@
 // DOMAINS_BY_LEVEL below) and only that level's questions.
 // ============================================================================
 
-export const LEVELS = ["EMR", "EMT", "AEMT", "Paramedic", "Other"];
+// The four core EMS certification exams — the progression every
+// diagnostic/adaptive-exam/campaign mechanic assumes a straight ladder
+// through (EMR -> EMT -> AEMT -> Paramedic). Never add a non-core level to
+// this array — see OTHER_PROVIDER_LEVELS below for anything else.
+export const CORE_LEVELS = ["EMR", "EMT", "AEMT", "Paramedic"];
+
+// Real, recognizable EMS/prehospital provider levels and certification
+// exams OUTSIDE the core EMR->EMT->AEMT->Paramedic ladder — grouped
+// separately in the UI as "Other Provider Practice" (never treated as a
+// single undifferentiated "Other" bucket, and never mixed into the core
+// ladder above). Each is its own selectable level with its own question
+// pool, even while that pool is empty (see EducationApp/MCQPracticeTab's
+// "no questions available yet — submit some" empty-state handling).
+export const OTHER_PROVIDER_LEVELS = [
+  "Wilderness First Responder",
+  "Critical Care Paramedic",
+  "Flight/Transport Medic",
+  "Tactical EMS",
+  "Community Paramedicine",
+];
+
+// The full flat list — most of the codebase (question pool filtering,
+// level dropdowns, etc.) only needs "every level that exists" and doesn't
+// care about the core/other distinction; CORE_LEVELS/OTHER_PROVIDER_LEVELS
+// above are for the two UI spots that must visually separate them.
+export const LEVELS = [...CORE_LEVELS, ...OTHER_PROVIDER_LEVELS];
 
 // Which domain buttons show up on the dashboard for a given certification
 // level. EMT is split exactly as requested: Airway, Cardiology, Trauma,
-// Medical + OBGYN, EMS Operations. Other levels default to the same five
-// until level-specific content/splits are added — extend this map (and add
-// questions tagged with that `level`) whenever that's wanted.
-export const DOMAINS_BY_LEVEL = {
-  EMR: ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"],
-  EMT: ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"],
-  AEMT: ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"],
-  Paramedic: ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"],
-  Other: ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"],
-};
+// Medical + OBGYN, EMS Operations. Every other level (core or Other
+// Provider Practice) defaults to the same five until level-specific
+// content/splits are added — extend this map (and add questions tagged
+// with that `level`) whenever that's wanted.
+const DEFAULT_DOMAINS = ["Airway", "Cardiology", "Trauma", "Medical + OBGYN", "EMS Operations"];
+export const DOMAINS_BY_LEVEL = Object.fromEntries(LEVELS.map((lvl) => [lvl, DEFAULT_DOMAINS]));
 
 // Back-compat flat list (union of every level's domains), still useful for
 // anything that wants "every domain that exists" regardless of level.

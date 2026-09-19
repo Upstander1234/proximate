@@ -1,29 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadProgress } from "./store.js";
 import { getQuestionPool } from "./questionPool.js";
 import { loadPredictionLog } from "./predictions.js";
 import { loadProfile } from "./profile.js";
 import { computeUserStats } from "./userStats.js";
+import { computeAnalytics } from "./analytics.js";
+import { buildRecommendations } from "./recommendations.js";
+import { loadDiagnosticResults } from "./diagnosticStore.js";
+import { loadStudyLog } from "./studyLog.js";
+import { loadQotdLog } from "./qotd.js";
+import { loadMedicdleLog } from "./eduMedicdle.js";
 
-export default function StatsTab({ user }) {
-  const [stats, setStats] = useState(null);
+export default function StatsTab({ user, onStartStudy, onNavigate, onStartDaily }) {
+  const [data, setData] = useState(null);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     let active = true;
-    Promise.all([loadProgress(user), getQuestionPool(), loadPredictionLog(user), loadProfile(user)]).then(
-      ([progress, pool, predictionLog, prof]) => {
-        if (!active) return;
-        setStats(computeUserStats(progress, pool, predictionLog));
-        setProfile(prof);
-      }
-    );
+    Promise.all([
+      loadProgress(user),
+      getQuestionPool(),
+      loadPredictionLog(user),
+      loadProfile(user),
+      loadDiagnosticResults(user),
+      loadStudyLog(user),
+      loadQotdLog(user),
+      loadMedicdleLog(user),
+    ]).then(([progress, pool, predictionLog, prof, diagnostics, studyLog, qotdLog, medicdleLog]) => {
+      if (!active) return;
+      const stats = computeUserStats(progress, pool, predictionLog);
+      const analytics = computeAnalytics({ progress, pool, predictionLog, studyLog, diagnostics, stats });
+      setData({ progress, pool, predictionLog, stats, analytics, diagnostics, studyLog, qotdLog, medicdleLog });
+      setProfile(prof);
+    });
     return () => {
       active = false;
     };
   }, [user]);
 
-  if (!stats) return <div className="text-slate-400 text-center py-20">Loading…</div>;
+  const recommendations = useMemo(() => {
+    if (!data) return [];
+    return buildRecommendations({
+      diagnostics: data.diagnostics,
+      stats: data.stats,
+      analytics: data.analytics,
+      profile,
+      studyLog: data.studyLog,
+      qotdLog: data.qotdLog,
+      medicdleLog: data.medicdleLog,
+    });
+  }, [data, profile]);
+
+  if (!data) return <div className="text-slate-400 text-center py-20">Loading…</div>;
+  const { stats, analytics, studyLog } = data;
+  void studyLog;
 
   return (
     <div className="space-y-6">
@@ -44,7 +74,61 @@ export default function StatsTab({ user }) {
 
       {stats.suggestion && (
         <div className="rounded-xl bg-sky-950/30 border border-sky-900 p-4 text-sm text-sky-200">
-          {stats.suggestion}
+{stats.suggestion}
+          {stats.weakestDomain && onStartStudy && (
+            <button
+              onClick={() => onStartStudy("weakest")}
+              className="mt-3 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium"
+            >
+              Start Weakest-Area Quiz
+            </button>
+          )}
+        </div>
+      )}
+
+      {recommendations.length > 0 && (
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
+          <div className="font-semibold mb-1">Recommended next steps</div>
+          <div className="text-xs text-slate-500 mb-3">
+            Built only from your real results — assessments, mistakes, reviews, and quizzes.
+          </div>
+          <div className="space-y-2">
+            {recommendations.map((r) => (
+              <div
+                key={r.id}
+                className="rounded-lg border border-slate-800 bg-slate-950/40 p-3 flex items-start justify-between gap-3"
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-200">{r.title}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{r.detail}</div>
+                </div>
+                {onStartStudy && r.action?.kind === "study" && (
+                  <button
+                    onClick={() => onStartStudy(r.action.mode, r.action.level, { domain: r.action.domain })}
+                    className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium"
+                  >
+                    {r.actionLabel || "Start"}
+                  </button>
+                )}
+                {onNavigate && r.action?.kind === "tab" && !r.action?.challenge && (
+                  <button
+                    onClick={() => onNavigate(r.action.tab)}
+                    className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-medium"
+                  >
+                    {r.actionLabel || "Open"}
+                  </button>
+                )}
+                {onStartDaily && r.action?.kind === "tab" && r.action?.challenge && (
+                  <button
+                    onClick={() => onStartDaily(r.action.challenge)}
+                    className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-medium"
+                  >
+                    {r.actionLabel || "Open"}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -107,7 +191,7 @@ export default function StatsTab({ user }) {
         </div>
       )}
 
-      {stats.calibrationBias != null && (
+      {stats.calibrationBias != null && analytics.calibration.length > 0 && (
         <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
           <div className="font-semibold mb-1">Predicted vs. actual performance</div>
           <div className="text-sm text-slate-400 mb-3">

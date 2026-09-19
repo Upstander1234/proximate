@@ -1585,7 +1585,7 @@ export const BATCH = [
       "A family member must co-sign the refusal in every case",
       "The patient understands the information provided",
     ],
-    correctIndices: [0, 1, 3, 5],
+    correctIndices: [0, 1, 3],
     explanation:
       "A valid refusal requires the patient to have decision-making capacity, be informed of risks/benefits/alternatives, understand that information, and have the encounter properly documented. The AEMT's personal agreement with the decision is irrelevant to validity, and a family co-signature is not universally required for a competent adult's own refusal.",
   },
@@ -1607,7 +1607,7 @@ export const BATCH = [
       "A patient complaining of a headache",
       "Signs the scene is not yet secured, such as active shouting or fighting audible on arrival",
     ],
-    correctIndices: [0, 1, 3, 5],
+    correctIndices: [0, 1, 3],
     explanation:
       "Visible weapons, an ongoing altercation, aggressive/threatening bystanders, and audible evidence the scene is not yet secured are all clear indicators of an unsafe scene requiring staging until law enforcement secures it. A known diabetes history or a headache complaint alone are patient care factors unrelated to scene safety and do not by themselves indicate danger.",
   },
@@ -2284,6 +2284,7 @@ export const BATCH = [
       "Rescue breaths are given for apneic children before determining deceased/expectant status",
       "Children are never assigned the minor/green category",
       "Children who can walk are still individually assessed using the full physiologic criteria before being tagged minor",
+      "Capillary refill is never used as a perfusion criterion in JumpSTART",
     ],
     correctIndices: [0, 1],
     explanation:

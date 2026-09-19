@@ -4,8 +4,12 @@
 
 import { BATCH as MEDIC_AIRWAY_BATCH } from "./_genbatch/medic_airway.js";
 import { BATCH as MEDIC_OPS_BATCH } from "./_genbatch/medic_ops.js";
+import { BATCH as MEDIC_TRAUMA_BATCH } from "./_genbatch/medic_trauma.js";
+import { BATCH as MEDIC_MEDICAL_BATCH } from "./_genbatch/medic_medical.js";
 
 export const PARAMEDIC_QUESTIONS = [
   ...MEDIC_AIRWAY_BATCH,
   ...MEDIC_OPS_BATCH,
+  ...MEDIC_TRAUMA_BATCH,
+  ...MEDIC_MEDICAL_BATCH,
 ];

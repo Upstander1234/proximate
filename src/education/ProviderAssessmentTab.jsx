@@ -3,8 +3,9 @@ import { getQuestionPool } from "./questionPool.js";
 import { buildAssessmentSet, computeAssessmentResult, DISCLAIMER } from "./assessment.js";
 import { randomizePresentation } from "./randomize.js";
 import { recordResponse } from "./itemStats.js";
+import { recordDiagnosticResult } from "./diagnosticStore.js";
 
-export default function ProviderAssessmentTab({ user }) {
+export default function ProviderAssessmentTab({ user, onStartStudy }) {
   const [phase, setPhase] = useState("intro"); // intro | quiz | results
   const [pool, setPool] = useState(null);
   const [quiz, setQuiz] = useState(null);
@@ -49,7 +50,7 @@ export default function ProviderAssessmentTab({ user }) {
     const q = quiz[idx];
     if (!q) {
       const result = computeAssessmentResult(responses);
-      return <Results result={result} onRestart={() => setPhase("intro")} />;
+      return <Results result={result} user={user} onRestart={() => setPhase("intro")} onStartStudy={onStartStudy} />;
     }
     return (
       <AssessmentQuestion
@@ -115,7 +116,8 @@ function AssessmentQuestion({ q, position, user, onAnswered }) {
   );
 }
 
-function Results({ result, onRestart }) {
+function Results({ result, user, onRestart, onStartStudy }) {
+  useEffect(() => { recordDiagnosticResult(user, result); }, [user, result]);
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center space-y-2">
@@ -159,6 +161,15 @@ function Results({ result, onRestart }) {
             </div>
           )}
         </div>
+      )}
+
+      {result.belowAreas.length > 0 && onStartStudy && (
+        <button
+          onClick={() => onStartStudy("custom", result.estimatedLevel === "Layperson" ? "EMR" : result.estimatedLevel, { domain: result.belowAreas[0] })}
+          className="w-full py-3 rounded-lg bg-sky-600 hover:bg-sky-500 font-medium"
+        >
+          Start a {result.belowAreas[0]} review
+        </button>
       )}
 
       <button onClick={onRestart} className="w-full py-3 rounded-lg bg-slate-800 hover:bg-slate-700 font-medium">

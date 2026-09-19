@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { DOMAINS_BY_LEVEL } from "./questions.js";
+import { DOMAINS_BY_LEVEL, LEVELS, CORE_LEVELS, OTHER_PROVIDER_LEVELS } from "./questions.js";
 import { crowdsourceEnabled, submitQuestion } from "./crowdsource.js";
 import { ITEM_TYPES, validateItemTypeShape } from "./itemTypes.js";
 import { ITEM_TYPE_LABELS, blankDraftFor, textFieldsFilled, finalizeDraft } from "./submitQuestionDrafts.js";
 
-export default function SubmitQuestionForm({ user }) {
-  const [draft, setDraft] = useState(() => blankDraftFor("multiple_choice"));
+export default function SubmitQuestionForm({ user, initialLevel }) {
+  const startLevel = LEVELS.includes(initialLevel) ? initialLevel : "EMT";
+  const [draft, setDraft] = useState(() => blankDraftFor("multiple_choice", startLevel));
   const [status, setStatus] = useState(null); // null | "submitting" | "done" | error string
   // Hooks must run unconditionally (before either early return below), per
   // React's own rules-of-hooks — harmless to compute even when the form
@@ -44,7 +45,12 @@ export default function SubmitQuestionForm({ user }) {
 
   const changeItemType = (itemType) => {
     if (itemType === draft.itemType) return;
-    setDraft((d) => ({ ...blankDraftFor(itemType), domain: d.domain }));
+    setDraft((d) => ({ ...blankDraftFor(itemType, d.level), domain: d.domain }));
+  };
+
+  const changeLevel = (level) => {
+    if (level === draft.level) return;
+    setDraft((d) => ({ ...d, level, domain: DOMAINS_BY_LEVEL[level][0] }));
   };
 
   const submit = async () => {
@@ -52,7 +58,7 @@ export default function SubmitQuestionForm({ user }) {
     try {
       await submitQuestion(user, finalized);
       setStatus("done");
-      setDraft(blankDraftFor("multiple_choice"));
+      setDraft(blankDraftFor("multiple_choice", draft.level));
     } catch (e) {
       setStatus(e.message || "Something went wrong.");
     }
@@ -63,9 +69,8 @@ export default function SubmitQuestionForm({ user }) {
       <div>
         <h1 className="text-3xl font-bold">Submit a Question</h1>
         <p className="text-slate-400 mt-2">
-          EMT-B only for this release. Your question enters a pending queue and is reviewed by an admin for
-          medical accuracy, correct-answer correctness, EMT-B appropriateness, and a well-formed answer key
-          before it's usable by anyone.
+          Your question enters a pending queue and is reviewed by an admin for medical accuracy, correct-answer
+          correctness, level appropriateness, and a well-formed answer key before it's usable by anyone.
         </p>
       </div>
 
@@ -78,6 +83,29 @@ export default function SubmitQuestionForm({ user }) {
         </div>
       ) : (
         <div className="space-y-4">
+          <Field label="Provider level">
+            <select
+              value={draft.level}
+              onChange={(e) => changeLevel(e.target.value)}
+              className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2"
+            >
+              <optgroup label="Core EMS Exams">
+                {CORE_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    {lvl}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Other Provider Practice">
+                {OTHER_PROVIDER_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    {lvl}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </Field>
+
           <Field label="Question type">
             <select
               value={draft.itemType}
@@ -98,7 +126,7 @@ export default function SubmitQuestionForm({ user }) {
               onChange={(e) => setDraft((d) => ({ ...d, domain: e.target.value }))}
               className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2"
             >
-              {DOMAINS_BY_LEVEL.EMT.map((d) => (
+              {DOMAINS_BY_LEVEL[draft.level].map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
