@@ -37,6 +37,7 @@
 //     allow update: if request.auth != null && request.auth.token.admin == true;
 //   }
 
+import { cachedFetch, invalidateCached } from "./cachedFetch.js";
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";
 import { CONDITION_LIST, CONDITION_META } from "../data/customScenario.js";
 import { STAGES } from "./medicdleData.js";
@@ -367,8 +368,12 @@ export async function fetchMyMedicdleSubmissions(user) {
 
 // The approved pool. This is the ONLY way an approved submission becomes
 // playable, and it re-validates each document before handing it over.
-export async function fetchApprovedMedicdleCases() {
-  if (!firebaseConfigured) return [];
+export function fetchApprovedMedicdleCases() {
+  if (!firebaseConfigured) return Promise.resolve([]);
+  return cachedFetch("approvedMedicdleCases", loadApprovedMedicdleCases);
+}
+
+async function loadApprovedMedicdleCases() {
   const approved = await fetchMedicdleSubmissionsByStatus(MEDICDLE_STATUS.APPROVED);
   const out = [];
   for (const s of approved) {
@@ -391,7 +396,7 @@ export async function reviewMedicdleSubmission(submission, decision, admin, { no
 
   const db = await getFirebaseDb();
   const { doc, updateDoc } = await import("firebase/firestore");
-  return updateDoc(doc(db, "medicdleSubmissions", submission.id), {
+  const res = await updateDoc(doc(db, "medicdleSubmissions", submission.id), {
     status: decision,
     reviewedBy: admin.uid,
     reviewedByName: admin.name,
@@ -411,4 +416,6 @@ export async function reviewMedicdleSubmission(submission, decision, admin, { no
       },
     ],
   });
+  invalidateCached("approvedMedicdleCases");
+  return res;
 }

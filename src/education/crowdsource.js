@@ -27,6 +27,7 @@
 //     allow update: if request.auth != null && request.auth.token.admin == true;
 //   }
 
+import { cachedFetch, invalidateCached } from "./cachedFetch.js";
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";
 import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
 import { LEVELS } from "./questions.js";
@@ -100,8 +101,12 @@ export async function fetchPendingQuestions() {
 // are stripped since a runtime consumer has no use for them.
 const BOOKKEEPING_FIELDS = new Set(["status", "submittedBy", "submittedByName", "submittedAt", "reviewedBy", "reviewedByName", "reviewedAt", "reviewNotes"]);
 
-export async function fetchApprovedCrowdsourced() {
-  if (!firebaseConfigured) return [];
+export function fetchApprovedCrowdsourced() {
+  if (!firebaseConfigured) return Promise.resolve([]);
+  return cachedFetch("approvedCrowdsourced", loadApprovedCrowdsourced);
+}
+
+async function loadApprovedCrowdsourced() {
   try {
     const db = await getFirebaseDb();
     const { collection, query, where, getDocs } = await import("firebase/firestore");
@@ -150,11 +155,13 @@ export async function reviewQuestion(question, decision, admin, notes) {
   }
   const db = await getFirebaseDb();
   const { doc, updateDoc } = await import("firebase/firestore");
-  return updateDoc(doc(db, "crowdsourcedQuestions", question.id), {
+  const res = await updateDoc(doc(db, "crowdsourcedQuestions", question.id), {
     status: decision, // "approved" | "rejected"
     reviewedBy: admin.uid,
     reviewedByName: admin.name,
     reviewedAt: Date.now(),
     reviewNotes: notes || "",
   });
+  invalidateCached("approvedCrowdsourced");
+  return res;
 }

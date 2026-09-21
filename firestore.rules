@@ -61,16 +61,16 @@ service cloud.firestore {
 
     match /eduGlobalStats/{id} {
       // Aggregate, non-identifying engagement counters (globalStats.js).
-      // Reads are public; each write may only add at most 1 to known counters.
+      // Reads are public; the client batches increments, so each write may add at most 100 to known counters.
       allow read: if true;
       allow create, update: if request.auth != null
         && request.resource.data.keys().hasOnly(["totalUsers", "totalQuestionsAnswered", "totalSrsReviews", "totalExamsCompleted", "totalMedicdlePlays", "totalQotdPlays", "updatedAt"])
-        && grew("totalUsers") >= 0 && grew("totalUsers") <= 1
-        && grew("totalQuestionsAnswered") >= 0 && grew("totalQuestionsAnswered") <= 1
-        && grew("totalSrsReviews") >= 0 && grew("totalSrsReviews") <= 1
-        && grew("totalExamsCompleted") >= 0 && grew("totalExamsCompleted") <= 1
-        && grew("totalMedicdlePlays") >= 0 && grew("totalMedicdlePlays") <= 1
-        && grew("totalQotdPlays") >= 0 && grew("totalQotdPlays") <= 1;
+        && grew("totalUsers") >= 0 && grew("totalUsers") <= 100
+        && grew("totalQuestionsAnswered") >= 0 && grew("totalQuestionsAnswered") <= 100
+        && grew("totalSrsReviews") >= 0 && grew("totalSrsReviews") <= 100
+        && grew("totalExamsCompleted") >= 0 && grew("totalExamsCompleted") <= 100
+        && grew("totalMedicdlePlays") >= 0 && grew("totalMedicdlePlays") <= 100
+        && grew("totalQotdPlays") >= 0 && grew("totalQotdPlays") <= 100;
     }
 
     match /nremtPredictions/{uid} {
