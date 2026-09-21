@@ -6,7 +6,7 @@ import ScopeEditor from "./ScopeEditor.jsx";
 import { speechRecognitionAvailable } from "../hooks/useVoiceCommands.js";
 import { isTesterUnlocked } from "../testerGate.js";
 import { ASSIST_LEVELS, ASSIST_LABELS } from "../procedureAssist.js";
-import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi } from "../dialogue/dialogueManager.js";
+import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi } from "../dialogue/dialogueManager.js";
 
 // Checked once at module load (not per-render) — browser support doesn't
 // change mid-session. Effectively Chrome/Edge/Chromium-based browsers only;
@@ -233,7 +233,13 @@ export default function SettingsOverlay({g,setG}){
                   isLocalAiEnabled comment): an unset g.localAiEnabled means
                   disabled, so the chip highlighting here must match that
                   same ??false default, not the old ??true. */}
-              {[["enable",true],["disable",false]].map(([l,val])=>Chip((g.localAiEnabled??false)===val,()=>setG(s=>({...s,localAiEnabled:val})),l,l))}
+              {/* Enabling must also START the load: the boot screen's own
+                  preloadLocalAi() is a one-shot on mount and is a no-op while
+                  the flag is unset, so without this the flag flips but nothing
+                  downloads until a dialogue event lazily triggers it (status
+                  sits at "not yet downloaded" indefinitely). preload is
+                  idempotent, so re-clicking Enable is harmless. */}
+              {[["enable",true],["disable",false]].map(([l,val])=>Chip((g.localAiEnabled??false)===val,()=>{setG(s=>({...s,localAiEnabled:val}));if(val)preloadLocalAi({localAiEnabled:true});},l,l))}
               {/* Reliability fix: a real Retry control, only shown once a
                   load has genuinely failed (never decorative — clicking it
                   calls the real dialogueManager.retryLocalAi(), which
