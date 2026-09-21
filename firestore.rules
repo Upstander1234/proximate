@@ -31,11 +31,11 @@ service cloud.firestore {
       // Community per-question response aggregates (itemStats.js). Every
       // signed-in user increments these via recordResponse(), so there is no
       // owner uid; instead each write is bounded to what one real response
-      // can add (max weight is 3), only known fields may be touched, and
-      // counters can never go down or be deleted.
+      // can add (max weight is 3), and counters can never go down or be
+      // deleted. No field whitelist: setDoc writes per-choice counts as
+      // literal "choiceCounts.N" field names, which a whitelist rejected.
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
-        && request.resource.data.keys().hasOnly(["attempts", "correct", "choiceCounts", "updatedAt"])
         && grew("attempts") >= 0 && grew("attempts") <= 3
         && grew("correct") >= 0 && grew("correct") <= grew("attempts");
     }
