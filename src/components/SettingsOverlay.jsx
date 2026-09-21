@@ -6,7 +6,8 @@ import ScopeEditor from "./ScopeEditor.jsx";
 import { speechRecognitionAvailable } from "../hooks/useVoiceCommands.js";
 import { isTesterUnlocked } from "../testerGate.js";
 import { ASSIST_LEVELS, ASSIST_LABELS } from "../procedureAssist.js";
-import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi } from "../dialogue/dialogueManager.js";
+import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi, importLocalAiModel } from "../dialogue/dialogueManager.js";
+import { MODEL_ZIP_URL } from "../dialogue/modelImport.js";
 
 // Checked once at module load (not per-render) — browser support doesn't
 // change mid-session. Effectively Chrome/Edge/Chromium-based browsers only;
@@ -43,6 +44,7 @@ export default function SettingsOverlay({g,setG}){
   // early-return below) but cheap: subscribeLocalAiProgress fires once
   // synchronously and otherwise only on real progress events.
   const [aiState,setAiState]=useState(()=>getLocalAiState());
+  const [importMsg,setImportMsg]=useState("");
   useEffect(()=>subscribeLocalAiProgress(setAiState),[]);
   if(!g||!setG) return null;
   const inShift=!!g.scen||["response","approach","scene","transport","arrived"].includes(g.phase);
@@ -251,6 +253,34 @@ export default function SettingsOverlay({g,setG}){
                   again — no extra local state needed here. */}
               {aiState.status==="failed"&&Chip(false,()=>retryLocalAi(),"retry","retry")}
             </div>
+            {/* Offline fallback for when the model download keeps failing
+                (Hugging Face resets connections for some players). The player
+                downloads one zip in their browser, then imports it here;
+                modelImport.js writes it into the cache web-llm reads from.
+                WebGPU tier only, so hidden on a WASM-only browser. */}
+            {aiState.backend==="webgpu"&&(
+              <div style={{fontFamily:MONO,fontSize:10.5,color:C.faint,display:"flex",flexDirection:"column",gap:6}}>
+                <div>Downloads failing? <a href={MODEL_ZIP_URL} target="_blank" rel="noreferrer" style={{color:C.faint,textDecoration:"underline"}}>Download the model file</a> (about 290 MB), then import it:</div>
+                <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                  <label style={{cursor:"pointer"}}>
+                    <input type="file" accept=".zip,application/zip" style={{display:"none"}}
+                      onChange={async(e)=>{
+                        const f=e.target.files?.[0];e.target.value="";
+                        if(!f)return;
+                        try{
+                          await importLocalAiModel(f,setImportMsg);
+                          setG(s=>({...s,localAiEnabled:true}));
+                          setImportMsg("Imported. Loading the model…");
+                        }catch(err){
+                          setImportMsg(err?.userFacing?err.message:"Import failed. Try downloading the file again.");
+                        }
+                      }}/>
+                    {Chip(false,()=>{},"import model file","import")}
+                  </label>
+                  {importMsg&&<span>{importMsg}</span>}
+                </div>
+              </div>
+            )}
           </div>
         </Row>
 

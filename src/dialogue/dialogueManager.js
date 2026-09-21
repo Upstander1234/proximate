@@ -11,7 +11,8 @@
 // structurally falls through to tier 2/1.
 
 import { buildDialogueContext } from "./dialogueContext.js";
-import { DeterministicProvider, TemplateProvider, LocalLLMProvider, WasmLLMProvider, progressStage, MODEL_DOWNLOAD_MB, WASM_MODEL_DOWNLOAD_MB } from "./dialogueProvider.js";
+import { DeterministicProvider, TemplateProvider, LocalLLMProvider, WasmLLMProvider, progressStage, MODEL_DOWNLOAD_MB, WASM_MODEL_DOWNLOAD_MB, MODEL_ID } from "./dialogueProvider.js";
+import { importModelZip } from "./modelImport.js";
 
 // F0 item 10: "Disabled -> deterministic/contextual fallback dialogue." A
 // real on/off flag the player controls from Settings (SettingsOverlay.jsx's
@@ -218,6 +219,17 @@ export function retryLocalAi() {
 // downloading right away too, instead of a later dialogue event having to
 // wait out a fresh download on top of already having waited out the failed
 // WebGPU attempt.
+// Offline import (Settings > LOCAL AI DIALOGUE > Import model file): unpacks a
+// model zip into the browser cache, then starts a load from that cache.
+// Only the WebGPU tier uses this cache, so it needs navigator.gpu.
+export async function importLocalAiModel(file, onProgress) {
+  if (typeof navigator === "undefined" || !navigator.gpu) {
+    throw Object.assign(new Error("Importing the model file needs a WebGPU browser (Chrome or Edge)."), { userFacing: true });
+  }
+  await importModelZip(file, MODEL_ID, onProgress);
+  return localLLM.afterModelImport();
+}
+
 export function preloadLocalAi(s) {
   if (!isLocalAiEnabled(s)) return;
   if (typeof navigator !== "undefined" && navigator.gpu) {

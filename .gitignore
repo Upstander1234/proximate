@@ -27,3 +27,4 @@ tools/browser/screenshots/
 *.sln
 *.sw?
 .claude/worktrees/
+model-zip/

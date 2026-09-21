@@ -72,7 +72,7 @@ const DETERMINISTIC_LINES = {
 // consumer GPUs (this project's own simulation is the thing that needs the
 // device's real compute budget, not the dialogue layer — item 3's "the
 // LLM's job is tone/personality/continuity, not reasoning about medicine").
-const MODEL_ID = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
+export const MODEL_ID = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
 // Exposed for UI surfaces (boot screen, settings toggle — F0 item 10's
 // "showing download size") that want to state the real download size without
 // duplicating the number this file's own header comment already cites.
@@ -132,6 +132,14 @@ function withTimeout(promise, ms, label) {
 // "device" classification; `bootScreenText.js`/`SettingsOverlay.jsx` instead
 // got a short, real troubleshooting hint (hardware acceleration setting,
 // GPU driver update, edge://gpu / chrome://gpu) as the honest alternative.
+// Auto-retry policy for a load that failed in a way that LOOKS transient
+// (network reset / timeout). Hugging Face's resolve endpoint randomly resets
+// roughly half of connections from some networks, which the browser reports
+// as a CORS/"Failed to fetch" error, so one automatic retry is not enough.
+// Completed shard files persist in the browser cache between attempts, so
+// every retry resumes where the last one stopped instead of starting over.
+const AUTO_RETRY_DELAYS_MS = [2000, 4000, 8000, 15000, 30000, 45000];
+
 function classifyLoadError(e) {
   const msg = String(e?.message || e || "").toLowerCase();
   if (msg.includes("timed out")) return "timeout";
@@ -295,7 +303,7 @@ export class LocalLLMProvider {
     // whether it's still owed a retry.
     this._lastErrorKind = null;
     this._failCount = 0;
-    this._autoRetried = false;
+    this._autoRetryCount = 0; // consecutive automatic retries used; reset on success
     // Real download/compile progress (F0 item 4's "detects... download in
     // progress" — the boot screen's AI panel subscribes to this rather than
     // faking a progress bar). web-llm's own `initProgressCallback` reports
@@ -447,6 +455,7 @@ export class LocalLLMProvider {
         initProgressCallback: (report) => this._emitProgress(report),
       });
       this._engine = engine;
+      this._autoRetryCount = 0;
       this._emitProgress({ progress: 1, text: "ready" });
       return engine;
     })();
@@ -497,6 +506,16 @@ export class LocalLLMProvider {
     return this._ensureEngine();
   }
 
+  // Called after modelImport.js has written the model into the browser cache:
+  // clears any failure state and starts a real load, which now finds every
+  // file cached (checkCache() reports "cached") and never needs the network.
+  afterModelImport() {
+    this._cacheState = "cached";
+    this._autoRetryCount = 0;
+    this._failed = false;
+    return this.retry().catch(() => { /* status()/subscribeProgress already reflect the failure */ });
+  }
+
   // Fire-and-forget preload (F0 item 4/5 "download in progress" support) —
   // lets the boot screen start the real download/compile early so its
   // progress panel has something honest to show, WITHOUT ever blocking
@@ -510,7 +529,7 @@ export class LocalLLMProvider {
     this._ensureEngine().catch(() => this._maybeAutoRetry());
   }
 
-  // Reliability fix: ONE automatic retry, with a short backoff, for a
+  // Reliability fix: automatic retries, with backoff, for a
   // failure that LOOKS transient (the load timed out, or a network blip
   // on one of the model's shard fetches) rather than a hard compile/
   // adapter-request rejection — a genuinely capable device deserves a
@@ -519,18 +538,18 @@ export class LocalLLMProvider {
   // is not retried automatically, since hammering a doomed load a second
   // time buys nothing and only delays the honest "failed" status. This is
   // a real, defensible split, not a perfect one — stated honestly rather
-  // than pretending every failure mode is cleanly distinguishable. At
-  // most one automatic attempt per session (`_autoRetried`); a player can
-  // still trigger further manual attempts via retry() (Settings' Retry
-  // control), which is unlimited.
+  // than pretending every failure mode is cleanly distinguishable. Up to
+  // AUTO_RETRY_DELAYS_MS.length automatic attempts with growing backoff; a
+  // player can still trigger further manual attempts via retry() (Settings'
+  // Retry control), which is unlimited.
   _maybeAutoRetry() {
-    if (this._autoRetried) return;
     if (this._lastErrorKind !== "timeout" && this._lastErrorKind !== "network") return;
-    this._autoRetried = true;
+    if (this._autoRetryCount >= AUTO_RETRY_DELAYS_MS.length) return;
+    const delay = AUTO_RETRY_DELAYS_MS[this._autoRetryCount++];
     setTimeout(() => {
       if (this._engine || this._loadPromise) return; // already recovered or already retrying
-      this.retry().catch(() => { /* status()/subscribeProgress already reflect the failure */ });
-    }, 3000);
+      this.retry().catch(() => this._maybeAutoRetry());
+    }, delay);
   }
 
   // Real generateDialogue(context)-equivalent call for tier 3. Throws on any
@@ -772,6 +791,7 @@ export class WasmLLMProvider {
     this._lastError = null;
     this._lastErrorKind = null;
     this._failCount = 0;
+    this._autoRetryCount = 0; // consecutive automatic retries used; reset on success
     this._progress = null; // {progress, text} | null — derived from transformers.js's own file-level progress_callback
     this._progressListeners = new Set();
     this._cacheState = "unknown"; // transformers.js caches ONNX weights in the browser Cache API itself; no separate pre-check API like web-llm's hasModelInCache exists, so this stays "unknown" until a real load starts (honest, not guessed).
@@ -855,6 +875,7 @@ export class WasmLLMProvider {
         },
       });
       this._pipeline = pipe;
+      this._autoRetryCount = 0;
       if (this._cacheState === "unknown") this._cacheState = "cached"; // no progress events fired at all — the library served it from its own cache without a network fetch
       this._emitProgress({ progress: 1, text: "ready" });
       return pipe;
@@ -883,7 +904,18 @@ export class WasmLLMProvider {
 
   preload() {
     if (!this.isAvailable() || this._pipeline || this._loadPromise) return;
-    this._ensurePipeline().catch(() => {});
+    this._ensurePipeline().catch(() => this._maybeAutoRetry());
+  }
+
+  // Same policy as LocalLLMProvider._maybeAutoRetry (see AUTO_RETRY_DELAYS_MS).
+  _maybeAutoRetry() {
+    if (this._lastErrorKind !== "timeout" && this._lastErrorKind !== "network") return;
+    if (this._autoRetryCount >= AUTO_RETRY_DELAYS_MS.length) return;
+    const delay = AUTO_RETRY_DELAYS_MS[this._autoRetryCount++];
+    setTimeout(() => {
+      if (this._pipeline || this._loadPromise) return;
+      this.retry().catch(() => this._maybeAutoRetry());
+    }, delay);
   }
 
   // Same contract as LocalLLMProvider.generate(): throws on any failure,
@@ -891,7 +923,8 @@ export class WasmLLMProvider {
   // throw from a tier-3 provider as "fall through" (item 11).
   async generate(event, ctx) {
     if (!this.isAvailable()) throw new Error("WasmLLMProvider unavailable (WebAssembly missing, or a prior load failed)");
-    const pipe = await this._ensurePipeline();
+    let pipe;
+    try { pipe = await this._ensurePipeline(); } catch (e) { this._maybeAutoRetry(); throw e; }
     const prompt = buildWasmPrompt(event, ctx);
     const reply = await withTimeout(
       pipe([{ role: "user", content: prompt }], WASM_GENERATION_PARAMS),
