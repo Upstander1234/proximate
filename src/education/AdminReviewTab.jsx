@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchPendingQuestions, reviewQuestion } from "./crowdsource.js";
+import { fetchPendingQuestions, reviewQuestion, exportApprovedAsCode } from "./crowdsource.js";
 import { fetchPendingReports, resolveReport } from "./reports.js";
 import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
 import MedicdleReviewPanel from "./MedicdleReviewPanel.jsx";
+import { QUESTIONS } from "./questions.js";
+import { fetchAllItemStats, pctCorrect, difficultyBand, MIN_RESPONSES_FOR_DISPLAY } from "./itemStats.js";
+import { difficultyFromStats } from "./adaptiveEngine.js";
 
 export default function AdminReviewTab({ user }) {
-  const [tab, setTab] = useState("submissions"); // submissions | reports | medicdles
+  const [tab, setTab] = useState("submissions"); // submissions | reports | medicdles | difficulty
 
   return (
     <div className="space-y-6">
@@ -35,11 +38,20 @@ export default function AdminReviewTab({ user }) {
         >
           Medicdle Submissions
         </button>
+        <button
+          onClick={() => setTab("difficulty")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+            tab === "difficulty" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          Difficulty Ratings
+        </button>
       </nav>
 
       {tab === "submissions" && <SubmissionsReview user={user} />}
       {tab === "reports" && <ReportsReview user={user} />}
       {tab === "medicdles" && <MedicdleReviewPanel user={user} />}
+      {tab === "difficulty" && <DifficultyRatings />}
     </div>
   );
 }
@@ -73,7 +85,21 @@ function SubmissionsReview({ user }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={async () => {
+            const code = await exportApprovedAsCode();
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+            a.download = "questionsCrowdsourced.js";
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          title="Download approved questions as source for src/education/questionsCrowdsourced.js"
+          className="text-sm text-slate-400 hover:text-white underline underline-offset-4"
+        >
+          Export approved as code
+        </button>
         <button onClick={refresh} className="text-sm text-slate-400 hover:text-white underline underline-offset-4">
           Refresh
         </button>
@@ -319,6 +345,84 @@ function ReportsReview({ user }) {
             </div>
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+const QUESTION_BY_ID = new Map(QUESTIONS.map((q) => [q.id, q]));
+
+function DifficultyRatings() {
+  const [rows, setRows] = useState(null);
+  const [sort, setSort] = useState("attempts"); // attempts | pct
+
+  const load = () => {
+    fetchAllItemStats().then((all) =>
+      setRows(
+        all.map((s) => {
+          const q = QUESTION_BY_ID.get(s.id);
+          return {
+            ...s,
+            text: q?.question || "(not in built-in bank)",
+            domain: q?.domain || "",
+            pct: pctCorrect(s),
+            band: difficultyBand(difficultyFromStats(s).b),
+            rated: s.attempts >= MIN_RESPONSES_FOR_DISPLAY,
+          };
+        })
+      )
+    );
+  };
+  useEffect(load, []);
+
+  if (rows === null) return <div className="text-slate-400 text-center py-20">Loading difficulty ratings…</div>;
+
+  const sorted = [...rows].sort((a, b) =>
+    sort === "pct" ? (a.pct ?? 101) - (b.pct ?? 101) : b.attempts - a.attempts
+  );
+  const ratedCount = rows.filter((r) => r.rated).length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between text-sm text-slate-400">
+        <span>
+          {rows.length} of {QUESTIONS.length} built-in questions have responses · {ratedCount} have at least{" "}
+          {MIN_RESPONSES_FOR_DISPLAY} (rated)
+        </span>
+        <span className="flex gap-3">
+          <button onClick={() => setSort(sort === "attempts" ? "pct" : "attempts")} className="underline underline-offset-4 hover:text-white">
+            Sort: {sort === "attempts" ? "most responses" : "hardest first"}
+          </button>
+          <button onClick={load} className="underline underline-offset-4 hover:text-white">
+            Refresh
+          </button>
+        </span>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">
+          No questions have any responses yet.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 divide-y divide-slate-800">
+          {sorted.map((r) => (
+            <div key={r.id} className="p-3 flex items-start gap-3 text-sm">
+              <div className="flex-1 min-w-0">
+                <div className="truncate">{r.text}</div>
+                <div className="text-xs text-slate-500">
+                  {r.id}
+                  {r.domain && ` · ${r.domain}`}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className={r.rated ? "font-medium" : "text-slate-500"}>
+                  {r.rated ? r.band : "Provisional"} · {r.pct ?? "-"}% correct
+                </div>
+                <div className="text-xs text-slate-500">{r.attempts} responses</div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

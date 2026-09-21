@@ -351,3 +351,21 @@ export function choicePercentages(stats, numChoices) {
   const total = counts.reduce((a, b) => a + (b || 0), 0);
   return counts.map((c) => (total > 0 ? Math.round(((c || 0) / total) * 100) : 0));
 }
+
+// Every question that has any community stats yet, for the admin
+// "Difficulty Ratings" view. One collection read, not one per question.
+export async function fetchAllItemStats() {
+  if (!firebaseConfigured) return [];
+  try {
+    const db = await getFirebaseDb();
+    const { collection, getDocs } = await import("firebase/firestore");
+    const snap = await getDocs(collection(db, "questionStats"));
+    return snap.docs.map((d) => {
+      const x = d.data();
+      return { id: d.id, attempts: x.attempts || 0, correct: x.correct || 0, updatedAt: x.updatedAt || 0 };
+    });
+  } catch (e) {
+    console.error("fetchAllItemStats failed", e);
+    return [];
+  }
+}

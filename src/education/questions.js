@@ -46,7 +46,7 @@ export const CORE_LEVELS = ["EMR", "EMT", "AEMT", "Paramedic"];
 export const OTHER_PROVIDER_LEVELS = [
   "Wilderness First Responder",
   "Critical Care Paramedic",
-  "Flight/Transport Medic",
+  "Flight Medic",
   "Tactical EMS",
   "Community Paramedicine",
 ];
@@ -244,6 +244,7 @@ import { EMT_QUESTIONS } from "./questionsEMT.js";
 import { AEMT_QUESTIONS } from "./questionsAEMT.js";
 import { PARAMEDIC_QUESTIONS } from "./questionsParamedic.js";
 import { OTHER_QUESTIONS } from "./questionsOther.js";
+import { CROWDSOURCED_QUESTIONS } from "./questionsCrowdsourced.js";
 
 // The combined bank, unchanged in shape from before the split — every
 // consumer (`import { QUESTIONS } from "./questions.js"`) keeps working with
@@ -255,6 +256,7 @@ export const QUESTIONS = [
   ...AEMT_QUESTIONS,
   ...PARAMEDIC_QUESTIONS,
   ...OTHER_QUESTIONS,
+  ...CROWDSOURCED_QUESTIONS,
 ];
 
 

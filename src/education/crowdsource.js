@@ -101,6 +101,24 @@ export async function fetchPendingQuestions() {
 // are stripped since a runtime consumer has no use for them.
 const BOOKKEEPING_FIELDS = new Set(["status", "submittedBy", "submittedByName", "submittedAt", "reviewedBy", "reviewedByName", "reviewedAt", "reviewNotes"]);
 
+// Fresh (uncached) approved bank rendered as source for questionsCrowdsourced.js,
+// in the same shape as the hand-written banks. `source`/`approved` are dropped
+// so these read as ordinary built-in questions.
+export async function exportApprovedAsCode() {
+  invalidateCached("approvedCrowdsourced");
+  const approved = await fetchApprovedCrowdsourced();
+  const items = approved
+    .map(({ source, approved: _a, ...q }) => q)
+    .sort((x, y) => x.id.localeCompare(y.id));
+  return `// Approved crowdsourced questions promoted into the built-in bank. This file
+// is generated: use Admin Review > Question Submissions > "Export approved as
+// code", replace this file with the download, and commit it. Ids keep their
+// "cs-" prefix so existing community difficulty stats stay attached.
+// Generated ${new Date().toISOString().slice(0, 10)}: ${items.length} question(s).
+export const CROWDSOURCED_QUESTIONS = ${JSON.stringify(items, null, 2)};
+`;
+}
+
 export function fetchApprovedCrowdsourced() {
   if (!firebaseConfigured) return Promise.resolve([]);
   return cachedFetch("approvedCrowdsourced", loadApprovedCrowdsourced);

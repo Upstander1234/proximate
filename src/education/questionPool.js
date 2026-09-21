@@ -40,7 +40,10 @@ export async function getQuestionPool({ forceRefresh = false } = {}) {
   if (!forceRefresh && cached && now - cachedAt < CACHE_MS) return cached;
   const approvedQuestions = QUESTIONS.map((q) => ({ ...q, source: q.source || "official", approved: true }));
   const crowdsourced = await withTimeout(fetchApprovedCrowdsourced(), CROWDSOURCE_TIMEOUT_MS, []);
-  cached = [...approvedQuestions, ...crowdsourced];
+  // Once an approved question is exported into the built-in bank it must not
+  // also load from Firestore.
+  const builtInIds = new Set(approvedQuestions.map((q) => q.id));
+  cached = [...approvedQuestions, ...crowdsourced.filter((q) => !builtInIds.has(q.id))];
   cachedAt = now;
   return cached;
 }
