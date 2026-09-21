@@ -11,7 +11,7 @@ const MODES = [
   { key: "quick10", label: "Quick 10", desc: "Ten questions from your provider level. Fast, no setup." },
   { key: "timed", label: "Timed Quiz", desc: "Pick a question count and a time limit. Beat the clock." },
   { key: "custom", label: "Custom Quiz", desc: "Filter by domain, seen/unseen, question type, and difficulty." },
-  { key: "weakest", label: "Weakest-Area Quiz", desc: "Built from your actual accuracy, leeches, and due reviews — not a guess." },
+  { key: "weakest", label: "Weakest-Area Quiz", desc: "Built from your actual accuracy, leeches, and due reviews." },
 ];
 
 export default function StudyTab({ progress, onUpdateCard, user, initialMode = null, initialLevel = "EMT", initialDomain = null }) {
