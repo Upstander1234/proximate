@@ -1,6 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Admins (can approve/reject submissions and resolve reports). Enforced
+    // here, not just by the client-side tab gate in adminConfig.js. To add an
+    // admin, append their Firebase Auth uid and redeploy the rules.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid in ["3oKF2rt9tiQw7hCsZYi6ZvRIcXi1"];
+    }
+
+    // How much a numeric field grew in this write (0 if it did not exist).
+    function grew(field) {
+      return request.resource.data.get(field, 0)
+        - (resource == null ? 0 : resource.data.get(field, 0));
+    }
     match /nremtProgress/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
@@ -14,38 +28,49 @@ service cloud.firestore {
     }
 
     match /questionStats/{id} {
-      // Community per-question response aggregates (itemStats.js) — every
-      // signed-in user increments these via recordResponse(), so there is
-      // no single owner uid to check against.
-      allow read, write: if request.auth != null;
+      // Community per-question response aggregates (itemStats.js). Every
+      // signed-in user increments these via recordResponse(), so there is no
+      // owner uid; instead each write is bounded to what one real response
+      // can add (max weight is 3), only known fields may be touched, and
+      // counters can never go down or be deleted.
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.keys().hasOnly(["attempts", "correct", "choiceCounts", "updatedAt"])
+        && grew("attempts") >= 0 && grew("attempts") <= 3
+        && grew("correct") >= 0 && grew("correct") <= grew("attempts");
     }
 
     match /crowdsourcedQuestions/{id} {
       allow create: if request.auth != null
         && request.resource.data.status == "pending"
         && request.resource.data.submittedBy == request.auth.uid;
-      // Approved questions are public so signed-out visitors get the crowdsourced bank.
-      allow read: if resource.data.status == "approved" || request.auth != null;
-      // TODO: replace with a real server-verified admin check (custom claim)
-      // before relying on this for anything beyond local development.
-      allow update: if request.auth != null;
+      // Approved questions are public so signed-out visitors get the
+      // crowdsourced bank; authors see their own; admins see everything.
+      allow read: if resource.data.status == "approved"
+        || isAdmin()
+        || (request.auth != null && resource.data.submittedBy == request.auth.uid);
+      allow update: if isAdmin();
     }
 
     match /questionReports/{id} {
       allow create: if request.auth != null
         && request.resource.data.status == "pending"
         && request.resource.data.reportedBy == request.auth.uid;
-      allow read: if request.auth != null;
-      // TODO: same caveat as above.
-      allow update: if request.auth != null;
+      allow read, update: if isAdmin();
     }
 
     match /eduGlobalStats/{id} {
-      // Aggregate, non-identifying engagement counters (globalStats.js) —
-      // same "every signed-in user increments these" shape as questionStats.
-      // Reads are public so signed-out visitors can see the totals.
+      // Aggregate, non-identifying engagement counters (globalStats.js).
+      // Reads are public; each write may only add at most 1 to known counters.
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.keys().hasOnly(["totalUsers", "totalQuestionsAnswered", "totalSrsReviews", "totalExamsCompleted", "totalMedicdlePlays", "totalQotdPlays", "updatedAt"])
+        && grew("totalUsers") >= 0 && grew("totalUsers") <= 1
+        && grew("totalQuestionsAnswered") >= 0 && grew("totalQuestionsAnswered") <= 1
+        && grew("totalSrsReviews") >= 0 && grew("totalSrsReviews") <= 1
+        && grew("totalExamsCompleted") >= 0 && grew("totalExamsCompleted") <= 1
+        && grew("totalMedicdlePlays") >= 0 && grew("totalMedicdlePlays") <= 1
+        && grew("totalQotdPlays") >= 0 && grew("totalQotdPlays") <= 1;
     }
 
     match /nremtPredictions/{uid} {
@@ -72,10 +97,17 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.status == "pending"
         && request.resource.data.submittedBy == request.auth.uid;
-      allow read: if request.auth != null;
-      // TODO: replace with a real server-verified admin check (custom claim)
-      // before relying on this for anything beyond local development.
-      allow update: if request.auth != null;
+      allow read: if resource.data.status == "approved"
+        || isAdmin()
+        || (request.auth != null && resource.data.submittedBy == request.auth.uid);
+      // Admins review; an author may only revise their own not-yet-approved
+      // submission, which always goes back to "pending".
+      allow update: if isAdmin()
+        || (request.auth != null
+            && resource.data.submittedBy == request.auth.uid
+            && resource.data.status != "approved"
+            && request.resource.data.status == "pending"
+            && request.resource.data.submittedBy == resource.data.submittedBy);
     }
   }
 }
