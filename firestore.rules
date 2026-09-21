@@ -24,7 +24,8 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.status == "pending"
         && request.resource.data.submittedBy == request.auth.uid;
-      allow read: if request.auth != null;
+      // Approved questions are public so signed-out visitors get the crowdsourced bank.
+      allow read: if resource.data.status == "approved" || request.auth != null;
       // TODO: replace with a real server-verified admin check (custom claim)
       // before relying on this for anything beyond local development.
       allow update: if request.auth != null;
@@ -42,7 +43,9 @@ service cloud.firestore {
     match /eduGlobalStats/{id} {
       // Aggregate, non-identifying engagement counters (globalStats.js) —
       // same "every signed-in user increments these" shape as questionStats.
-      allow read, write: if request.auth != null;
+      // Reads are public so signed-out visitors can see the totals.
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
     match /nremtPredictions/{uid} {
