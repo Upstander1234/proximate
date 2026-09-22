@@ -110,6 +110,9 @@ function snapshot(p) {
     rvEdv: p.rvEdv || 0, rvEsv: p.rvEsv || 0, rvSv: p.rvSv || 0, rvEf: p.rvEf || 0,
     // Circulatory mechanism variables
     cprActive: p.cprActive || 0,
+    opioidMiosis: p.opioidMiosis || 0,
+    assistedVt: p.assistedVent ? p.assistedVent.vt : 0,
+    assistedRr: p.assistedVent ? p.assistedVent.rr : 0,
     venousCapacitanceDrug: p.venousCapacitanceDrug ?? 1,
     opioidBlockade: p.opioidBlockade || 0,
     alphaTone: p.alphaTone || 0,
@@ -685,6 +688,35 @@ console.log("\n[CHEST COMPRESSIONS]");
   // clearly nonzero at final read, not collapsed to ~0 by its own decay.
   const r = probe({ scen: "fbao", settle: 600, run: 900, apply: ["cpr"] });
   assertNonZero("CPR -> mechanical pump engaged", r, "cprActive", 0.1);
+}
+
+console.log("\n[CPR COMPRESSION QUALITY, CprMinigame's pat.cprQuality]");
+{
+  // Hands-on quality (depth/rate) scales the pump. _cprQualityAt is pinned far
+  // in the future so the 30 s expiry never triggers inside this probe.
+  const good = probe({ scen: "fbao", settle: 600, run: 900, apply: ["cpr"], mutate: (p) => { p.cprQuality = 1; p._cprQualityAt = 1e9; } });
+  const poor = probe({ scen: "fbao", settle: 600, run: 900, apply: ["cpr"], mutate: (p) => { p.cprQuality = 0.3; p._cprQualityAt = 1e9; } });
+  assertVersus("poor-quality CPR -> weaker pump", poor, good, "cprActive", "down", 0.1);
+}
+
+console.log("\n[OPIOID MIOSIS, pat.opioidMiosis read by physio/pupils.js]");
+{
+  const ctl = probe({ scen: "fbao", settle: 60, run: 400, apply: [] });
+  const op = probe({ scen: "fbao", settle: 60, run: 400, apply: ["fentanyl"] });
+  assertVersus("fentanyl -> opioid miosis drive", op, ctl, "opioidMiosis", "up", 0.05);
+}
+
+console.log("\n[BVM LIVE QUALITY, BvmMinigame's pat.bvmVolQ / bvmRateQ]");
+{
+  // Hands-on volume/rate factors scale the assisted ventilation the engine
+  // delivers. _bvmQualityAt is pinned far in the future so the 12 s expiry never
+  // triggers inside this probe.
+  const pin = (vq, rq) => (p) => { p.bvmVolQ = vq; p.bvmRateQ = rq; p._bvmQualityAt = 1e9; };
+  const good = probe({ scen: "fbao", settle: 60, run: 200, apply: ["bvm"], mutate: pin(1, 1) });
+  const shallow = probe({ scen: "fbao", settle: 60, run: 200, apply: ["bvm"], mutate: pin(0.3, 1) });
+  const slow = probe({ scen: "fbao", settle: 60, run: 200, apply: ["bvm"], mutate: pin(1, 0.3) });
+  assertVersus("shallow squeezes -> less delivered volume", shallow, good, "assistedVt", "down", 0.05);
+  assertVersus("slow bagging -> lower delivered rate", slow, good, "assistedRr", "down", 1);
 }
 
 console.log("\n[CPR COMPRESSION FRESHNESS — queue item V2-29 (redo)]");

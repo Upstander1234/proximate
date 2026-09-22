@@ -2526,6 +2526,29 @@ prankCall: {cat: "medical", id: "PRANK-031", pronouns: "he", title: "Male, teens
     correct: true, truth: "Hoax / prank call — no patient, no emergency"}),
 },
 
+// Test patient: a well adult at textbook baseline (no condition, so nothing
+// deteriorates), for exercising every treatment, assessment and minigame
+// against a normal patient.
+baseline: {cat: "medical", id: "TEST-000", pronouns: "they", title: "Test patient, 35. Healthy, baseline vitals.",
+  limit: 1800, transport: 300,
+  bystanders: "Nobody else is here. It is a quiet, well-lit room.",
+  units: [],
+  dispatch: ["Test patient, adult. No complaint.", "Baseline vitals, no history."],
+  update: [],
+  impression: "Sitting comfortably, alert, pink and dry. Nothing is wrong. Use them to test your kit.",
+  imps: ["ALOC", "RARF"],
+  patient: {age: 35, hr: 72, sbp: 120, rr: 14},
+  clothing: {top: "short", bottom: "pants", shoes: true},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: '"I feel fine. No pain, nothing hurts."', kind: "pt", find: "OPQRST: no complaint."}),
+    sample: () => ({say: '"No allergies, no medications, no history. Ate a couple of hours ago."', kind: "pt", find: "SAMPLE: NKDA, no meds, no PMH, last ate ~2h ago."}),
+  },
+  resolve: () => ({died: false, cause: "",
+    notes: ["A baseline patient: every finding should read normal, and any drug given has a clean, unmasked effect."],
+    correct: true, truth: "Healthy test patient, no pathology"}),
+},
+
 benignFaint: {cat: "medical", id: "SYNC-032", pronouns: "he", title: "Male, 19. Passed out, per roommate, \"mid-scream.\"",
   limit: 900, transport: 420,
   bystanders: "His roommate is still holding a game controller. \"We were in the middle of a match and he just went down.\"",

@@ -329,6 +329,10 @@ export class Patient {
     this.aorticOcclusion = 0;       // fraction of systemic bed excluded (REBOA)
     this.externalWarmingW = 0;      // watts of applied external heat
     this.opioidBlockade = 0;      // naloxone effect
+    this.bvmVolQ = 1;             // 0-1 delivered-volume factor of hands-on BVM (BvmMinigame)
+    this.bvmRateQ = 1;            // delivered rate relative to the device's 10/min
+    this.cprQuality = 1;          // 0-1 quality of hands-on compressions (CprMinigame)
+    this.opioidMiosis = 0;        // opioid effect net of naloxone, drives miosis (pupils.js)
     this.transcellularKShift = 0; // slow K movement
     this.txaEffect = 0;           // persistent TXA effect
     // Within-encounter receptor desensitization / acute tolerance (queue
@@ -522,6 +526,11 @@ export class Patient {
     this.nmsRigidity = b.nmsRigidity ?? 0;
     this.airway = b.airway ?? "clear";
     this.ptx = b.ptx ?? null;
+    // Which side the pneumothorax and any pleural effusion/hemothorax are on, for
+    // auscultation ("R" | "L" | "both"). ptx has no side of its own, so an unset
+    // side defaults to the right; set it per scenario for a specific side.
+    this.ptxSide = b.ptxSide ?? null;
+    this.pleuralEffusionSide = b.pleuralEffusionSide ?? null;
     // Respiratory mechanics scale with body size: lung compliance tracks lung
     // volume (~weight), and small airways carry higher resistance. Without this
     // a neonate breathes at adult tidal volumes and blows off CO2 to alkalosis.
@@ -884,6 +893,10 @@ export class Patient {
     // Electrical conduction subsystem
     this.qrsWidth = 0.08;          // s; widens with hyperK / Na-channel block / ischemia
     this.avConduction = 1.0;       // AV nodal conduction (0 = complete block)
+    // Which wall the ST elevation is in when the ECG reads "stemi": "inferior" |
+    // "anterior" | "septal" | "lateral" | "anterolateral" | "posterior". Null
+    // means unspecified (drawn as inferior, the ECG's historical default).
+    this.infarctTerritory = b.infarctTerritory ?? null;
     this.prInterval = 0.16;        // s; explicit AV-nodal delay (see updateConduction)
     this.firstDegreeBlock = false; // PR > 0.20s but still conducting
     this.saRate = this.hrBase;     // intrinsic sinus node rate before autonomic modulation
@@ -1334,6 +1347,7 @@ export class Patient {
       k, blood, ph: phScaled, kidney, temp, coag,
       bronch, edema, urticaria, angioedema, dystonia, airway: this.airway || "clear", ptx: this.ptx,
       rhythm: this.rhythm || "sinus", tv, ecg: ecgDesc,
+      infarctTerritory: this.infarctTerritory ?? null, prInterval: this.prInterval ?? 0.16,
       // QUEUE ITEM 54: qrsWidth (cardiovascular.js's updateConduction) is a
       // real, already-live quantity (seconds — 0.08 baseline, widened by
       // hyperkalaemia/Na-channel block/ischemia/hypermagnesaemia) that was

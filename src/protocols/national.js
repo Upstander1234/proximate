@@ -89,28 +89,27 @@
 // indication; hydroxocobalamin, calcium chloride, and sodium bicarbonate are
 // each single fixed-dose engine entries standing in for a real mg/kg range.
 //
-// REAL GAPS FOUND, NOT GUESSED PAST — every one of these drugs is named
-// explicitly in this guideline's own text but has no matching `gear.js`
-// TASKS entry, so no rule below can reach it: activated charcoal,
-// acetylcysteine (N-acetylcysteine, for acetaminophen overdose),
-// diltiazem, metoprolol (as a standalone task — the drug exists in
-// `drugs.js` but nothing in `gear.js` wraps it for crew-direction),
-// verapamil, procainamide, lidocaine (as a systemic antiarrhythmic — the
-// existing `lidocaineIO` task is declared for IO-associated pain, a
-// different clinical purpose, not reused here for VT), ipratropium,
-// dexamethasone/prednisone/methylprednisolone (as standalone tasks — the
-// `dexamethasone` drugs.js entry has no gear.js task), norepinephrine (as
-// a standalone task — `pushEpi` is the only crew-directable pressor bolus
-// this engine has; used throughout as the practical stand-in for "give a
-// vasopressor" wherever this guideline names norepinephrine as the
-// preferred agent), pralidoxime chloride, morphine/hydromorphone/ketamine
-// (as standalone pain-management tasks — `fentanylPain` is the only
-// crew-directable opioid analgesic task), sodium thiosulfate, potassium
-// iodide, droperidol/haloperidol/ziprasidone (as standalone agitation
-// tasks — `olanzapineOdt`/`midazolamAgitation` are the only two this
-// engine has), labetalol/hydralazine/nifedipine (as antihypertensives for
-// severe pre-eclampsia — no BP-lowering drug task of any kind exists in
-// this engine).
+// REAL GAPS FOUND, NOT GUESSED PAST (re-checked against data/drugs.js on
+// 2026-09-21). drugs.js now has ipratropium, diltiazem, metoprolol,
+// dexamethasone, morphine, ketamine, norepinephrine, ketorolac, IV
+// acetaminophen and nitrous oxide, each wired below with its own task.
+// (vasopressin/phenylephrine exist but this guideline gives no step for them.)
+// Named by this guideline but absent from drugs.js entirely: activated
+// charcoal, acetylcysteine, verapamil, procainamide, systemic lidocaine for
+// VT (the `lidocaineIO` task is for IO pain, a different purpose),
+// prednisone/methylprednisolone/hydrocortisone, pralidoxime chloride,
+// hydromorphone, sodium thiosulfate, potassium iodide, droperidol/
+// haloperidol/ziprasidone, labetalol/hydralazine/nifedipine (severe
+// pre-eclampsia). `olanzapineOdt`/`midazolamAgitation`/`ketamineSedation`
+// are the only agitation tasks. Norepinephrine now stands in for the shock
+// vasopressor; `pushEpi` remains for anaphylaxis.
+//
+// ASSESSMENT-DEVICE GAPS: Universal Care (p.14) also names temperature as
+// baseline monitoring, and this engine has no thermometer device or task, so
+// no rule can attach one. Pulse oximetry, BP cuff, waveform capnography, ECG
+// leads/12-lead, pads, blood glucose, serial vitals (q5 min critical / q15
+// min stable / after each drug), vascular access and tourniquet application
+// ARE covered above.
 //
 // TASK-CAP POLICY, stated once rather than per rule, matching this
 // project's own established discipline (see the LA County and San Diego
@@ -281,6 +280,36 @@ const NEWBORN_NEEDS_CPR = (ctx) => { const nb = newbornPat(ctx); return !!nb && 
 // stays manual-only.
 const NERVE_AGENT_SEVERE = (ctx) => apnoeic(ctx) || ACTIVE_SEIZURE(ctx) || (ctx.v.spo2 > 0 && ctx.v.spo2 < 90);
 
+// ── Assessment/monitoring cadence helpers (Universal Care p.9-18, plus each
+//    chapter's own "reassess vital signs" / "vital signs before and after
+//    medication" step). The Universal Care Guideline requires an initial
+//    full set, monitoring of critical patients "frequently," and (p.14)
+//    "at least two sets of pertinent vital signs" for stable patients; the
+//    Shock/Sepsis chapter's own quality measure (p.5700) gives q15 minutes
+//    for stable patients. Seconds on the call clock (ctx.s.t). ──
+const VITALS_EVERY_CRITICAL = 300;
+const VITALS_EVERY_STABLE = 900;
+const lastVitalsAt = (ctx) => ctx.s.vitals?.HR?.at ?? -Infinity;
+const CRITICAL = (ctx) => SHOCK(ctx) || pulseless(ctx) || hypoxic(ctx) || altered(ctx) || apnoeic(ctx);
+// Drugs whose effect must be re-measured (p.4689: "vital signs before and
+// after medication administration"); airway/CPR/O2 support doses excluded.
+const REASSESS_DRUGS = new Set([
+  "naloxone_iv", "epiIM", "albuterol", "nebEpi", "nitro", "fentanyl", "atropine",
+  "adenosine", "saline", "salineMinor", "d10", "glucagon", "oralGlucose", "midazolam",
+  "magnesium", "ondansetron", "diphen", "pushEpi", "calcium", "bicarb", "txa",
+]);
+const DRUG_SINCE_VITALS = (ctx) => {
+  const last = lastVitalsAt(ctx);
+  return (ctx.s.doses || []).some((d) => REASSESS_DRUGS.has(d.id) && (d.at ?? 0) > last);
+};
+const lastDoseAt = (ctx, id) => (ctx.s.doses || []).reduce((m, d) => (d.id === id ? Math.max(m, d.at ?? 0) : m), -Infinity);
+const since = (ctx, id, secs) => ctx.s.t - lastDoseAt(ctx, id) >= secs;
+const OVER_65 = (ctx) => (PATIENT_AGE(ctx) ?? 0) > 65;
+const OPIOID_SAFE = (ctx) => !SHOCK(ctx) && ctx.v.rr >= 12 && !(ctx.v.spo2 > 0 && ctx.v.spo2 < 94);
+const TQ_PLACED = (ctx) => Object.keys(ctx.s.done || {}).some((k) => k.startsWith("tq@"));
+const LOW_GLUCOSE_TREATED = (ctx) => ["d10", "oralGlucose", "glucagon"].some((id) => gaveDose(ctx, id));
+const CARDIAC_COMPLAINT = (ctx) => GENERIC_PAIN(ctx) || BRADYCARDIC(ctx) || ctx.v.hr > 100 || ["svt", "afib", "flutter", "VT"].includes(ctx.v.rhythm);
+
 export default {
   id: "national", name: "NASEMSO National Model EMS Clinical Guidelines",
   rules: [
@@ -298,7 +327,80 @@ export default {
     { id: "coOxygen", when: (ctx) => CO_POISONING(ctx) && !apnoeic(ctx), task: "o2", note: "suspected CO poisoning — high-flow O2 despite a normal-looking pulse ox" },
     { id: "monitor", when: notMonitored, task: "monitor", note: "get them on the monitor" },
     { id: "leads", when: noLeads, task: "leads", note: "leads on, twelve-lead" },
+
+    // ── Universal Care baseline devices (p.14-15: "pulse oximetry," "12-lead
+    //    EKG... promptly in patients with cardiac..." complaints, blood
+    //    pressure as part of "an initial full set of vital signs"). Each of
+    //    these attaches the actual device, not just a reading, so a later
+    //    "monitor" task has something to read. Critical patients first. ──
+    { id: "pulseOx", when: (ctx) => !ctx.s.devices?.pulseox, task: "attachPulseOx", note: "continuous pulse oximetry" },
+    { id: "bpCuff", when: (ctx) => !ctx.s.devices?.bpcuff, task: "attachBpCuff", note: "cuff on, baseline blood pressure" },
+    // p.14 (Universal Care): "consider waveform capnography for patients with
+    // respiratory complaints (essential for critical patients...)"; p.6228:
+    // EtCO2 to monitor CPR effectiveness; p.6551: post-arrest EtCO2 35-45.
+    { id: "capnography", when: (ctx) => !ctx.s.devices?.capno && (CRITICAL(ctx) || lowSpo2(ctx) || WHEEZING(ctx) || RALES(ctx)), task: "attachCapno", note: "critical or respiratory patient — waveform capnography" },
+    // p.1500: "acquire a 12-lead EKG within 10 minutes" for cardiac
+    // presentations — reuses the same leads task/doneKey as the baseline.
+    { id: "ecg12Cardiac", when: (ctx) => CARDIAC_COMPLAINT(ctx) && !ctx.s.done?.ecgAcquire, task: "leads", note: "cardiac complaint — twelve-lead within ten minutes" },
+    // Pads go on any unstable tachy/brady patient (pacing/cardioversion
+    // pathways, p.35-42) not just an arrested one.
+    { id: "unstablePads", when: (ctx) => SHOCK(ctx) && (BRADYCARDIC(ctx) || ctx.v.hr > 150) && !ctx.s.done?.pads, task: "applyPads", note: "unstable rhythm — pads on before it worsens" },
+
     { id: "vitals", when: noVitals, task: "vitals", note: "full set of vitals" },
+
+    // ── Serial vitals (p.14 "critical patients should have pertinent vital
+    //    signs frequently monitored"; p.5700 "reassessment q 15 minutes"). ──
+    { id: "vitalsCritical", when: (ctx) => !noVitals(ctx) && CRITICAL(ctx) && ctx.s.t - lastVitalsAt(ctx) >= VITALS_EVERY_CRITICAL, task: "vitals", note: "critical patient — repeat vitals" },
+    { id: "vitalsStable", when: (ctx) => !noVitals(ctx) && ctx.s.t - lastVitalsAt(ctx) >= VITALS_EVERY_STABLE, task: "vitals", note: "stable — routine repeat vitals" },
+    { id: "vitalsAfterDrug", when: (ctx) => !noVitals(ctx) && DRUG_SINCE_VITALS(ctx), task: "vitals", note: "reassess after medication" },
+
+    // ── Vascular access for anything that may need a drug or fluid. Each
+    //    treatment chapter's own IV/IO step, gathered here so access is
+    //    already in place when the drug rule fires. ──
+    { id: "ivCritical", when: (ctx) => !HAS_IV(ctx) && !pulseless(ctx) && (SHOCK(ctx) || ACTIVE_SEIZURE(ctx) || ACTIVE_HEMORRHAGE(ctx) || (GENERIC_PAIN(ctx) && ctx.v.hr > 0) || (BRADYCARDIC(ctx) && SHOCK(ctx)) || TACHY_SVT(ctx) || TACHY_WCT_REGULAR(ctx) || (apnoeic(ctx) && ctx.v.hr > 0)), task: "iv", note: "may need drugs or fluid — vascular access" },
+
+    // ── Blood glucose (p.393-394: "check blood glucose in patients with
+    //    AMS or suspected stroke"; p.4393: repeat if hypoglycemia treated
+    //    and mental status hasn't improved; p.5247 seizure; p.6562 post-arrest). ──
+    { id: "glucoseSeizure", when: (ctx) => ACTIVE_SEIZURE(ctx) && !ctx.s.done?.gluc, task: "glucoseCheck", note: "seizing — rule out hypoglycemia" },
+    { id: "glucoseRecheck", when: (ctx) => LOW_GLUCOSE_TREATED(ctx) && altered(ctx) && ctx.s.t - (ctx.s.vitals?.Glu?.at ?? -Infinity) >= 300, task: "glucoseCheck", note: "still altered after sugar — recheck glucose" },
+
+    // ── Drug tasks added once drugs.js/gear.js caught up with this
+    //    guideline's own text (all adult-gated, capped, IV-gated where the
+    //    guideline's route is IV). ──
+    // Respiratory Distress p.10163: "Ipratropium 0.5 mg nebulized... up to 3
+    // doses in conjunction with albuterol" (not for pediatric bronchiolitis, p.7884).
+    { id: "bronchospasmIpratropium", when: (ctx) => WHEEZING(ctx) && ADULT(ctx) && gaveDose(ctx, "albuterol") && doseCount(ctx, "ipratropium") < 3, task: "ipratropiumNeb", note: "bronchospasm — ipratropium with the albuterol" },
+    // p.10175-10181: steroids "should be administered in the prehospital
+    // setting"; IV dexamethasone (0.6 mg/kg, max 16 mg — the 10 mg entry) for the critically ill.
+    { id: "bronchospasmDexamethasone", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && ADULT(ctx) && HAS_IV(ctx) && doseCount(ctx, "dexamethasone") < 1, task: "dexamethasoneTask", note: "bronchospasm — steroid" },
+    // Tachycardia with a Pulse p.2083-2115. Stable irregular narrow (A-fib/
+    // flutter): diltiazem 0.25 mg/kg, second dose 0.35 mg/kg after 15 minutes;
+    // over 65, initial max 10 mg (the fixed 20 mg entry overshoots, so
+    // metoprolol 5 mg q5 min x3 is used instead). Metoprolol needs SBP >120
+    // (p.2235); beta-blocker plus CCB together is a hazard (p.2259) so each
+    // rule excludes the other. Regular narrow (SVT) escalates to diltiazem
+    // only after all three adenosine doses fail (p.2083).
+    { id: "afibDiltiazem", when: (ctx) => (TACHY_AFIB_FLUTTER(ctx) || (TACHY_SVT(ctx) && doseCount(ctx, "adenosine") >= 3)) && !UNSTABLE(ctx) && ctx.v.sbp >= 100 && ADULT(ctx) && !OVER_65(ctx) && HAS_IV(ctx) && !gaveDose(ctx, "metoprolol") && doseCount(ctx, "diltiazem") < 2 && since(ctx, "diltiazem", 900), task: "diltiazemTask", note: "stable rapid rhythm — diltiazem" },
+    { id: "afibMetoprolol", when: (ctx) => (TACHY_AFIB_FLUTTER(ctx) || (TACHY_SVT(ctx) && doseCount(ctx, "adenosine") >= 3)) && !UNSTABLE(ctx) && ctx.v.sbp > 120 && ADULT(ctx) && OVER_65(ctx) && HAS_IV(ctx) && !gaveDose(ctx, "diltiazem") && doseCount(ctx, "metoprolol") < 3 && since(ctx, "metoprolol", 300), task: "metoprololTask", note: "stable rapid rhythm, over 65 — metoprolol" },
+    // Pain Management p.93: mild/adjunct non-opioids (acetaminophen 1 g IV
+    // max, ketorolac 15 mg IV — not in hypotension, p.4868, or coagulopathy/
+    // bleeding — nitrous oxide, not in pneumothorax); moderate-severe opioids
+    // (morphine 0.1 mg/kg — the 4 mg entry; repeat after 5 minutes, p.4851;
+    // "with caution" for GCS <15, p.4865). Chest pain keeps its own nitro-then-
+    // fentanyl ladder above (morphine "with caution" in NSTEMI, p.1544), so
+    // opioids here skip anyone already given fentanyl and any STEMI rhythm.
+    { id: "painAcetaminophen", when: (ctx) => GENERIC_PAIN(ctx) && ADULT(ctx) && HAS_IV(ctx) && !SHOCK(ctx) && doseCount(ctx, "acetaminophenIV") < 1, task: "acetaminophenTask", note: "pain — non-opioid adjunct" },
+    { id: "painNitrous", when: (ctx) => GENERIC_PAIN(ctx) && ADULT(ctx) && !SHOCK(ctx) && ctx.v.ptx !== "tptx" && ctx.v.ptx !== "ptx" && doseCount(ctx, "nitrous") < 2, task: "nitrousTask", note: "pain — nitrous oxide" },
+    { id: "painKetorolac", when: (ctx) => ctx.v.pain >= 4 && ctx.v.pain < 7 && ADULT(ctx) && HAS_IV(ctx) && !SHOCK(ctx) && ctx.v.sbp >= 100 && !ACTIVE_HEMORRHAGE(ctx) && !(ctx.v.coag < 70) && ctx.v.rhythm !== "stemi" && doseCount(ctx, "ketorolac") < 1, task: "ketorolacTask", note: "moderate pain — ketorolac" },
+    { id: "painMorphine", when: (ctx) => ctx.v.pain >= 7 && ADULT(ctx) && HAS_IV(ctx) && OPIOID_SAFE(ctx) && ctx.v.rhythm !== "stemi" && !gaveDose(ctx, "fentanyl") && doseCount(ctx, "morphine") < 3 && since(ctx, "morphine", 300), task: "morphinePain", note: "severe pain — morphine" },
+    // Agitation p.3050: ketamine is the option "for high violence risk" — used
+    // as the step after midazolam has failed to settle severe agitation.
+    { id: "agitationKetamine", when: (ctx) => AGITATED_SEVERE(ctx) && ADULT(ctx) && HAS_IV(ctx) && gaveDose(ctx, "midazolam") && !apnoeic(ctx) && doseCount(ctx, "ketamine") < 1, task: "ketamineSedation", note: "severe agitation despite midazolam — ketamine" },
+
+    // ── Hemorrhage control (Trauma chapters p.7319-7322, p.11164, p.12066:
+    //    "apply a commercial tourniquet 2-3 inches proximal to the wound"). ──
+    { id: "tourniquet", when: (ctx) => ACTIVE_HEMORRHAGE(ctx) && !TQ_PLACED(ctx), task: "tq", note: "life-threatening bleeding — tourniquet/pressure" },
     { id: "iv", when: (ctx) => HYPOGLYCEMIC(ctx) && !HAS_IV(ctx), task: "iv", note: "line for dextrose" },
     // p.71 (Altered Mental Status): "check blood glucose" for AMS, deferred
     // by nearly every other guideline in this document.
@@ -315,7 +417,7 @@ export default {
     // p.32: "0.4 mg SL, can repeat q 3-5 minutes if SBP greater than 100" —
     // no stated total; a conservative default of 3 is used.
     { id: "cardiacNitro", when: (ctx) => ctx.v.sbp >= 100 && GENERIC_PAIN(ctx) && doseCount(ctx, "nitro") < 3, task: "nitroTask", note: "SBP >=100 — nitroglycerin" },
-    { id: "cardiacFentanyl", when: (ctx) => GENERIC_PAIN(ctx) && !SHOCK(ctx) && gaveDose(ctx, "nitro") && doseCount(ctx, "fentanyl") < 4, task: "fentanylPain", note: "pain unresponsive to nitrates — fentanyl" },
+    { id: "cardiacFentanyl", when: (ctx) => GENERIC_PAIN(ctx) && !SHOCK(ctx) && gaveDose(ctx, "nitro") && !gaveDose(ctx, "morphine") && doseCount(ctx, "fentanyl") < 4, task: "fentanylPain", note: "pain unresponsive to nitrates — fentanyl" },
 
     // ── Bradycardia (p.35-38) — also reused below by Beta Blocker and
     //    Calcium Channel Blocker Poisoning/Overdose, which name the exact
@@ -419,7 +521,7 @@ export default {
     // administering rapid, predetermined boluses (e.g., 500 mL)" — a real
     // stated target, roughly 4 administrations for a 70kg reference.
     { id: "shockSaline", when: (ctx) => !pulseless(ctx) && SHOCK(ctx) && !GENERIC_PAIN(ctx) && !DELIVERED(ctx) && !WHEEZING(ctx) && doseCount(ctx, "saline") < 4, task: "salineBolus", note: "shock — fluid" },
-    { id: "shockPushEpi", when: (ctx) => !pulseless(ctx) && SHOCK(ctx) && gaveDose(ctx, "saline") && doseCount(ctx, "pushEpi") < 6, task: "pushEpi", note: "shock refractory to fluid — push-dose epinephrine (stands in for norepinephrine/epinephrine drip)" },
+    { id: "shockNorepi", when: (ctx) => !pulseless(ctx) && SHOCK(ctx) && gaveDose(ctx, "saline") && doseCount(ctx, "norepi") < 6, task: "norepiTask", note: "shock unresponsive to fluid — norepinephrine (p.5614: preferred pressor, esp. septic/neurogenic)" },
 
     // ── Cardiac Arrest (VF/VT/Asystole/PEA) (p.117-125) ──
     { id: "arrestPads", when: (ctx) => SHOCKABLE(ctx) && !ctx.s.done?.pads, task: "applyPads", note: "shockable rhythm — pads on" },
@@ -466,7 +568,7 @@ export default {
     { id: "traumaticArrestTxa", when: (ctx) => pulseless(ctx) && ACTIVE_HEMORRHAGE(ctx) && doseCount(ctx, "txa") < 1, task: "txaTask", note: "traumatic arrest — adjunctive TXA" },
     { id: "traumaticArrestNeedleD", when: (ctx) => pulseless(ctx) && TENSION_PTX(ctx) && doseCount(ctx, "needleD") < 2, task: "needleDecompTask", note: "traumatic arrest — bilateral chest decompression" },
     // p.126-129 (Adult Post-ROSC Care): SBP<90/MAP<65 defers to the Shock
-    // Guideline's own already-built rules (shockSaline/shockPushEpi, gated
+    // Guideline's own already-built rules (shockSaline/shockNorepi, gated
     // on plain hypotension, not pulselessness) — `pat.roscOccurred`
     // (mortality.js) exists but is deliberately debrief-only state a
     // provider must not be able to read during play (see this project's

@@ -840,6 +840,9 @@ export function updateDrugs(pat, s, dt) {
     pat.sodiumBlockIschemiaSelective = false;
     pat.venousToneModifier = 1;
     pat.vagalBlock = 0;
+    // Opioid mu-receptor effect net of naloxone (0-1), recomputed each tick; the
+    // physiologic driver of miosis (read by pupils.js).
+    pat.opioidMiosis = 0;
     pat.uterotonicDrive = 0;
     let alphaDrug = 0, beta1Drug = 0, beta2Drug = 0;
     // Local airway receptor activity from inhaled drugs, kept separate from the
@@ -1643,6 +1646,9 @@ export function updateDrugs(pat, s, dt) {
         if (drugDef.class === "opioid" && !dr.pk) supp *= (1 - pat.opioidBlockade);
         pat.respDriveSuppression = Math.min(0.95, pat.respDriveSuppression + supp);
       }
+      if (drugDef.class === "opioid") {
+        pat.opioidMiosis = Math.min(1, pat.opioidMiosis + intensity * (dr.pk ? 1 : (1 - pat.opioidBlockade)));
+      }
 
       // ----- Anticonvulsant action (mechanism, not a stat change) -----
       // A benzodiazepine does not "stop the seizure" as an event; it raises the
@@ -1892,10 +1898,18 @@ export function updateDrugs(pat, s, dt) {
         // instant the assisted-ventilation override engages.
         const targetVt = (pat.vtBase || 0.5) * 1.3;
         const deliveredVt = Math.min(v.vt || 0, targetVt);
-        const mv = (v.rr || 0) * deliveredVt;
+        // Hands-on BVM (BvmMinigame): live volume and rate factors from the
+        // player's actual squeezes. They expire 12 s after the last update, so an
+        // abandoned bag reverts to a crew-quality breath rather than ghost-scoring.
+        let vtEff = deliveredVt, rrEff = v.rr;
+        if (dr.id === "bvm" && (s.t - (pat._bvmQualityAt ?? -Infinity)) < 12) {
+          vtEff = deliveredVt * (pat.bvmVolQ ?? 1);
+          rrEff = v.rr * (pat.bvmRateQ ?? 1);
+        }
+        const mv = (rrEff || 0) * vtEff;
         const cur = pat.assistedVent;
         if (!cur || mv > (cur.rr * cur.vt)) {
-          pat.assistedVent = { rr: v.rr, vt: deliveredVt, intensity };
+          pat.assistedVent = { rr: rrEff, vt: vtEff, intensity };
         }
       }
       if (dr.id === "lucas") {
@@ -1924,7 +1938,10 @@ export function updateDrugs(pat, s, dt) {
         pat._lastCprDoseAt = Math.max(pat._lastCprDoseAt ?? -Infinity, dr.time);
         const sinceDose = Math.max(0, s.t - pat._lastCprDoseAt);
         const freshness = Math.exp(-sinceDose / 12);
-        pat.cprActive = Math.max(pat.cprActive, intensity * freshness);
+        // cprQuality (0-1): depth/rate quality of the compressions the player
+        // actually delivered in the CPR minigame; 1 for crew/unscored CPR.
+        const cq = (s.t - (pat._cprQualityAt ?? -Infinity)) < 30 ? (pat.cprQuality ?? 1) : 1;  // expires 30 s after the last scored compression
+        pat.cprActive = Math.max(pat.cprActive, intensity * freshness * cq);
       }
       // Naloxone's blockade is accumulated in the antagonist pre-pass above, not
       // here — see the note there. Doing it here made reversal order-dependent.

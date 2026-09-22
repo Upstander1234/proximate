@@ -1059,8 +1059,8 @@ export const BATCH = [
     clinicalJudgment: true,
     graphic: {
       kind: "ecg",
-      src: "/assets/education/graphics/aemt-medical-peaked-t-waves.svg",
-      alt: "A cardiac monitor strip showing tall, narrow, peaked T waves with a widened QRS complex.",
+      rhythm: "peakedT",
+      alt: "Lead II ECG rhythm strip.",
     },
     question:
       "This monitor strip is from a patient in renal failure who missed dialysis. What does this pattern most likely represent?",

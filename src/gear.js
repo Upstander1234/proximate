@@ -112,6 +112,7 @@ export const TASKS=[
   {id:"leads",name:"Apply leads / acquire 12-lead",lvl:2,dur:25,readback:'"Leads on, acquiring."',report:'"Twelve-lead is on the screen."',attachDevice:"leads",sets:{leadsOn:1},doneKey:"ecgAcquire"},
   {id:"attachPulseOx",name:"Attach pulse oximeter",lvl:2,dur:12,readback:'"Pulse ox on."',report:'"Pulse ox is on and reading."',attachDevice:"pulseox"},
   {id:"attachBpCuff",name:"Apply the BP cuff",lvl:1,dur:12,readback:'"Cuff on."',report:'"Cuff is on, ready to cycle."',attachDevice:"bpcuff"},
+  {id:"attachCapno",name:"Attach waveform capnography",lvl:3,dur:12,readback:'"Capno on."',report:'"Waveform is up, EtCO2 reading."',attachDevice:"capno"},
   {id:"prep",name:"Draw up the next drug",lvl:2,dur:25,readback:'"Drawing up."',report:'"Drawn, labeled, and in your hand."',sets:{prepped:1}},
   {id:"cspine",name:"Hold manual C-spine",lvl:0,dur:9999,readback:'"I have the head."',report:""},
   {id:"fetch",name:"Fetch a bag from the truck",lvl:0,dur:25,readback:'"On my way."',fetch:1},
@@ -276,6 +277,18 @@ export const TASKS=[
   // `lvl`/`dur` mirror the wrapped action's own `lvl`/`cost` — the same
   // real-world scope requirement and time cost apply whether the player or
   // a crew member does it.
+  // National Model EMS Clinical Guidelines drug tasks (national.js) — each `dose` id is a real
+  // data/drugs.js key. lvl follows each drug's own scope tier, capped at 4 (paramedic).
+  {id:"ipratropiumNeb",name:"Ipratropium 0.5mg neb",lvl:2,dur:20,readback:'"Ipratropium with the albuterol, copy."',report:'"Duoneb is running."',dose:"ipratropium"},
+  {id:"dexamethasoneTask",name:"Dexamethasone 10mg IV/IM",lvl:4,dur:15,readback:'"Dex, ten milligrams, copy."',report:'"Dex is in."',dose:"dexamethasone"},
+  {id:"diltiazemTask",name:"Diltiazem 20mg slow IV",lvl:4,dur:25,readback:'"Diltiazem over two minutes, copy."',report:'"Diltiazem is in, watching the pressure."',dose:"diltiazem"},
+  {id:"metoprololTask",name:"Metoprolol 5mg slow IV",lvl:4,dur:20,readback:'"Metoprolol, copy."',report:'"Five of metoprolol is in over two minutes."',dose:"metoprolol"},
+  {id:"morphinePain",name:"Morphine 4mg IV/IM",lvl:3,dur:15,readback:'"Morphine, copy."',report:'"Four of morphine is in. Watching the respirations."',dose:"morphine"},
+  {id:"ketorolacTask",name:"Ketorolac 15mg IV",lvl:4,dur:15,readback:'"Toradol, copy."',report:'"Fifteen of ketorolac is in."',dose:"ketorolac"},
+  {id:"acetaminophenTask",name:"Acetaminophen 1g IV",lvl:4,dur:20,readback:'"IV Tylenol, copy."',report:'"One gram of acetaminophen is running."',dose:"acetaminophenIV"},
+  {id:"nitrousTask",name:"Nitrous oxide — patient-administered",lvl:2,dur:15,readback:'"Nitrous, copy."',report:'"He has the mask and is breathing it himself."',dose:"nitrous"},
+  {id:"ketamineSedation",name:"Ketamine IV/IO (severe agitation)",lvl:4,dur:20,readback:'"Ketamine, copy."',report:'"Ketamine is in. Watching the airway."',dose:"ketamine"},
+  {id:"norepiTask",name:"Norepinephrine IV",lvl:4,dur:20,readback:'"Norepi, copy."',report:'"Norepi is running, titrating to the pressure."',dose:"norepi"},
   {id:"assessLoc",name:"Assess level of consciousness (AVPU)",lvl:0,dur:10,readback:'"Checking responsiveness."',assessId:"loc"},
   {id:"assessSkin",name:"Assess skin — color, temp, moisture",lvl:0,dur:15,readback:'"Checking his skin."',assessId:"skin"},
   {id:"assessPupils",name:"Check pupils",lvl:0,dur:10,readback:'"Checking pupils."',assessId:"pupils"},

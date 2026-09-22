@@ -19,6 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { itemTypeOf } from "./itemTypes.js";
+import EcgStrip from "./EcgStrip.jsx";
 import { evaluateQuestionResponse } from "./evaluateResponse.js";
 import {
   randomizePresentation,
@@ -32,6 +33,15 @@ const CARD = "rounded-xl bg-slate-900 border border-slate-800 p-5";
 
 function GraphicPanel({ graphic }) {
   if (!graphic) return null;
+  // ECGs drawn from the game's own waveform table (src/ecg.js). The visible
+  // caption is deliberately not `alt`, which would describe the answer.
+  if (graphic.kind === "ecg" && graphic.rhythm) {
+    return (
+      <div className="mb-4 rounded-lg border border-slate-800 bg-slate-950 p-2">
+        <EcgStrip rhythm={graphic.rhythm} alt={graphic.alt} />
+      </div>
+    );
+  }
   return (
     <div className="mb-4 rounded-lg border border-slate-800 bg-slate-950 p-2">
       <img src={graphic.src} alt={graphic.alt || ""} className="w-full max-h-80 object-contain rounded" />

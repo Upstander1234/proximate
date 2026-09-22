@@ -1,6 +1,8 @@
 import { LIM } from "./scope.js";
 import { cyan } from "./util.js";
 import { PROCS } from "./data/procedures.js";
+import { pupilState } from "./physio/pupils.js";
+import { sideFinding } from "./physio/auscultation.js";
 
 export const LIB=[
   {id:"loc",region:"head",tab:"assess",label:"Level of consciousness (AVPU)",gerund:"Assessing responsiveness",cost:10,lvl:0,probe:"loc",
@@ -79,21 +81,20 @@ export const LIB=[
     // milder, non-lateralizing sluggishness. A scenario with a specific
     // narrated finding (e.g. a lateralized bleed) still wins via probes.pupils
     // — this is only the fallback every other scenario was silently missing.
-    run:(s,v)=>{const pat=s.patient;
-      if((pat?.icp||10)>25) return {say:"One pupil is bigger than the other, and slow to react.",kind:"crit",
-        find:"Anisocoria, sluggish — rising ICP.",evid:"A newly blown, sluggish pupil with rising ICP is a herniation warning sign."};
-      // Cholinergic toxidrome (organophosphatePoisoning, queue item 67) —
-      // narrated only, gated on the real pat.cholinergicVagalTone that
-      // condition itself drives (0.35-0.85 range — see conditions.js), not a
-      // new decorative flag. No pupil-diameter mechanism exists anywhere in
-      // this engine (the same standing limitation atropineOverdose's/
-      // tricyclicOverdose's own mydriasis narration carries for the
-      // opposite, anticholinergic, direction) — this field has exactly one
-      // writer, so a >0 check cannot fire for any other condition.
-      if((pat?.cholinergicVagalTone||0)>0) return {say:"Both pupils are pinpoint, barely visible.",kind:"warn",
-        find:"Pupils: bilateral miosis (pinpoint).",evid:"Miosis fits the muscarinic toxidrome (cholinergic excess) — the opposite finding from an anticholinergic or opioid picture, and a real bedside clue toward organophosphate/nerve-agent exposure."};
-      if(v._cons&&v._cons!=="awake") return {say:"Equal, but sluggish to react.",kind:"warn",find:"Pupils sluggish."};
-      return {say:"Equal, reactive.",find:"PERRL."};}},
+    // Reads pupilState() (physio/pupils.js), derived live from icp, opioid
+    // effect, cholinergic/anticholinergic state, catecholamines, perfusion and
+    // consciousness, so the finding follows the physiology instead of a fixed
+    // list of conditions. The PupilMinigame reads the same function.
+    run:(s,v)=>{const ps=pupilState(s.patient,v);
+      const out={
+        blown:{say:"One pupil is bigger than the other, and slow to react.",kind:"crit",find:"Anisocoria, sluggish, rising ICP.",evid:"A newly blown, sluggish pupil with rising ICP is a herniation warning sign."},
+        pinpoint:{say:"Both pupils are pinpoint, barely visible.",kind:"warn",find:"Pupils: bilateral miosis (pinpoint).",evid:"Pinpoint pupils fit an opioid or cholinergic (organophosphate/nerve agent) picture."},
+        dilated:{say:"Both pupils are large and dilated.",kind:"warn",find:"Pupils: bilateral mydriasis.",evid:"Dilated pupils fit an anticholinergic or sympathomimetic picture."},
+        fixed:{say:"Both pupils are wide, fixed and do not react to the light.",kind:"crit",find:"Pupils fixed and dilated.",evid:"Fixed, dilated pupils mean severe global brain hypoperfusion."},
+        sluggish:{say:"Equal, but sluggish to react.",kind:"warn",find:"Pupils sluggish."},
+        perrl:{say:"Equal, reactive.",find:"PERRL."},
+      };
+      return out[ps.key];}},
   // Physiology queue item 34: pat.strokeWeakness/strokeSide/strokeAphasia
   // (patient.js) are real, correctly-computed focal-deficit fields —
   // ischemicStroke (0.8), intracerebralHemorrhage (0.6), tia (0->0.7,
@@ -190,9 +191,18 @@ export const LIB=[
       return {say:v.hr>100?"Rapid, regular, no murmurs or rubs.":v.hr<60?"Slow, regular, no murmurs or rubs.":"Regular rate and rhythm. No murmurs, rubs, or gallops.",
         find:"Heart sounds unremarkable."};}},
   {id:"lungs",region:"torso",tab:"assess",label:"Auscultate lung fields",gerund:"Auscultating chest",cost:25,lvl:1,pocket:"scope",probe:"lungs",
-    run:(s,v)=>({say:s.aspirated?"Coarse and wet at the right base. You did that.":v.bronch>.3?"Wheeze throughout.":"Clear and equal.",
-      kind:s.aspirated?"crit":v.bronch>.3?"warn":"obs",
-      find:s.aspirated?"Coarse crackles R base — aspiration.":v.bronch>.3?"Wheeze.":"Lungs clear."})},
+    // Reads sideFinding() (physio/auscultation.js), the same live physiology the
+    // stethoscope minigame plays sounds from, so the logged finding matches what was
+    // heard: absent or diminished breath sounds (pneumothorax), dullness (effusion or
+    // hemothorax), crackles (edema, aspiration), wheeze, rhonchi.
+    run:(s,v)=>{const pat=s.patient;
+      if(s.aspirated) return {say:"Coarse and wet at the right base. You did that.",kind:"crit",find:"Coarse crackles R base — aspiration."};
+      const R=sideFinding(pat,v,"R",s), L=sideFinding(pat,v,"L",s);
+      if(R==="clear"&&L==="clear") return {say:"Clear and equal.",kind:"obs",find:"Lungs clear."};
+      const W={clear:"clear",wheeze:"wheezes",crackles:"crackles",rhonchi:"rhonchi",diminished:"diminished breath sounds",absent:"absent breath sounds",dull:"dull and reduced at the base",none:"no breath sounds"};
+      const sev=(x)=>x==="absent"||x==="diminished"||x==="none";
+      const say=R===L?`${W[R][0].toUpperCase()+W[R].slice(1)} on both sides.`:`Right: ${W[R]}. Left: ${W[L]}.`;
+      return {say,kind:(sev(R)||sev(L))?"crit":"warn",find:R===L?`Lungs: ${W[R]} bilaterally.`:`Lungs: R ${W[R]}, L ${W[L]}.`};}},
   {id:"rr",region:"torso",tab:"assess",label:"Respirations — rate, DEPTH, effort",gerund:"Counting respirations",cost:25,lvl:0,
     run:(s,v)=>({say:`${v.rr} a minute.`+(v.rr<8?" Too slow. Normal is 12–20. And they are difficult to rouse — this is respiratory FAILURE, not distress."
       :v.rr>20?` Above normal (12–20). But rate is not adequacy — check the depth and the mental status.`:" Within the normal range, 12–20."),
@@ -492,6 +502,7 @@ export const PROC_ACTS=[
   P("ultrasound","torso","procedures"),P("paCath","torso","procedures",{once:1}),P("warm","torso","procedures",{once:1}),
   P("moveToShade","torso","procedures",{once:1}),P("activeCooling","torso","procedures",{once:1}),
   P("headElevate","head","procedures",{once:1}),
+  P("cspine","head","airway",{once:1}),
   P("cCollar","neck","procedures",{once:1}),
   P("pelvicBinder","abdo","procedures",{once:1}),P("pack","abdo","procedures"),P("directPressure","abdo","procedures"),
   P("fundalMassage","abdo","procedures"),

@@ -10805,6 +10805,159 @@ plausible but not fitted to trial data.
     `mechanismWiring.mjs`/`scenarioSweep.mjs` to completion afterward, not
     a same-session addition on top of an unrelated verification pass.
 
+
+79. **NEW, filed 2026-09-21 — `national.js` cannot take a temperature,
+    named as baseline monitoring by Universal Care (p.14).** Waveform
+    capnography DOES exist (`devices.js` `capno`, now crew-attachable via
+    `gear.js`'s `attachCapno` task and `national.js`'s `capnography` rule).
+    No thermometer device/task exists: needs a device entry, an
+    `attachDevice` task, a published temp reading, then hyper/hypothermia
+    and sepsis rules. Still owed: EtCO2-driven rules (CPR quality <10 mmHg,
+    p.6230; post-ROSC target 35-45, p.6551) now that the reading is live.
+
+80. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
+    ipratropium, dexamethasone, diltiazem, metoprolol, morphine, ketorolac,
+    IV acetaminophen, nitrous oxide, ketamine (agitation step after
+    midazolam), norepinephrine (replaces `pushEpi` as the shock pressor;
+    `pushEpi` kept for anaphylaxis) — new `gear.js` tasks + capped,
+    adult-gated `national.js` rules. STILL OPEN, not in `data/drugs.js` at
+    all (need entry, task, rule): activated charcoal, acetylcysteine,
+    verapamil, procainamide, systemic lidocaine (VT), prednisone/
+    methylprednisolone/hydrocortisone, pralidoxime, hydromorphone, sodium
+    thiosulfate, potassium iodide, droperidol/haloperidol/ziprasidone,
+    labetalol/hydralazine/nifedipine. KNOWN LIMITS of the done part:
+    (a) fixed-dose entries stand in for weight-based doses (diltiazem 20 mg
+    vs 0.25 mg/kg; over-65 patients get metoprolol instead because the
+    guideline caps their diltiazem at 10 mg); (b) `GENERIC_PAIN` (pain>=4)
+    cannot tell chest pain from other pain, so a severe-pain patient can be
+    offered morphine alongside the cardiac aspirin/nitro rules; (c)
+    vasopressin/phenylephrine exist but this guideline names no step for
+    them; (d) unverified in a live call, mock-`ctx` evaluation only.
+
+81. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
+    fixed-dose `national.js` rule is gated `ADULT`, so pediatric patients
+    get no auto-suggested drugs. Needs weight-scaled task variants (or a
+    dose multiplier on the task) for adenosine, atropine, naloxone, epi,
+    saline, midazolam, dextrose etc., then removal of the gate per rule.
+
+82. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
+    (pulse ox, BP cuff, 12-lead, pads, serial vitals, drug-reassessment
+    vitals, IV access, glucose recheck, tourniquet) were added to
+    `national.js` only.** Not yet ported to `laCounty.js` or
+    `sanDiegoCounty.js`, which still fire `iv` only for hypoglycemia/
+    arrest/shock and `vitals` only once. Port using their own protocol
+    citations, not National page numbers.
+
+83. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
+    in a live call and use coarse triggers.** Only a mock-`ctx` evaluation
+    and eslint were run. Still to do: (a) play a call and confirm the
+    "directs <hand>: <task>" log lines appear; (b) `tourniquet` fires on
+    any `activeBleedRate>0` (no extremity/junctional distinction); (c)
+    `ivCritical` uses broad triggers rather than each chapter's own IV
+    step; (d) `CRITICAL`/`vitalsCritical` (q5 min) is this file's own
+    reading of "frequently," not a stated National interval; (e) no rule
+    yet for `cspine`/spinal motion restriction (Spinal Care p.241, a
+    decision guideline with no clean physiology signal), `assessPupils`/
+    `assessSkin`/`assessCapRefill` tasks, or serial 12-leads after ROSC/
+    clinical change (p.1554, p.6554); (f) a chapter-by-chapter audit of
+    every guideline's own monitoring/access/reassessment steps against
+    the rules is still owed.
+
+84. **NEW, filed 2026-09-21 — a real pupil-diameter mechanism.** The
+    engine still has NO stored pupil state. `src/physio/pupils.js`
+    (`pupilState(pat, v)`) is a live READ-OUT over existing fields, shared
+    by the `pupils` exam action and `PupilMinigame.jsx`: `opioidMiosis`
+    (new this session, `pk.js`, opioid effect net of naloxone),
+    `cholinergicVagalTone`, `vagalBlock` (atropine/anticholinergics),
+    `catecholLevel`, `icp`/`strokeSide`, `cpp`/pulse (arrest gives fixed,
+    dilated), consciousness, age. Not yet measured against a two-sided
+    A/B in `mechanismWiring.mjs`. Still to build: (a) a stored
+    `pat.pupilL`/`pat.pupilR` diameter with real dynamics (constriction
+    latency, hippus) instead of a per-read derivation; (b) drivers that
+    have no signal today: sympathomimetics (cocaine/amphetamine),
+    serotonin syndrome, alcohol, hypoglycemia, hypothermia, ketamine
+    (nystagmus/midposition), benzodiazepines and other sedatives (no
+    miosis), barbiturates, botulism/lateral brainstem lesions; (c) a
+    lesion SIDE for ICP/mass effect (only `strokeSide` exists, defaults
+    left); (d) `probes.pupils` scenario overrides are still frozen text
+    that beats the live state (see F7); (e) `respDriveSuppression` is NOT
+    used as a miosis proxy on purpose, since sedatives also set it;
+    (f) add the `mechanismWiring.mjs` assertions (naloxone reverses
+    `opioidMiosis`; raising `icp` above 25 anisocoria; arrest fixed).
+
+85. **NEW, filed 2026-09-21 — printable 12-lead is a teaching synthesis, not
+    a cardiac-vector model.** `src/twelveLead.js` draws all 12 leads from
+    the live snapshot (rhythm kind, hr, `qrsWidth`, `prInterval`,
+    `infarctTerritory`); the Monitor tab's "Print 12-lead" button keeps the
+    last 3 as static paper (`TwelveLeadPrint.jsx`). Still to do: (a) no
+    scenario or condition sets `pat.infarctTerritory` yet, so every STEMI
+    draws inferior; set it per scenario/condition (`ami`, `chest`, the
+    `probes.ecg` overrides already name territories in prose); (b) the
+    NSTEMI/unstable angina ST depression and T inversion are not drawn (only
+    the `stemi` ecg kind gets ST changes); (c) axis is fixed normal, and no
+    LBBB/RBBB, LVH, Wellens, pericarditis, hypokalemia U waves, or
+    `pat.qt`-driven QT drawn (QT is recomputed from rate); (d) `ecgLiveText`
+    scenario overrides can disagree with the drawn tracing; (e) print does
+    not cost time or require a paramedic-level scope check, and printing
+    is not yet tied to the `ecgAcquire` action or base transmission.
+
+86. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
+    physiology.** `GiveMedMinigame`, `DrawUpMinigame`, `PupilMinigame`,
+    `GlucometerMinigame`, `DeviceMinigame`, `CprMinigame` and
+    `ProcMinigame` (tourniquet, needle decompression, chest seal, BVM,
+    defib) replace the flat busy-timer, but only CPR (`pat.cprQuality`)
+    and pupils (`pupilState`) feed the engine, plus BVM as of the
+    continuous rework (`pat.bvmVolQ`/`bvmRateQ` scale assisted ventilation
+    live, expiring 12 s after the last push). CPR and BVM are continuous
+    sessions with a crew hand-off; CPR has a stamina bar driven by
+    `staminaFitness` (fitness after fatigue, where fatigue 0 is fresh and
+    100 is exhausted; Medical Simulation reads every stat as maxed via
+    `statFor`/`SIM_MAX_STATS` in `campaign/core.js`). Still to do: (a) BVM
+    over-large breaths should cause gastric insufflation and vomiting, and
+    the crew hand-off has a 25 s task delay for BVM (CPR gets an immediate
+    dose); (b) tourniquet tightness should separate a venous from an
+    arterial tourniquet, and the written time should surface at handoff;
+    (c) needle decompression site/depth errors should have real injury
+    consequences; (d) glucometer technique should bias the reading
+    (dilution, alcohol) instead of only failing; (e) device errors (lead
+    reversal, wrong cuff size, unzeroed art line) should distort the
+    monitor rather than only blocking the attach; (f) the drug draw-up
+    order is random and not tied to the next drug given; (g) none of the
+    minigames has a browser test yet (see `tools/browser/verifyMinigame*.mjs`);
+    (h) pediatric CPR depth/rate and pad sizes are not scaled.
+
+87. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
+    Shipped: `AuscultationMinigame` is a free-placement exam on a drawn bare
+    torso (`ChestBody.jsx`, front and back, no labels) — hover, click to place,
+    hold and drag to slide; `physio/auscultation.js`'s `chestSpec()` mixes the
+    lung field and heart area audible at that point from live physiology, and
+    `audio/auscultationPlayer.js` cross-fades gains so dragging blends rather
+    than restarting. It CANNOT be failed: the player types what they heard and
+    what they think it is, which goes to the crew as a radio line, and the
+    engine's own finding still lands in the log via `actions.js`. Requires a
+    bare chest (`CLOTH_LOCK.torso` plus a `start()` guard). Rates AND rhythm are
+    exact: `intervalPattern()` (`audio/retime.js`) gives regular, afib (no
+    repeating pattern), pvc (early beat then a compensatory pause, from
+    `pat.pvcFrequency`) and pac (from `pat.atrialEctopicFocus`), every one with
+    an exact mean. 258 clips from 5 open datasets (see `credits.js`); regenerate
+    the manifest with `node src/scripts/genAusculManifest.mjs` after adding
+    files. Verified by `scripts/ausculRetimeTest.mjs` (136 pass) and a
+    headless-Chromium test (pneumothorax side measurably quieter, dragging
+    builds exact-rate buffers, back view plays, typed note handed back,
+    no page errors). Still to do: (a) no scenario sets `pat.ptxSide` /
+    `pleuralEffusionSide`, so a pneumothorax is always on the right; (b) the
+    user's own hemothorax and pneumothorax-cough recordings are not added yet
+    (need source and license); tension pneumothorax is a 0.03 gain attenuation,
+    not a recording; (c) no pericardial rub, and only 3 stridor clips (the
+    HF_Lung test split holds 22 s of stridor in total); (d) AV block and Mobitz
+    dropped beats are not sounded (the engine models no dropped beat); (e) MR
+    and AR use pediatric CirCor clips; Wikimedia CC BY-SA clips were
+    deliberately not taken; (f) the drawn torso is one body type, with only a
+    female-contour variant and no body-size or tone variation from the patient;
+    (g) the typed note is free text that nothing reads back or scores, and the
+    crew do not react to it; (h) sounds were built and measured but never played
+    through speakers by a person.
+
 ---
 
 ## 7. Hard-won lessons

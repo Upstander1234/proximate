@@ -34,7 +34,7 @@ import { isTaskBlocked, rollPartnerLimitation, LIMITATIONS } from "./limitations
 import { CONDITION_INFO, groundTruthConditions, matchesCondition } from "./medicle.js";
 import { REFLECTION_PROMPTS, REFLECTION_PRIMARY_DELTA, REFLECTION_SECONDARY_DELTA, initializeCampaignNames,
   campaignName, campaignGender, CAMPAIGN_NAME_SLOTS,
-  effectiveFitness, fitnessCostMult, campaignFumbleChance, PHYSICAL_ACTION_IDS, FATIGUE_PER_PHYSICAL_ACTION,
+  effectiveFitness, staminaFitness, fitnessCostMult, campaignFumbleChance, PHYSICAL_ACTION_IDS, FATIGUE_PER_PHYSICAL_ACTION,
   clampFatigue, campaignBagCap, betweenCallRecovery,
   endOfShiftFatigueGain, FATIGUE_WARN_THRESHOLD, FATIGUE_STUMBLE_THRESHOLD, FATIGUE_STUMBLE_CHANCE,
   clampMorale, clampReputation, needsRemedialTraining, callOutcomeDeltas,
@@ -84,10 +84,22 @@ import { TESTER_KEY, TESTER_PASSWORD, isTesterUnlocked } from "./testerGate.js";
 const DEFAULT_COOP_URL = import.meta.env.VITE_COOP_RELAY_URL || "ws://localhost:8787";
 import Shell from "./components/Shell.jsx";
 import BootScreen from "./components/BootScreen.jsx";
+import CreditsScreen from "./components/CreditsScreen.jsx";
+import { CREDITS_SEEN_KEY } from "./credits.js";
 import AccessMinigame from "./components/AccessMinigame.jsx";
 import AirwayMinigame from "./components/AirwayMinigame.jsx";
 import CricMinigame from "./components/CricMinigame.jsx";
 import SGAMinigame from "./components/SGAMinigame.jsx";
+import DrawUpMinigame from "./components/DrawUpMinigame.jsx";
+import PupilMinigame from "./components/PupilMinigame.jsx";
+import GiveMedMinigame from "./components/GiveMedMinigame.jsx";
+import TwelveLeadPrint from "./components/TwelveLeadPrint.jsx";
+import GlucometerMinigame from "./components/GlucometerMinigame.jsx";
+import DeviceMinigame from "./components/DeviceMinigame.jsx";
+import CprMinigame from "./components/CprMinigame.jsx";
+import ProcMinigame from "./components/ProcMinigame.jsx";
+import BvmMinigame from "./components/BvmMinigame.jsx";
+import AuscultationMinigame from "./components/AuscultationMinigame.jsx";
 import BodyMap from "./components/BodyMap.jsx";
 import { VNScene, VNBox, VNDialogue, VNHeader, VNSprite } from "./components/VNShell.jsx";
 import CampusMapOverlay from "./components/CampusMapOverlay.jsx";
@@ -385,7 +397,7 @@ function useReadAloud(log,voice,dispatchCue,volume=1){
 export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:4,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},
   t:0,onSceneAt:null,pockets:[],bags:[],stretcher:0,
   log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},crew:[],
-  busy:null,cBusy:{},ivSites:[],exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
+  busy:null,cBusy:{},ivSites:[],accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
   // F44: a snapshot of outcomeReport(s) — the OBJECTIVE physiological outcome
   // (neuro outcome, ROSC/downtime, irreversible/reversible injury, troponin,
   // lethal-mechanism-treatable) — taken at the same moment g.outcome itself is
@@ -1329,7 +1341,7 @@ const BackBtn=({toPhase,label="← Back",confirmMsg,reset,setG})=>(
     style={{background:C.panelHi,border:`1px solid ${C.line}`,color:C.dim,fontSize:12,padding:"6px 12px",borderRadius:6,cursor:"pointer",whiteSpace:"nowrap"}}>
     {label}</button>);
 
-export default function App(){
+export default function App({onHome}={}){
   const [g,setG]=useState(blank);
   // Autosave every 5 minutes of real time to the active slot (on top of the
   // existing save-around-each-call behavior). Reads the latest state through
@@ -1398,6 +1410,9 @@ export default function App(){
   const [mapView,setMapView]=useState(false);
   // Free Explore (temporary, dev-facing) — which map id the player picked
   // to walk around; UI-only, same footing as mapView, no save/CARRY needed.
+  // Credits are the very first screen of a fresh session, once; afterwards they
+  // live behind the title screen's Credits button (phase "credits").
+  const [firstCredits,setFirstCredits]=useState(()=>{try{return !localStorage.getItem(CREDITS_SEEN_KEY);}catch{return true;}});
   const [exploreMapId,setExploreMapId]=useState("city");
   const [exploreSpawnVehicle,setExploreSpawnVehicle]=useState(false);
   // Tester-gate password field — UI-only, never persisted, same footing as
@@ -1612,6 +1627,13 @@ export default function App(){
       outcome:{...base,notes:dNote?[...(base.notes||[]),dNote]:(base.notes||[]),arrest:a}});};
 
   const medActs=()=>{const out=[];
+    // Player draw-up, resolved through DrawUpMinigame.jsx (start() intercepts
+    // id "prep"). On success start() re-enters with _skipMinigame and this
+    // run() sets the same `prepped` flag the crew "prep" task already sets.
+    out.push({id:"prep",region:"head",tab:"meds",label:"Draw up the next drug",gerund:"Drawing up",cost:25,lvl:2,bag:"drug",
+      tip:"Draw the next drug ahead of time; the next push takes half as long.",
+      run:(s)=>{if(s.prepped) return {say:"A drug is already drawn up and in your hand.",kind:"obs"};
+        s.prepped=1; return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
     Object.entries(DRUGS).forEach(([id,d])=>{
       const ivOnly=(d.route.includes("IV")||d.route.includes("IO"))&&!d.route.includes("IM")&&!d.route.includes("IN");
       const imN=d.route.includes("IM")||d.route.includes("IN");
@@ -1624,14 +1646,19 @@ export default function App(){
       out.push({id,region,tab:"meds",drug:id,prepped:!!g.prepped,label:`${d.name} · ${d.route}`,
         gerund:`Giving ${d.name.split(" ")[0].toLowerCase()}`, cost,
         lvl:lvlOf(id,d.lvl),bag:"drug",tip:d.note,
-        run:(s,v)=>{if(d.hold){const h=d.hold(v);if(h)return {say:h,kind:"warn"};}
+        run:(s,v,act)=>{const ov=!!(act&&act._override);
+          if(d.hold&&!ov){const h=d.hold(v);if(h)return {say:h,kind:"warn"};}
           // F6: a tourniquet occludes venous return from everything distal to
           // it — a line placed on that same limb cannot deliver anything to
           // central circulation while the tourniquet is on. Real teaching
           // point (start the line ABOVE the tourniquet, or on the other arm).
-          if(ivOnly&&s.done?.[`tq@${region}`]) return {say:`The tourniquet is still on this limb — nothing pushed below it reaches central circulation. Use the other arm, or remove the tourniquet first.`,kind:"warn"};
+          if(ivOnly&&s.done?.[`tq@${region}`]){
+            if(!ov) return {say:`The tourniquet is still on this limb — nothing pushed below it reaches central circulation. Use the other arm, or remove the tourniquet first.`,kind:"warn"};
+            // Confirmed anyway: the dose is spent but never reaches the patient.
+            s.given={...s.given,[id]:(s.given[id]||0)+1};s.prepped=0;
+            return {say:`You push it below the tourniquet. It pools in the limb and never reaches central circulation.`,kind:"warn"};}
           const n=(s.given[id]||0)+1;
-          if(d.max&&n>d.max) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
+          if(d.max&&n>d.max&&!ov) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
           s.given={...s.given,[id]:n};giveDose(s,{id,at:s.t});s.prepped=0;
           if(id==="calcium") s.calcium=1;
           // F0 — treatment-response dialogue (item 18): analgesics are
@@ -1673,7 +1700,7 @@ export default function App(){
       // F6: sternal IO is the one non-limb site — LIMBS.includes would
       // otherwise fall it back to "armR" and silently relocate it.
       const site=p.id==="io"&&p.region==="torso"?"torso":(LIMBS.includes(p.region)?p.region:"armR");
-      s.ivSites=[...new Set([...(s.ivSites||[]),site])]; giveDose(s,{id:p.id,at:s.t});
+      s.ivSites=[...new Set([...(s.ivSites||[]),site])]; {const t=p.id==="io"?"IO":"IV";const cur=(s.accessTypes||{})[site]||[];s.accessTypes={...(s.accessTypes||{}),[site]:cur.includes(t)?cur:[...cur,t]};} giveDose(s,{id:p.id,at:s.t});
       return {say:`${pr.name}. ${site==="torso"?"IO needle seated in the manubrium, aspirate confirms marrow.":"Eighteen's in, flushes clean."} — drugs are live on this ${site==="torso"?"site":"limb"}.`,kind:"good",
         set:{region:site,tab:"meds",panel:"actions"}};}
     if(["opa","npa","sga","bvm","suction","mouthMask"].includes(p.id)&&s.vomited&&!s.rolled){s.aspirated=1;
@@ -2988,7 +3015,7 @@ export default function App(){
     // rule every other action in this game still honors. Do not add a
     // Sandbox gate here to "fix" this — it would be undoing an explicit
     // design decision, not closing a gap.
-    if(["iv","io","laryngoscopy","ett","cric","sga"].includes(a.id)&&!a._skipMinigame){
+    if(["iv","io","laryngoscopy","ett","cric","sga","prep","pupils"].includes(a.id)&&!a._skipMinigame){
       // alertBaseline: how many eventAlertQueue entries existed the moment
       // this attempt opened (spec 2.5's escape hatch — see the tick-loop
       // comment above this function's own resolveAccessMinigame). Sim time
@@ -3000,6 +3027,58 @@ export default function App(){
       return {...s,accessMinigame:{action:a,kind:a.id,site:a.region,
         attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
         alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    // Tourniquet, needle decompression, chest seal, BVM and defibrillation.
+    // Stethoscope exam: real recordings retimed to the engine's exact rates.
+    if((a.id==="lungs"||a.id==="heart")&&!a._skipMinigame){
+      // A stethoscope needs skin: the chest has to be bared first.
+      if(!s.exposed?.torso) return {...s,log:[...s.log,{t:s.t,kind:"warn",
+        text:"You can't hear anything through their shirt. Expose the chest first."}]};
+      return {...s,accessMinigame:{action:a,kind:"auscultate",mode:a.id==="lungs"?"lungs":"heart",site:a.region,
+        attempts:0,alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    // BVM is a continuous, live session (BvmMinigame), not a one-shot sequence.
+    if(a.id==="bvm"&&!a._skipMinigame){
+      return {...s,accessMinigame:{action:a,kind:"bvm",site:a.region,
+        attempts:0,alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    if(["tq","needleD","chestSeal","defib","aedShock","headTilt","jawThrust","cCollar","cspine","opa","npa","suction","o2nc","o2nrb"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
+      return {...s,accessMinigame:{action:a,kind:"proc",site:a.region,procId:a.id,procName:PROCS[a.id].name,
+        attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
+        alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    // Glucometer, device application and hands-on CPR minigames.
+    if((a.id==="gluc"||a.id==="cpr"||/^attach_/.test(a.id))&&!a._skipMinigame){
+      const devId=/^attach_/.test(a.id)?a.id.slice(7):null;
+      if(!devId||DEVICES[devId]){
+        return {...s,accessMinigame:{action:a,kind:devId?"device":a.id,site:a.region,deviceId:devId,deviceName:devId?DEVICES[devId].name:"",
+          attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
+          alertBaseline:(s.eventAlertQueue||[]).length}};
+      }
+    }
+    // Route-shaped drug administration (GiveMedMinigame.jsx). Contraindication
+    // holds and a tourniquet-occluded line fall through to the normal path so
+    // their warning still fires instead of wasting a minigame.
+    if(a.drug&&!a._skipMinigame&&DRUGS[a.drug]){
+      const d=DRUGS[a.drug];
+      // Contraindication, tourniquet and max-dose problems no longer skip the
+      // game: they become a warning + confirmation screen, and the player can
+      // still proceed (a._override, read by medActs()'s run()).
+      const warnings=[];
+      const held=d.hold&&d.hold(physio(s));
+      if(held) warnings.push(held);
+      const lineOnlyRoute=(d.route.includes("IV")||d.route.includes("IO"))&&!d.route.includes("IM")&&!d.route.includes("IN");
+      if(lineOnlyRoute&&s.done?.[`tq@${a.region}`]) warnings.push("The tourniquet is still on this limb. Nothing pushed below it reaches central circulation.");
+      if(d.max&&(s.given[a.drug]||0)>=d.max) warnings.push(`Maximum dose reached (${d.max}). Stop, or call Base.`);
+      {
+        const r=d.route;
+        const lineOnly=(r.includes("IV")||r.includes("IO"))&&!r.includes("IM")&&!r.includes("IN");
+        const mode=lineOnly?"line":r.includes("IM")?"im":r.includes("IN")?"in":/NEB|INH/.test(r)?"neb":"oral";
+        const accessOptions=(s.accessTypes||{})[a.region]||["IV"];
+        return {...s,accessMinigame:{action:a,kind:"give",site:a.region,mode,access:accessOptions[0],accessOptions,drugName:d.name,warnings,
+          attempts:(s.accessAttempts||{})[`give@${a.id}`]||0,
+          alertBaseline:(s.eventAlertQueue||[]).length}};
+      }
     }
     const pr=a.probe&&(scenOf(s).probes||{})[a.probe];
     // Zero-To-Hero campaign only (design doc §1.3.1/§1.3.3) — every player
@@ -3019,13 +3098,17 @@ export default function App(){
     // not new: effectiveFitness (campaign.js) already steepens its penalty
     // past fatigue 80, so fitMult below is already slower once fatigue
     // crosses that warning threshold.
-    const stumbled=zth&&(s.fatigue||0)>=FATIGUE_STUMBLE_THRESHOLD&&Math.random()<FATIGUE_STUMBLE_CHANCE;
-    const fumbled=!stumbled&&zth&&Math.random()<campaignFumbleChance(s.confidence,s.knowledge);
+    // No random fumble or stumble once the player has done the minigame: a
+    // successful attempt (a._skipMinigame re-entry) is decided by their own
+    // technique, not a dice roll. Actions without a minigame keep both rolls.
+    const viaMinigame=!!a._skipMinigame;
+    const stumbled=zth&&!viaMinigame&&(s.fatigue||0)>=FATIGUE_STUMBLE_THRESHOLD&&Math.random()<FATIGUE_STUMBLE_CHANCE;
+    const fumbled=!stumbled&&zth&&!viaMinigame&&Math.random()<campaignFumbleChance(s.confidence,s.knowledge);
     const fn=stumbled
       ?()=>({say:"You stumble, dangerously exhausted — that didn't land.",kind:"warn"})
       :fumbled
       ?()=>({say:"Your hands aren't quite there yet — that didn't land the way you meant to.",kind:"warn"})
-      :(n,v)=>{const b=a.run?a.run(n,v):null;const r=pr?pr(n,v):null;return r?{...(b||{}),...r}:b;};
+      :(n,v)=>{const b=a.run?a.run(n,v,a):null;const r=pr?pr(n,v):null;return r?{...(b||{}),...r}:b;};
     // F1: an action performed above the player's own certification level only
     // reaches here because the scope-OVERRIDE switch let it through (why()'s
     // lock check exempts overridden ids) — record it so sandboxRating's
@@ -3169,6 +3252,45 @@ export default function App(){
     return {...s,log,dialogueMemory,dialogueLastAt:s.t};
   });
 
+  // CprMinigame: each 4th compression pushes the rolling depth/rate quality
+  // into the patient (idempotent value, safe under strict-mode double invoke)
+  // and every 8th refreshes the compression dose so perfusion doesn't decay.
+  const cprProgress=(q,n)=>setG(s=>{if(!s.patient) return s;
+    s.patient.cprQuality=q; s.patient._cprQualityAt=s.t;
+    if(n!==1&&n%8!==0) return s;
+    const m={...s}; giveDose(m,{id:"cpr",at:s.t}); return m;});
+  // Hands-on CPR/BVM tire the player in the campaign (fatigue: 0 fresh, 100
+  // exhausted). Medical Simulation has no fatigue, and only the Zero to Hero
+  // campaign tracks it, matching start()'s own physical-action rule.
+  const cprFatigue=(s,count)=>s.learningMode==="zth"&&s.gmode!=="sandbox"
+    ?clampFatigue((s.fatigue||0)+Math.round(FATIGUE_PER_PHYSICAL_ACTION*count/60)):s.fatigue;
+  const cprSummaryText=(sum)=>`${sum.count} compressions at an average ${sum.avgDepth.toFixed(1)} cm, ${Math.round(sum.goodDepth*100)}% at target depth${sum.rate?`, about ${sum.rate}/min`:""}`;
+  const cprFinish=(sum)=>{const mg=g.accessMinigame; if(!mg) return;
+    setG(s=>({...s,accessMinigame:null,fatigue:cprFatigue(s,sum.count),
+      log:[...s.log,{t:s.t,kind:"obs",text:`Compressions stopped: ${cprSummaryText(sum)}.`}]}));
+    // Re-enter the normal CPR action so its own logic (e.g. clearing an FBAO) still runs.
+    start({...mg.action,_skipMinigame:true,cost:5});};
+  const cprAbort=()=>setG(s=>({...s,accessMinigame:null}));
+  // Hand the work to a crew member: end the player's session, keep the
+  // compressions going without a gap (a fresh dose now), and order the task.
+  const handOff=(taskId,cid,sum)=>{
+    const c=(g.crew||[]).find(x=>x.id===cid), t=TASKS.find(x=>x.id===taskId);
+    if(!c||!t) return;
+    setG(s=>{const m={...s,accessMinigame:null};
+      if(taskId==="cpr"){ giveDose(m,{id:"cpr",at:s.t}); if(sum) m.fatigue=cprFatigue(s,sum.count); }
+      m.log=[...s.log,{t:s.t,kind:"obs",text:sum?`You hand compressions to ${c.name} after ${cprSummaryText(sum)}.`:`You hand the bag to ${c.name}.`}];
+      return m;});
+    order(c,t);};
+  // BVM, live: each second the minigame pushes volume/rate factors into the
+  // patient, and the first push starts the ventilation dose.
+  const bvmProgress=(volQ,rateQ)=>setG(s=>{if(!s.patient) return s;
+    s.patient.bvmVolQ=volQ; s.patient.bvmRateQ=rateQ; s.patient._bvmQualityAt=s.t;
+    if((s.doses||[]).some(d=>d.id==="bvm")) return s;
+    const m={...s,bvm:1}; giveDose(m,{id:"bvm",at:s.t}); return m;});
+  const bvmStop=(count)=>setG(s=>({...s,accessMinigame:null,
+    doses:count>0?(s.doses||[]).filter(d=>d.id!=="bvm"):s.doses,
+    log:count>0?[...s.log,{t:s.t,kind:"obs",text:`You stop bagging after ${count} breaths.`}]:s.log}));
+
   const resolveAccessMinigame=(outcome,detail)=>{
     const mg=g.accessMinigame; if(!mg) return;
     if(outcome===PROCEDURE_OUTCOME.CANCELLED){
@@ -3179,6 +3301,17 @@ export default function App(){
     if(outcome===PROCEDURE_OUTCOME.ABORTED){
       setG(s=>({...s,accessMinigame:null,
         log:[...s.log,{t:s.t,kind:"obs",text:`${mg.action.label||"Attempt"} abandoned, the patient's condition changed.`}]}));
+      return;
+    }
+    if(outcome===PROCEDURE_OUTCOME.SUCCESS&&mg.kind==="auscultate"){
+      // Nothing to pass or fail here: the player listened, and whatever they typed
+      // is what they tell the crew. The engine's own finding still lands in the log
+      // through the normal exam action (actions.js), so the record stays honest even
+      // if the player's read was wrong.
+      setG(s=>{const note=detail&&(detail.hear||detail.think);
+        return {...s,accessMinigame:null,log:note?[...s.log,
+          {t:s.t,kind:"disp",text:`YOU: "${detail.what}${detail.hear?` — ${detail.hear}`:""}${detail.think?`. I think ${detail.think}.`:""}"`}]:s.log};});
+      start({...mg.action,_skipMinigame:true,cost:5});
       return;
     }
     if(outcome===PROCEDURE_OUTCOME.SUCCESS){
@@ -3215,7 +3348,7 @@ export default function App(){
       // Per explicit operator instruction, the busy timer after a
       // successful mini-game is a short, fixed confirmation window, not
       // the original flat cost.
-      start({...mg.action,_skipMinigame:true,cost:5});
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:5});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -3551,6 +3684,8 @@ export default function App(){
      progress bar, and how the AI panel's progress is genuinely wired to
      LocalLLMProvider via dialogueManager's getLocalAiState()/
      subscribeLocalAiProgress()/preloadLocalAi(). ═══ */
+  if(g.phase==="boot"&&firstCredits) return <CreditsScreen firstRun onDone={()=>{try{localStorage.setItem(CREDITS_SEEN_KEY,"1");}catch{/* storage unavailable */} setFirstCredits(false);}}/>;
+  if(g.phase==="credits") return <CreditsScreen onDone={()=>setG(s=>({...s,phase:"title"}))}/>;
   if(g.phase==="boot") return <BootScreen g={g} setG={setG}/>;
 
   /* ═══ TITLE ═══ */
@@ -3574,6 +3709,8 @@ export default function App(){
           style={{background:C.panelHi,border:`1px solid ${C.line}`,color:C.text,fontSize:14}}>How it works</button>
         <button onClick={()=>setG(s=>({...s,phase:"faq"}))} className="px-7 py-3 rounded"
           style={{background:C.panelHi,border:`1px solid ${C.line}`,color:C.text,fontSize:14}}>Scope of practice</button>
+        <button onClick={()=>setG(s=>({...s,phase:"credits"}))} className="px-7 py-3 rounded"
+          style={{background:C.panelHi,border:`1px solid ${C.line}`,color:C.text,fontSize:14}}>Credits</button>
         <button onClick={()=>setG(s=>({...s,phase:goOnShiftPhase()}))} className="px-7 py-3 rounded"
           style={{background:"#2A1418",border:`1px solid ${C.red}`,color:C.red,fontSize:14}}>▲ Go on shift</button>
       </div>
@@ -3583,10 +3720,9 @@ export default function App(){
       <button onClick={()=>setG(s=>({...s,phase:"freeExplorePick"}))} className="mt-3"
         style={{background:"none",border:"none",color:C.faint,fontSize:11,fontFamily:MONO,letterSpacing:".08em",textDecoration:"underline",cursor:"pointer"}}>
         🚶 Free Explore (beta) — walk around a map, no call</button>
-      <div className="f4" style={{fontFamily:MONO,fontSize:9.5,color:C.faint,marginTop:26,lineHeight:1.7}}>
-        SCOPE · NATIONAL EMS SCOPE OF PRACTICE MODEL 2019 (+CN 1.0/2.0), SGA AT EMT<br/>
-        PROTOCOLS · LOS ANGELES COUNTY DHS
-      </div>
+      {onHome&&<button onClick={onHome} className="mt-3"
+        style={{background:"none",border:"none",color:C.faint,fontSize:11,fontFamily:MONO,letterSpacing:".08em",cursor:"pointer"}}>
+        ← Back to main menu</button>}
     </div></Shell>);
 
   /* ═══ FREE EXPLORE — temporary, dev-facing free-roam mode. Pick a map,
@@ -5493,7 +5629,7 @@ export default function App(){
             // procedure a layperson can never give, which handed out an
             // unwinnable call through no fault of the player. Every other
             // level still draws from the full library.
-            const pool=s.level==="layperson"?Object.keys(SCEN).filter(k=>LAYPERSON_COMPLETABLE.has(k)):Object.keys(SCEN);
+            const pool=s.level==="layperson"?Object.keys(SCEN).filter(k=>LAYPERSON_COMPLETABLE.has(k)):Object.keys(SCEN).filter(k=>k!=="baseline");
             // F17 step 3: HIDDEN shift duration / dynamic call volume — a
             // real shift's length isn't known in advance to the crew working
             // it. Previously always exactly 5; now 3-7, and the station
@@ -6078,7 +6214,7 @@ export default function App(){
   }
 
   if(g.phase==="cat"){
-    const pick=(cat)=>{const pool=Object.keys(SCEN).filter(k=>cat==="random"||SCEN[k].cat===cat);
+    const pick=(cat)=>{const pool=Object.keys(SCEN).filter(k=>k!=="baseline"&&(cat==="random"||SCEN[k].cat===cat));
       // pick() is only ever invoked from an onClick handler (every call site
       // below), never during render; the rule can't tell a function DEFINED
       // in the render body from one only ever CALLED from an event handler.
@@ -6106,10 +6242,11 @@ export default function App(){
       <div className="f2 flex flex-col gap-2 mt-6">
         {[["medical","Medical","Chest pain. Breathing. Overdose. The ones that look fine and are not."],
           ["trauma","Trauma","The ones that look terrible and sometimes are not."],
-          ["random","Random","You do not get to know. Neither does dispatch."]].map(([k,n,d])=>(
-          <button key={k} onClick={()=>pick(k)} className="text-left px-5 py-4 rounded"
-            style={{background:C.panelHi,border:`1px solid ${k==="random"?C.amber:C.line}`}}>
-            <div style={{fontSize:17,fontWeight:600,color:k==="random"?C.amber:C.text}}>{n}</div>
+          ["random","Random","You do not get to know. Neither does dispatch."],
+          ["test","Test Patient","A healthy adult at baseline vitals, for trying every treatment, device and minigame. Never comes up in random calls."]].map(([k,n,d])=>(
+          <button key={k} onClick={()=>(k==="test"?pickExact("baseline"):pick(k))} className="text-left px-5 py-4 rounded"
+            style={{background:C.panelHi,border:`1px solid ${k==="random"?C.amber:k==="test"?C.spo2:C.line}`,marginTop:k==="test"?10:0}}>
+            <div style={{fontSize:17,fontWeight:600,color:k==="random"?C.amber:k==="test"?C.spo2:C.text}}>{n}</div>
             <div style={{fontSize:12,color:C.dim,marginTop:4}}>{d}</div></button>))}
       </div>
       {g.roster.length>0&&<div className="f2 mt-6 p-3 rounded" style={{background:C.panel,border:`1px solid ${C.line}`}}>
@@ -6134,7 +6271,7 @@ export default function App(){
                   color:(v==="map")===mapView?C.spo2:C.dim,fontFamily:MONO,fontSize:9.5}}>{n}</button>))}
           </div>
         </div>
-        {(()=>{const byBody={}; Object.keys(SCEN).forEach(k=>{const sys=bodySystemOf(k); (byBody[sys]=byBody[sys]||[]).push(k);});
+        {(()=>{const byBody={}; Object.keys(SCEN).filter(k=>k!=="baseline").forEach(k=>{const sys=bodySystemOf(k); (byBody[sys]=byBody[sys]||[]).push(k);});
           const order=["Cardiac","Respiratory","Trauma","Toxicology","Infectious Disease","Allergy / Immune","Obstetric / Gynecologic","Pediatric","Gastrointestinal","Neurologic","Endocrine / Metabolic","Electrolyte","Environmental","Other"];
           // Same "you don't get to know which one" flavor as the top-level
           // Random button and the map pins, scoped to one body system —
@@ -9417,7 +9554,7 @@ export default function App(){
 
   if(g.phase==="campaignCh8Internship"){
     const begin=()=>setG(s=>{
-      const pool=Object.keys(SCEN);
+      const pool=Object.keys(SCEN).filter(k=>k!=="baseline");
       const queue=[...pool].sort(()=>Math.random()-.5).slice(0,CH8_INTERNSHIP_CALLS_REQUIRED);
       return {...s,career:{queue,idx:0,results:[]},ch8InternshipActive:1,scopeLocked:1,
         loadoutSelection:null,supplyStock:null,truckReserve:null,callsSinceLoadoutRefresh:0,phase:"station",stationBoardOpen:false};
@@ -9844,6 +9981,48 @@ export default function App(){
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame} onDialogue={fireMinigameDialogue}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="proc"&&<ProcMinigame open kind="proc"
+      procId={g.accessMinigame.procId} procName={g.accessMinigame.procName}
+      pat={g.patient} assist={g.procedureAssist}
+      suspectSpine={scenOf(g)?.cat==="trauma"||(g.patient?.brainInjury||0)>0}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="gluc"&&<GlucometerMinigame open kind="gluc"
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="device"&&<DeviceMinigame open kind="device"
+      deviceId={g.accessMinigame.deviceId} deviceName={g.accessMinigame.deviceName}
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="auscultate"&&<AuscultationMinigame open kind="auscultate"
+      mode={g.accessMinigame.mode} pat={g.patient} aspirated={g.aspirated}
+      sex={(scenOf(g)?.pronouns==="she"?"f":"m")}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="bvm"&&<BvmMinigame open kind="bvm" pat={g.patient}
+      crew={(g.crew||[]).map(c=>({id:c.id,name:c.name}))}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onProgress={bvmProgress} onStop={bvmStop} onHandoff={(cid)=>handOff("bvm",cid)}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="cpr"&&<CprMinigame open kind="cpr" pat={g.patient}
+      fitness={staminaFitness(g)} crew={(g.crew||[]).map(c=>({id:c.id,name:c.name}))}
+      onHandoff={(cid,sum)=>handOff("cpr",cid,sum)}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onProgress={cprProgress} onFinish={cprFinish} onAbort={cprAbort}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="give"&&<GiveMedMinigame open kind="give" warnings={g.accessMinigame.warnings}
+      drugName={g.accessMinigame.drugName} mode={g.accessMinigame.mode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="prep"&&<DrawUpMinigame open kind="prep"
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="pupils"&&<PupilMinigame open kind="pupils"
+      pat={g.patient}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="sga"&&<SGAMinigame open kind="sga"
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
@@ -10274,6 +10453,16 @@ export default function App(){
 
             {/* ── 12-lead interpretation / transmit to base ── */}
             {leadsLive&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
+              <button disabled={!!g.busy} onClick={()=>setG(s=>{const pv=physio(s);const n=(s.twelveLeadCount||0)+1;
+                  const snap={n,t:s.t,seed:Math.floor(s.t*10)+7*n,hr:pv.hr,ecg:pv.ecg,qrsWidth:pv.qrsWidth,k:pv.k,
+                    infarctTerritory:pv.infarctTerritory,pr:pv.prInterval,
+                    info:{name:s.idKnown?s.patientName:"UNKNOWN",age:s.patient?.ageProfile?.age,bp:`${pv.sbp}/${pv.dbp}`,spo2:pv.spo2,id:scenOf(s).id}};
+                  return {...s,twelveLeadCount:n,twelveLeadPrints:[snap,...(s.twelveLeadPrints||[])].slice(0,3),
+                    log:[...s.log,{t:s.t,kind:"obs",text:"You print a 12-lead ECG."}]};})}
+                className="px-3 py-2 rounded mb-3" style={{background:C.panelHi,border:`1px solid ${C.hr}`,color:C.hr,fontSize:12.5,cursor:"pointer",display:"block"}}>
+                Print 12-lead</button>
+              {(g.twelveLeadPrints||[]).map(sn=><TwelveLeadPrint key={sn.n} snap={sn}
+                onClose={()=>setG(s=>({...s,twelveLeadPrints:(s.twelveLeadPrints||[]).filter(x=>x.n!==sn.n)}))}/>)}
               {L>=4&&g.ecgRead
                 ?<div style={{fontSize:13.5,color:["stemi","peakedT","VF","VT","PEA"].includes(V.ecg)?C.amber:C.text,lineHeight:1.6}}>
                    {ecgLiveText(g,V)}</div>

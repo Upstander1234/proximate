@@ -92,6 +92,8 @@ export const PROCS={
   // conditions that don't.
   suction:{pkModel:"curve",name:"Suction — upper airway",lvl:1,bag:"airway",cost:15,onset:0,dur:0,fx:{},reducesAirwayFluid:0.6},
   manualBP:{pkModel:"curve",name:"Blood pressure — manual",lvl:1,pocket:"scope",cost:28},
+  cspine:{pkModel:"curve",name:"Manual C-spine stabilization",lvl:0,cost:10,onset:0,dur:9999,fx:{},
+    note:"Hold the head in neutral in-line alignment until a collar and board are on."},
   cCollar:{pkModel:"curve",name:"Cervical collar",lvl:1,bag:"trauma",cost:15,onset:0,dur:9999,fx:{}},
   splint:{pkModel:"curve",name:"Extremity splinting",lvl:1,bag:"trauma",cost:40,onset:10,dur:9999,fx:{pain:-3,bleed:-.2}},
   /* EMT (2) */

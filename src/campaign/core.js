@@ -67,6 +67,22 @@ export const REFLECTION_SECONDARY_DELTA = 1;
 export const FATIGUE_MAX = 100;
 export function clampFatigue(v) { return Math.max(0, Math.min(FATIGUE_MAX, Math.round(v))); }
 
+// Medical Simulation (sandbox) mode has no campaign progression, so every stat
+// is treated as the best it can be. These values sit at or past each stat's own
+// ceiling: fitness 20 is where fitnessCostMult bottoms out and the bag cap
+// lifts, and confidence + knowledge of 60 is where campaignFumbleChance hits
+// its 1% floor.
+export const SIM_MAX_STATS = { fitness: 20, confidence: 30, knowledge: 30, ambition: 20 };
+// A stat as the game should read it right now: maxed in Medical Simulation,
+// the stored campaign value everywhere else.
+export function statFor(s, name) {
+  return s && s.gmode === "sandbox" ? SIM_MAX_STATS[name] : (s?.[name] ?? 10);
+}
+// Fitness after fatigue, for stamina: no fatigue in Medical Simulation.
+export function staminaFitness(s) {
+  return s && s.gmode === "sandbox" ? SIM_MAX_STATS.fitness : effectiveFitness(s?.fitness, s?.fatigue);
+}
+
 export function effectiveFitness(fitness, fatigue) {
   const f = fitness ?? 10, fat = fatigue ?? 0;
   let ef = f * (1 - fat / 200);

@@ -43,7 +43,7 @@ export const BEATS={
   // in cardiovascular.js. This engine has no continuous per-lead amplitude
   // model, so severity is represented as one qualitative waveform (a single
   // hump right after the QRS) rather than a graded J-point height.
-  osborn:[[0,0],[3,0],[4,-3],[6,0],[18,2],[20,-14],[22,7],[24,0],[26,5],[28,2],[34,-5],[38,0],[46,0]],
+  osborn:[[0,0],[3,0],[4,-3],[6,0],[18,2],[20,-14],[22,7],[24,0],[26,-5],[28,-2],[34,-5],[38,0],[46,0]],
 };
 export const ECG_READ={
   sinus:"Normal sinus rhythm.", sinusTach:"Sinus tachycardia.", sinusBrad:"Sinus bradycardia.",
@@ -74,6 +74,14 @@ export const ECG_READ={
 export function ecgReadout(kind, v = {}) {
   const base = ECG_READ[kind] || "Rhythm unclear.";
   switch (kind) {
+    case "stemi": {
+      const t = v.infarctTerritory;
+      if (!t) return base;
+      const leads = { inferior: "inferior leads (II, III, aVF)", anterior: "anterior leads (V1-V4)", septal: "septal leads (V1-V2)",
+        lateral: "lateral leads (I, aVL, V5-V6)", anterolateral: "anterolateral leads (V3-V6, I, aVL)" };
+      if (t === "posterior") return "ST DEPRESSION with tall R waves in V1-V3. Posterior STEMI until proven otherwise.";
+      return `ST ELEVATION - ${leads[t] || t}.`;
+    }
     case "afib": {
       const hr = v.hr;
       if (hr == null) return base;

@@ -11,6 +11,7 @@ import { BATCH as AEMT_AIRWAY_BATCH } from "./_genbatch/aemt_airway.js";
 import { BATCH as AEMT_TRAUMA_BATCH } from "./_genbatch/aemt_trauma.js";
 import { BATCH as AEMT_MEDICAL_BATCH } from "./_genbatch/aemt_medical.js";
 import { BATCH as AEMT_OPS_BATCH } from "./_genbatch/aemt_ops.js";
+import { AEMT_ECG_BATCH } from "./_genbatch/ecg_als.js";
 
 export const AEMT_QUESTIONS = [
   {
@@ -207,4 +208,5 @@ export const AEMT_QUESTIONS = [
   ...AEMT_TRAUMA_BATCH,
   ...AEMT_MEDICAL_BATCH,
   ...AEMT_OPS_BATCH,
+  ...AEMT_ECG_BATCH,
 ];

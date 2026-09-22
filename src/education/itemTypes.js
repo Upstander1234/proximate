@@ -60,6 +60,8 @@
 //
 // graphical (a MODIFIER, composed with any of the above, never alone):
 //   graphic: { kind: "ecg"|"capnography"|"image"|"chart"|"label", src, alt }
+//   or, for a rhythm drawn from the game's own monitor waveforms (src/ecg.js):
+//   graphic: { kind: "ecg", rhythm: "VT", alt }   // no src needed
 //   e.g. { itemType: "multiple_choice", graphic: {...}, choices: [...] }
 //
 // scenario (a linking field set, not its own answer shape):
@@ -80,6 +82,8 @@
 //     | "take_action"
 //     | "evaluation"
 // ---------------------------------------------------------------------
+
+import { BEATS } from "../ecg.js";
 
 export const ITEM_TYPES = [
   "multiple_choice",
@@ -120,7 +124,13 @@ export function validateItemTypeShape(question) {
 
   if (question.graphic) {
     const g = question.graphic;
-    if (!g.kind || !g.src) errors.push("graphic requires both kind and src");
+    if (g.kind === "ecg" && g.rhythm) {
+      if (!Object.prototype.hasOwnProperty.call(BEATS, g.rhythm)) {
+        errors.push(`ecg graphic rhythm ${JSON.stringify(g.rhythm)} is not a key of BEATS in ecg.js`);
+      }
+    } else if (!g.kind || !g.src) {
+      errors.push("graphic requires both kind and src (or kind \"ecg\" with a rhythm)");
+    }
   }
 
   if (question.scenarioId && question.scenarioStage && !SCENARIO_STAGES.includes(question.scenarioStage)) {

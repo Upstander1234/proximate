@@ -16,7 +16,7 @@ export default function RootApp() {
     return () => unsub();
   }, []);
 
-  if (mode === "game") return <App />;
+  if (mode === "game") return <App onHome={() => setMode(null)} />;
   if (mode === "education") return <EducationApp onExit={() => setMode(null)} />;
   return (
     <HomePage

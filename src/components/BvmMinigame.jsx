@@ -1,0 +1,132 @@
+import { useState, useRef, useEffect } from "react";
+import { C, MONO } from "../theme.js";
+import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
+import HandoffRow from "./HandoffRow.jsx";
+
+// Bag-valve-mask ventilation, continuous. Get a mask seal, then squeeze once per
+// breath: how long you hold sets the volume (aim for visible chest rise, the
+// green band), and the gap between squeezes sets the rate (aim for one every 5
+// to 6 seconds, 10 a minute). It runs live: every second onProgress pushes the
+// current volume and rate factors into pat.bvmVolQ / bvmRateQ, which scale the
+// engine's assisted ventilation. Stop bagging whenever you choose, or hand it
+// to another provider.
+const VOL_LO = 0.4, VOL_HI = 0.7;
+const TARGET_RATE = 10;
+
+export default function BvmMinigame({ open, kind, pat, crew, interrupted, onProgress, onStop, onHandoff }) {
+  const [sealed, setSealed] = useState(false);
+  const [vol, setVol] = useState(0);
+  const [squeezing, setSqueezing] = useState(false);
+  const [count, setCount] = useState(0);
+  const [msg, setMsg] = useState(null);
+  const [rateNow, setRateNow] = useState(null);
+  const breaths = useRef([]);     // {t, v}
+  const startedAt = useRef(0);
+  // Keep the latest callback in a ref: App re-renders every tick, and a changing
+  // callback in the effect deps below would restart the 1 s interval each time.
+  const progressRef = useRef(onProgress);
+  useEffect(() => { progressRef.current = onProgress; });
+
+  // Squeeze meter fills while held.
+  useEffect(() => {
+    if (!squeezing) return undefined;
+    const id = setInterval(() => setVol((v) => Math.min(1, v + 0.05)), 80);
+    return () => clearInterval(id);
+  }, [squeezing]);
+
+  // Live push, once a second. Rate is the breath rate over the last few breaths,
+  // and it falls the longer you go without squeezing.
+  useEffect(() => {
+    if (!open || kind !== "bvm" || !sealed) return undefined;
+    const id = setInterval(() => {
+      const now = performance.now();
+      const b = breaths.current;
+      if (!b.length) return;
+      const recent = b.slice(-4);
+      const sinceLast = (now - recent[recent.length - 1].t) / 1000;
+      let bpm = 0;
+      if (recent.length >= 2) bpm = 60 / ((recent[recent.length - 1].t - recent[0].t) / 1000 / (recent.length - 1));
+      // No squeeze for longer than two intervals: ventilation is stopping.
+      const cap = sinceLast > 0 ? 60 / sinceLast : bpm;
+      const eff = recent.length >= 2 ? Math.min(bpm, Math.max(cap, 0)) : Math.min(TARGET_RATE, cap);
+      const vols = recent.map((x) => x.v);
+      const avgV = vols.reduce((a, c) => a + c, 0) / vols.length;
+      const volQ = avgV >= VOL_LO ? 1 : Math.max(0.2, avgV / VOL_LO);
+      const rateQ = Math.max(0, Math.min(2, eff / TARGET_RATE));
+      setRateNow(Math.round(eff));
+      progressRef.current(volQ, rateQ);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [open, kind, sealed]);
+
+  if (!open || kind !== "bvm") return null;
+
+  const release = () => {
+    if (!squeezing) return;
+    setSqueezing(false);
+    const now = performance.now();
+    const v = vol;
+    setVol(0);
+    breaths.current.push({ t: now, v });
+    setCount(breaths.current.length);
+    const b = breaths.current;
+    const gap = b.length >= 2 ? (now - b[b.length - 2].t) / 1000 : null;
+    if (v > VOL_HI) setMsg("Too much air. Big breaths force air into the stomach.");
+    else if (v < VOL_LO) setMsg("Too shallow. The chest didn't rise.");
+    else if (gap != null && gap < 3) setMsg("Too fast. Let them exhale between breaths.");
+    else if (gap != null && gap > 9) setMsg("Too slow. Keep a breath every 5 to 6 seconds.");
+    else setMsg("Good breath, chest rose.");
+  };
+
+  const setSeal = () => { setSealed(true); startedAt.current = performance.now(); };
+  const rateColor = rateNow == null ? C.faint : rateNow >= 8 && rateNow <= 12 ? C.hr : C.amber;
+  const msgColor = msg && msg.startsWith("Good") ? C.hr : C.amber;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000C", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(480px,92vw)" }}>
+        <div style={{ fontSize: 14, color: C.amber, marginBottom: 10 }}>Bag-valve-mask ventilation</div>
+        <MinigameVitalsStrip pat={pat} />
+        {interrupted && (
+          <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
+            The patient's condition just changed. Keep bagging or stop and attend to them.
+          </div>
+        )}
+        {!sealed ? (
+          <>
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
+              Get a seal with the C-E grip: thumb and finger make a C over the mask, the other three fingers lift the jaw.
+            </div>
+            <button onClick={setSeal} style={{ width: "100%", background: "#122A18", border: `1px solid ${C.hr}`, color: C.hr, borderRadius: 6, padding: "9px 10px", fontSize: 12.5, cursor: "pointer" }}>
+              Set the C-E grip and start bagging</button>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
+              Hold to squeeze and release to give a breath. Aim for visible chest rise, about one breath every 5 to 6 seconds. Stop whenever you like.
+            </div>
+            <div style={{ position: "relative", height: 16, background: "#10151A", border: `1px solid ${C.line}`, borderRadius: 5, marginBottom: 10 }}>
+              <div style={{ position: "absolute", left: `${VOL_LO * 100}%`, width: `${(VOL_HI - VOL_LO) * 100}%`, top: 0, bottom: 0, background: "#1B3A24" }} />
+              <div style={{ width: `${vol * 100}%`, height: "100%", borderRadius: 4, background: vol >= VOL_LO && vol <= VOL_HI ? C.hr : C.amber }} />
+            </div>
+            <button onPointerDown={() => { setVol(0); setSqueezing(true); }} onPointerUp={release} onPointerLeave={release}
+              style={{ width: "100%", height: 90, borderRadius: 10, cursor: "pointer", fontSize: 14, letterSpacing: ".08em",
+                background: squeezing ? "#1B3A24" : "#122A18", border: `2px solid ${C.hr}`, color: C.hr }}>
+              HOLD TO SQUEEZE
+            </button>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 12 }}>
+              <span style={{ color: C.text }}>Breaths {count}</span>
+              <span style={{ color: rateColor }}>{rateNow == null ? "Rate --" : `${rateNow}/min`}</span>
+              <span style={{ color: msgColor }}>{msg || "--"}</span>
+            </div>
+            <HandoffRow crew={crew} verb="bagging" onHandoff={onHandoff} />
+          </>
+        )}
+        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+          <button onClick={() => onStop(count)} style={{ background: "#10151A", border: `1px solid ${C.line}`, color: C.text, borderRadius: 6, padding: "8px 14px", fontSize: 12, cursor: "pointer" }}>
+            {sealed ? "Stop bagging" : "Cancel"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
