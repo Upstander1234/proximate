@@ -42,7 +42,9 @@ export const PROCS={
   // hands for everything else a code needs done at once.
   lucas:{pkModel:"curve",name:"Mechanical CPR device (LUCAS)",lvl:1,cost:45,onset:0,dur:9999,fx:{},
     note:"Once applied, compressions are continuous and fatigue-free. Applying it still takes hands and time; it does not replace the first round of manual compressions while it's being set up."},
-  pads:{pkModel:"curve",name:"Apply defib/AED pads",lvl:0,bag:"monitor",cost:15,onset:0,dur:9999,fx:{}},
+  // "pads" itself is retired (see actions.js's own comment at PROC_ACTS) —
+  // DEVICES.pads (devices.js) is the one real definition now, consumed by
+  // deviceActs()'s attach_pads / DeviceMinigame.
   aedAnalyze:{pkModel:"curve",name:"AED — analyze rhythm",lvl:0,bag:"monitor",cost:10,onset:0,dur:0,fx:{}},
   aedShock:{pkModel:"curve",name:"AED — deliver shock",lvl:0,bag:"monitor",cost:5,onset:0,dur:0,fx:{},rhythmFix:1},
   recovery:{pkModel:"curve",name:"Recovery position",lvl:0,cost:10,onset:0,dur:9999,fx:{},airwayFix:1},
@@ -129,7 +131,11 @@ export const PROCS={
     note:"First line in pulmonary edema. Hold if hypotensive or suspected pneumothorax."},
   pulseox:{pkModel:"curve",name:"Pulse oximeter",lvl:2,bag:"monitor",cost:10},
   autoBP:{pkModel:"curve",name:"Blood pressure — automated (background)",lvl:2,bag:"monitor",cost:4},
-  glucometer:{pkModel:"curve",name:"Blood glucose",lvl:2,pocket:"glucometer",cost:25},
+  // "glucometer" itself is retired — it was never registered as a real
+  // action (no P("glucometer",...) anywhere in actions.js), so this entry,
+  // its App.jsx run() branch, and every s.given.glucometer/categories.js
+  // reference to it were all dead on arrival. The real, reachable action is
+  // "gluc" (actions.js), which already routes through GlucometerMinigame.
   ecgAcquire:{pkModel:"curve",name:"12-lead — acquire and transmit",lvl:2,bag:"monitor",cost:25,
     note:"National Scope: EMT may ACQUIRE and TRANSMIT a 12-lead. Interpretation is Paramedic-level. You will see the strip. You will not be told what it says."},
   // Cost audit: was 25s — LESS than plain extremity splinting (splint,

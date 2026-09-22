@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchPendingQuestions, reviewQuestion, exportApprovedAsCode } from "./crowdsource.js";
 import { fetchPendingReports, resolveReport } from "./reports.js";
+import { fetchPendingClipReports, resolveClipReport } from "./soundClipReports.js";
 import { validateItemTypeShape, itemTypeOf } from "./itemTypes.js";
 import MedicdleReviewPanel from "./MedicdleReviewPanel.jsx";
 import { QUESTIONS } from "./questions.js";
@@ -46,12 +47,21 @@ export default function AdminReviewTab({ user }) {
         >
           Difficulty Ratings
         </button>
+        <button
+          onClick={() => setTab("clipReports")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+            tab === "clipReports" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          Sound Clip Reports
+        </button>
       </nav>
 
       {tab === "submissions" && <SubmissionsReview user={user} />}
       {tab === "reports" && <ReportsReview user={user} />}
       {tab === "medicdles" && <MedicdleReviewPanel user={user} />}
       {tab === "difficulty" && <DifficultyRatings />}
+      {tab === "clipReports" && <ClipReportsReview user={user} />}
     </div>
   );
 }
@@ -318,6 +328,100 @@ function ReportsReview({ user }) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <textarea
+              placeholder="Reason for approving or denying this report (required, shown as the resolution note)"
+              value={notes[r.id] || ""}
+              onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+              rows={2}
+              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                disabled={busyId === r.id}
+                onClick={() => decide(r, "approved")}
+                className="flex-1 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 font-medium disabled:opacity-50"
+              >
+                Approve report (issue confirmed)
+              </button>
+              <button
+                disabled={busyId === r.id}
+                onClick={() => decide(r, "denied")}
+                className="flex-1 py-2.5 rounded-lg bg-red-800 hover:bg-red-700 font-medium disabled:opacity-50"
+              >
+                Deny report
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function ClipReportsReview({ user }) {
+  const [pending, setPending] = useState(null);
+  const [notes, setNotes] = useState({});
+  const [busyId, setBusyId] = useState(null);
+
+  const refresh = () => {
+    fetchPendingClipReports().then(setPending);
+  };
+
+  useEffect(() => {
+    fetchPendingClipReports().then(setPending);
+  }, []);
+
+  const decide = async (r, decision) => {
+    const note = notes[r.id] || "";
+    if (!note.trim()) {
+      alert("Give a reason before approving or denying this report — it's shown to explain the decision.");
+      return;
+    }
+    setBusyId(r.id);
+    try {
+      await resolveClipReport(r.id, decision, user, note);
+      setPending((p) => p.filter((x) => x.id !== r.id));
+    } catch (e) {
+      alert(e.message || "Review failed.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (pending === null) return <div className="text-slate-400 text-center py-20">Loading reported clips…</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <button onClick={refresh} className="text-sm text-slate-400 hover:text-white underline underline-offset-4">
+          Refresh
+        </button>
+      </div>
+
+      {pending.length === 0 ? (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">
+          No open sound clip reports right now.
+        </div>
+      ) : (
+        pending.map((r) => (
+          <div key={r.id} className="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+            <div className="text-xs text-slate-500">
+              Reported by {r.reportedByName || "unknown"} · {r.clipKind} · {r.clipSrc}
+            </div>
+            <div className="inline-block px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-300 text-xs">
+              {r.reason}
+            </div>
+            {r.details && <div className="text-sm text-slate-300">"{r.details}"</div>}
+
+            <div className="rounded-lg bg-slate-950 border border-slate-800 p-3 space-y-2">
+              <div className="text-sm font-medium">
+                Labeled: {r.clipCategory}
+                {r.clipLoc && r.clipLoc !== "any" ? ` · ${r.clipLoc}` : ""}
+              </div>
+              <div className="text-xs text-slate-500 font-mono">{r.clipId}</div>
+              {r.clipUrl && <audio controls src={r.clipUrl} className="w-full" />}
             </div>
 
             <textarea

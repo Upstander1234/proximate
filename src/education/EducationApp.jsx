@@ -19,6 +19,7 @@ import ProviderAssessmentTab from "./ProviderAssessmentTab.jsx";
 import DailyChallengeTab from "./DailyChallengeTab.jsx";
 import StatsTab from "./StatsTab.jsx";
 import GlobalStatsTab from "./GlobalStatsTab.jsx";
+import AuscultationPracticeTab from "./AuscultationPracticeTab.jsx";
 
 const TABS = [
   { key: "dashboard", label: "Dashboard" },
@@ -27,6 +28,7 @@ const TABS = [
   { key: "adaptive", label: "Adaptive Exam" },
   { key: "assessment", label: "Assessment" },
   { key: "daily", label: "Daily Challenge" },
+  { key: "auscultation", label: "Auscultation Practice" },
   { key: "stats", label: "Progress" },
   { key: "lectures", label: "Lectures", badge: "WIP" },
   { key: "submit", label: "Submit a Question" },
@@ -181,6 +183,7 @@ const [submitPrefillLevel, setSubmitPrefillLevel] = useState(null);
         />
       )}
       {tab === "global" && <GlobalStatsTab />}
+      {tab === "auscultation" && <AuscultationPracticeTab user={user} />}
       {tab === "lectures" && <LecturesTab onOpenPractice={() => setTab("mcq")} />}
       {tab === "submit" && <SubmitQuestionForm user={user} initialLevel={submitPrefillLevel} />}
       {tab === "submitMedicdle" && <SubmitMedicdleForm user={user} />}

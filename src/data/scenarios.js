@@ -618,9 +618,9 @@ fall: {cat: "trauma", id: "TRMA-011", pronouns: "he", title: "Male, 24. Fall fro
     onRefuseNo: "\"Then what am I missing? Give me a finding, not a mechanism.\"",
     onQuestion: "\"Fluids don't fix a hole in the chest or a bleeding artery. If you've found either, say so.\""}),
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const tq = (s.given.tq || 0) + (s.given.pack || 0) + (s.given.directPressure || 0) + (s.given.reboa || 0);
-    const decompressed = (s.given.needleD || 0) + (s.given.chestTube || 0);
-    const ventilated = (s.given.bvm || 0) + (s.given.ett || 0) + (s.given.sga || 0) + (s.given.vent || 0) + (s.given.mouthMask || 0);
+    const tq = (s.doses.some(d=>d.id==="tq")?1:0) + (s.done.pack || 0) + (s.done.directPressure || 0) + (s.done.reboa || 0);
+    const decompressed = (s.done.needleD || 0) + (s.done.chestTube || 0);
+    const ventilated = (s.done.bvm || 0) + (s.done.ett || 0) + (s.done.sga || 0) + (s.done.vent || 0) + (s.done.mouthMask || 0);
     let died = !!arr, cause = arr?.story || "";
     if (arr) {
       cause = `${arr.story}\n\n` + (!decompressed
@@ -775,9 +775,9 @@ motorcycle: {cat: "trauma", id: "TRMA-014", pronouns: "he", title: "Male, 30. Mo
     onRefuseNo: "\"An arrest is an arrest. What would you do differently?\"",
     onQuestion: "\"If you think this arrest is different from a medical one, tell me why.\""}),
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const tq = (s.given.tq || 0) + (s.given.pack || 0) + (s.given.directPressure || 0) + (s.given.reboa || 0);
-    const seal = (s.given.chestSeal || 0) + (s.given.needleD || 0) + (s.given.chestTube || 0);
-    const ventilated = (s.given.bvm || 0) + (s.given.ett || 0) + (s.given.sga || 0) + (s.given.vent || 0);
+    const tq = (s.doses.some(d=>d.id==="tq")?1:0) + (s.done.pack || 0) + (s.done.directPressure || 0) + (s.done.reboa || 0);
+    const seal = (s.done.chestSeal || 0) + (s.done.needleD || 0) + (s.done.chestTube || 0);
+    const ventilated = (s.done.bvm || 0) + (s.done.ett || 0) + (s.done.sga || 0) + (s.done.vent || 0);
     const epiOnly = s.given.epiIV && !tq;
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ["PEA", "asystole"].includes(pat.rhythm)) { died = 1; }
@@ -828,7 +828,7 @@ drowning: {cat: "trauma", id: "PEDS-006", pronouns: "they", title: "Child, 3. Pu
     onRefuseNo: "\"Her rate is dropping. Why wouldn't we compress?\"",
     onQuestion: "\"Tell me the pediatric arrest sequence and where you'd start.\""}),
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const ventilated = (s.given.bvm || 0) + (s.given.ett || 0) + (s.given.sga || 0) + (s.given.mouthMask || 0) + (s.given.mouthMouth || 0) + (s.given.vent || 0) + (s.given.cpap || 0);
+    const ventilated = (s.done.bvm || 0) + (s.done.ett || 0) + (s.done.sga || 0) + (s.done.mouthMask || 0) + (s.done.mouthMouth || 0) + (s.done.vent || 0) + (s.done.cpap || 0);
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ((pat.sao2 || 100) < 60 || ["PEA", "asystole"].includes(pat.rhythm))) died = 1;
     if (died) {
@@ -838,7 +838,7 @@ drowning: {cat: "trauma", id: "PEDS-006", pronouns: "they", title: "Child, 3. Pu
     }
     if (ventilated) notes.push("You ventilated her. That is the whole ball game in a pediatric drowning — oxygen in, and the heart rate climbs back on its own.");
     else notes.push("No effective ventilation. Everything downstream — the bradycardia, the arrest — flows from that one missing thing.");
-    if (s.given.suction && ventilated) notes.push("Suction then ventilate — reasonable when there's water and vomit in the airway.");
+    if (s.done.suction && ventilated) notes.push("Suction then ventilate — reasonable when there's water and vomit in the airway.");
     if ((s.given.epiIV || s.doses?.some?.(d => d.id === "cpr")) && !ventilated) notes.push("Compressions and epinephrine before ventilation, in a hypoxic child. PALS is explicit: this arrest is respiratory in origin — restore oxygen first.");
     if (s.pi === "CANT") notes.push("Labeled a cardiac arrest. It's a respiratory one — the distinction is the entire treatment plan.");
     if (!died && pat && pat.coreTemp < 35) notes.push("She's hypothermic from the cold water. Keep resuscitating and rewarm — cold-water submersion in children can have strikingly good outcomes even after long downtimes. Don't stop early.");
@@ -881,9 +881,9 @@ bikeVsCar: {cat: "trauma", id: "TRMA-020", pronouns: "he", title: "Male, 25. Bic
         evid: "Early TBI sign layered on the shock — the trend is up if the tension chest and the bleed aren't addressed.", find: "Pupils sluggish, equal — not yet anisocoric."},
   },
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const bleedCtrl = (s.given.tq || 0) + (s.given.pack || 0) + (s.given.directPressure || 0);
-    const chest = (s.given.chestSeal || 0) + (s.given.needleD || 0) + (s.given.chestTube || 0);
-    const vent = (s.given.bvm || 0) + (s.given.ett || 0) + (s.given.sga || 0) + (s.given.mouthMask || 0);
+    const bleedCtrl = (s.doses.some(d=>d.id==="tq")?1:0) + (s.done.pack || 0) + (s.done.directPressure || 0);
+    const chest = (s.done.chestSeal || 0) + (s.done.needleD || 0) + (s.done.chestTube || 0);
+    const vent = (s.done.bvm || 0) + (s.done.ett || 0) + (s.done.sga || 0) + (s.done.mouthMask || 0);
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ["PEA", "asystole"].includes(pat.rhythm)) died = 1;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + (!bleedCtrl
@@ -928,7 +928,7 @@ chestPainM: {cat: "medical", id: "CARD-021", pronouns: "he", title: "Male, 54. C
     if (died && !nitroLow) cause = (arr?.story ? arr.story + "\n\n" : "") + "He arrested — likely a lethal dysrhythmia off the ischemic myocardium. Early aspirin, oxygen only if hypoxic, a twelve-lead transmitted, and a fast ALS handoff are the wins here.";
     if (s.given.aspirin) notes.push("Aspirin — the single highest-yield drug in ACS. Chewed, early."); else notes.push("No aspirin given. It's the highest-yield ACS intervention and it was indicated.");
     if (s.given.nitro && !nitroLow) notes.push("Nitro assisted with an adequate pressure — reasonable for ongoing ischemic pain.");
-    if (s.given.ecgAcquire || s.given.ecgRead) notes.push("Twelve-lead obtained — the difference between a STEMI going to a cath lab and one that doesn't."); else notes.push("No twelve-lead. Acquisition (and transmission) is how this patient reaches the right destination.");
+    if (s.done.ecgAcquire || s.done.ecgRead) notes.push("Twelve-lead obtained — the difference between a STEMI going to a cath lab and one that doesn't."); else notes.push("No twelve-lead. Acquisition (and transmission) is how this patient reaches the right destination.");
     return {died, cause, notes, correct: s.pi === "CPMI" || s.pi === "CPSC", truth: "Acute coronary syndrome (STEMI)"};},
 },
 
@@ -958,7 +958,7 @@ chestPainF: {cat: "medical", id: "CARD-022", pronouns: "she", title: "Female, 54
     if (nitroLow) {died = 1; cause = "Nitro with a systolic under 100 — you took the preload out from under a marginal pressure and it collapsed. Confirm the pressure first.";}
     if (died && !nitroLow) cause = (arr?.story ? arr.story + "\n\n" : "") + "She arrested off the ischemic myocardium. Atypical presentations in women are frequently under-treated — the aspirin, twelve-lead and fast handoff matter just as much here.";
     if (s.given.aspirin) notes.push("Aspirin given — highest-yield in ACS, and easy to miss when the presentation is 'atypical.'"); else notes.push("No aspirin. The atypical presentation doesn't lower the indication — it raises the risk of under-treating it.");
-    if (s.given.ecgAcquire || s.given.ecgRead) notes.push("Twelve-lead obtained — essential; women's ACS is under-diagnosed partly because the ECG isn't done early.");
+    if (s.done.ecgAcquire || s.done.ecgRead) notes.push("Twelve-lead obtained — essential; women's ACS is under-diagnosed partly because the ECG isn't done early.");
     return {died, cause, notes, correct: s.pi === "CPMI" || s.pi === "CPSC", truth: "Acute coronary syndrome (atypical presentation)"};},
 },
 
@@ -2122,11 +2122,11 @@ asthmaAttack: {cat: "medical", id: "RESP-023", pronouns: "she", title: "Female, 
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const bronchodil = (s.given.albuterol || 0) + (s.given.ipratropium || 0) + (s.given.epiIM || 0);
-    const o2 = (s.given.o2nrb || 0) + (s.given.o2nc || 0) + (s.given.cpap || 0) + (s.given.bvm || 0);
+    const o2 = (s.done.o2nrb || 0) + (s.done.o2nc || 0) + (s.done.cpap || 0) + (s.done.bvm || 0);
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "She tired into a respiratory arrest. Severe bronchospasm that isn't reversed marches to a silent chest and then apnea — bronchodilators, oxygen, and being ready to assist ventilations are the whole game.";
     if (bronchodil) notes.push("Bronchodilator given — the definitive treatment for the bronchospasm. Albuterol ± ipratropium; IM epinephrine if she were crashing."); else notes.push("No bronchodilator. That's the treatment for this problem — the airways are constricted and nothing else opens them.");
     if (o2) notes.push("Oxygen / ventilatory support for the hypoxia and work of breathing — appropriate."); else notes.push("Hypoxia went unsupported. She needed oxygen, and a hand on the BVM if she tired.");
-    if (s.given.cpap) notes.push("CPAP can buy a tiring asthmatic time — reasonable if she tolerates it.");
+    if (s.done.cpap) notes.push("CPAP can buy a tiring asthmatic time — reasonable if she tolerates it.");
     return {died, cause, notes, correct: s.pi === "SOBB", truth: "Severe asthma exacerbation (irritant-triggered bronchospasm)"};},
 },
 
@@ -2163,7 +2163,7 @@ abdGSW: {cat: "trauma", id: "TRMA-024", pronouns: "he", title: "Male, 29. Gunsho
     if (s.committedAt) notes.push("You committed to transport — correct. This patient is a surgeon's problem and every minute on scene is blood on the floor."); else notes.push("Scene time is the enemy here. There is no field procedure that controls intra-abdominal bleeding — the treatment is a fast trip to an operating room.");
     if (s.given.txa) notes.push("TXA given — reasonable early in traumatic hemorrhage (best within the first hours).");
     if (overResus) notes.push("Aggressive crystalloid pushed the pressure high and popped fresh clot. Permissive hypotension (a radial pulse / SBP ~80–90) is the target until surgical control.");
-    if ((s.given.tq || s.given.pack)) notes.push("A tourniquet/packing can't reach an intra-abdominal bleed — this hemorrhage is non-compressible.");
+    if ((s.doses.some(d=>d.id==="tq") || s.done.pack)) notes.push("A tourniquet/packing can't reach an intra-abdominal bleed — this hemorrhage is non-compressible.");
     return {died, cause, notes, correct: s.pi === "TRMA" || s.pi === "SHOK", truth: "Penetrating abdominal trauma with hemorrhagic shock"};},
 },
 
@@ -2276,7 +2276,7 @@ pph: {cat: "medical", id: "OBGY-043", pronouns: "she", title: "Female, 34. Just 
   resolve: (s, v, arr) => {const notes = []; const mother = s._roster?.find(e => e.role !== "newborn")?.patient || s.patient;
     const nb = s._roster?.find(e => e.id === "newborn")?.patient;
     let died = !!arr, cause = arr?.story || "";
-    const massaged = !!s.given.fundalMassage;
+    const massaged = !!s.done.fundalMassage;
     const oxy = !!s.given.oxytocin;
     const tone = mother?._pregnancy?.uterineTone ?? 0;
     if (massaged && oxy) notes.push("Fundal massage AND oxytocin — correct escalation. The two act on the same muscle through different routes (mechanical/reflex vs. pharmacologic) and compose: this is real combination therapy for atony, not redundant treatment.");
@@ -2315,7 +2315,7 @@ respArrest: {cat: "medical", id: "RESP-026", pronouns: "she", title: "Female, 24
     skin: () => ({say: "Hot and dry, then pale and dusky at the lips.", kind: "crit", evid: "Fever + central cyanosis: septic and profoundly hypoxic.", find: "Febrile; central cyanosis."}),
   },
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const vent = (s.given.bvm || 0) + (s.given.ett || 0) + (s.given.sga || 0) + (s.given.mouthMask || 0) + (s.given.mouthMouth || 0);
+    const vent = (s.done.bvm || 0) + (s.done.ett || 0) + (s.done.sga || 0) + (s.done.mouthMask || 0) + (s.done.mouthMouth || 0);
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ["PEA", "asystole"].includes(pat.rhythm)) died = 1;
     // Agonal + never ventilated = asphyxial death. A non-rebreather on a
@@ -2323,7 +2323,7 @@ respArrest: {cat: "medical", id: "RESP-026", pronouns: "she", title: "Female, 24
     if (!died && !vent) died = 1;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Agonal breathing is not breathing. Without positive-pressure ventilation the hypoxia deepened into an asphyxial arrest. Recognizing the agonal pattern and bagging her — with an adjunct and high-flow oxygen — is the intervention that saves her.";
     if (vent) notes.push("You recognized the agonal breathing and ventilated — the single action that reverses this arc. Add an airway adjunct and high-flow oxygen."); else notes.push("The agonal gasps were mistaken for breathing. She needed positive-pressure ventilation immediately — a non-rebreather on a barely-breathing patient does almost nothing.");
-    if (s.given.opa || s.given.npa) notes.push("Airway adjunct placed — helps you deliver effective ventilations.");
+    if (s.done.opa || s.done.npa) notes.push("Airway adjunct placed — helps you deliver effective ventilations.");
     if (s.given.saline || s.given.plasmalyte) notes.push("A fluid bolus is reasonable for the septic hypotension once oxygenation is being handled — airway first.");
     if (s.pi === "CANT") notes.push("This is a respiratory (hypoxic) arrest with a septic source, not a primary cardiac arrest — the label sets the priorities.");
     return {died, cause, notes, correct: s.pi === "RARF", truth: "Severe pneumonia with sepsis → hypoxic respiratory arrest"};},
@@ -2352,9 +2352,9 @@ seizure: {cat: "medical", id: "NEUR-027", pronouns: "he", title: "Male, 25. Post
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A simple post-ictal patient should not be lost — the ways to harm him are an unprotected airway or missing a reversible cause.";
     notes.push("Post-ictal care is protective, not aggressive: position for airway protection/recovery, oxygen, check the glucose, and monitor for another seizure.");
-    if (s.given.recovery || s.given.opa || s.given.npa || s.given.suction) notes.push("Airway protected during the post-ictal period — the main risk in a drowsy patient.");
-    if (s.given.o2nrb || s.given.o2nc) notes.push("Oxygen given — reasonable while he reoxygenates from the seizure.");
-    if (s.given.glucometer) notes.push("Glucose checked — hypoglycemia is the classic reversible trigger and must be excluded."); else notes.push("No glucose check. Hypoglycemia mimics and triggers seizures — always check it.");
+    if (s.done.recovery || s.done.opa || s.done.npa || s.done.suction) notes.push("Airway protected during the post-ictal period — the main risk in a drowsy patient.");
+    if (s.done.o2nrb || s.done.o2nc) notes.push("Oxygen given — reasonable while he reoxygenates from the seizure.");
+    if (s.done.gluc) notes.push("Glucose checked — hypoglycemia is the classic reversible trigger and must be excluded."); else notes.push("No glucose check. Hypoglycemia mimics and triggers seizures — always check it.");
     if (s.given.midazolam || s.given.diazepam) notes.push("Benzodiazepines are for an ACTIVE seizure (or status), not the post-ictal state — he's already stopped. Giving them now mostly deepens his sedation and his airway risk.");
     return {died, cause, notes, correct: s.pi === "SEIZ" || s.pi === "ALOC", truth: "Breakthrough generalized seizure, now post-ictal"};},
 },
@@ -2388,8 +2388,8 @@ seizureCombative: {cat: "medical", id: "NEUR-035", pronouns: "he", title: "Male,
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A post-ictal patient, even a combative one, is not a threat to be subdued — he's a confused, disoriented person having a medical event. Losing him here usually means an airway problem missed because everyone was focused on the struggle instead of the patient.";
     notes.push("Post-ictal agitation is a recognized part of the seizure recovery period, not defiance — he isn't refusing to cooperate, he genuinely isn't oriented enough to understand what's happening to him yet.");
     notes.push("Scene safety first: give him space, keep bystanders back, and let PD manage physical safety while you stay ready to assess — approaching too fast or trying to physically control him usually prolongs the agitation, not shortens it.");
-    if (s.given.glucometer) notes.push("Glucose checked despite the combativeness — worth the fight, since hypoglycemia can look exactly like this and is immediately reversible."); else notes.push("No glucose check attempted. It's harder to get on a combative patient, but hypoglycemia can present as agitation just as easily as drowsiness, and it's the one thing here you can fix in the field.");
-    if (s.given.recovery || s.given.opa || s.given.npa || s.given.suction) notes.push("Airway considered even though he was fighting you — the right instinct; combativeness doesn't make the airway risk go away, it just makes it harder to manage.");
+    if (s.done.gluc) notes.push("Glucose checked despite the combativeness — worth the fight, since hypoglycemia can look exactly like this and is immediately reversible."); else notes.push("No glucose check attempted. It's harder to get on a combative patient, but hypoglycemia can present as agitation just as easily as drowsiness, and it's the one thing here you can fix in the field.");
+    if (s.done.recovery || s.done.opa || s.done.npa || s.done.suction) notes.push("Airway considered even though he was fighting you — the right instinct; combativeness doesn't make the airway risk go away, it just makes it harder to manage.");
     if (s.given.midazolam || s.given.diazepam) notes.push("A benzodiazepine here would need real justification (recurrent/status seizure, not simple post-ictal agitation) — sedating a confused-but-breathing patient to make the scene easier is a safety call, not a treatment, and should be named as such if it's the reason.");
     return {died, cause, notes, correct: s.pi === "SEIZ" || s.pi === "ALOC", truth: "Breakthrough generalized seizure with post-ictal agitation/combativeness"};},
 },
@@ -2420,8 +2420,8 @@ stabChest: {cat: "trauma", id: "TRMA-028", pronouns: "he", title: "Male, 32. Sta
     onAccept: () => "Copy — needle decompression, seal, permissive hypotension, rapid transport.",
     onQuestion: "\"This is a tension pneumothorax. Decompress the left chest before anything else.\""}),
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const decomp = (s.given.needleD || 0) + (s.given.chestTube || 0);
-    const seal = (s.given.chestSeal || 0);
+    const decomp = (s.done.needleD || 0) + (s.done.chestTube || 0);
+    const seal = (s.done.chestSeal || 0);
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ["PEA", "asystole"].includes(pat.rhythm)) died = 1;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + (!decomp
@@ -2460,8 +2460,8 @@ choking40: {cat: "medical", id: "CHOKE-029", pronouns: "she", title: "Female, 40
     if (died && !cleared) cause = (arr?.story ? arr.story + "\n\n" : "") + "The airway was never cleared. In an unresponsive choking patient, CPR (the compressions generate airway pressure) and direct removal of the object are the treatment — you can't ventilate past an object.";
     if (cleared) notes.push("You cleared the obstruction — the entire problem. Compressions in the unresponsive choking patient, then a look with the laryngoscope and Magill forceps.");
     else notes.push("The object stayed in. Nothing you give works until the airway is mechanically cleared — that's the whole call.");
-    if ((s.given.bvm || s.given.mouthMask) && !cleared) notes.push("You can't bag air past a lodged object — clear it first, then ventilate.");
-    if (s.given.laryngoscopy || s.given.magill) notes.push("Direct laryngoscopy to remove the object under vision — the definitive move once BLS maneuvers fail.");
+    if ((s.done.bvm || s.done.mouthMask) && !cleared) notes.push("You can't bag air past a lodged object — clear it first, then ventilate.");
+    if (s.done.laryngoscopy || s.given.magill) notes.push("Direct laryngoscopy to remove the object under vision — the definitive move once BLS maneuvers fail.");
     return {died, cause, notes, correct: s.pi === "CHOK", truth: "Foreign body airway obstruction (unresponsive)"};},
 },
 
@@ -2879,8 +2879,8 @@ unsafeSceneAssault: {cat: "trauma", id: "TRMA-037", pronouns: "he", title: "Male
         evid: "Early TBI sign layered on the shock — the trend is up if the tension chest and the bleed aren't addressed.", find: "Pupils sluggish, equal — not yet anisocoric."},
   },
   resolve: (s, v, arr) => {const notes = []; const pat = s.patient;
-    const bleedCtrl = (s.given.tq || 0) + (s.given.pack || 0) + (s.given.directPressure || 0);
-    const chest = (s.given.chestSeal || 0) + (s.given.needleD || 0) + (s.given.chestTube || 0);
+    const bleedCtrl = (s.doses.some(d=>d.id==="tq")?1:0) + (s.done.pack || 0) + (s.done.directPressure || 0);
+    const chest = (s.done.chestSeal || 0) + (s.done.needleD || 0) + (s.done.chestTube || 0);
     const allergicReaction = (s.evidence || []).some(e => e.startsWith("Allergic reaction"));
     let died = !!arr, cause = arr?.story || "";
     if (!arr && pat && ["PEA", "asystole"].includes(pat.rhythm)) died = 1;
@@ -3026,7 +3026,7 @@ sickleCellCrisis: {cat: "medical", id: "MISC-036", pronouns: "he", title: "Male,
       evid: "Chronic pallor fits the baseline hemolytic anemia of sickle cell disease — this is not a new, acute pallor from bleeding.", find: "Skin pale (chronic baseline), warm, diaphoretic with pain."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const gaveO2 = s.given.o2nc || s.given.o2nrb || s.given.bvm || s.given.cpap;
+    const gaveO2 = s.done.o2nc || s.done.o2nrb || s.done.bvm || s.done.cpap;
     const gaveFluid = s.given.saline;
     const gaveAnalgesia = s.given.fentanyl || s.given.morphine || s.given.ketorolac;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Progressive hypoxemia let the sickling cycle run unchecked — the vaso-occlusion causing the hypoxia and the hypoxia driving more vaso-occlusion, until his lungs could no longer keep up on room air.";
@@ -3062,8 +3062,8 @@ heatStroke: {cat: "medical", id: "HEAT-001", pronouns: "he", title: "Male, 20. C
       evid: "Altered mental status is a defining feature of heat stroke, not an incidental finding — hyperthermic encephalopathy is real, direct cellular injury, not simple exertional fatigue.", find: "LOC: confused, disoriented, slow to respond."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const shaded = s.given.moveToShade;
-    const activeCooled = s.given.activeCooling;
+    const shaded = s.done.moveToShade;
+    const activeCooled = s.done.activeCooling;
     const fluid = s.given.saline;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "His own thermoregulation had already failed — with sweating stopped and nothing done to actively remove heat, his core temperature kept climbing until it cost him.";
     if (shaded) notes.push("Moving him out of direct sun was the right first move — free, immediate, and it removes real radiant heat load. It is not a cure: the air itself is still dangerously hot, which is exactly why it has to be paired with active cooling, not substituted for it.");
@@ -3117,7 +3117,7 @@ accidentalHypothermia: {cat: "medical", id: "ENV-002", pronouns: "he", title: "M
       : {say: `Slow, regular. You count ${v.hr}.`, kind: "obs", find: `Heart: bradycardic (${v.hr}), regular.`},
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const warmed = s.given.warm;
+    const warmed = s.done.warm;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "His core temperature kept falling with nothing done to actively reverse it — a cold enough heart is an irritable heart, and eventually it found a rhythm that couldn't be shocked back.";
     if (warmed) notes.push("Active rewarming was started — the actual treatment. It will not fix this in the field (real rewarming runs about 1 C an hour), but it is the only thing that turns the trajectory around instead of letting exposure keep winning.");
     else notes.push("No active rewarming was given. He was left to keep losing heat to the same cold environment that put him down — this does not get better on its own once shivering has stopped.");
@@ -3148,7 +3148,7 @@ spontaneousPneumothorax: {cat: "medical", id: "RESP-027", pronouns: "he", title:
     skin: () => ({say: "Pale, mildly diaphoretic, no cyanosis yet.", find: "Skin pale, mildly diaphoretic."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const decompressed = s.given.needleD;
+    const decompressed = s.done.needleD;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "The pneumothorax progressed to tension — rising intrathoracic pressure obstructed venous return until his heart could no longer fill.";
     if (decompressed) notes.push("Needle decompression was performed — the correct move once this progressed toward tension. There is no external wound here, so a chest seal was never the answer; this is a closed pneumothorax, and only decompression relieves it.");
     else notes.push("No decompression was performed. There is no wound to seal on this patient — recognizing a closed pneumothorax and being ready to decompress if it tensions is the whole skill being tested.");
@@ -3177,8 +3177,8 @@ openPneumothorax: {cat: "trauma", id: "TRMA-039", pronouns: "she", title: "Femal
     skin: () => ({say: "Pale, cool, mildly diaphoretic.", find: "Skin pale, cool, diaphoretic."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const sealed = s.given.chestSeal;
-    const decompressed = s.given.needleD;
+    const sealed = s.done.chestSeal;
+    const decompressed = s.done.needleD;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "The open wound was never sealed, and it tensioned — rising intrathoracic pressure choked off venous return until her heart couldn't fill.";
     if (sealed) notes.push("A vented chest seal was applied — the correct, specific fix for an open communicating wound. It lets air escape on exhalation while blocking it from being drawn in on inhalation, which is exactly what stops this from progressing to tension.");
     else notes.push("The wound was never sealed. Left open, this is exactly the wound that tensions — every minute without a seal is a minute closer to the heart losing its ability to fill.");
@@ -3208,8 +3208,8 @@ hemothorax: {cat: "trauma", id: "TRMA-040", pronouns: "he", title: "Male, 34. St
     skin: () => ({say: "Pale, cool, clammy, delayed capillary refill.", kind: "obs", evid: "Signs of ongoing hemorrhagic shock, not just respiratory distress.", find: "Skin pale, cool, clammy, delayed cap refill — hemorrhagic shock."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const needled = s.given.needleD;
-    const tubed = s.given.chestTube;
+    const needled = s.done.needleD;
+    const tubed = s.done.chestTube;
     const fluid = s.given.saline || s.given.blood;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ongoing intrathoracic hemorrhage, compounded by a progressively compressed lung, was never controlled or drained — he bled and suffocated at the same time.";
     if (needled && !tubed) notes.push("Needle decompression was tried here. It relieves trapped AIR under tension — it does nothing for blood pooling in the chest, and the dullness to percussion (not hyperresonance) was the clue that this was never going to work.");
@@ -3242,8 +3242,8 @@ pleuralEffusionCall: {cat: "medical", id: "RESP-028", pronouns: "she", title: "F
     skin: () => ({say: "Pale, no diaphoresis, no fever to the touch.", find: "Skin pale, dry, afebrile."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const drained = s.given.chestTube;
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm || s.given.cpap;
+    const drained = s.done.chestTube;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm || s.done.cpap;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A large, slowly accumulating pleural effusion finally compressed enough lung that oxygenation failed — nothing in the field beyond oxygen and positioning addressed the fluid itself.";
     if (drained) notes.push("A chest tube was placed and the effusion drained — a real, if unusually invasive, field option most crews carrying this drug box will not have (paramedic scope), and more than this patient strictly needed compared to the thoracentesis she'll get at the hospital.");
     else notes.push("No field drainage was attempted — reasonable. Most crews do not carry paramedic-level tube thoracostomy, and the actual job here is oxygen, positioning, and getting her to a facility that can perform a thoracentesis.");
@@ -3303,9 +3303,9 @@ aspirationPneumonitis: {cat: "medical", id: "RESP-030", pronouns: "she", title: 
     skin: () => ({say: "Slightly pale, mild diaphoresis, no cyanosis yet.", find: "Skin pale, mild diaphoresis."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const suctioned = s.given.suction;
+    const suctioned = s.done.suction;
     const bronchodilator = s.given.albuterol;
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm || s.given.cpap;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm || s.done.cpap;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Aspirated gastric content in the airway and the chemical injury it caused were never adequately managed — the airway stayed compromised while the resulting inflammation worsened her oxygenation.";
     if (suctioned) notes.push("The airway was suctioned — the correct, specific first move for a WITNESSED aspiration. Clearing what is actually sitting in the airway matters more here than almost anything else available in the field.");
     else notes.push("The airway was never suctioned despite a witnessed aspiration event. This is the one intervention that directly addresses what actually happened — everything else is supportive.");
@@ -3372,8 +3372,8 @@ bronchiolitisInfant: {cat: "medical", id: "PEDS-007", pronouns: "she", title: "I
     skin: () => ({say: "Warm, pink centrally, no cyanosis currently visible.", find: "Skin warm, pink, no cyanosis at this time."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm;
-    const suctioned = s.given.suction;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm;
+    const suctioned = s.done.suction;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Progressive small-airway obstruction and fatigue in a small infant with little reserve went unsupported until her own effort could no longer keep up.";
     if (oxygenated) notes.push("Supplemental oxygen was given for a hypoxic, working-hard infant — appropriate supportive care.");
     if (suctioned) notes.push("Nasal/airway suctioning was performed — genuinely useful in bronchiolitis, since infants are obligate nose-breathers and upper-airway secretions alone can meaningfully worsen the work of breathing.");
@@ -3404,7 +3404,7 @@ pertussisInfant: {cat: "medical", id: "PEDS-008", pronouns: "he", title: "Infant
     skin: () => ({say: "Pink and warm right now, between episodes — but the parents insist he went dusky/blue during the fits.", find: "Skin currently pink; witnessed cyanosis during paroxysms per parents."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const monitored = s.given.pulseox || s.given.monitor;
+    const monitored = s.done.pulseox || s.given.monitor;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A paroxysm produced apnea prolonged enough, in an infant with almost no physiologic reserve, that hypoxia was not corrected in time.";
     notes.push("The key danger here is not what the chest sounds like between fits — it is clear — it is the apnea DURING a paroxysm. This infant needs continuous monitoring through transport, not a one-time assessment, because the next fit can happen at any moment.");
     if (monitored) notes.push("Continuous monitoring was maintained — the correct call for a patient whose danger is intermittent and can appear with no warning.");
@@ -3433,7 +3433,7 @@ influenzaPneumonia: {cat: "medical", id: "RESP-032", pronouns: "he", title: "Mal
     skin: () => ({say: "Hot, flushed, diaphoretic.", find: "Skin hot, flushed, diaphoretic — febrile."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm || s.given.cpap;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm || s.done.cpap;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Progressive viral pneumonia drove his oxygenation down faster than anything in the field could keep pace with — supportive ventilation was needed and either wasn't given or wasn't enough.";
     if (oxygenated) notes.push("Supplemental oxygen (and escalation to positive pressure if needed) was provided — the actual treatment available in the field for viral pneumonia; there is no field antiviral or antibiotic to give.");
     else notes.push("No supplemental oxygen was given to a febrile, tachypneic, working-hard patient. Supportive oxygenation is the entire field treatment available here — there is nothing else in this drug box that treats a viral pneumonia directly.");
@@ -3463,7 +3463,7 @@ covidPneumonia: {cat: "medical", id: "RESP-033", pronouns: "she", title: "Female
     skin: () => ({say: "Warm, normal color, no obvious cyanosis to the naked eye despite the pulse ox reading.", find: "Skin warm, normal-appearing color — cyanosis not obviously visible despite measured hypoxemia."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm || s.given.cpap;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm || s.done.cpap;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "The gap between how she felt and how hypoxic she actually was closed the wrong way — real oxygenation failure that her own perception never warned her about in time.";
     if (oxygenated) notes.push("Supplemental oxygen was given despite her denying significant symptoms — the correct call. Trusting the pulse oximeter over a patient's self-assessment is exactly the skill this call is testing.");
     else notes.push("No supplemental oxygen was given to a patient with a clearly abnormal SpO2, because she 'didn't seem that sick.' That is precisely the trap 'silent hypoxia' sets — treat the number, not just the appearance.");
@@ -3567,7 +3567,7 @@ cysticFibrosisExacerbation: {cat: "medical", id: "RESP-034", pronouns: "she", ti
     skin: () => ({say: "Warm, thin build, mild digital clubbing visible on her fingers.", kind: "obs", evid: "Digital clubbing is a real, chronic sign of long-standing hypoxemic lung disease — consistent with her known CF, not a new finding tonight.", find: "Skin warm; digital clubbing (chronic finding)."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const oxygenated = s.given.o2nc || s.given.o2nrb || s.given.bvm;
+    const oxygenated = s.done.o2nc || s.done.o2nrb || s.done.bvm;
     const bronchodilator = s.given.albuterol;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Thick, poorly-cleared secretions and bronchospasm together outpaced what supportive field care could manage — the definitive treatment (IV antibiotics, inpatient airway clearance) was never reached in time.";
     if (bronchodilator) notes.push("A bronchodilator was given — appropriate here, unlike croup/epiglottitis: CF airway disease genuinely does have a real bronchospastic component alongside the mucus plugging.");
@@ -3848,7 +3848,7 @@ clusterHeadacheAttack: {cat: "medical", id: "NEUR-047", pronouns: "he", title: "
     eyes: () => ({say: "Right eye red and tearing, mild ptosis on that side. Left eye normal.", kind: "obs",
       evid: "Ipsilateral autonomic features — tearing, redness, drooping eyelid — accompanying the pain are the diagnostic hallmark of cluster headache (trigeminal-autonomic activation).", find: "Right eye: conjunctival injection, tearing, mild ptosis. Left eye normal."}),
   },
-  resolve: (s) => {const notes = []; const gaveO2 = s.given.o2nrb || s.given.o2;
+  resolve: (s) => {const notes = []; const gaveO2 = s.done.o2nrb || s.given.o2;
     notes.push("High-flow oxygen is a real, documented abortive treatment for an acute cluster headache attack — worth using if available, unlike most other headache types." + (gaveO2 ? " It was given here." : " It was not given here — a real, low-risk option that was available."));
     notes.push("The ipsilateral autonomic signs (tearing, redness, ptosis) alongside the pain are what confirm this as cluster headache rather than a more generic severe headache — a real, teachable exam finding.");
     return {died: false, cause: "", notes, correct: s.pi === "PMGT" || s.pi === "CPNC", truth: "Cluster headache, acute attack"};},
@@ -4587,7 +4587,7 @@ myxedemaComaCold: {cat: "medical", id: "ENDO-109", pronouns: "he", title: "Male,
       evid: "Profound hypothermia with dry (not diaphoretic) skin, in a patient with known thyroid disease, points at a metabolic cause (myxedema coma) rather than environmental exposure or sepsis alone.", find: "Skin: profoundly cold, dry, poor perfusion."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const warmed = s.given.warm;
+    const warmed = s.done.warm;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Severe, decompensated hypothyroidism with profound hypothermia and depressed consciousness progressed without recognition and active rewarming.";
     if (warmed) notes.push("Active warming was given — appropriate here, and a genuine, if partial, help against the real hypometabolic heat-production failure driving this cold.");
     else notes.push("No active warming was given to a profoundly hypothermic patient — real, if partial, help against a metabolic rate that has genuinely collapsed, not just ordinary environmental cold.");
@@ -4787,7 +4787,7 @@ toxicInhalationChlorine: {cat: "medical", id: "RESP-037", pronouns: "he", title:
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const bronchodil = (s.given.albuterol || 0) + (s.given.ipratropium || 0);
-    const o2 = (s.given.o2nrb || 0) + (s.given.o2nc || 0) + (s.given.cpap || 0) + (s.given.bvm || 0);
+    const o2 = (s.done.o2nrb || 0) + (s.done.o2nc || 0) + (s.done.cpap || 0) + (s.done.bvm || 0);
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated irritant-gas bronchospasm progressed to respiratory failure.";
     if (bronchodil) notes.push("Bronchodilator given — the real, reachable treatment here. Chlorine gas causes a genuine, acute bronchospasm through the same airway pathway ordinary asthma does, and it responds the same way.");
     else notes.push("No bronchodilator given. This isn't just irritation — the airway smooth muscle is genuinely constricted, and that responds to the same treatment any other bronchospasm does.");
@@ -4817,7 +4817,7 @@ excitedDeliriumAgitated: {cat: "medical", id: "MISC-042", pronouns: "he", title:
       evid: "Genuine hyperthermia and a persistently extreme heart rate reflect a real, dangerous hypermetabolic/catecholamine state — this patient has a genuine, measurable risk of sudden cardiac arrest from the physiology itself, not from the restraint.", find: "Skin hot, profusely diaphoretic; heart rate remains extreme despite restraint."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const cooled = s.given.activeCooling || s.given.moveToShade;
+    const cooled = s.done.activeCooling || s.done.moveToShade;
     const sedated = s.given.midazolam || s.given.lorazepam || s.given.diazepam || s.given.ketamine;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Severe catecholamine-driven hyperthermia and cardiac irritability progressed to a fatal arrhythmia — a real, physiologic risk this presentation carries independent of the restraint itself.";
     if (sedated) notes.push("Sedation was given — the correct priority once this is recognized as a medical emergency: lowering the catecholamine drive is the actual treatment, not further physical struggle.");
@@ -4957,7 +4957,7 @@ acuteDystonicReactionCall: {cat: "medical", id: "NEURO-014", pronouns: "she", ti
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const gaveDiphen = s.given.diphen;
-    const gaveStrokeWorkup = s.given.strokeScreen;
+    const gaveStrokeWorkup = s.done.strokeScreen;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Something else in this call's management went wrong — an isolated dystonic reaction, with no airway or hemodynamic compromise, does not kill a patient over the span of a single call.";
     if (gaveDiphen) notes.push("Diphenhydramine was given — the correct, real first-line field treatment. Its anticholinergic activity restores the striatal dopamine-acetylcholine balance the antiemetic's D2 blockade disrupted.");
     else notes.push("No diphenhydramine was given for a real, symptomatic dystonic reaction. It is indicated here and TP 1239 requires base contact to confirm, but the treatment itself is not optional once confirmed.");
@@ -5004,7 +5004,7 @@ copperheadBite: {cat: "medical", id: "ENV-014", pronouns: "he", title: "Male, 44
     },
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const immobilized = s.given.splint;
+    const immobilized = s.done.splint;
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "A single extremity envenomation, immobilized and transported promptly, does not kill a patient over the span of one call. Something else in this call's management went wrong.";
     if (immobilized) notes.push("The limb was immobilized at heart level, the actual field intervention that matters here — it slows lymphatic/venous spread of venom without a tourniquet's own well-documented harm.");
     else notes.push("The bitten limb was never immobilized. There is no field antivenom to give; splinting the extremity and keeping it still is the one concrete thing this call's treatment could have done.");
@@ -5667,7 +5667,7 @@ carbonMonoxidePoisoning: {cat: "medical", id: "TOX-005", pronouns: "he", title: 
     }),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const o2 = (s.given.o2nrb || 0) + (s.given.bvm || 0) + (s.given.cpap || 0);
+    const o2 = (s.done.o2nrb || 0) + (s.done.bvm || 0) + (s.done.cpap || 0);
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated carbon monoxide poisoning — real tissue oxygen delivery collapsed while the pulse ox kept reading normal.";
     if (o2) notes.push("High-flow oxygen given — the correct, and only real field, move. It doesn't just support breathing here: raising FiO2 competitively displaces CO off hemoglobin and genuinely speeds recovery, the same mechanism hyperbaric oxygen uses at a hospital, just slower.");
     else if (!died) notes.push("High-flow oxygen was never given. Room air clears carboxyhemoglobin over several hours; 100% oxygen cuts that time to roughly an hour — a real, meaningful difference this patient needed.");
@@ -6037,7 +6037,7 @@ lowerGIBleed: {cat: "medical", id: "ABD-029", pronouns: "he", title: "Male, 71. 
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ongoing lower GI hemorrhage, uncorrected, progressed to hemorrhagic shock.";
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Volume support was given — the correct move for real, ongoing hemorrhage, even without an external wound to point at.");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Volume support was given — the correct move for real, ongoing hemorrhage, even without an external wound to point at.");
     else if (!died) notes.push("No volume support was given for a patient with a real, large-volume internal hemorrhage — the absence of a visible external wound doesn't mean the bleeding isn't real or dangerous.");
     notes.push("Painless bleeding is the actual teaching point here — it's easy to under-triage a comfortable-looking patient with a scary story, but a brisk diverticular bleed can cause real hemorrhagic shock just as fast as a traumatic one.");
     return {died, cause, notes, correct: s.pi === "HOTN", truth: "Lower GI hemorrhage (diverticular bleed) — painless, brisk"};},
@@ -6063,7 +6063,7 @@ upperGIBleed: {cat: "medical", id: "ABD-030", pronouns: "he", title: "Male, 58. 
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ongoing upper GI hemorrhage from a bleeding peptic ulcer, uncorrected, progressed to hemorrhagic shock and airway compromise.";
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Volume support was given — the correct move for a real, ongoing GI hemorrhage.");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Volume support was given — the correct move for a real, ongoing GI hemorrhage.");
     notes.push("Active hematemesis is an airway problem as much as a circulation one — positioning to protect the airway and having suction ready matters here, the same way it does for a variceal bleed, even though this is a slower, less catastrophic source than a ruptured varix.");
     notes.push("Chronic daily NSAID use without any prior GI evaluation is the real risk factor here — a common, easy-to-miss cause of a genuinely dangerous bleed.");
     return {died, cause, notes, correct: s.pi === "HOTN", truth: "Upper GI hemorrhage from a bleeding peptic ulcer (chronic NSAID use)"};},
@@ -6172,7 +6172,7 @@ ectopicPregnancyRuptured: {cat: "medical", id: "OBGY-044", pronouns: "she", titl
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ruptured ectopic pregnancy, uncorrected, progressed to fatal hemorrhagic shock.";
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Volume support was given — the right supportive move while she's transported for the real, definitive fix (emergency surgery).");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Volume support was given — the right supportive move while she's transported for the real, definitive fix (emergency surgery).");
     else if (!died) notes.push("No volume support was given for a patient in real, ongoing hemorrhagic shock from internal bleeding.");
     notes.push("There is no field treatment that stops this bleeding — a ruptured ectopic pregnancy is a surgical emergency. Rapid recognition (missed period plus sudden unilateral pain plus shock) and rapid transport are the actual interventions that save her.");
     return {died, cause, notes, correct: s.pi === "HOTN", truth: "Ruptured ectopic pregnancy — hemoperitoneum from a tubal rupture"};},
@@ -6201,7 +6201,7 @@ placentalAbruption: {cat: "medical", id: "OBGY-045", pronouns: "she", title: "Fe
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Placental abruption, uncorrected, progressed to fatal maternal hemorrhagic shock.";
     notes.push("Positioning her tilted to the left (not flat on her back) relieves aortocaval compression from the gravid uterus and genuinely improves her venous return — a real, mechanism-based intervention, not just comfort.");
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Volume support was given — appropriate here, since a real, large fraction of this hemorrhage is CONCEALED behind the placenta and not visible as external bleeding.");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Volume support was given — appropriate here, since a real, large fraction of this hemorrhage is CONCEALED behind the placenta and not visible as external bleeding.");
     else if (!died) notes.push("No volume support was given — a rigid, board-like uterus means significant concealed hemorrhage even if the visible vaginal bleeding looks modest.");
     notes.push("There is no field treatment that stops the separation itself — rapid transport for emergency delivery is the definitive fix, for both mother and baby.");
     return {died, cause, notes, correct: s.pi === "OBEM", truth: "Placental abruption — painful, dark bleeding, rigid uterus, concealed hemorrhage"};},
@@ -6230,7 +6230,7 @@ placentaPrevia: {cat: "medical", id: "OBGY-046", pronouns: "she", title: "Female
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Placenta previa hemorrhage, uncorrected, progressed to fatal maternal hemorrhagic shock.";
     notes.push("No digital vaginal exam should ever be performed on suspected previa in the field — probing near a placenta covering the cervix can trigger catastrophic hemorrhage.");
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Volume support was given for real, ongoing blood loss — reasonable, even though this bleed is typically slower and more self-limited than an abruption's.");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Volume support was given for real, ongoing blood loss — reasonable, even though this bleed is typically slower and more self-limited than an abruption's.");
     notes.push("The painless-versus-painful distinction is the actual field teaching point here: painless bright bleeding suggests previa, painful dark bleeding with a rigid uterus suggests abruption — the same complaint, two different diseases, two different (though both surgical) endpoints.");
     return {died, cause, notes, correct: s.pi === "OBEM", truth: "Placenta previa — painless bright-red vaginal bleeding, soft non-tender uterus"};},
 },
@@ -6313,7 +6313,7 @@ abdominalAorticAneurysm: {cat: "medical", id: "VASC-003", pronouns: "he", title:
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ruptured abdominal aortic aneurysm, uncorrected, progressed to fatal hemorrhagic shock.";
     notes.push("There is no field treatment that repairs this — only emergency surgery does. The field skill is rapid recognition and rapid transport to a facility capable of vascular intervention, not delay for procedures that don't change the outcome.");
-    if (s.given.saline || s.given.plasmalyte || s.given.wholeBlood) notes.push("Some volume support was given — reasonable for hypotension, but aggressive fluid resuscitation before surgical control can worsen an unstable retroperitoneal bleed by raising pressure against a leaking vessel; permissive hypotension (treat toward adequate mentation/perfusion, not a normal number) is the taught approach here.");
+    if (s.given.saline || s.given.plasmalyte || s.given.blood) notes.push("Some volume support was given — reasonable for hypotension, but aggressive fluid resuscitation before surgical control can worsen an unstable retroperitoneal bleed by raising pressure against a leaking vessel; permissive hypotension (treat toward adequate mentation/perfusion, not a normal number) is the taught approach here.");
     notes.push("He can look transiently stable — 'in extremis but talking' — before decompensating suddenly once the retroperitoneal space can no longer tamponade the bleed. That trajectory, not a single vitals snapshot, is the actual danger.");
     return {died, cause, notes, correct: s.pi === "HOTN", truth: "Ruptured abdominal aortic aneurysm — tearing pain, pulsatile mass, retroperitoneal hemorrhage"};},
 },

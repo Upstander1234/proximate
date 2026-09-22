@@ -12,6 +12,45 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 // device — that's the actual clinical point of an SGA). Success feedback is
 // a felt-resistance/seating cue rather than a visual confirmation, standing
 // in for the real tactile "give" a provider feels at correct depth.
+//
+// The scene below is an OUTSIDE view of the head/device (what a provider
+// standing over the patient actually sees), not an inside/glottic view —
+// it tracks the same angle/depth the player is dialing in, without
+// revealing anything about whether the blind seat is correct.
+function HeadProfile({ angle, depth }) {
+  const rad = (angle * Math.PI) / 180;
+  const tipX = 128 - Math.cos(rad) * (18 + depth * 58);
+  const tipY = 62 - Math.sin(rad) * (10 + depth * 30);
+  return (
+    <svg viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+      <defs>
+        <linearGradient id="sgaFaceGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E3AE87" />
+          <stop offset="60%" stopColor="#D19972" />
+          <stop offset="100%" stopColor="#B87A54" />
+        </linearGradient>
+      </defs>
+      {/* head/face in profile, shaded rather than a flat tan silhouette */}
+      <path d="M40,90 Q20,50 55,25 Q90,4 120,20 Q140,30 138,55 Q150,58 148,66 Q145,72 136,70 Q132,90 100,96 Q60,100 40,90 Z"
+        fill="url(#sgaFaceGrad)" stroke="#8A5E45" strokeWidth={1} />
+      {/* forehead/nose bridge highlight */}
+      <path d="M60,28 Q80,10 110,18" fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />
+      {/* nostril */}
+      <ellipse cx={115} cy={44} rx={4} ry={2.5} fill="#00000030" />
+      {/* lips, parted for the device */}
+      <path d="M118,58 Q128,66 133,58" fill="none" stroke="#7A3B3B" strokeWidth={2} opacity={0.7} strokeLinecap="round" />
+      <path d="M118,52 Q128,50 134,53" fill="none" stroke="#5C3A2A" strokeWidth={1.2} opacity={0.5} />
+      {/* ear */}
+      <ellipse cx={44} cy={60} rx={7} ry={11} fill="#00000018" />
+      {/* chin/jaw shading */}
+      <path d="M60,88 Q90,98 132,86" fill="none" stroke="#00000018" strokeWidth={2} />
+      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#DCE6EA" strokeWidth={5} strokeLinecap="round" />
+      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#8FA8B5" strokeWidth={1.5} strokeLinecap="round" opacity={0.6} />
+      <circle cx={tipX} cy={tipY} r={3} fill="#7CD68A" opacity={0.8} />
+      <rect x={130} y={54} width={24} height={16} rx={3} fill="#0E1518" stroke={C.line} strokeWidth={1} />
+    </svg>
+  );
+}
 export default function SGAMinigame({ open, kind, pat, assist, interrupted, onResolve, onDialogue }) {
   const [angle, setAngle] = useState(45);
   const [depth, setDepth] = useState(0);
@@ -72,6 +111,7 @@ export default function SGAMinigame({ open, kind, pat, assist, interrupted, onRe
 
         {!flash && (
           <>
+            <HeadProfile angle={angle} depth={depth} />
             <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Follow the curve of the palate; insertion angle.</div>
             <input type="range" min={20} max={90} value={angle} onChange={(e) => setAngle(Number(e.target.value))} style={{ width: "100%", marginBottom: 8 }} />
             <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Advance until you feel it seat.</div>

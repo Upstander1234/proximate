@@ -117,10 +117,25 @@ function leadTrace(lead, snap, t0, dur, fs, rand, o, beats) {
     else if (kind === "VT") v = sgn * 1.4 * Math.sin(6.28 * (hr / 60) * t) + 0.3 * Math.sin(6.28 * 2 * (hr / 60) * t);
     else if (kind === "torsades") v = sgn * 1.6 * Math.sin(6.28 * (hr / 60) * t) * Math.sin(6.28 * 0.45 * t + 0.5);
     else {
+      // Contribute from the SINGLE nearest beat only, not every beat within
+      // a fixed +-0.5/0.6s window. That window is wider than one QRST
+      // complex's own real duration, so whenever two beats land closer
+      // together than it — a fast baseline rate, or afib's randomized RR
+      // jitter putting two beats back-to-back by chance — their tails used
+      // to sum together and garble the trace into a distorted, "gappy"
+      // patch wherever that happened, which tracked the RNG and so looked
+      // "random." Picking only the nearest beat means every sample reflects
+      // exactly one complex, however tightly packed the rhythm gets.
+      let nearest = null, nearestAbs = Infinity;
       for (const b of beats) {
-        const dt = t - b.t;
-        if (dt < -0.5 || dt > 0.6) continue;
-        v += b.ect ? gauss(dt, 0, sgn * -1.3, 0.055) + gauss(dt, 0.14, sgn * 0.6, 0.07) : beat(dt, lead, o);
+        const a = Math.abs(t - b.t);
+        if (a < nearestAbs) { nearestAbs = a; nearest = b; }
+      }
+      if (nearest) {
+        const dt = t - nearest.t;
+        if (dt >= -0.5 && dt <= 0.6) {
+          v += nearest.ect ? gauss(dt, 0, sgn * -1.3, 0.055) + gauss(dt, 0.14, sgn * 0.6, 0.07) : beat(dt, lead, o);
+        }
       }
       if (kind === "afib") v += 0.05 * Math.sin(6.28 * 6.5 * t + seeds[0][0]) + (rand() - 0.5) * 0.03;
       if (kind === "chb") v += gauss(((t % 0.8) + 0.8) % 0.8, 0.4, BASE[lead][0] * 1.4, 0.022);

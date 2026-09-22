@@ -60,6 +60,12 @@ export const CREDITS = [
         license: "Open Data Commons Attribution License v1.0 (opendatacommons.org/licenses/by/1-0)",
         changes: "Changes: selected recordings converted to 4 kHz mono, trimmed, level-matched, and re-timed to the patient's heart rate",
       },
+      {
+        name: "ICBHI 2017 Respiratory Sound Database, compiled by Rocha, Filos, Mendes, Vogiatzis, Perantoni, Kaimakamis, Natsiavas, Oliveira, Jacome, Marques, Paiva, Serasa, Marques, Pereira and colleagues (An open access database for the evaluation of respiratory sound classification algorithms, Physiological Measurement 40 035001, 2019)",
+        source: "https://bhichallenge.med.auth.gr/ICBHI_2017_Challenge",
+        license: "Published by the ICBHI 2017 Challenge organizers as \"freely available for research\"; no CC/ODC license identifier is stated on the source page. Used here in good faith with full attribution; will be removed promptly on request from the database's owners.",
+        changes: "Changes: selected recordings resampled to 4 kHz mono, trimmed, level-matched, and re-timed to the patient's breathing rate",
+      },
     ],
   },
   // Sound and art credits go here once verified, e.g.
@@ -84,4 +90,11 @@ export const UNVERIFIED_ASSETS = [
   "public/assets/audio/achievement.wav",
   "public/assets/audio/notification.wav",
   "public/assets/audio/heart_monitor_beep.wav",
+  // The three below are different from the rest of this list: their origin was
+  // actively asked about (the person who provided them, and whoever they got
+  // them from) and nobody could identify a source to cite. Not a pending TODO —
+  // leave unattributed rather than inventing a source or license for them.
+  "public/assets/audio/auscultation/lung/USR_Normal_any_0.wav",
+  "public/assets/audio/auscultation/lung/USR_Diminished_any_0.wav",
+  "public/assets/audio/auscultation/lung/USR_Cough_any_0.wav",
 ];

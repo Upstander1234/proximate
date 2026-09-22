@@ -3,7 +3,7 @@ import { C, MONO } from "./theme.js";
 import { clk, curve } from "./util.js";
 import { LEVELS, LNAME, CODES, LIM, STALE, SOFTSTALE, travelTimes, VEH_TYPE_TRAVEL_MULT } from "./scope.js";
 import { PI, POCKETS, BAGS, RN, TASKS, STANDARD_BAG_KEYS } from "./gear.js";
-import { ecgReadout, ecgPoints, plethPoints, artPoints, capnoPoints, respPoints } from "./ecg.js";
+import { ecgReadout, ecgPoints, artPoints, capnoPoints, respPoints } from "./ecg.js";
 import { DRUGS } from "./data/drugs.js";
 import { PROCS } from "./data/procedures.js";
 import { STOCK_ITEMS, CONSUMES_STOCK, STOCK_CATEGORIES, CATEGORY_LABEL, maxCapacity, defaultLoadout,
@@ -28,6 +28,7 @@ import { generateDialogueSync, shouldSpeakUnprompted, pickUnpromptedEvent, pushD
 import { neuralTts } from "./dialogue/neuralTts.js";
 import { PROCEDURE_OUTCOME } from "./procedureOutcome.js";
 import { buildDialogueContext } from "./dialogue/dialogueContext.js";
+import { resolveActingCrew, npcId, rememberNpcLine } from "./dialogue/characterBrain.js";
 import { ACHIEVEMENTS, newlyUnlocked } from "./achievements.js";
 import { useVoiceCommands } from "./hooks/useVoiceCommands.js";
 import { isTaskBlocked, rollPartnerLimitation, LIMITATIONS } from "./limitations.js";
@@ -65,7 +66,7 @@ import { drawName, drawNameByGender, firstName } from "./names.js";
 import { friendshipTier, toneBucket, createRelationship, adjustFriendship, adjustRomance, wasQuietMomentEligible } from "./relationships.js";
 import { CONDITION_LIST, CONDITION_META, buildCustomScenario } from "./data/customScenario.js";
 import { TAXONOMY, CONDITION_TAXONOMY } from "./data/conditionTaxonomy.js";
-import { DEVICES, WAVE_META, DEFIB_ENERGIES } from "./devices.js";
+import { DEVICES, WAVE_META, DEFIB_ENERGIES, pulseRateFrom } from "./devices.js";
 import { getProtocol, evaluateProtocol } from "./protocols/index.js";
 import { getScope, effectiveLvl, SCOPES } from "./scopes/index.js";
 import { getCustomScope } from "./customScopes.js";
@@ -96,10 +97,13 @@ import GiveMedMinigame from "./components/GiveMedMinigame.jsx";
 import TwelveLeadPrint from "./components/TwelveLeadPrint.jsx";
 import GlucometerMinigame from "./components/GlucometerMinigame.jsx";
 import DeviceMinigame from "./components/DeviceMinigame.jsx";
+import PulseOxScreen from "./components/PulseOxScreen.jsx";
 import CprMinigame from "./components/CprMinigame.jsx";
 import ProcMinigame from "./components/ProcMinigame.jsx";
 import BvmMinigame from "./components/BvmMinigame.jsx";
 import AuscultationMinigame from "./components/AuscultationMinigame.jsx";
+import SplintMinigame from "./components/SplintMinigame.jsx";
+import BpMinigame from "./components/BpMinigame.jsx";
 import BodyMap from "./components/BodyMap.jsx";
 import { VNScene, VNBox, VNDialogue, VNHeader, VNSprite } from "./components/VNShell.jsx";
 import CampusMapOverlay from "./components/CampusMapOverlay.jsx";
@@ -242,8 +246,16 @@ function dialogueLineFor(speaker,text,role,patientName){
   // "PATIENT: ..." find, s.idKnown) is labeled by name instead of the
   // generic "PATIENT" tag once it's actually been asked, matching how
   // crew/bystander lines already carry a real name/role.
+  //
+  // `role` doubles as "whatever real name/relationship label this specific
+  // speaker should carry" — a bystander's parsed relationship word (already
+  // shipped) OR, for a crew-voiced line, the ACTING crew member's own real
+  // name (characterBrain.js's resolveActingCrew — see the crew-reaction call
+  // sites below), so two different crew members on the same call show up as
+  // two different names instead of one generic "CREW" tag.
   if(speaker==="patient") return {kind:"pt",text:`${(patientName||"PATIENT").toUpperCase()}: "${text}"`};
-  const label=(speaker==="bystander"&&role&&role!=="bystander")?role.toUpperCase()
+  const label=(speaker==="crew"&&role)?role.toUpperCase()
+    :(speaker==="bystander"&&role&&role!=="bystander")?role.toUpperCase()
     :speaker==="crew"?"CREW":speaker==="bystander"?"BYSTANDER":(speaker||"NARRATOR").toUpperCase();
   return {kind:"disp",text:`${label}: "${text}"`};
 }
@@ -475,6 +487,14 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   // sim-time (n.t, seconds) of the last unprompted line, enforcing the
   // cooldown in shouldSpeakUnprompted().
   dialogueMemory:[],dialogueLastAt:null,
+  // Real, SEPARATE per-NPC "brain" memory (characterBrain.js) — keyed by a
+  // stable id per character (patient/"patient", each crew member's own
+  // roster id, "bystander"), each holding just the lines THAT character
+  // has personally said this call. Distinct from the shared dialogueMemory
+  // scrollback above. Wiped every new call by the same blank() reset that
+  // already wipes dialogueMemory — Medical Simulation Mode has no reason to
+  // remember an NPC's own voice past the call they were in.
+  npcBrains:{},
   // F0 — treatment-response dialogue tracking (item 18's "treatment
   // response" event). Seeded once by medActs' own run() handler at the
   // moment an analgesic dose (any drug whose real, already-declared
@@ -1741,7 +1761,6 @@ export default function App({onHome}={}){
     if((p.id==="needleD")&&!v.ptx){giveDose(s,{id:p.id,at:s.t});
       return {say:"There was nothing to decompress. You just put a needle in a chest that did not need one.",kind:"warn"};}
     if(p.id==="paCath"){s.paCath=1;return {say:"PA catheter floated. PAOP is LEFT ventricular preload. CVP is the RIGHT. They are not the same number.",kind:"good"};}
-    if(p.id==="pads"){s.padsOn=1;s.devices={...(s.devices||{}),pads:{at:s.t}};return {say:"Pads placed — anterior/apex. Cable connected.",kind:"good"};}
     if(p.id==="aedAnalyze"){const shockable=v.rhythm==="VF"||v.rhythm==="VT";
       s.lastAnalysis={shockable,at:s.t};
       if(shockable) return {say:'"SHOCK ADVISED." Stand clear.',kind:"warn"};
@@ -1783,7 +1802,30 @@ export default function App({onHome}={}){
       return {say:`${v.sbp} over ${v.dbp}, by auscultation.`,meas:{"BP (R)":`${v.sbp}/${v.dbp}`},find:`BP ${v.sbp}/${v.dbp} (manual).`};
     }
     if(p.id==="pulseox") return {say:`SpO₂ ${v.spo2}%, PR ${v.hr}.`,meas:{"SpO₂":`${v.spo2}%`,PR:`${v.hr}`}};
-    if(p.id==="glucometer") return {say:`${v.glu} mg/dL.`,meas:{Glu:`${v.glu}`}};
+    // eFAST — four real windows, each reading a real physiology field rather
+    // than a decorative "Ultrasound (eFAST)." line: pericardial (tamponade),
+    // RUQ/Morison's pouch and LUQ (free fluid — liverInjury/gutInjury are
+    // the same structural-injury accumulators item 42's own work already
+    // verifies, reused here as the honest, already-real proxy for
+    // hemoperitoneum rather than inventing a dedicated free-fluid field),
+    // and bilateral lung windows for pneumothorax (v.ptx).
+    if(p.id==="ultrasound"){
+      const peri=(s.patient?.pericardialEffusion??0)>0.15;
+      const ruq=(s.patient?.liverInjury??0)>0.1;
+      const luq=(s.patient?.gutInjury??0)>0.1;
+      const lungPos=!!v.ptx;
+      const hits=[peri&&"pericardial effusion",ruq&&"free fluid, RUQ (Morison's pouch)",luq&&"free fluid, LUQ",
+        lungPos&&`absent lung sliding${v.ptxSide?` (${v.ptxSide})`:""}${v.ptx==="tptx"?" — tension physiology":""}`].filter(Boolean);
+      giveDose(s,{id:p.id,at:s.t});
+      const summary=hits.length?`eFAST positive — ${hits.join("; ")}.`:"eFAST negative — no pericardial or free peritoneal fluid, lung sliding present bilaterally.";
+      return {say:summary,kind:hits.length?"crit":"obs",find:summary,
+        evid:peri?"Pericardial effusion on eFAST — tamponade physiology.":(ruq||luq)?"Free intraperitoneal fluid on eFAST — intra-abdominal hemorrhage.":null};
+    }
+    // "glucometer" itself is dead as an action id — the real, reachable
+    // action is "gluc" (its own run() above, via GlucometerMinigame). This
+    // branch never matched anything; removed along with the PROCS.glucometer
+    // entry and every s.given.glucometer/categories.js reference that made
+    // the same id mistake (see scenarios.js/categories.js).
     giveDose(s,{id:p.id,at:s.t});
     const dir=Object.entries(pr.fx||{}).filter(([,m])=>m).map(([k,m])=>`${k.toUpperCase()} ${m>0?"↑":"↓"}${Math.abs(m)}`).join("  ");
     return {say:`${pr.name}.${dir?"   ["+dir+"]":""}`,kind:"good"};}}));
@@ -1996,16 +2038,21 @@ export default function App({onHome}={}){
       if(!on){
         out.push({id:`attach_${id}`,region:d.region,tab:d.tab,label:d.attach,gerund:`Attaching ${d.name.toLowerCase()}`,
           cost:12,lvl:d.lvl,bag:d.bag,doneKey:`attach_${id}`,
-          run:(s)=>{s.devices={...(s.devices||{}),[id]:{at:s.t}};
+          run:(s,v,a)=>{s.devices={...(s.devices||{}),[id]:{at:s.t}};
             const dn={...s.done}; delete dn[`remove_${id}`]; s.done=dn;   // allow removing again
-            if(id==="leads"){s.leadsOn=1;s.leadsSecured=0;}   // fresh placement — artifact until reseated
+            // fresh placement — artifact until reseated. leadsPlacementQuality
+            // (0-1) comes from DeviceMinigame's own click-precision score,
+            // carried through the SUCCESS re-entry as a._leadsQuality — see
+            // resolveAccessMinigame. Undefined (e.g. a save from before this
+            // mechanism existed) reads as 1, a perfect placement.
+            if(id==="leads"){s.leadsOn=1;s.leadsSecured=0;s.leadsPlacementQuality=a?._leadsQuality??1;}
             return {say:`${d.name} attached.`+(d.reads?" Readings are live on the monitor.":""),kind:"obs",find:`${d.name} attached.`};}});
       } else {
         out.push({id:`remove_${id}`,region:d.region,tab:d.tab,label:`Remove ${d.name.toLowerCase()}`,gerund:`Removing ${d.name.toLowerCase()}`,
           cost:6,lvl:0,doneKey:`remove_${id}`,
           run:(s)=>{const nd={...(s.devices||{})}; delete nd[id]; s.devices=nd;
             const dn={...s.done}; delete dn[`attach_${id}`]; s.done=dn;   // allow attaching again
-            if(id==="leads"){s.leadsOn=0;s.leadsSecured=0;s.ecgRead=0;s.ecgInterp=null;}
+            if(id==="leads"){s.leadsOn=0;s.leadsSecured=0;s.ecgRead=0;s.ecgInterp=null;s.leadsPlacementQuality=null;}
             if(id==="pads"){s.defib={energy:null,charged:0};}
             return {say:`${d.name} removed.`+(d.wave?" The trace goes flat.":""),kind:"obs",find:`${d.name} removed.`};}});
       }
@@ -2148,7 +2195,10 @@ export default function App({onHome}={}){
         return {say:`${c.name.toUpperCase()}: "Can't get the leads on, his ${REGION_LABEL[region].toLowerCase()} is still covered."`,kind:"warn"};
       }
       m.devices={...(m.devices||{}),[t.attachDevice]:{at:m.t}};
-      if(t.attachDevice==="leads"){m.leadsOn=1;m.leadsSecured=0;} }
+      // A trained crew member's own placement, not the player's minigame
+      // precision — competent but not perfect, so some baseline artifact
+      // is still real until the leads settle (see the artifact calc below).
+      if(t.attachDevice==="leads"){m.leadsOn=1;m.leadsSecured=0;m.leadsPlacementQuality=0.85;} }
     // Contraindication enforcement, mirroring medActs()'s own d.hold(v) check
     // (App.jsx's player dosing path, e.g. nitro's SBP<100 hold) — a real gap:
     // crew-directed doses skipped this entirely, so a crew member could be
@@ -2775,17 +2825,36 @@ export default function App({onHome}={}){
            the onset lines. Only fires with a real crew member present on
            scene — an unattended patient obviously has nobody to voice this. */
         if(n.crew&&n.crew.length&&(n.phase==="scene"||n.phase==="transport")){
-          const evt=(isSeizing&&!wasSeizing)?{type:"crew_seizure_reaction",speaker:"crew",bucket:"calm"}
-            :(!isSeizing&&wasSeizing)?{type:"crew_seizure_ended_reaction",speaker:"crew",bucket:"calm"}
-            :(isUnresponsive&&!wasUnresponsive)?{type:"crew_unresponsive_reaction",speaker:"crew",bucket:"calm"}
-            :(!isUnresponsive&&wasUnresponsive)?{type:"crew_recovery_reaction",speaker:"crew",bucket:"calm"}:null;
+          // Per-NPC brain: pick a real, specific crew member to voice this
+          // moment (characterBrain.js's resolveActingCrew — stable across a
+          // call, not a fresh random pick each event) and carry their id on
+          // the event itself, so buildDialogueContext/buildPrompt's own brain
+          // lookup (dialogueProvider.js) scopes the Tier-3 prompt to THAT
+          // person's own name/personality instead of an anonymous "crew
+          // member." actingName also labels the log line directly (below),
+          // so even the Tier-1/2 fallback — which never touches the brain —
+          // already shows a real name, not just a generic "CREW" tag.
+          const actingCrew=resolveActingCrew(n.crew,null);
+          const actingName=actingCrew?.name||null;
+          // The stable per-NPC memory-store key for whichever crew member is
+          // voicing this moment (characterBrain.js's npcId) — computed once
+          // here so both the immediate line and the async tier-3 patch below
+          // remember into the SAME bucket for the SAME person.
+          const cid=npcId("crew",actingCrew?.id);
+          const evt=(isSeizing&&!wasSeizing)?{type:"crew_seizure_reaction",speaker:"crew",bucket:"calm",crewId:actingCrew?.id}
+            :(!isSeizing&&wasSeizing)?{type:"crew_seizure_ended_reaction",speaker:"crew",bucket:"calm",crewId:actingCrew?.id}
+            :(isUnresponsive&&!wasUnresponsive)?{type:"crew_unresponsive_reaction",speaker:"crew",bucket:"calm",crewId:actingCrew?.id}
+            :(!isUnresponsive&&wasUnresponsive)?{type:"crew_recovery_reaction",speaker:"crew",bucket:"calm",crewId:actingCrew?.id}:null;
           if(evt){
             const line=generateDialogueSync(evt,n,vNow);
             if(line){
               const entryId=`dlg_crew_${Math.round(n.t*10)}`;
-              n.log=[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text)}];
+              n.log=[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text,actingName)}];
               n.dialogueMemory=pushDialogueMemory(n.dialogueMemory,line.text);
               n.dialogueLastAt=n.t;
+              // Per-NPC memory: this specific crew member now "remembers"
+              // having said this, for the rest of the call (characterBrain.js).
+              n.npcBrains=rememberNpcLine(n.npcBrains,cid,"crew",actingName,line.text);
               // F0 — same fire-and-forget tier-3 upgrade pattern as the
               // unprompted-patient-dialogue site above (requestLocalUpgrade's
               // own header): the immediate line is always tier 2/1, rendered
@@ -2795,9 +2864,13 @@ export default function App({onHome}={}){
               // scrolled off the log (or the log has moved on), the .map()
               // below simply finds no match and changes nothing — a silent,
               // safe discard, not a stale-patch bug.
+              // Same convention as dialogueMemory above: the per-NPC "own
+              // memory" remembers the line at the moment it was generated
+              // (the tier-2/1 text), not a second, redundant entry if a
+              // tier-3 upgrade later polishes the same log line's wording.
               requestLocalUpgrade(evt,n,vNow,(upgraded)=>{
                 setG(s2=>({...s2,log:s2.log.map(e=>
-                  e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text)}:e)}));
+                  e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,actingName)}:e)}));
               });
             }
           }
@@ -2827,6 +2900,7 @@ export default function App({onHome}={}){
               n.log=[...n.log,{t:n.t,id:bEntryId,...dialogueLineFor(bline.speaker,bline.text,bctx.bystander.role)}];
               n.dialogueMemory=pushDialogueMemory(n.dialogueMemory,bline.text);
               n.dialogueLastAt=n.t;
+              n.npcBrains=rememberNpcLine(n.npcBrains,npcId("bystander"),"bystander",bctx.bystander.role,bline.text);
               requestLocalUpgrade(bevt,n,vNow,(upgraded)=>{
                 setG(s2=>({...s2,log:s2.log.map(e=>
                   e.id===bEntryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,bctx.bystander.role)}:e)}));
@@ -2859,6 +2933,7 @@ export default function App({onHome}={}){
             n.log=[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,n.idKnown?n.patientName:null)}];
             n.dialogueMemory=pushDialogueMemory(n.dialogueMemory,line.text);
             n.dialogueLastAt=n.t;
+            n.npcBrains=rememberNpcLine(n.npcBrains,npcId("patient"),"patient",n.idKnown?n.patientName:null,line.text);
             requestLocalUpgrade(evt,n,vNow,(upgraded)=>{
               setG(s2=>({...s2,log:s2.log.map(e=>
                 e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}:e)}));
@@ -2890,6 +2965,7 @@ export default function App({onHome}={}){
             n.log=[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,n.idKnown?n.patientName:null)}];
             n.dialogueMemory=pushDialogueMemory(n.dialogueMemory,line.text);
             n.dialogueLastAt=n.t;
+            n.npcBrains=rememberNpcLine(n.npcBrains,npcId("patient"),"patient",n.idKnown?n.patientName:null,line.text);
             // F0 — same fire-and-forget tier-3 upgrade pattern as the other
             // dialogue call sites in this same tick loop. Discards silently
             // (via the .map() no-match case) if this entry has scrolled off
@@ -3042,7 +3118,26 @@ export default function App({onHome}={}){
       return {...s,accessMinigame:{action:a,kind:"bvm",site:a.region,
         attempts:0,alertBaseline:(s.eventAlertQueue||[]).length}};
     }
-    if(["tq","needleD","chestSeal","defib","aedShock","headTilt","jawThrust","cCollar","cspine","opa","npa","suction","o2nc","o2nrb"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
+    // Extremity splinting: unique per limb (arm/leg, left/right — right
+    // pulse site and joints) and unique per material (rigid/cardboard vs
+    // vacuum), distinct from the generic flat-timer ProcMinigame below.
+    if(a.id==="splint"&&!a._skipMinigame){
+      return {...s,accessMinigame:{action:a,kind:"splint",site:a.region,
+        attempts:(s.accessAttempts||{})[`splint@${a.region}`]||0,
+        alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    // Manual blood pressure: a real arm, a real cuff, listen for the sounds
+    // yourself — distinct from autoBP, which stays a flat cycling wait since
+    // an automatic cuff needs no technique. Needs the cuff already applied
+    // (DeviceMinigame's own bpcuff attach) — if it isn't, fall through to the
+    // normal proc-action path below so the existing "no cuff" warning fires.
+    if(a.id==="manualBP"&&!a._skipMinigame&&s.devices?.bpcuff){
+      return {...s,accessMinigame:{action:a,kind:"bp",site:a.region,
+        attempts:(s.accessAttempts||{})[`manualBP@${a.region}`]||0,
+        alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    if(["tq","needleD","chestSeal","defib","aedShock","headTilt","jawThrust","cCollar","cspine","opa","npa","suction","o2nc","o2nrb","directPressure","pack","fundalMassage","recovery","abdThrust","traction","ultrasound",
+      "cardiovert","pacing","icdMagnet","chestTube","lucas","pelvicBinder","artLine","reboa","paCath","cpap","vent","mouthMask","mouthMouth"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
       return {...s,accessMinigame:{action:a,kind:"proc",site:a.region,procId:a.id,procName:PROCS[a.id].name,
         attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
         alertBaseline:(s.eventAlertQueue||[]).length}};
@@ -3156,7 +3251,8 @@ export default function App({onHome}={}){
       if(line){
         const entryId=`dlg_${a.id}_${Math.round(s.t*10)}`;
         dlgPatch={log:[...s.log,{t:s.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,s.idKnown?s.patientName:null)}],
-          dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text)};
+          dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text),
+          npcBrains:rememberNpcLine(s.npcBrains,npcId("patient"),"patient",s.idKnown?s.patientName:null,line.text)};
         requestLocalUpgrade(exEvt,s,exV,(upgraded)=>{
           setG(s2=>({...s2,log:s2.log.map(e=>
             e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}:e)}));
@@ -3169,7 +3265,8 @@ export default function App({onHome}={}){
       if(line){
         const entryId=`dlg_${a.id}_${Math.round(s.t*10)}`;
         dlgPatch={log:[...s.log,{t:s.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,s.idKnown?s.patientName:null)}],
-          dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text)};
+          dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text),
+          npcBrains:rememberNpcLine(s.npcBrains,npcId("patient"),"patient",s.idKnown?s.patientName:null,line.text)};
         // F0 — same fire-and-forget tier-3 upgrade pattern as the tick-loop
         // dialogue sites. Called here (inside start()'s own setG updater,
         // not the tick-loop interval) with a snapshot of `s` — safe, since
@@ -3245,11 +3342,12 @@ export default function App({onHome}={}){
     const entryId=`dlg_mg_${evtType}_${Math.round(s.t*10)}`;
     const log=[...s.log,{t:s.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,s.idKnown?s.patientName:null)}];
     const dialogueMemory=pushDialogueMemory(s.dialogueMemory,line.text);
+    const npcBrains=rememberNpcLine(s.npcBrains,npcId("patient"),"patient",s.idKnown?s.patientName:null,line.text);
     requestLocalUpgrade(evt,s,v,(upgraded)=>{
       setG(s2=>({...s2,log:s2.log.map(e=>
         e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}:e)}));
     });
-    return {...s,log,dialogueMemory,dialogueLastAt:s.t};
+    return {...s,log,dialogueMemory,npcBrains,dialogueLastAt:s.t};
   });
 
   // CprMinigame: each 4th compression pushes the rolling depth/rate quality
@@ -3303,6 +3401,20 @@ export default function App({onHome}={}){
         log:[...s.log,{t:s.t,kind:"obs",text:`${mg.action.label||"Attempt"} abandoned, the patient's condition changed.`}]}));
       return;
     }
+    if(outcome===PROCEDURE_OUTCOME.SUCCESS&&mg.kind==="bp"){
+      // The player's OWN marked pressures are what gets charted here, not
+      // the engine's true v.sbp/v.dbp — a real manual BP can read a few
+      // points off from technique, same as a real one can. giveDose still
+      // fires so the cost/done-marking/repeat-attempt bookkeeping matches
+      // every other proc action, it just doesn't route through the generic
+      // manualBP run() (which would report the exact true numbers).
+      setG(s=>{const sbp=detail?.sbp, dbp=detail?.dbp;
+        const m={...s,accessMinigame:null};
+        giveDose(m,{id:"manualBP",at:s.t});
+        return apply(m,{say:`${sbp} over ${dbp}, by auscultation.`,kind:"obs",
+          meas:{"BP (R)":`${sbp}/${dbp}`},find:`BP ${sbp}/${dbp} (manual).`});});
+      return;
+    }
     if(outcome===PROCEDURE_OUTCOME.SUCCESS&&mg.kind==="auscultate"){
       // Nothing to pass or fail here: the player listened, and whatever they typed
       // is what they tell the crew. The engine's own finding still lands in the log
@@ -3330,7 +3442,8 @@ export default function App({onHome}={}){
           if(line){
             const entryId=`dlg_ok_${mg.kind}_${Math.round(s.t*10)}`;
             dlgPatch={log:[...s.log,{t:s.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,s.idKnown?s.patientName:null)}],
-              dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text)};
+              dialogueMemory:pushDialogueMemory(s.dialogueMemory,line.text),
+              npcBrains:rememberNpcLine(s.npcBrains,npcId("patient"),"patient",s.idKnown?s.patientName:null,line.text)};
             // Same fire-and-forget tier-3 upgrade pattern as every other
             // dialogue call site, discards silently via the .map() no-match
             // case if this entry has scrolled off the log.
@@ -3348,7 +3461,13 @@ export default function App({onHome}={}){
       // Per explicit operator instruction, the busy timer after a
       // successful mini-game is a short, fixed confirmation window, not
       // the original flat cost.
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:5});
+      // Leads placement quality (click-precision score from DeviceMinigame)
+      // rides along on the re-entered action so deviceActs()' own attach_leads
+      // run() can read it via its 3rd (action) argument and set
+      // s.leadsPlacementQuality — the thing the monitor's artifact calc
+      // reads (see the Monitor panel below).
+      const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:5,...leadsExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -9981,6 +10100,14 @@ export default function App({onHome}={}){
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame} onDialogue={fireMinigameDialogue}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="splint"&&<SplintMinigame open kind="splint"
+      site={g.accessMinigame.site} pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="bp"&&<BpMinigame open kind="bp"
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="proc"&&<ProcMinigame open kind="proc"
       procId={g.accessMinigame.procId} procName={g.accessMinigame.procName}
       pat={g.patient} assist={g.procedureAssist}
@@ -10382,10 +10509,17 @@ export default function App({onHome}={}){
           const settling=leadsLive&&secSinceLeads<12?(1-secSinceLeads/12):0;
           const movement=g.patient?.seizing?0.75:0;
           const loose=leadsLive&&!g.leadsSecured?0.3:0;
-          const artifact=Math.min(1,movement+settling*0.6+loose);
+          // A fourth, PERSISTENT source, distinct from the transient settling
+          // window and the securable "loose" flag above: how precisely the
+          // electrodes were actually placed (DeviceMinigame's own click-
+          // accuracy score for a player attach, ~0.85 for a crew attach, 1
+          // for an undefined/legacy save). Poor contact from sloppy placement
+          // doesn't resolve on its own the way settling does — it stays until
+          // the leads are pulled and redone.
+          const placementNoise=leadsLive?(1-(g.leadsPlacementQuality??1))*0.5:0;
+          const artifact=Math.min(1,movement+settling*0.6+loose+placementNoise);
           const waves=[
             leadsLive&&{key:"ecg",pts:ecgPoints(V.ecg,380,70,artifact)},
-            dv.pulseox&&{key:"pleth",pts:plethPoints(V.hr,380,70,perf)},
             dv.capno&&{key:"capno",pts:capnoPoints(V.etco2,V.rr)},
             dv.artline&&{key:"art",pts:artPoints(V.sbp,V.dbp,V.hr)},
             (leadsLive||dv.pulseox)&&{key:"resp",pts:respPoints(V.rr)},
@@ -10402,11 +10536,15 @@ export default function App({onHome}={}){
                 {attached.length?`${attached.length} ATTACHED`:"NOTHING ATTACHED"}</span></div>
             {leadsLive&&artifact>0.25&&
               <div style={{fontFamily:MONO,fontSize:10,color:C.amber||"#F2A33C",marginBottom:6}}>
-                ⚠ ARTIFACT — {movement>0?"patient movement is defeating the leads":"check lead contact, reseat if loose"}</div>}
+                ⚠ ARTIFACT — {movement>0?"patient movement is defeating the leads"
+                  :loose>0?"check lead contact, reseat if loose"
+                  :placementNoise>0.15?"electrodes are poorly seated, remove and reapply for a clean trace"
+                  :"leads are still settling"}</div>}
             {o2Active&&
               <div style={{fontFamily:MONO,fontSize:10,color:o2Psi<=400?(C.amber||"#F2A33C"):C.dim,marginBottom:6}}>
                 O2 CYLINDER — {o2Psi} psi{o2Psi<=400?" — LOW, swap soon":""}</div>}
-            {waves.length===0
+            {dv.pulseox&&<PulseOxScreen spo2={V.spo2} pr={pulseRateFrom(V)} perf={perf}/>}
+            {waves.length===0&&!dv.pulseox
               ?<div style={{fontSize:13,color:C.dim,padding:"24px 0",textAlign:"center"}}>
                  Nothing is on the patient. Attach the pulse oximeter, capnography, monitor leads or an arterial line
                  (from the relevant body region) and the waveforms appear here.</div>

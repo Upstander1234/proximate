@@ -97,21 +97,56 @@ export default function AirwayMinigame({ open, kind, pat, assist, interrupted, o
 
         {/* First-person laryngoscope view: a mouth opening, epiglottis, and
             the cords sliding into frame as lift approaches the target. */}
-        <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#150A0A", borderRadius: 6, marginBottom: 12 }}>
-          <ellipse cx={100} cy={60} rx={90} ry={50} fill="#2A1414" />
+        <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0C0505", borderRadius: 6, marginBottom: 12 }}>
+          <defs>
+            <radialGradient id="oralCavityGrad" cx="50%" cy="35%" r="75%">
+              <stop offset="0%" stopColor="#3A1A1A" />
+              <stop offset="100%" stopColor="#100707" />
+            </radialGradient>
+            <linearGradient id="tongueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#C9636F" />
+              <stop offset="100%" stopColor="#8C3B45" />
+            </linearGradient>
+            <linearGradient id="epiGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#B8555F" />
+              <stop offset="100%" stopColor="#7A3B3B" />
+            </linearGradient>
+          </defs>
+          {/* oral cavity, vignetted so the scope's own "view cone" reads naturally */}
+          <ellipse cx={100} cy={60} rx={92} ry={54} fill="url(#oralCavityGrad)" />
+          {/* tongue mass filling the lower field, pushed down by blade lift */}
+          <path d={`M -10 ${118 - lift * 0.15} Q 100 ${100 - lift * 0.1} 210 ${118 - lift * 0.15} L 210 130 L -10 130 Z`}
+            fill="url(#tongueGrad)" opacity={0.9} />
           {(() => {
             const closeness = Math.max(0, 1 - Math.abs(lift - targetLift) / 50);
             const epY = 60 - closeness * 30;
             return (
               <>
-                <ellipse cx={100} cy={epY + 10} rx={40} ry={14} fill="#7A3B3B" opacity={0.6 + closeness * 0.3} />
-                {closeness > 0.55 && <ellipse cx={100} cy={epY + 18} rx={22} ry={8} fill="#E8DCC8" opacity={(closeness - 0.55) * 2} />}
+                {/* epiglottis, a leaf-shaped flap lifting out of the way as
+                    blade lift approaches the correct amount */}
+                <path d={`M ${100 - 26} ${epY + 4} Q 100 ${epY - 14 - closeness * 8} ${100 + 26} ${epY + 4} Q 100 ${epY + 20} ${100 - 26} ${epY + 4} Z`}
+                  fill="url(#epiGrad)" opacity={0.55 + closeness * 0.4} />
+                {closeness > 0.5 && (
+                  <>
+                    {/* arytenoids + glottic opening, only visible once the
+                        epiglottis is lifted enough — the real "grade 1" view */}
+                    <ellipse cx={92} cy={epY + 22} rx={6} ry={5} fill="#D8B8AE" opacity={(closeness - 0.5) * 2} />
+                    <ellipse cx={108} cy={epY + 22} rx={6} ry={5} fill="#D8B8AE" opacity={(closeness - 0.5) * 2} />
+                    <path d={`M 88 ${epY + 20} L 100 ${epY + 34} L 112 ${epY + 20} Z`}
+                      fill="#2B1414" opacity={(closeness - 0.5) * 2} />
+                    <ellipse cx={100} cy={epY + 20} rx={20} ry={9} fill="none" stroke="#F0D8CE"
+                      strokeWidth={1.2} opacity={(closeness - 0.5) * 1.6} />
+                  </>
+                )}
               </>
             );
           })()}
           {step === "pass" && (
-            <line x1={100 + tubeOffset * 60} y1={10} x2={100 + tubeOffset * 60} y2={20 + tubeDepth * 70}
-              stroke={C.text || "#DDE"} strokeWidth={3} strokeLinecap="round" />
+            <line x1={100 + tubeOffset * 60} y1={6} x2={100 + tubeOffset * 60} y2={16 + tubeDepth * 74}
+              stroke="#E8E4D8" strokeWidth={4} strokeLinecap="round" />
+          )}
+          {step === "pass" && (
+            <circle cx={100 + tubeOffset * 60} cy={16 + tubeDepth * 74} r={5} fill="none" stroke="#7CB3D6" strokeWidth={1.5} opacity={0.8} />
           )}
         </svg>
 

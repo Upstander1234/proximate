@@ -114,10 +114,31 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
         resultText={flash === "success" ? "Flash! You're in the vein." : flash === "angle" ? "Wrong angle, missed the vein." :
           flash === "shallow" ? "Too shallow, no flash." : flash === "blown" ? "Blew through the back wall." : ""}>
         <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12 }}>
-          <rect x={0} y={0} width={200} height={30} fill="#C9987A" opacity={0.35} />
-          <line x1={0} y1={30} x2={200} y2={30} stroke="#C9987A" strokeWidth={2} />
-          <rect x={0} y={30 + veinTop * 80} width={200} height={Math.max(4, veinWidth * 80)}
-            fill={C.hr || "#B33"} opacity={0.25 + veinVis * 0.55} rx={4} />
+          <defs>
+            <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#E3AE87" />
+              <stop offset="55%" stopColor="#CD9068" />
+              <stop offset="100%" stopColor="#B87A54" />
+            </linearGradient>
+            <linearGradient id="veinGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#7D3E52" />
+              <stop offset="100%" stopColor="#4A2436" />
+            </linearGradient>
+          </defs>
+          {/* forearm: a gently tapered limb, not a flat strip, so this
+              reads as skin rather than an abstract cross-section bar */}
+          <path d="M -10 -6 Q 100 -14 210 -6 L 210 34 Q 100 44 -10 34 Z" fill="url(#skinGrad)" />
+          <path d="M -10 -6 Q 100 -14 210 -6" fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />
+          {/* subtle skin texture / creases */}
+          <path d="M 10 6 Q 100 -2 190 6" fill="none" stroke="#00000022" strokeWidth={1} />
+          <path d="M 10 24 Q 100 32 190 24" fill="none" stroke="#00000022" strokeWidth={1} />
+          {/* the vein itself, gently curved rather than a straight bar,
+              with a soft glow scaled by how visible it is on this patient */}
+          <path
+            d={`M -5 ${30 + veinTop * 80 + veinWidth * 40} Q 60 ${30 + veinTop * 80 + veinWidth * 40 - 6} 100 ${30 + (veinTop + veinWidth / 2) * 80} T 205 ${30 + veinTop * 80 + veinWidth * 40 + 5}`}
+            fill="none" stroke="url(#veinGrad)" strokeWidth={Math.max(5, veinWidth * 70)} strokeLinecap="round"
+            opacity={0.28 + veinVis * 0.55} />
+          <line x1={0} y1={30} x2={200} y2={30} stroke="#A9714E" strokeWidth={1.5} opacity={0.6} />
           {step !== "uncap" && <NeedleLine angle={angle} depth={depth} pivotY={30} depthScale={80} />}
           {flash === "success" && <circle cx={100} cy={30 + (veinTop + veinWidth / 2) * 80} r={5} fill={C.red || "#E33"} />}
         </svg>
@@ -191,9 +212,28 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
       resultText={flash === "success" ? "Pop! You're through the cortex." : flash === "landmark" ? "Off the landmark." :
         flash === "shallow" ? "No pop yet." : flash === "through" ? "Drove through the far cortex." : ""}>
       <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12 }}>
-        <rect x={0} y={0} width={200} height={20} fill="#C9987A" opacity={0.3} />
-        <rect x={0} y={20} width={200} height={12} fill="#E8DCC8" opacity={0.85} /> {/* cortex */}
-        <rect x={0} y={32} width={200} height={70} fill="#8A7A5C" opacity={0.35} /> {/* medullary cavity */}
+        <defs>
+          <linearGradient id="ioSkinGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#E3AE87" />
+            <stop offset="100%" stopColor="#CD9068" />
+          </linearGradient>
+          <linearGradient id="ioCortexGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F4EBDA" />
+            <stop offset="100%" stopColor="#DCCBA6" />
+          </linearGradient>
+          <linearGradient id="ioMarrowGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#A6906A" />
+            <stop offset="100%" stopColor="#7A6748" />
+          </linearGradient>
+        </defs>
+        <path d="M -10 -8 Q 100 -16 210 -8 L 210 20 Q 100 26 -10 20 Z" fill="url(#ioSkinGrad)" />
+        <rect x={0} y={20} width={200} height={12} fill="url(#ioCortexGrad)" /> {/* cortex */}
+        <path d="M 0 20 Q 100 27 200 20" fill="none" stroke="#B8A27A" strokeWidth={1} opacity={0.6} />
+        <rect x={0} y={32} width={200} height={70} fill="url(#ioMarrowGrad)" opacity={0.75} /> {/* medullary cavity */}
+        {/* faint trabecular texture inside the marrow space */}
+        {[18, 46, 74, 102, 130, 158, 186].map((x) => (
+          <line key={x} x1={x} y1={34} x2={x + 6} y2={98} stroke="#00000018" strokeWidth={2} />
+        ))}
         <rect x={100 + (0 - landmarkTol) * 90} y={20} width={landmarkTol * 2 * 90} height={12}
           fill={C.amber} opacity={0.35} />
         {step !== "uncap" && <NeedleLine angle={angle} depth={depth} pivotY={20} depthScale={70} xOffset={offset * 90} vertical />}

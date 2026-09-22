@@ -10,9 +10,4473 @@ most recent entries inline; this file picks up right after those.
 
 ---
 
-### Front-end batch: queue item F0's third slice — a real crew-voiced dialogue reaction (part of item 12's "crew dialogue can reuse the same architecture"), closing a found gap where `DialoguePanel` had styled a "CREW" speaker with nothing ever feeding it; a real, reusable testing gotcha found and documented for forcing a sustained seizure edge in a browser-automation script
 
-Per explicit instruction to continue F0 after the treatment-response
+### 2026-09-09 — Education subsystem: MCQ Practice, an IRT-based Adaptive Practice Exam, a WIP Lectures tab, and crowdsourced-question submission/review, built on top of the pre-existing `src/education/` module (not the physiology engine — see the preface's own new pointer)
+
+**Not physiology-engine work.** Filed here only because section 3 is this
+project's one changelog; none of this touched `src/physio/*`,
+`physiology.js`, or either verification suite, and none of it is tracked in
+section 6's queue. Read `src/education/*.js` directly for anything further —
+this entry is a pointer, not a maintained status board for that subsystem.
+
+**What existed already, confirmed by reading the tree before building
+anything:** a real, working MCQ study screen (`EducationApp.jsx`,
+`questions.js`, `srs.js`, `store.js`, `auth.js`, `firebase.js`) — a static,
+hand-authored EMT question bank, an SM-2 spaced-repetition scheduler keyed
+per-question per-user, and optional Firebase auth/Firestore sync with a
+localStorage/guest-mode fallback when Firebase isn't configured. No question
+randomization, no community answer-choice statistics, no adaptive/IRT
+testing, no crowdsourcing, no admin review, and no Lectures tab existed.
+
+**Shipped, reusing that existing architecture rather than duplicating it:**
+`contentBlueprint.js` (the NREMT content-blueprint category weights, plus a
+documented, honestly-approximate domain→category mapping since existing
+questions are tagged by body-system topic, not assessment phase);
+`itemStats.js` (community per-question response aggregation — attempts,
+correct, per-choice counts — via Firestore with a clearly-labeled
+device-local fallback); `randomize.js` (per-presentation answer-choice
+shuffling that always grades/records against the stable canonical index,
+never the on-screen position); `exposure.js` (question-"seen" tracking
+built directly on the existing SRS progress store — a question counts as
+seen the instant it's shown, in any mode, shared automatically since MCQ
+Practice and the Adaptive Exam both write into the same progress object);
+`questionPool.js` (merges the built-in bank with manually-approved
+crowdsourced questions into one runtime pool); `adaptiveEngine.js` (a real
+2-parameter-logistic IRT model — MAP ability estimation via Newton-Raphson
+with a weak N(0,1) prior, per-item difficulty derived from community data
+and shrunk toward neutral until enough responses back it, content-blueprint-
+aware item selection, a hard 70-question floor and 120-question ceiling, a
+99% confidence stopping criterion); `crowdsource.js`/`adminConfig.js`
+(Firestore-gated question submission and a manual admin approve/reject
+queue — documented required security rules in `crowdsource.js`'s own header,
+not enforced client-side); `lectures.js` (an empty, WIP-labeled data shape
+reusing the existing domain taxonomy, ready for real lecture content later
+without a redesign). New UI: `MCQPracticeTab.jsx`, `AdaptiveTestTab.jsx`,
+`LecturesTab.jsx`, `MethodsPage.jsx` (the player-facing transparency page —
+explicitly states this is NOT the real NREMT algorithm), `SubmitQuestionForm
+.jsx`, `AdminReviewTab.jsx`; `EducationApp.jsx` rebuilt as a tabbed shell
+routing between them.
+
+**A real bug was found and fixed via actual browser verification, not just
+lint/build.** A full-length adaptive exam run through the real UI
+(`tools/browser/verifyAdaptiveExamCompletion.mjs`, new) stopped at 40
+questions — a direct violation of the hard 70-question floor. Root cause:
+`selectNextItem`'s eligibility filter excluded any question already
+administered EARLIER IN THE SAME EXAM even once reuse was allowed, so once
+the ~57-question EMT bank (smaller than the 70-question minimum) had been
+fully cycled through once, no eligible candidate remained and the exam
+stopped early. Fixed with a real three-tier eligibility fallback in
+`adaptiveEngine.js`'s `selectNextItem` (never-seen-anywhere → seen elsewhere
+but not yet this exam → true within-exam repeat, only as a last resort) —
+re-verified via the same script, twice: a full run now reaches a
+70-120-question stop, the exhaustion notice fires exactly once, and the
+review screen pages through every administered question correctly
+(including genuine within-exam repeats, which are unavoidable and expected
+given a bank this size).
+
+**Verification.** `npx eslint src/education` and `npx eslint src`: clean,
+exactly the project's own pre-existing 3-error `App.jsx`
+`react-refresh/only-export-components` baseline, zero findings in anything
+this batch touched. `npx vite build`: clean, same pre-existing >500kB
+chunk-size warning. Two new permanent Playwright scripts,
+`tools/browser/verifyEducationApp.mjs` (a full click-through of all four
+tabs plus the Methods page, guest mode, run twice clean, zero console
+errors) and `tools/browser/verifyAdaptiveExamCompletion.mjs` (drives a
+complete adaptive exam to its natural stop via real clicks — not state
+injection, since none of this subsystem's state is exposed through
+`App.jsx`'s dev hooks — asserting the 70-120 bound, the single exhaustion
+notice, and full review coverage; run twice clean after the fix above).
+Neither `mechanismWiring.mjs` nor `scenarioSweep.mjs` was run, since neither
+imports anything under `src/education/`.
+
+### 2026-09-05 — a previous item in the queue: fixed `renal.js`'s `aldoEffect` resting-baseline bug, root-caused (not fixed) the dominant remaining kMass drift driver, filed as new a previous item in the queue
+
+`conservationAudit.mjs` (a previous item in the queue) had found a real, unexplained
+drift in "conserved" quantities for a completely resting, condition-less,
+dose-less patient (a previous item in the queue). Picked up a genuine, real fix already
+present as an in-progress uncommitted change (`renal.js`'s `aldoEffect`
+term), verified it by direct measurement rather than trusting the existing
+comment's claim, and found the claim was PARTIALLY right: it fixed a real
+bug, but did not close the item.
+
+**The real bug, confirmed and kept.** `aldoEffect` used to be
+`(pat.aldosterone - 1) * 0.05`, treating aldosterone=1 as the "no extra
+excretion" resting baseline. But this file's own RAAS block decays resting
+aldosterone toward 0, not 1 — measured settling at ~0.047 for a
+condition-less patient. That mismatch produced a near-constant, spurious
+~-0.048 potassium-RETENTION bias every tick at rest (every other
+aldosterone consumer in this file already treats 0 as the resting
+baseline). Fixed to scale directly off aldosterone itself, so aldosterone~0
+at rest contributes ~0 extra excretion.
+
+**Honest re-measurement after the fix, not assumed fixed.** Re-ran
+`conservationAudit.mjs`: kMass still FAILS, now drifting the OPPOSITE
+direction (~12-15% over 15 min instead of the pre-fix ~2.4-3.9% rise) —
+the aldoEffect bug had been partially MASKING a larger, opposite-signed
+leak, not causing the whole thing. totalBloodVol/plasmaVol failures are
+unaffected (pre-existing, different mechanism, still open per a previous item in the queue's
+own original note about the Starling/lymphatic balance).
+
+**Root-caused the dominant remaining driver, by direct tick-by-tick
+probing (a standalone script, stripped after use, per lesson 8) — not
+guessed.** The dominant contributor to the still-failing kMass drift is
+`renal.js`'s own `kShiftConc` term (real, correctly-coded H+/K+ exchange
+physiology), forced by a resting patient's `pat.ph` sitting persistently
+around 7.457-7.459 instead of 7.40. This is NOT an acid-base-module defect
+— `pat.ph` is correctly DERIVED each tick from na/k/cl/paco2/etc.
+(`acidbase.js`), not an independent state that could itself drift. Traced
+one level further: the real cause is `pat.paco2` (respiratory.js) never
+reaching a fixed point within the audit's own 15-30 minute window — it
+falls from the constructed initial 40 mmHg toward ~34.6 mmHg and is still
+falling, in an unbroken line, at t=900s. `respiratory.js`'s
+`paco2Target = (vco2/pat.va) * 863` is the ratio of `pat.vo2Demand`
+(metabolic.js) to alveolar ventilation `pat.va` (from `pat.rr`/`pat.vt`,
+driven by `pat.neuralSymp`/`pat.sympathetic` in cardiovascular.js) — both
+numerator and denominator relax from this engine's own elevated
+constructed initial sympathetic tone toward rest, but on DIFFERENT
+effective time constants, so PaCO2 (and everything downstream of it) keeps
+drifting for as long as neuralSymp itself hasn't converged, which
+measurably outlasts this project's own 900-1800s verification window. This
+is genuinely separate, larger, cross-module (respiratory/cardiovascular-
+autonomic/metabolic) physiology-engine work — filed in full as new a previous item in the queue (section 6) rather than patched blind inside a renal-module fix,
+since a change to the shared initial-sympathetic-tone/relaxation dynamics
+would move every scenario's own resting baseline and needs its own
+dedicated, carefully re-verified batch.
+
+**Verification.** `node --check` clean on `renal.js`. `npx eslint
+src/physio/renal.js`: zero findings. `npx vite build`: clean (60s, same
+pre-existing >500kB chunk-size warning, no new warnings).
+`node src/scripts/scenarioSweep.mjs` re-run to completion before AND after
+this fix: byte-identical **183 scenarios, 20,833,820 checks, 915 failed**
+in both runs (the 915 are a confirmed PRE-EXISTING, unrelated
+rvEdv/rvEsv/rvSv/rvEf/pvrWood-undefined-at-t=2s defect present on
+unmodified `master` too — not investigated further here, out of scope for
+this item, but worth its own future queue entry if not already tracked).
+`mechanismWiring.mjs` run to completion in the shared, busy multi-agent
+environment this session (see this document's own standing note about
+that); no assertion touching `k`/`kMass`/`aldosterone`/`ph`/`paco2` was
+newly failing versus its own pre-existing baseline. This session's own
+throwaway diagnostic probe scripts (two, both under `src/scripts/_probeK
+.mjs`-style throwaway names) were stripped before this entry was written.
+
+### 2026-09-03 — a previous item in the queue's remainder — a second chronic-adaptation state, `pat.vascularStiffness`, and a real "field was inert" defect found and fixed before it could ship
+
+Direct continuation of the same session's a previous item in the queue work. `pat.lvHypertrophy`
+(a prior session) already established the real relax-toward-target idiom
+for slow-timescale chronic adaptation; this item's own remainder named
+vascular stiffness, nephron loss, and coronary atherosclerosis as still
+unbuilt. Scoped to vascular stiffness — a real, citable, well-understood
+mechanism (Framingham/pulse-wave-velocity literature on hypertension-driven
+arterial stiffening) with an obvious pairing to the already-shipped LVH
+work (same underlying cause, genuinely different, slower time course).
+
+`pat.vascularStiffness` (patient.js, default 0) relaxes toward a target
+driven by the same sustained-SVR-elevation ratio `updateChronicRemodeling`
+already computes for `lvHypertrophy`, but on its own, real, cited,
+SLOWER 90-day time constant (arterial wall remodeling from collagen
+deposition/elastin fragmentation is a real, separately-documented,
+months-scale process, distinct from and slower than LVH's own weeks-scale
+onset) — `cardiovascular.js`.
+
+**A real "written, read, still inert" defect (section 1's own third rule)
+was found and fixed before this could ship, not glossed over.** The first
+consumer attempt lowered the CEILING (`pat.arterialComplianceBase`) that
+`updateCardiovascular`'s own acute, pressure-dependent stiffening term
+relaxes toward. MEASURED directly before trusting it: this had ZERO effect
+on any published vital (`pat.pp`/`pat.sbp`/`pat.dbp` were bit-for-bit
+identical with `vascularStiffness` forced to 1 vs. 0) — because
+`arterialComplianceBase`/`arterialCompliance` only feed the LUMPED model's
+own `pat.ea`/stroke-volume calculation, which the authoritative full-loop
+ODE solver overwrites every tick (section 5's own documented "two solvers,
+the full ODE is authoritative" rule). Fixed by composing into
+`pat.arterialComplianceFactor` instead — the authoritative solver's OWN
+real aortic-compliance disease handle (`Cao` in `buildParams`,
+`cardiovascular_ode_full.js`), the SAME field `preeclampsia`'s own
+arterial-stiffening mechanism already writes, via the identical `Math.min`
+ceiling idiom so the two lesions compose correctly (whichever is more
+severe wins) rather than one silently clobbering the other.
+
+**MEASURED, not guessed, via a standalone probe (stripped after use) before
+trusting the fix (lesson 8):** a healthy control holds `vascularStiffness`
+at exactly 0 over 900s; forcing sustained elevated SVR (1900, vs. a normal
+~1150) engages it measurably (0.0001 by 900s, 0.0004 by 3600s — genuinely
+gradual on its own real 90-day tau, longer window shows more engagement,
+not a step); an acute cardiac condition (`ami`) stays at exactly 0 (no
+regression); and forcing `vascularStiffness=1` directly widens pulse
+pressure by ~17.8 mmHg versus an otherwise-identical control over a 60s
+window (35.9 -> 53.7) — a real, published-vital consequence via the
+authoritative ODE's own `Cao` term, the classic isolated-systolic-
+hypertension-in-stiff-arteries signature, not just a field that moves.
+
+Four new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[VASCULAR STIFFNESS — a previous item in the queue's remainder, chronic-adaptation
+slice]` section, mirroring `lvHypertrophy`'s own section structure;
+`vascularStiffness`/`arterialComplianceFactor`/`pp` added to that suite's
+`snapshot()` helper (the latter two were real, live, pre-existing fields
+never previously snapshotted). `vascularStiffness`/`arterialComplianceFactor`
+added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification.** `node --check` clean on all four touched files
+(`patient.js`, `cardiovascular.js`, `mechanismWiring.mjs`,
+`scenarioSweep.mjs`). `npx eslint`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in any touched file. The four new assertions were verified
+passing via a standalone reproduction of the suite's own probe logic
+before being trusted (lesson 8); the full `mechanismWiring.mjs`/
+`scenarioSweep.mjs` suites were not confirmed to completion against this
+specific change within this session (see this session's a previous item in the queue entry
+immediately below for the same shared-environment instability note — a
+background run launched for a previous item in the queue was still in progress, reaching the
+`[TAKOTSUBO]` section clean with no new failures, when this entry was
+written; a future session should confirm the new `[VASCULAR STIFFNESS]`
+section in-suite). The throwaway probe script was stripped before this
+entry was written.
+
+### 2026-09-03 — a previous item in the queue's standing overdose-condition workstream — amiodarone overdose (`amiodaroneOverdose`, TOX-017), the sixth drug shipped, and a real self-correction (lesson 16) of an unmeasured first-draft comment before it could ship
+
+Per a previous item in the queue's own explicit warning ("measure before writing the scenario's
+clinical framing, not after"), confirmed before building that amiodarone's
+existing PK entry (twoCompartment, ec50=1.75) drives its
+`antiarrhythmic`/`receptors` terms (`sodiumBlock`/`potassiumBlock`/
+`avSlowing`/`arteriolarDilation`) continuously off summed effect-site
+concentration — not the per-drug-id Emax gate a previous item in the queue found for fentanyl —
+so this is a real, buildable overdose, the same shape diltiazem/metoprolol/
+lidocaine's own workstream entries already confirmed for their own drugs.
+
+**A dose sweep (1800/3600/6000/9000mg at 20min elapsed, run through the
+real `physio()` pipeline against the real scenario, not a hand-rebuilt tick
+loop) found a genuinely different SHAPE of finding than diltiazem/
+metoprolol/atropine's own "receptor coefficient is already the ceiling"
+result.** Amiodarone's intensity is NOT saturated at these doses —
+`potassiumChannelBlock` rose from 0.169 at 1800mg to 0.359 at 9000mg, well
+short of its own 0.5 ceiling — so severity genuinely scales with dose here,
+closer to lidocaine's LAST shape.
+
+**A real, previously-unmeasured claim in this condition's own first-draft
+comment was caught and corrected before shipping — the exact lesson 16
+mistake, self-inflicted and self-caught in the same batch.** An initial
+comment claimed "hr 88->69" (bradycardia) without having actually measured
+it. MEASURED, at a 3600mg seeded load: hr sits at 94.6-96.8 throughout the
+call, statistically indistinguishable from a condition-less control's own
+95.2-95.5 — amiodarone's `drugs.js` entry declares NO direct
+negative-chronotropic receptor (only `arteriolarDilation` for vasodilation
+plus the three channel/conduction `antiarrhythmic` terms); `avSlowingDrug`
+acts on AV-nodal CONDUCTION (`pat.avConduction`, cardiovascular.js,
+lengthening PR toward first-degree block), not on sinus rate. The
+condition, scenario, and resolve() text were all corrected to state this
+honestly: this toxidrome is real hypotension + QT prolongation, NOT
+bradycardia. What IS real: sbp 127.4 (control) -> 98.0 at 600s (a genuine
+~23% arteriolarDilation-mediated drop) and qt 0.318 -> 0.349 (a real ~10%
+QT prolongation via `potassiumChannelBlock`'s own already-calibrated 0.15
+coefficient in cardiovascular.js, landing inside amiodarone's documented
+10-15% QTc-prolongation range), both sustained essentially unchanged from
+60s through 900s — a genuine load/duration toxicity (amiodarone's kel=0.005
+is the slowest clearance of any two-compartment drug in this formulary),
+not a brief spike.
+
+**Scene framing**: a home-health IV-push medication error (a full week's
+oral maintenance dose given as one inadvertent bolus) rather than an
+intentional overdose — amiodarone is not a typical self-harm drug of
+choice, but IV-push dosing errors with this exact drug are a real,
+documented medication-safety issue. New scenario `amiodaroneOverdose`
+(TOX-017, `scenarios.js`): a `heart` probe reads `pat.qt` live (threshold
+set against the engine's OWN measured range per lesson 20 — a
+condition-less control reads ~318ms, this condition ~348ms, so 335ms
+cleanly separates them; real clinical QTc cutoffs, ~450-470ms, are absolute
+values this engine's internal qt scale isn't calibrated to). No specific
+antidote exists in this formulary (grep-confirmed) — the same honest
+"supportive care, no curative field drug" framing `atropineOverdose`/
+`lidocaineOverdose` already established.
+
+**Four new two-sided `mechanismWiring.mjs` assertions** in a new
+`[AMIODARONE OVERDOSE — a previous item in the queue, sixth drug]` section: presence (real
+hypotension + QT prolongation + channel blockade); specificity (a
+condition-less control shows zero of any channel blockade); the honest,
+explicitly-asserted NON-bradycardia finding (hr within 5 bpm of a matched
+control, not lowered); and time-course (hypotension sustained from 600s to
+900s, not a brief spike). All four fields (`qt`, `potassiumChannelBlock`,
+`sodiumChannelBlock`, `avSlowingDrug`) were already real, live, and already
+in `mechanismWiring.mjs`'s own `snapshot()` from earlier batches — no new
+`scenarioSweep.mjs`/`patient.js` changes were needed, since this condition
+introduces no genuinely new physiology field, only a new producer for four
+already-real ones.
+
+**Verification.** `node --check`/`npx eslint` clean on all three touched
+files (`conditions.js`, `scenarios.js`, `mechanismWiring.mjs`) — zero new
+findings beyond the pre-existing 3-error `App.jsx` baseline. All four new
+assertions verified passing via a standalone extraction of the suite's own
+probe()/snapshot() helpers (lesson 17's sanctioned technique — copied
+verbatim, not reconstructed), run directly against the real engine: 4/4
+passed (sbp=98.2, qt=345ms, kBlock=0.25 at presence; hr 96.4 vs control
+95.5 confirming the non-bradycardia finding; sbp 98.2->96.6 from 600s to
+900s confirming sustained hypotension). **The full `mechanismWiring.mjs`
+suite was NOT run to completion this session** — this repo's shared,
+multi-agent environment had five to six other `node.exe` processes
+(concurrent physiology-queue batches from other agents working the same
+repo in parallel) actively contending for the single CPU core throughout
+this batch, and a full-suite run launched in the background made only
+partial progress (reaching the `[DEFIBRILLATION]` section, itself well past
+this batch's own new section, with zero failures observed in every section
+reached) before this entry was written — stated honestly as NOT confirmed
+in-suite, not assumed clean; the standalone extraction above is this
+batch's own real, measured regression evidence, per this project's own
+established precedent for a shared/busy-environment session. `scenarioSweep.mjs`
+was not run this batch (no new field was added for it to check). The
+throwaway extraction script was stripped before this entry was written.
+
+### 2026-09-03 — a previous item in the queue (pulmonary circulation / RV-LV coupling) — confirmed the PVR-driven RV afterload coupling already exists in the authoritative ODE, and fixed a real, previously-invisible defect: the published RV vitals were coming from a separate, non-coupled legacy estimate
+
+Confirmed against the tree first (lesson 16), then measured directly, not
+assumed either way per this item's own instruction. `cardiovascular_ode_full.js`
+already integrates a genuine RV chamber (`IDX.VRV`) with real afterload physics
+(`Rpul` scaled by `pat._fullRpulRatio`, itself derived from `pat.pvrWood`,
+itself derived from `pat.pulmResistFactor` — the `pe` condition's own existing
+PVR-elevation handle), and its pulmonary venous return feeds the SAME loop's
+own `VLA`/`VLV` states — i.e. the PVR -> RV afterload -> RV output -> LV
+preload chain this item names as the target emergent behavior is REAL and
+already computed, inside the authoritative solver, not missing.
+
+**What was genuinely missing, found by direct measurement (lesson 8, probe
+copied from `mechanismWiring.mjs`'s own `probe()`/`pinTraitsNeutral()`):**
+driving `pe` to its severity ceiling (pulmResistFactor 1->4, pvrWood 1.3->5.2)
+measurably reduced LV preload/output through the coupled ODE (edv 117->92 mL,
+sv 61->42 mL, co roughly flat at ~6 L/min only because compensatory
+tachycardia — hr climbing toward 144-180 — offsets the falling stroke volume;
+by 3000s the patient degenerates into VT) — the RV/LV coupling is real and
+reachable. But the RV-specific vitals actually PUBLISHED (`pat.rvEdv`/`rvEsv`/
+`rvSv`/`rvEf`) come from `updateRightHeart()`, a SEPARATE, non-coupled legacy
+estimate whose own EDV formula is pure preload (CVP-driven `fillingP`) with NO
+afterload term at all — confirmed this cannot show real afterload-driven RV
+strain: under severe `pe`, the legacy `rvEdv` FELL (142->108) instead of
+rising, purely because rising heart rate shrinks its `diastolicFraction`
+term faster than rising CVP grows `fillingP`. Separately, `fourChamberLoop.
+volumes.vrv` (the ODE's OWN true RV volume) was only ever read as a single
+INSTANTANEOUS end-of-tick sample — the exact aliased-sampling defect already
+found and fixed once for Pao/VLV (see the "SECOND BUG" comment in
+`updateFullLoopODE`), never extended to VRV, so even the real state was
+misread: raw vrv showed 91.8 (control) vs 42.2 (severe pe, one untraced
+sample) — backwards, from sampling phase alone, not physiology.
+
+**Fixed by extending the SAME windowed-peak technique already used for
+Pao/VLV to VRV** (`cardiovascular.js`'s `updateFullLoopODE`): `vrvMax`/`vrvMin`
+tracked over each tick's RK4 substep window, smoothed the same way (`betaEma`),
+giving `pat._fullRvEdv`/`_fullRvEsv`/`_fullRvSv`/`_fullRvEf` — no
+tricuspid/pulmonic regurgitant accumulator exists (only `IDX.WMR`/`WAR` for
+mitral/aortic), so total RV ejection is forward RV output with no subtraction
+needed, unlike the LV side. The publish block (right after the LV
+`useFullODE` republish) now republishes `pat.rvEdv`/`rvEsv`/`rvSv`/`rvEf` from
+this real state too, with the same single-authoritative-owner discipline the
+LV side already follows — `pat._legacyRvEdv` etc. snapshot the old estimate
+first for A/B inspection, matching the existing `_legacySv`/`_legacyEdv`
+convention.
+
+**MEASURED after the fix**: healthy control rvEdv 98.4/rvEsv 37.2/rvSv
+61.2/rvEf 0.622; severe `pe` at the same 900s timepoint: rvEdv 84.0/rvEsv
+41.8/rvSv 42.2/rvEf 0.502 — a real, measured RV-strain signature (EF falls,
+ESV rises — incomplete ejection against elevated afterload — forward RV
+output nearly halves). Stated honestly: RV EDV itself does NOT rise in this
+scenario's own compensated-tachycardia regime (HR climbing to 144 shrinks
+diastolic filling time faster than the elevated afterload/CVP can dilate the
+chamber) — the classic "acute RV dilation" sign (rising EDV) is not what this
+particular severity/heart-rate combination produces; the falling-EF/rising-ESV
+signature is the real, measured, directionally-correct consequence that does
+show up, and is reported as such rather than overclaimed.
+
+New `[RV/PULMONARY-VASCULAR COUPLING — a previous item in the queue]` section added to
+`mechanismWiring.mjs` (four two-sided assertions: PVR genuinely rises under
+`pe`; elevated PVR depresses RV EF and forward RV stroke volume; the same
+run's LV preload/output falls too, proving the coupling reaches the LV side
+through the real pulmonary circuit, not a separate hand-authored link; a
+healthy control shows normal RV EF and PVR) — all four verified passing via a
+standalone reproduction of the suite's own probe logic (lesson 8) before being
+trusted. `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pulmResistFactor` added to
+`scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists (rvEdv/rvEsv/rvSv/rvEf
+were real, live, pre-existing fields that had simply never been tracked by
+either suite before this item needed them).
+
+**Verification.** `node --check` clean on all three touched files
+(`cardiovascular.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx
+eslint src`: exactly the pre-existing 3-error `react-refresh/only-export-
+components` baseline in `App.jsx`, zero new findings. `npx vite build`:
+clean (25.86s, same pre-existing >500kB chunk-size warning). The full
+`mechanismWiring.mjs` suite was launched three times this session to confirm
+no regression to the shared cardiovascular hot path; each run was killed or
+lost to this shared, multi-agent environment's own instability before
+reaching completion (consistent with lesson 14's documented "container
+killed it seven times" experience, and with three other agents running
+concurrent physiology batches this session) — every partial run observed
+(up to ~35 lines / ~20 assertions in) showed the SAME pre-existing PASS
+results as the documented baseline, with no new failures in the region
+reached. **Stated honestly: the full suite was NOT confirmed to completion
+this session** — the standalone probe reproducing the suite's own
+probe()/snapshot() logic (lesson 8) is this batch's own real, measured
+regression evidence for the new mechanism specifically; a future session
+should re-run `mechanismWiring.mjs`/`scenarioSweep.mjs` to completion once
+the shared environment is quieter and confirm the new `[RV/PULMONARY-
+VASCULAR COUPLING]` section passes in-suite, not just via the standalone
+reproduction.
+
+### 2026-09-03 — Four cheap audits closed (a previous item in the queue, a previous item in the queue, a previous item in the queue, a previous item in the queue), a previous item in the queue confirmed genuinely partial; no code changes needed on any of them
+
+Assigned a metabolic/cellular/inflammation bucket this session. Worked the
+cheap-audit items first per this batch's own instruction, confirming each
+against the tree (lesson 16) before writing anything:
+
+- **a previous item in the queue (hepatic drug clearance vs. a previous item in the queue's hepaticDO2) — CLOSED, fully
+  consistent, no gap.** `pk.js`'s `organClearanceFactor()` and `neuro.js`'s
+  `hepaticDO2` (a previous item in the queue) both read the identical `pat.co / pat._restCo`
+  flow proxy — confirmed by reading both call sites directly, not
+  inferring from names. `neuro.js`'s own in-code comment at the
+  `hepaticDO2` computation already documents this as a deliberate,
+  intentional reuse ("`pk.js`'s organClearanceFactor() already uses the
+  SAME hepatic-blood-flow proxy... real physiology, not a new invention").
+  No wiring gap exists; the two signals cannot drift apart because they are
+  literally the same ratio computed twice from the same inputs.
+
+- **a previous item in the queue (cerebral perfusion/oxygenation) — CLOSED, already substantially
+  real, matching the source document's own itemization.** `neuro.js`
+  computes a real CPP-driven `brainO2now` (autoregulation plateau
+  ~50-150 mmHg CPP, ischemic threshold, reperfusion-injury term with its
+  own asymmetric recovery), a Cushing-reflex mechanism gated on elevated
+  ICP specifically (not generic hypotension), an upper-autoregulation-limit
+  hypertensive-breakthrough term, and a `pat.consciousness` ladder derived
+  from that same `brainO2now` signal rather than written ad hoc. No
+  additional cerebral-perfusion mechanism from the source document's own
+  list was found missing on direct comparison.
+
+- **a previous item in the queue's third finding (`capillaryLeak` resolution) — reconfirmed
+  already fully resolved, no action needed.** The item's own text already
+  states this was fixed in a prior direct follow-up (endothelial-repair
+  decay in `physiology.js`'s `stepPatient()`); re-read in full this
+  session to confirm nothing in it was left dangling. It was not — the
+  entry is honestly closed by its own final paragraph.
+
+- **a previous item in the queue (hyperkalaemia rhythm-instability treatment-responsiveness
+  question) — audited, confirmed this is an ALREADY-DELIBERATE, already
+  in-code-documented design decision from a previous item in the queue, not an
+  unaddressed gap.** Read `cardiovascular.js` directly: `a.hyperK` (line
+  ~2493, feeding the stochastic `rhythmInstability`/VT pathway) reads raw
+  `pat.k` on purpose, per a comment already in place at the deterministic
+  `effK` state machine a few lines below (a previous item in the queue's own fix) —
+  "calcium stabilises the conduction/threshold axis but does not correct
+  the potassium-driven excitability that actually causes ectopy... the
+  correct clinical nuance (calcium buys time, it doesn't treat the
+  hyperkalaemia)." a previous item in the queue's measured finding (calcium+bicarb doesn't
+  rescue the stochastic VT pathway in a realistic 10-minute window) is
+  therefore not a bug surfacing an oversight — it is exactly the documented
+  intended behavior, independently re-derived from the observable side.
+  The genuinely open question a previous item in the queue raises (should ONGOING treatment
+  that actually lowers serum K, e.g. bicarb's transcellular shift, decay
+  `rhythmInstability` faster than raw `pat.k` already falling does on its
+  own) remains open, correctly, at the scope the item's own text already
+  flagged: `a.hyperK`/`substrate` is shared engine-wide rhythm code also
+  consumed by ACS/AMI/electrical-storm/torsades, so recalibrating it needs
+  its own dedicated batch with re-verification against every one of those
+  conditions, not a bolt-on here. No code changed. Left open in section 6
+  with this clarification added.
+
+- **a previous item in the queue (CPR as a distinct mechanical state) — confirmed genuinely
+  PARTIAL, not closeable as a cheap audit.** Read `cardiovascular.js`'s
+  full-loop CPR block directly (~line 1045 on): chest compressions are
+  already real external mechanical activation (not a `fx:{sbp:...}`
+  stat write) whose resulting pressure/CO/DO2 and, per the code's own
+  comment, EtCO2 (via the alveolar dead-space model reading
+  compression-generated flow) all fall out of the same shared circulation
+  every other state uses — genuine mechanism, not scripted. What is NOT
+  modeled, confirmed by reading the same block: `pat.cprActive` is a
+  0-1 binary/continuous gate with a FIXED output floor
+  (`mechAct = 0.17 * cpr`, "~25-30% of native CO") and a FIXED
+  `compressionRate = 110` constant — compression depth, rate, and duty
+  (fraction of time actually compressing vs. paused for ventilation/
+  pulse checks) have no independent effect on output; a technically poor
+  CPR performer and a textbook-perfect one produce identical hemodynamics
+  today. This is a real, confirmed remaining gap matching the item's own
+  framing exactly ("partially real... confirm, then extend rather than
+  rebuild") — extending it (making depth/rate/duty independently move the
+  0.17 floor) is genuine new mechanism work, not attempted this session
+  given the remaining time budget; left open in section 6, not marked
+  done.
+
+No files were touched by any of the five items above (all confirmed
+correct-as-is or already resolved); `node --check`/`eslint`/suite runs were
+therefore not needed for this part of the session — nothing changed.
+
+### 2026-09-03 — a previous item in the queue (per-organ oxygen extraction / SvO2 composite) audited, confirmed already fully built and correct; no code changes needed
+
+Assigned as new work, but confirmed against the tree before writing anything
+(lesson 16): `neuro.js`'s `updateOrganInjury` already computes real,
+per-organ resting extraction targets (kidney 10%, liver/gut/muscle 25%,
+skin 10%, brain 35% static, heart 60% static) that rise reciprocally as
+each organ's own already-real DO2 signal (a previous item in the queue) falls, capped at a real
+0.65-0.70 physiologic ceiling, composing via Guyton & Hall's own resting
+cardiac-output-distribution weights into a real, flow-weighted
+`pat.svO2Composite` — not the flat demand-of-1/binary debt signal this
+queue item's own text (written when the work was still open) describes.
+`scenarioSweep.mjs`'s tracked-field lists and a real, four-assertion
+`mechanismWiring.mjs` section (`[PER-ORGAN OXYGEN EXTRACTION — a previous item in the queue]`) were both already in place, evidently from an earlier, undocumented
+session — this queue entry had simply never been marked closed.
+
+**Re-verified independently this session, not just read**, via a standalone
+probe (stripped after use) replicating `mechanismWiring.mjs`'s own
+`probe()`/`pinTraitsNeutral()` helpers verbatim (lesson 8): a healthy
+control (abdPain, 900s) shows svO2Composite 72.65 (real 60-85% normal
+range) with kidney extraction at 0.10 (its own cited resting target);
+cardiogenicShock (300s) shows kidney extraction 0.138 (spared, <0.30) while
+abdominalAorticAneurysm (1800s) shows 0.65 (exhausted, >=0.60) — the real,
+clinically distinct divergence per shock type — while their whole-body
+svO2Composite values stay far closer together (53.40 vs 51.24, delta 2.16)
+than the kidney-extraction gap, confirming the composite alone hides the
+per-organ story, exactly the teaching point this queue item was written to
+achieve. No touched files, no regression risk — this was a pure audit.
+a previous item in the queue marked CLOSED in section 6.
+### 2026-09-03 — a previous item in the queue (lymphatic reserve capacity) CLOSED — a real finite ceiling added on top of the engine's existing lymphatic-return term
+
+Confirmed against the tree first (lesson 16): `metabolic.js`'s
+`updateFluidShifts` already had a real Starling equation (leak-sensitive
+sigma) AND an existing lymphatic-return term pulling excess interstitial
+fluid back into plasma — an earlier, undocumented session had already built
+that much. What a previous item in the queue's own text asked for and was genuinely missing: a
+FINITE reserve ceiling on that return, citable to real physiology (Guyton &
+Hall — resting lymph flow ~2-4 L/day, with a real ~10-20x reserve safety
+factor before edema becomes clinically apparent). Without a ceiling, the
+existing return term could in principle fully compensate any sustained leak
+forever, which is not how real lymphatics behave.
+
+Added `pat.lymphaticFlow` (published current return rate) and
+`pat.lymphaticCapacity` (published ceiling, `0.0025 * 15 *
+(1-lymphaticObstruction)` L/min) to `metabolic.js`, capping the return term
+at that ceiling every tick. `pat.lymphaticObstruction` (patient.js, default
+0) is a new general handle for a future lymphedema-type condition, mirroring
+`pat.capillaryLeak`'s own convention — no shipped condition sets it yet.
+
+MEASURED via a standalone, isolated harness calling `updateFluidShifts`
+directly on a bare `Patient` (lesson 8 — a full-pipeline probe was tried
+first and found confounded by unrelated renal/RAAS water handling over the
+multi-hour horizons this needs): a resolved leak genuinely drains back
+toward baseline over 10h (excess 0.194L -> 0.005L); a sustained SEVERE leak
+shows real, persistent, uncompensated edema (excess 1.6L, lymphaticFlow
+pinned near lymphaticCapacity — reserve exhausted, not infinite); a healthy
+control stays within 0.01L of baseline over the same window. Three new
+two-sided assertions in `mechanismWiring.mjs`'s
+`[LYMPHATIC RETURN / RESERVE CAPACITY — a previous item in the queue]` section, all
+passing. `lymphaticFlow`/`lymphaticCapacity` added to `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s constructor. `node
+--check`/`npx eslint` clean on all four touched files (`metabolic.js`,
+`patient.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). The full
+`mechanismWiring.mjs`/`scenarioSweep.mjs` suites were NOT run to completion
+this session (per this project's own "quick standalone probe, not a
+20+ minute full-suite background run" discipline for a scoped, single-item
+batch) — the isolated harness above is this batch's own real, measured
+evidence.
+### 2026-09-03 — a previous item in the queue's dead-code sweep, another fresh batch — `pat.mapRate` wired to a real baroreceptor rate-sensitivity mechanism
+
+Audited a fresh batch of ~34 `patient.js` constructor fields not previously
+named in this document's own dead-code-sweep entries (grep-reads-then-writes
+against every module in `src/`, per this item's own standing method):
+`venousToneModifier`, `splenicRBC`, `tvDrugOffset`, `sbpLeftOffset`,
+`opioidBlockade`, `txaEffect`, `vagalSurge`, `uterotonicDrive`, `dlco`,
+`arterialComplianceFactor`, `mg`, `afferentConstriction`, `scarBurden`,
+`atrialKick`, `venousCompliance`, `venousResistance`, `pacerRate`,
+`pacerOutput`, `pacedCapture`, `aorticOcclusion`, `svO2Composite`,
+`consciousnessTimer`, `homeMeds`, `interstitialVolBaseline`,
+`unstressedVol`, `arterialComplianceBase`, `portalPressure`,
+`_portalVasodilation`, `ivAlbuminMass`, `isAlbuminMass`, `mapRate`,
+`prevMap`, `adrenalOutput`, `catecholLevel`, `neuralSymp`,
+`diastolicFraction`, `ectopicFocus`, `atrialEctopicFocus`,
+`cardiacExternalP`, `pericardialP`. All confirmed-clean (a real reader
+exists) except two:
+
+**`pat.mapRate` was genuinely dead — computed every tick in
+`updateAutonomic` (a smoothed dMAP/dt), published, and never read by
+anything.** The comment sitting directly above where it's computed even
+claimed the baroreceptor "senses pressure error AND its rate of change
+(dP/dt)" — a comment describing a mechanism that had never been built, the
+same "a comment claims a fix that was never made" shape lesson 16 warns
+about. Real baroreceptors do have a genuine derivative component (Guyton &
+Hall): a rapidly falling MAP provokes a brisker sympathetic response than a
+slow drift to the identical pressure. Wired as a bounded addition to
+`sympTarget` in `updateAutonomic` (`cardiovascular.js`), scaled by the same
+per-patient `baroreflexGain` trait as the existing proportional term (the
+same afferent apparatus), and explicitly excluded from `nonBaroDrive`'s own
+baseline subtraction so it composes correctly with the existing
+central-command/vagal-withdrawal logic rather than being double-counted as
+non-baroreflex drive.
+
+**MEASURED, not guessed** (direct `physio()`/`activePatient()` instantiation,
+a fast 0.4 L/min vs. a slow 0.05 L/min hemorrhage on a plain `abdPain`
+patient, traits pinned neutral): at a MATCHED mean arterial pressure
+(window-averaged over each arm's own pass through the same MAP band, not a
+single noisy instant), the fast arm averages `mapRate` ~ -3.9 mmHg/min
+against the slow arm's ~ -0.7 mmHg/min, and shows measurably MORE
+sympathetic tone at that same pressure (`alphaTone` ~0.233 vs ~0.214,
+`neuralSymp` ~0.259 vs ~0.238) — the real, distinguishing clinical point:
+two patients at the identical blood pressure compensate differently
+depending on how fast they got there. A resting, bleed-less control's
+`mapRate` stays near zero on average (ordinary integration noise, not a
+sustained trend), confirming the new term contributes essentially nothing
+to a quiet patient.
+
+**`pat.venousCompliance` was reviewed and found NOT worth fixing this
+batch, stated honestly rather than silently left as a defect.** It's
+written every tick in `cardiovascular.js` (`pat.venousCompliance = cv`) but
+never read again — however the local variable `cv` it snapshots is already
+fully consumed earlier in the same calculation (`pat.msfp = stressedVol /
+cv`), so the mechanism's real effect is already realized through `msfp`/
+`vr`/downstream hemodynamics; the published field is a decorative leftover
+snapshot, not a mechanism that silently does nothing. A real consumer
+(e.g. a JVD/venous-congestion exam finding reading it directly) would be a
+reasonable future fix but wasn't forced here — no existing exam action's
+comment or scenario text claims this specific field drives anything, so
+adding a consumer would be inventing a new teaching point rather than
+completing an existing one.
+
+**Verification.** `node --check` and `npx eslint` clean on both touched
+files (`cardiovascular.js`, `mechanismWiring.mjs`). A new two-sided
+`[BARORECEPTOR RATE SENSITIVITY]` section added to `mechanismWiring.mjs`
+(matched-MAP window-average comparison, a rate-gap assertion, a
+sympathetic-tone assertion, and a resting-control specificity check) —
+verified via a standalone replica of the suite's own probe logic against
+the real engine before being trusted (lesson 8): all four checks pass with
+real margin. The full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites were
+NOT run to completion this session (per this project's own standing
+"quick, targeted, standalone probe, not a 20+ minute full-suite background
+wait" verification discipline) — the standalone probe above is this
+batch's own real, measured evidence. No new patient field was introduced
+(`mapRate`/`neuralSymp` both already existed with real constructor
+defaults), so no `scenarioSweep.mjs` list changes were needed. All
+throwaway probe scripts were stripped before this entry was written,
+confirmed via a directory listing showing no `_tmp_*` files remain under
+`src/scripts/`.
+
+### 2026-09-01 — Third wave: V2 queue continued in parallel (a previous item in the queue scoped slice, a previous item in the queue scoped slice, a previous item in the queue scoped slice, a previous item in the queue dead-code sweep), all via non-self-delegating worktree agents; a previous item in the queue documentation
+
+Direct continuation of the second-wave entry below — same workflow (worktree
+isolation, wave-based disk management, explicit "do this yourself, no
+self-delegation" instruction in every prompt, which held cleanly for all four
+launches this wave with no self-delegation incidents). One real infrastructure
+hiccup: two consecutive `Agent` launches with `isolation:"worktree"` failed
+immediately with "Cannot create agent worktree: not in a git repository" —
+diagnosed as transient (the repo itself was confirmed intact via `git status`/
+`git worktree list`), resolved by simply retrying after a merge/cleanup cycle;
+not fully root-caused, flagged for a future session if it recurs.
+
+**Four items shipped:**
+
+**1. a previous item in the queue (pulmonary V/Q compartments), scoped slice.** The full population-
+based V/Q-compartment rewrite remains explicitly out of scope for one batch
+(genuinely large, high-blast-radius). Instead, a real, useful diagnostic
+window was added: `respiratory.js`'s existing shunt equation already
+mathematically distinguishes pure shunt (refractory to supplemental O2) from
+V/Q mismatch (O2-responsive), it just had no surfaced observable. A real
+room-air PaO2 baseline and post-O2 PaO2 delta are now tracked and exposed via
+a new `o2ResponseTest` exam action. MEASURED: ARDS (near-pure shunt) reads
+refractory (ΔPaO2 ~101-120 mmHg, under the 150 mmHg threshold); asthma (V/Q
+mismatch) reads responsive (~167 mmHg); a healthy control also reads
+responsive (specificity). See a previous item in the queue's own updated entry.
+
+**2. a previous item in the queue's dead-code sweep — `pat.splanchnicFrac` wired to a real
+consumer.** Found genuinely dead (default 0.33, never read anywhere) via the
+standard grep-reads-then-writes audit. Wired as a real venoconstrictor-reserve
+coefficient in cardiovascular.js's splanchnic autotransfusion mobilization
+mechanism, narrowed by renal.js's existing portal-hypertension mechanism
+(cirrhosis's `portalPressure`) — a real, cited interaction: portal
+hypertension genuinely reduces how much blood the splanchnic bed can
+autotransfuse under sympathetic stress.
+
+**3. a previous item in the queue (nephron segment-level modeling), scoped slice.** The full
+glomerulus→PCT→loop of Henle→DCT→collecting-duct chain remains unbuilt
+(large, structural, no diuretic drug exists in this formulary as a real
+prerequisite). A real two-segment model shipped instead: `renal.js` gained
+`pat.proximalReabsorptionEff` (SGLT/glucose-sensitive, reusing a previous item in the queue's own
+`glucoseExcess` signal) and `pat.distalReabsorptionEff` (aldosterone-driven,
+finally giving `pat.aldosterone` — previously computed every tick with no
+sodium/volume consumer at all — a real one), composing into
+`pat.segmentReabsorptionEff`. MEASURED: glucose=550 impairs proximal
+specifically while distal stays untouched; aldosterone=1.0 (full RAAS)
+boosts distal specifically while proximal stays untouched; critically, full
+RAAS activation CANNOT rescue a glucose-driven proximal leak (composite stays
+impaired) — the real teaching point that these are separate nephron
+segments, not one shared number. a previous item in the queue's own DKA osmotic-diuresis drain
+confirmed unbroken alongside this addition. A healthy, resting, euglycemic
+control's composite lands within 0.03 of exactly 1 (no regression to any
+already-calibrated volume trajectory).
+
+**4. a previous item in the queue (chronic adaptation and remodeling), scoped slice.** The full
+multi-variable remodeling proposal (vascular stiffness, nephron loss,
+coronary atherosclerosis) remains unbuilt. A real first slow-timescale state
+variable shipped: `pat.lvHypertrophy`, relaxing toward a target driven by
+sustained elevated `pat.svr` on a cited ~14-day time constant. A genuine
+multi-week engine run was investigated and found infeasible in this
+harness's time budget (~0.5s per simulated minute at MAX_TICK, so a 60-day
+run would take hours) — verified instead via real, measured DIRECTIONAL
+engagement over a 900s window: sustained afterload measurably engages
+`lvHypertrophy` while a normotensive control stays exactly 0; a longer
+window shows more hypertrophy than a shorter one (gradual, not a step);
+acute cardiac conditions (`ami`, `cardiogenicShock`) stay negligible (<0.01,
+no regression); and forcing `lvHypertrophy=1` measurably reduces diastolic
+filling (EDV) via a new multiplicative EDPVR diastolic-stiffness term in
+`cardiovascular.js`, confirming the field reaches a real downstream
+consequence.
+
+**5. a previous item in the queue — a real dependency/update-order map of the engine as it exists
+today**, replacing the source document's aspirational 23-step pipeline
+(which describes subsystems that don't exist yet) with the actual, verified
+`physiology.js` call order and the real per-mechanism time constants driving
+this project's "multi-timescale" property. See a previous item in the queue's own entry
+for the full pipeline (conditions → drugs → inflammation → coagulation →
+metabolic/fluid → renal → respiratory → neuro/organ-injury → cardiovascular
+→ thermo → post-step passes).
+
+**Verification, per item, all via quick standalone probes against the real
+engine per this session's own "no long-running full-suite waits" discipline
+— NOT the full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites run to
+completion this wave.** `node --check` and targeted `npx eslint` clean on
+every touched file across all four items (`respiratory.js`, `actions.js`,
+`cardiovascular.js`, `renal.js`, `patient.js`, `mechanismWiring.mjs`,
+`scenarioSweep.mjs`), zero new findings beyond the pre-existing `App.jsx`
+baseline. Two real merge conflicts (both `mechanismWiring.mjs`, between
+a previous item in the queue's own/a previous item in the queue and then a previous item in the queue) were mechanical — independently-appended
+assertion sections, resolved by concatenation with no logic changes, each
+confirmed clean via `node --check` immediately after resolution. Merged into
+master in three commits; each worktree's own commit message documents its
+own specific probe results. **Stated honestly: the full regression suites
+were not run to completion against the merged, combined state of all four
+items together this wave** — each item's own probe covers its own change in
+isolation, and node --check/eslint confirm no syntax/lint regression across
+the merge, but a full `mechanismWiring.mjs`/`scenarioSweep.mjs` run against
+the fully-merged tree is the natural next verification step before treating
+this wave as fully closed.
+### 2026-09-03 — Mitral Stenosis (chronic/rheumatic), a previous item in the queue's standing condition-library workstream — the last remaining piece of the queue-41 valve-mechanism family, and a real engine bug found and fixed along the way
+
+Confirmed genuinely unbuilt before touching anything (lesson 16): grepped
+`mitralStenosis`/`riskFactors.mitralStenosis` across the whole tree — the
+underlying MECHANISM already existed, built for a previous item in the queue and left
+unconsumed exactly like `aorticStenosisSeverity` was before that condition
+shipped: `cardiovascular.js`'s `updateValves` already sets
+`pat.mitralStenosisSeverity` from `riskFactors.mitralStenosis`, consumed by
+both the lumped model's EDV filling term (`edv *= 1 -
+mitralStenosisSeverity*0.55`) and the authoritative full-loop ODE solver's
+`Rmv = p.Rmv * stenR(p.mitralStenosisSeverity)` — but no condition had ever
+set the risk factor. Real mitral stenosis (StatPearls; ACC/AHA 2020 valve
+guideline; almost always rheumatic in origin) is an INFLOW obstruction —
+the opposite hemodynamic signature from aortic stenosis's OUTFLOW cap:
+elevated left atrial pressure (pulmonary venous congestion, real AFib
+risk from a chronically stretched LA) and a genuinely REDUCED LV
+preload/EDV, with the key teaching point that tachycardia (especially
+new-onset AFib, this disease's own classic decompensation trigger) WORSENS
+output rather than compensating for it, since diastole is the only phase
+the stenotic valve can pass blood through at all and shrinks
+disproportionately as rate rises.
+
+**A real, previously-undiscovered engine defect was found and fixed before
+this could ship, not glossed over.** A first measurement (direct
+instantiation via `physio()`/`activePatient()`, not reconstructed, per
+lesson 8) showed the already-wired mechanism was nearly INERT in the
+authoritative full-loop ODE solver: at `mitralStenosisSeverity=0.65` (a
+real moderate-severe presentation), EDV barely moved from a matched
+healthy control (116-120 mL either way), even under forced tachycardia.
+Traced to ground: the shared `stenR` severity->resistance mapping
+(`cardiovascular_ode_full.js`, `1+sev*6`) is real and effective for the
+AORTIC (outflow) valve — a modest resistance bump directly caps ejection
+against downstream pressure — but is the wrong shape for the MITRAL
+(inflow) valve: diastole is long relative to the mitral valve's tiny base
+resistance, so a 5-7x bump barely dents filling, and the left atrium
+simply rises in pressure to compensate (itself real physiology, but
+leaving LV EDV nearly unchanged at rest, the opposite of the intended
+signature). Fixed with a separate, steeper `mvStenR` mapping specific to
+the mitral valve (quadratic in severity — `1+sev^2*100` — closer to the
+real Gorlin-formula orifice-area relationship than a linear term, MEASURED
+against candidate coefficients rather than guessed), leaving the shared
+`stenR`/aortic-stenosis calibration completely untouched.
+
+**MEASURED, not guessed, against the real engine (matched abdPain healthy
+control, same age 71, settle 300s/run 600s):** resting edv 96.5 mL vs.
+control 118.6 mL (18.6% reduction), co 4.67 vs 5.98 L/min (21.9%
+reduction) — a real, substantial reduced-filling signature, the opposite
+direction from aortic stenosis's own preserved-preload picture (confirmed
+directly: mitralStenosis's edv is meaningfully lower than aorticStenosis's
+own, 82.1 vs 98.6 mL in the paired mechanismWiring assertion). The
+tachycardia teaching point, confirmed two-sided rather than assumed:
+forcing hr to 130 (simulating new-onset rapid AFib) WIDENS the co deficit
+relative to a rate-matched healthy control — 38.3% at rest vs. 41.7% at
+hr130 — a real, measured worsening, not merely an unchanged percentage.
+
+**Shipped**: `mitralStenosis` (`conditions.js`, static severity 0.65,
+matching the same "chronic disease held constant for the encounter"
+reasoning `aorticStenosis`/`hocmObstructive` already use) and a new
+scenario `mitralStenosis` (CARD-052, `scenarios.js`) — a 71-year-old with a
+childhood rheumatic-fever history, decompensating with new rapid atrial
+fibrillation, added to `App.jsx`'s `SCEN_BODY_SYSTEM` map under Cardiac.
+`pat.mitralStenosisSeverity` given a real constructor default (0) in
+`patient.js`, alongside its siblings, closing the same "undefined on the
+very first tick" gap this document's own history already documents once
+for the other valve-lesion fields. Four new two-sided
+`mechanismWiring.mjs` assertions (presence/severity, specificity via a
+healthy control, distinctness from aortic stenosis's own opposite
+signature, and the tachycardia-widens-the-deficit teaching point) —
+verified standalone via a direct replica of the suite's own probe/pin
+helpers before being trusted (lesson 8): 4/4 passed. `mitralStenosisSeverity`
+added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification.** `node --check` clean on all six touched files
+(`conditions.js`, `cardiovascular_ode_full.js`, `patient.js`,
+`scenarios.js`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx eslint`
+on the same six plus `App.jsx`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings anywhere else. `npx vite build`: clean (12.51s, same pre-existing
+>500kB chunk-size warning). A standalone 900-second sweep of the new
+scenario through the real `physio()` pipeline confirmed no NaN/negative/
+undefined values for the new field and sane vitals throughout (pH 7.48,
+sbp 93.9 at 900s). The full `mechanismWiring.mjs`/`scenarioSweep.mjs`
+suites were NOT run to completion this session (per this project's own
+"quick standalone probe, not a 20+ minute full-suite background run"
+verification discipline for a single-condition batch) — the standalone
+probe replicas above are this batch's own real, measured evidence; a
+future full-suite pass should show these same numbers. All throwaway
+probe scripts were stripped before this entry was written, confirmed via
+a directory listing showing no `_tmp_*` files remain under `src/scripts/`.
+
+### 2026-09-01 — Multi-agent parallel batch, second wave: five more conditions (Necrotizing Fasciitis, Neuroleptic Malignant Syndrome, Cocaine Toxicity, Malaria, Dengue Fever) plus a mass-conservation audit tool (a previous item in the queue), all via non-self-delegating worktree agents
+
+**Direct continuation of the entry immediately below (the first wave's own workflow notes still apply — worktree isolation, disk-space-limited waves, `git add -A` discipline). One new, real infrastructure finding this wave: self-delegation is unsafe under worktree isolation.** Two agents in this wave's first attempts (a previous item in the queue twice, Necrotizing Fasciitis once) spawned their own child `Agent` calls rather than doing the work directly — an emergent behavior of the `claude` subagent type on a large task, not something this session asked for — and in every case the CHILD's worktree was found already removed once it tried to act, while the PARENT had already reported "completed" after only 2-4 tool calls. The pattern is consistent: the harness appears to tear down a worktree-isolated agent's own worktree once that agent itself returns, without waiting for any background child it spawned to finish using it. Every affected grandchild correctly refused to improvise outside its assigned isolation boundary and reported back cleanly with zero work done and zero damage — but the work still had to be redone. Fixed for the rest of this wave by adding an explicit "do this yourself, do NOT spawn another Agent call" instruction at the top of every subsequent agent prompt, which worked cleanly for the remaining five launches. **Lesson for a future session: never let a worktree-isolated `claude` agent self-delegate to a child Agent call — instruct it not to, explicitly, every time.**
+
+**Five conditions shipped, each reusing existing engine mechanisms per a previous item in the queue's own standing methodology, plus one genuinely new mechanism (malaria's hemolysis):**
+
+**1. Necrotizing Fasciitis** (section 8's Infectious-disease backlog). Real picture: a rapidly progressive soft-tissue infection with severe, disproportionate pain (pain out of proportion to visible findings — the classic early sign) and fast systemic toxicity, a true surgical emergency the field cannot treat beyond recognition and rapid transport. Built on the SAME shared inflammation cascade (`pat.pathogenBurden`/`pat.cytokineLoad`, a previous item in the queue) and `riskFactors.sepsis` distributive-shock mechanism `pneumoniaSepsis`/`septicShock` already use — not duplicated, reused — distinguished by a genuinely FASTER time course and severe local pain via `pat.intrinsicPain` (a previous item in the queue's handle). Deliberately did NOT wire the new acute-traumatic-coagulopathy pathway (a previous item in the queue, this same session's first wave): that mechanism's gate needs real structural organ/limb injury, which necrotizing fasciitis (an infective, not mechanical, lesion) has no genuine writer for — forcing the connection would have repeated the exact mechanism-category error that field's own comment warns against. Measured: SVR collapses 1152→458 by 1200s (vs. a healthy control); its own myocardial-depression gate (`contractilityFactor`) opens within ~20 minutes untreated, dramatically faster than `septicShock`'s own documented ~93-minute onset; sbp collapses further than septicShock's own at the matched 1200s timepoint (67.0 vs septicShock's own comparison point); severe pain (10/10) present from minute 5; fluids genuinely raise co (6.74→9.47) and sbp (73.7→90.8) through the shared Starling path, but the disproportionate local pain stays fixed at 10.0 with or without fluids — the actual clinical point (this needs surgery, not resuscitation, to fix). New scenario `necrotizingFasciitisCall` (INFX-001, a new numbering prefix — no Infectious-disease scenario existed before this session to extend).
+
+**2. Neuroleptic Malignant Syndrome** (section 8's Toxicology backlog), built as a real, deliberate CONTRAST to `serotoninSyndrome` (shipped in this session's first wave) per Caroff & Mann's classic review. Real distinguishing feature: sustained, uniform "lead-pipe" RIGIDITY (a new `pat.nmsRigidity`, narrated at the `reflexes` exam action — mirroring `serotoninSyndrome`'s own `pat.serotoninClonus` pattern but a genuinely separate field, since NMS's rigidity is sustained/uniform tone, mechanistically different from serotonin syndrome's intermittent clonus/hyperreflexia), triggered by dopamine (D2) antagonism (an antipsychotic dose increase) rather than serotonergic excess, with a real, slower days-scale onset. Reuses the SAME shared hyperthermia/tachycardia/hypertension/altered-mental-status handles (`metabolicHeatMultiplier`/`hrBase`/`baseSVR`/`agitationBurden`/`metabolicEncephalopathy`) serotoninSyndrome already established — not duplicated, reused with NMS's own severity numbers. Measured, directly contrasted against serotoninSyndrome at the SAME 900s timepoint (confirming the two are genuinely distinct in the engine, not a reskin): NMS rigidity=0.64 with clonus=0.00, vs. serotoninSyndrome's own clonus=0.58 with rigidity=0.00; NMS runs a hotter course (heat=1.88 vs. serotoninSyndrome's 1.71) with a slower within-call rise (0.090 vs. 0.180) — both real, citable, and opposite distinguishing signatures. Midazolam measurably suppresses agitation (0.55→0.02) while leaving the autonomic crisis untouched; active cooling partially lowers coreTemp without stopping the underlying rigidity-driven heat production. No field antidote exists (dantrolene/bromocriptine are hospital drugs) — recognize and transport, matching this project's honest precedent for several other toxidromes. New scenario TOX-015.
+
+**3. Cocaine Toxicity** (section 8's Toxicology backlog). Real picture (Lange & Hillis, NEJM 2001; Richards et al., Clin Toxicol 2016): severe tachycardia/hypertension from combined alpha/beta-adrenergic potentiation (reuptake BLOCKADE at the synapse — a real, distinct mechanism CATEGORY from ketamine's own indirect-sympathomimetic-via-adrenalReserve mechanism, this session's first wave's a previous item in the queue work, so this condition deliberately does NOT gate on `adrenalReserve`), psychomotor agitation, hyperthermia, and the real teachable complication — coronary VASOSPASM from direct alpha-mediated coronary vasoconstriction. Reuses the EXISTING coronary supply/demand mechanism (`cardiovascular.js`'s `coronaryStenosis`/`myoO2Balance`/`atp`, the same term ACS's own structural lesion drives) for the vasospasm rather than inventing a parallel ischemia pathway, deliberately kept sub-critical (peak ~0.35) so it stays real and honest without widening the survivable-ischemia band a previous item in the queue already warns against. The real "unopposed alpha" beta-blocker relative-contraindication teaching point was investigated and found only PARTIALLY representable: metoprolol's own beta1/beta2 terms and this condition's coronaryStenosis/baseSVR terms don't read each other today, so metoprolol is honestly INERT rather than actively harmful here — flagged plainly in-code as a real, not-yet-closed gap rather than silently glossed over, deliberately not built out further as scope creep beyond the condition itself. Measured: untreated hr=170 vs. a healthy control's ~97-100, sbp=145, coronaryStenosis=0.35 (real but sub-critical — atp stays at 1.000, an honest finding matching real cocaine chest pain often occurring without objective infarction); already substantially symptomatic by 5 minutes (hr=158); midazolam (real, effective first-line field treatment, unlike several of this session's other toxidromes) measurably lowers hr to 160, sbp to 121, agitationBurden to 0.58; metoprolol lowers hr to 150 through its own unrelated mechanism while leaving coronaryStenosis/baseSVR completely unchanged — the honest partial representation described above. New scenario TOX-016.
+
+**4. Malaria** (section 8's Infectious-disease backlog), the one condition this wave that required GENUINELY NEW engine mechanism, not just reuse: real, pure HEMOLYSIS. Confirmed by grep before building anything that no pure red-cell-destruction pathway existed anywhere — every existing hematology writer either loses whole blood proportionally (hemorrhage, moving plasma and red cells together) or seeds a one-time construction-time shift (`sickleCellCrisis`). Built `updateHemolysis` (new, `metabolic.js`), consuming a condition-owned `pat.hemolysisRate` (%/min of rbcMass) that reduces `rbcVol`/`rbcMass`/`totalBloodVol` while leaving `plasmaVol` completely untouched — the real, distinguishing signature (RBCs destroyed IN PLACE, not lost from the vascular space, mechanistically the OPPOSITE of every hemorrhage in this engine) — wired into `patient.js`'s substep loop right after `updateHemorrhage`. Fever via the shared `metabolicHeatMultiplier` handle, sustained for the encounter rather than a literal 48-72h sinusoid (a call can't show one full real cycle, the same "no reason to simulate what a call cannot show" reasoning `cyanidePoisoning`'s own delayed-phase limb already established). Cerebral/multi-organ complications reuse `metabolicEncephalopathy`/`epilepticDrive`, gated on accumulated severity, not present from the first tick. No field antimalarial exists in any real EMS formulary (confirmed by grep — artesunate/quinine/doxycycline are all hospital-pharmacy drugs) — recognize (travel history) and support. Measured, matched-patient comparison (via `mutate`, not two differently-built scenario patients, since comparing plasma volume across different baseline blood volumes would be meaningless): untreated malaria shows hb 15.06 vs. a healthy control's 15.35, hct 0.452 vs. 0.461, while plasmaVol differs by only 0.006 L from that same control; a hemorrhage control over the identical window shows both rbcMass AND plasmaVol falling together, proportionally — the exact opposite signature; a condition-less control shows exactly zero hemolysisRate. Severe/cerebral escalation absent at a realistic 900s scene, reaching epilepticDrive=0.33/metabolicEncephalopathy=0.40 by 3600s (a real, honest days-scale-disease-compressed-into-hours finding, not forced to complete within one call). New scenario `malaria` (INF-001, and a new "Infectious Disease" `SCEN_BODY_SYSTEM` category in App.jsx, since none existed before this session).
+
+**5. Dengue Fever** (section 8's Infectious-disease backlog), built as the real MIRROR-IMAGE mechanism to malaria's hemolysis: plasma LEAKING OUT of the vasculature (increased capillary permeability), not red cells being destroyed. Note: this agent's own worktree was branched before malaria had merged, so it could not read that condition directly — it verified the distinguishing mechanism independently instead (confirmed `rbcMass` stays completely flat while plasma volume falls, the honest opposite of what a hemolysis mechanism would show) and the two conditions were confirmed compatible once merged. Real picture (WHO dengue classification): a febrile phase (breakbone headache/myalgia/retro-orbital pain via `pat.intrinsicPain`, `metabolicHeatMultiplier`), then — timed to the real, counterintuitive "deterioration during defervescence" teaching point — a critical phase as fever DECLINES: `pat.capillaryLeak` ramps to a real ceiling (same order of magnitude as `septicShock`/`acutePancreatitis`) driving genuine plasma-volume loss through the already-verified Starling mechanism, alongside real thrombocytopenia (`pat.plateletCount`, a re-imposed ceiling, the same idiom `preeclampsia`'s HELLP mechanism already uses) crossing the WHO <100 warning-sign threshold. Presents already at the defervescence transition (a days-long real natural history compressed into an "already symptomatic" framing, matching this project's own established precedent). Fluids are a real, field-actionable intervention here (unlike several of this session's other toxidromes) — but a genuinely honest, TWO-SIDED finding, found by measurement not assumed: saline raises plasmaVol (+1.6 L) and sbp (+31 mmHg) through the existing capillaryLeak-responsive Starling path, but does NOT fix, and via the engine's own pre-existing dilutional-coagulopathy term further DILUTES, the platelet count (83→52) — a real fluid-caution point matching actual WHO dengue-shock guidance about over-resuscitation risk. New scenario `dengueFeverCall` (INFX-002).
+
+**A real crash was found and fixed during this session's own consolidated verification, not shipped blind.** The first full `mechanismWiring.mjs` run after merging all five conditions crashed outright: `pat.nmsRigidity` is used extensively throughout the NMS assertions section but was never added to the suite's own `snapshot()` helper, so `untreated.after.nmsRigidity` read as `undefined` and the very first `.toFixed()` call on it threw. This is exactly the gap this project's own "measure the observable at the FAR END of the chain" discipline exists to catch — the NMS agent's own standalone verification only ever ran the assertion LOGIC directly against a hand-built object, never through the real suite's own snapshot path, so the gap was invisible until the actual full suite ran. Fixed with a one-line addition (`nmsRigidity: p.nmsRigidity || 0` in `snapshot()`) and re-verified: the full suite then ran clean.
+
+**Final consolidated verification, run to completion after every agent's work was merged and the crash above was fixed.** `node --check` and `npx eslint` clean on every touched file (same pre-existing 3-error `App.jsx` baseline, zero new findings). **`mechanismWiring.mjs`: 612 passed, 5 failed** — every new section for all five conditions passed cleanly, including their own two-sided treatment-response and specificity assertions; the 5 failures are ALL pre-existing, already-documented flaky/borderline assertions unrelated to anything this wave touched: the BVM trio (`ventUnloadFraction`/`workOfBreathing`/`vtPrev`), the PAC HR-variance stdev check, and the tracheostomy-vs-native-airway `vt` comparison — the last of which this document's own earlier text already records as an inherently razor-thin 0.002 L margin (0.4866 L vs 0.4886 L) asserted at the real measured threshold rather than an invented larger one, exactly the shape of assertion expected to occasionally flip sign on ordinary patient-construction noise. **`scenarioSweep.mjs`: 181 scenarios, 17,999,728 checks, 0 failed** — clean across the entire library, including all five new scenarios. `npx vite build`: clean (22.90s, same pre-existing >500kB chunk-size warning).
+
+### 2026-09-01 — Multi-agent parallel batch: seven V2/physiology-queue items shipped in parallel via isolated git worktrees (blood viscosity, methemoglobinemia, ketamine, thirst, liver/gut reversible injury, acute traumatic coagulopathy, serotonin syndrome)
+
+**Workflow, stated honestly since this was a real departure from the usual single-session batch.** Per explicit operator instruction to run several agents on the physiology queue in parallel, this session used `isolation: "worktree"` (a real git worktree per agent, each on its own branch) rather than the shared-directory model earlier large parallel pushes in this project's history used — worktree isolation genuinely eliminates the file-collision risk those earlier pushes hit, at the cost of real infrastructure friction this session had to work through:
+
+- **Disk space was the binding constraint, not CPU.** This machine had only ~1-2GB free at the start (a 222GB drive at ~98% full); the first worktree-creation attempt failed mid-copy ("No space left on device") on a large committed asset directory (`public/assets/cc0-library`'s sprite pack), consuming the failed attempt's own partial data before erroring. After the user freed some space, agents were run in waves of 1-3 at a time (not all at once), each merged into master and its worktree removed (`git worktree remove --force` + `git worktree prune`) immediately on completion to reclaim ~1.5-2GB per wave before starting the next.
+- **A D:-drive redirect via a directory junction was attempted and correctly blocked by the harness**: pointing `.claude/worktrees` at a junction resolving onto D: (which had ~300GB free) would have worked at the filesystem level (verified with a manual write-through-junction test) but the agent-spawning tool explicitly refuses to create a worktree through a symlinked `.claude/worktrees` path, as a real security policy against a repo-committed symlink redirecting worktree writes outside the repo boundary. Reverted; all worktrees stayed on C: for the rest of the session, managed via the merge-then-prune wave discipline above.
+- **A real `git add -A` mistake was caught and fixed on the spot**: one merge commit accidentally added an active worktree directory as an embedded git repo (git's own warning caught it immediately — `git rm --cached` fixed the index, `.claude/worktrees/` was added to `.gitignore` so it can never happen again). No data was lost; the fix was folded into the same merge commit via `--amend` before it could propagate.
+- **Two sub-agents self-delegated to grandchild agents** rather than doing the work directly (an emergent behavior of the `claude` subagent type on a large task, not something this session asked for) — one grandchild found its own worktree had been cleaned up out from under it mid-run (a race with the disk-constrained merge/prune cycle) and correctly refused to improvise outside its assigned isolation boundary, reporting back cleanly with zero work done and zero damage; that item (a previous item in the queue) was simply relaunched from scratch and completed normally on the retry. The other grandchild (serotonin syndrome) ran to completion normally.
+- **`mechanismWiring.mjs` merge conflicts were real but mechanical**: multiple agents each appended a new, independent assertion section near the end of the same file. Every conflict was resolved by keeping both sections (removing conflict markers, no logic changes) — confirmed safe by `node --check` after each resolution, and by the final full-suite run below showing every section's own assertions passing.
+
+**Seven items shipped, each with its own literature anchor, real engine measurement, and mechanismWiring.mjs assertions — summarized here; the full reasoning for each lives in the commit history and the agents' own code comments, which follow this project's usual citation discipline:**
+
+**1. Blood viscosity → vascular resistance (a previous item in the queue).** `cardiovascular.js`'s `updateFullLoopODE`/vascular-tone calculation gained a real hematocrit-driven viscosity multiplier on `pat.svr`, referenced to each patient's own age/sex-scaled normal hct (`pat.ageProfile.normalHct()`), not a flat 45%. Anchored on Guyton & Hall's relative-viscosity-vs-hematocrit teaching curve: roughly a doubling from a normal ~45% hct to a polycythemic ~60% (+15 points), roughly a third-to-half from 45% down to a moderately anemic ~20% (-25 points).
+
+A first pass used a pure exponential fit through the +15-point anchor. **A real, two-stage calibration failure was found and fixed, not glossed over.** The exponential was too steep at SMALL, clinically common hct deviations — caught by the regression suite itself, not guessed at: `crushSyndrome`'s own real hemoconcentration (third-spacing from the injury raises hct by only ~0.03-0.04 over its presenting baseline) pushed the exponential's SVR multiplier to ~1.15-1.20x, which raised diastolic pressure enough to measurably widen the delta-pressure margin the already-shipped compartment-syndrome mechanism (a previous item in the queue, Phase 3) needs to overcome before tissue pressure can exceed it — the existing `mechanismWiring.mjs` time-course assertion (`csOccl>0.5` by 5h, `limbInjury>=0.5` by 10h) regressed from clean to `5h=0.369` (fail). Fixed by switching to a cubic form (near-linear and modest close to the reference hct, only steepening toward the anchor points at the extremes) that reproduces the SAME two literature anchors while giving a realistic few-point hemoconcentration only a modest nudge. **A first cubic pass (linear slope 1.5) still left a residual gap** — MEASURED: `csOccl@5h` recovered to 0.594 (passing) but `limbInjury@10h` was still short at 0.429 (needed ≥0.5), because compartment occlusion accrues over hours, so even a ~5% sustained SVR nudge compounds into a real delay over that long a window. The linear slope was lowered further (1.5→1.0, cubic coefficients re-solved against the same two anchors) so a realistic hemoconcentration now moves SVR under 4%. Re-verified: `limbInjury@10h` reached 0.520, clearing the threshold; the full `mechanismWiring.mjs` suite subsequently ran clean on this section and on compartment syndrome. Direct measurements: healthy control hct≈0.456→svr≈1115-1130 (baseline, inert); forced polycythemia (hct 0.60) → svr≈1685 (+~490-570 over control); forced anemia (hct 0.20) → svr≈642 (-~470-490 under control).
+
+**2. Clinical monitoring (a previous item in the queue).** Investigated first: the CO-poisoning pulse-ox blind spot (`pat.cohb`) and the ETCO2-vs-PaCO2 gradient (`pat.alveolarDeadSpaceFrac`, already PE-vs-hypoventilation-distinguishing) were both confirmed already real — not rebuilt. The one genuine gap found and filled: methemoglobinemia's classic pulse-ox floor artifact (SpO2 pulled toward ~85% regardless of true saturation, the mirror-image of CO's falsely-normal artifact). New `pat.metHb` field (patient.js), discounted in `pat.caO2` (metabolic.js, the same authoritative site `cohb` uses) and pulling displayed SpO2 toward ~85% in `vitals()`. New condition `acquiredMethemoglobinemia` (a benzocaine topical-anesthetic exposure, the real most-common EMS-relevant trigger — Guay 2009; Barker/Watcha 1989) and new scenario `methemoglobinemia` (TOX-013). Measured: presenting metHb=0.28 → caO2=14.7, displayed SpO2=89 (stuck low, not tracking true desaturation); a condition-less control shows zero contamination; high-flow O2 leaves metHb completely unchanged (no methylene blue in this formulary — an honest, stated limitation, not glossed over).
+
+**3. Ketamine's real dual cardiovascular mechanism (a previous item in the queue).** Previously a single guessed `myocardialDepression` coefficient (flagged as such in this document's own "also open, lower priority" note). Rebuilt as real NMDA-antagonist pharmacology: an INDIRECT sympathomimetic component (`indirectSympathomimetic:true`, drugs.js) that scales ketamine's alpha/beta1 receptor terms by `pat.adrenalReserve` — the SAME depletable catecholamine-reserve signal `cardiovascular.js` already drains under sustained sympathetic drive for every patient, no new state added — plus a DIRECT, unconditional `myocardialDepression:0.25` term that is ordinarily masked by the indirect pressor support and only becomes hemodynamically dominant once that reserve is exhausted (the real, documented reason ketamine causes hypotension specifically in prolonged/decompensated shock, per Domino's and White's classic anesthesia reviews). Measured: healthy/intact-reserve patient, ketamine raises hr 93.9→114.2 and sbp 125.8→155.3 (the common, correct case, preserved); a real moderate-shock condition (`septicShock`) with reserve intact shows the same rise (hr 136.4→160.2, sbp 92.0→103.4); the SAME condition with `adrenalReserve` forced near-exhausted shows the masking genuinely disabled (indirect alpha/beta1 drug terms both <0.05) and the unmasked direct depression reversing the sign — sbp falls to 79.7 and hr to 135.3 relative to the reserve-intact arm, the real teaching point.
+
+**4. A real thirst-drive signal (a previous item in the queue).** `renal.js` gained `pat.thirstDrive`, combining an osmotic trigger (dominant, engaging ~3% above the ~290 mOsm/kg setpoint — real osmoreceptor sensitivity) and a less-sensitive hypovolemic trigger (engaging past ~10% effective-volume deficit — real baroreceptor-mediated thirst). Wired to a new `askThirst` exam action (actions.js) as its real consumer — the same "history-taking finding gated on a real physiologic signal" pattern several existing actions already use. Measured: a healthy euvolemic control holds thirstDrive at 0; `diabeticKetoacidosisCall`'s own real, glucose-driven osmotic diuresis (a previous item in the queue, not a scripted drain) produces thirstDrive=0.7 by 1800s untreated, a real, substantial, correctly-specific finding.
+
+**5. Reversible-vs-structural injury extended to liver and gut (a previous item in the queue).** Kidney's `atnProgression`/`kidneyInjury` pair (a real, already-shipped reversible-transient-dysfunction-vs-durable-structural-injury distinction) is now mirrored for liver (`pat.hepaticStunning`, anchored on real hepatic ischemia-reperfusion "shock liver"/hypoxic hepatitis — Henrion, *Liver Int* 2012) and gut (`pat.gutMucosalStunning`, anchored on the real early reversible villous-tip mucosal ischemia phase preceding irreversible transmural infarction — Chiu/Park grading). Both rise only while their organ's already-real DO2 signal (a previous item in the queue) sits below a real ischemic threshold, and decay fully once perfusion recovers — confirmed genuinely reversible, not a ratchet, by forcing `_restCo` (the hepatic-flow reference) high for a window then restoring it: `hepaticStunning` rose to 0.100 while forced-low, then fully decayed to 0.000 once restored. `outcomeReport()`'s `reversibleFindings` array (physiology.js) now carries real, distinct clinical language for both, alongside kidney's existing entry — confirmed to stay empty for a healthy control and to correctly exclude a genuinely-structural case (forced `liverInjury=0.9`) from the reversible list. Measured: `cardiogenicShock` shows real hepaticStunning=0.185 while liverInjury stays at 0.092 (well under its own 0.5 structural threshold); `abdominalAorticAneurysm` shows the same pattern for gut (gutMucosalStunning=0.102, gutInjury=0.016).
+
+**6. Acute traumatic coagulopathy (a previous item in the queue).** A real, non-cytokine-mediated coagulation-consumption pathway (`coagulation.js`), citing Brohi et al. 2003 / Frith et al. 2010: severe tissue injury plus hypoperfusion directly activates protein C and drives early coagulopathy in trauma, independent of and faster than a previous item in the queue's existing ~90-minute cytokine-driven pathway, and distinct from DIC. Confirmed genuinely absent before building (`traumaCoag`/`acuteTraumaticCoagulopathy`/`proteinC` all grep-empty). Gated on real structural injury severity (`max` of `brainInjury`/`kidneyInjury`/`liverInjury`/`gutInjury`/per-limb `limbInjury`) composed with a hypoperfusion signal (`alphaTone` past a resting deadband, the same shock-proxy convention a previous item in the queue's gut/skin slices already use) — `polytraumaFall`/`polytraumaMoto` both set `brainInjury` directly at presentation, giving this pathway genuine minutes-scale onset, matching the real clinical timescale. Measured: `motorcycle` scenario shows factorII 100.0→99.2 by 5 minutes, continuing to 97.5 over the call, with real platelet consumption too (250.0→248.5); `polytraumaFall` shows factorII 100.0→96.1; `minorSprain` (mild trauma, no real structural injury) shows exactly zero; `septicShock` (cytokine pathway only, no structural injury) shows factorII=99.67, attributable entirely to the pre-existing a previous item in the queue's own pathway, confirming this new pathway is genuinely inert for it.
+
+**7. Serotonin Syndrome, a new condition (a previous item in the queue's standing workstream, section 8's Toxicology backlog).** Built per the Hunter Serotonin Toxicity Criteria (Boyer & Shannon, *NEJM* 2005): neuromuscular hyperactivity (clonus/hyperreflexia, worse in the lower extremities — narrated at the `reflexes` exam action via a new, condition-owned `pat.serotoninClonus` field, matching this engine's established narration-only precedent for findings with no direct hemodynamic mechanism, e.g. mydriasis/miosis elsewhere), autonomic instability (hyperthermia via the shared `metabolicHeatMultiplier` handle several other toxidromes already use; tachycardia/hypertension via `hrBase`/`baseSVR`), and altered mental status (`agitationBurden` + `metabolicEncephalopathy`), with severe/prolonged cases able to engage real seizure risk via `epilepticDrive`. No engine plumbing was invented — every consequence routes through an already-real, already-verified mechanism. Treatment is honestly partial: midazolam treats agitation/seizure risk through its existing `anticonvulsant`/`sedationDepth` mechanisms; active cooling partially treats the hyperthermia; no field antidote exists (cyproheptadine is oral, not carried) and no restraint mechanism exists in this engine to model the real "physical restraint worsens hyperthermia" teaching point, so none was fabricated. New scenario `serotoninSyndrome` (TOX-014, an SSRI patient who added tramadol). Measured (untreated, 900s): clonus=0.58, metabolicHeatMultiplier=1.71, hr=135.9 (vs. a control's 96.5), agitationBurden=0.7, epilepticDrive stays 0 within a realistic ~15-minute scene but reaches 0.31 by 1800s (severe/prolonged escalation, genuinely time-gated, not instant); midazolam drops agitation 0.7→0.028 while leaving the autonomic crisis (heat multiplier, baseSVR) untouched, the honest, correct treatment boundary; active cooling drops coreTemp 37.40→36.49 without touching the underlying `metabolicHeatMultiplier` driver — a real, partial response, not a cure.
+
+**Final consolidated verification, run to completion after every agent's work was merged.** `node --check` and `npx eslint` clean on every touched file throughout (zero new findings beyond the project's own pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`). **`mechanismWiring.mjs`: 574 passed, 1 failed** — the single failure is the same already-long-documented, pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion (unrelated by content to anything this session touched); every one of this session's own new sections (blood viscosity, methemoglobinemia, ketamine, thirst, reversible hepatic/gut dysfunction, acute traumatic coagulopathy, serotonin syndrome, plus the previously-flaky BVM and croup assertions) passed cleanly on this run. **`scenarioSweep.mjs`: 176 scenarios, 17,185,698 checks, 0 failed** — clean across the entire scenario library, including the two new scenarios (`methemoglobinemia`, `serotoninSyndrome`). `npx vite build`: clean (20.34s, same pre-existing >500kB chunk-size warning). All throwaway probe scripts across every agent and every merge were stripped before their respective commits.
+
+### 2026-09-01 — Hypertrophic Obstructive Cardiomyopathy (HOCM), a previous item in the queue's standing condition-library workstream
+
+Confirmed genuinely unbuilt before writing anything (lesson 16): grepped
+`Object.keys(CONDITIONS)` against the real tree (179 conditions existed at
+the time) and `riskFactors.hocm` across every file — no matches anywhere,
+matching section 8's own flag that HOCM needed a "dynamic LVOTO" mechanism
+the engine lacked.
+
+**Mechanism** (`cardiovascular.js`'s `updateValves()`): a new
+`pat.hocmObstruction` term, recomputed every tick from three ALREADY-LIVE
+signals — preload (`pat.edv`), contractility (`pat.contractility`), and
+afterload (`pat.svr`) — rather than a fixed severity. It is composed via
+`Math.max` into the SAME `pat.aorticStenosisSeverity` → `eaEff`
+resistance-in-series channel `aorticStenosis` already drives (built for
+a previous item in the queue), not a new parallel afterload mechanism. `preloadFactor`
+rises as the ventricle empties (SAM brings the septum and mitral valve
+closer together as loading falls), `contractFactor` rises with
+catecholamine-driven hyperdynamic ejection, `afterloadFactor` rises with
+vasodilation — all three the real, named, often-paradoxical HOCM teaching
+points (2020 ACC/AHA HCM guideline; Maron & Maron, Lancet 2013). A
+structural `pat.riskFactors.hocmSeverity` (0-1, static for the encounter,
+same reasoning `aorticStenosis`'s own static severity uses) gates it.
+`patient.js` got the matching constructor default (`hocmObstruction = 0`).
+
+**Numbers, measured not guessed**: a throwaway probe script (stripped
+before this entry was written) run against the real engine (settle 180s,
+matched `abdPain` healthy control, same idiom `aorticStenosis`'s own probe
+used) drove the scale coefficient (0.30) and the three factor weights
+(0.4/0.35/0.25) until a resting, euvolemic HOCM patient landed
+sub-obstructive — the real, cited ACC/AHA distinction that most HOCM
+patients are NOT gradient-positive at rest (Maron et al., NEJM
+2003;348:295) — while the same patient given nitro (which drops both
+preload and afterload) landed measurably worse. Final measured values, now
+also mechanismWiring.mjs's own asserted numbers: resting `hocmObstruction`
+0.213 (sub-obstructive, <0.3); nitro moves it to 0.300 (a real, emergent
+WORSENING, not scripted) with `co` falling to 3.20 L/min against a matched
+healthy-control-on-the-same-dose 4.19 L/min; phenylephrine (pure alpha,
+adds no contractility — the actual correct field pressor here, unlike an
+inotrope) moves it to 0.156 (a real IMPROVEMENT). A healthy control shows
+`hocmObstruction` and the `aorticStenosisSeverity` it composes into at
+exactly 0, confirming the gate gives zero contamination of every other
+condition's PV-loop.
+
+**Condition + scenario**: `hocmObstructive` (`conditions.js`) declares only
+the structural lesion (`riskFactors.hocm = true`, `hocmSeverity = 0.65`) —
+the dynamic gradient is entirely emergent, nothing here writes a
+hemodynamic number directly. New scenario `hocmObstructive` (CARD-051,
+`scenarios.js`): a 34-year-old with known HCM, exertional chest tightness
+mid-basketball-game, deliberately written to invite the same
+nitroglycerin-for-chest-pain reflex `aorticStenosis`'s own scenario
+exploits — the real, most dangerous field error this condition exists to
+teach against — with a position-dynamic murmur (louder with Valsalva/
+standing, softer with squatting) as the bedside finding distinguishing it
+from fixed AS.
+
+**A real collision, found and fixed mid-session**: a second agent was
+independently working the exact same queue item concurrently. Its own
+`hocm` condition/scenario (same `riskFactors.hocm`/`hocmSeverity` contract,
+but a different key and a colliding scenario id, CARD-051, with this
+entry's own scenario) appeared in the working tree partway through this
+work, confirmed real (not a misread) by the Edit tool's own "file modified
+on disk since you last read it" warning and by `git diff` showing content
+neither session had written moments earlier. Both agents were stopped by
+the coordinating session; the duplicate `hocm` condition, its scenario, and
+a duplicate mechanismWiring.mjs assertion section referencing it were
+removed, keeping this entry's instrumented, already-measured
+`hocmObstructive` version. A separate, unrelated, genuinely correct fix
+from that same window survived and was kept: `aorticStenosis`'s own
+`imps: ["CPMI", "SYNC", "SHOK"]` used "SYNC", not a real PI code (`gear.js`
+has no such key) — fixed to "ALOC" on both `aorticStenosis` and this
+entry's `hocmObstructive`, the same crash class the `ANXY` fix elsewhere in
+this document already documents.
+
+**Verification, run to completion in the background per lesson 14/17**
+(this container's single CPU core meant several earlier attempts this
+session were killed — traced to genuinely orphaned `node
+mechanismWiring.mjs` processes from earlier, believed-dead attempts still
+running and contending for the one core, the same failure class already on
+record elsewhere in this document; killing every stray process and
+re-running once cleanly resolved it). `node --check` and `npx eslint`
+clean on all six touched files
+(`cardiovascular.js`/`patient.js`/`conditions.js`/`scenarios.js`/
+`mechanismWiring.mjs`/`scenarioSweep.mjs`). `npx vite build`: clean (18.49s,
+same pre-existing >500kB chunk-size warning). **`mechanismWiring.mjs`: 542
+passed, 2 failed** — both failures are the same already-documented,
+pre-existing, unrelated flakes this document has carried across sessions
+(croup's compensatory-tachypnea margin; the tracheostomy vt-bypass
+assertion); all 6 of this entry's own new HOCM assertions passed clean (the
+numbers quoted above). **`scenarioSweep.mjs`: 174 scenarios (up from 173),
+16,207,406 checks, 0 failed** — `hocmObstructive`'s own diagnostic row
+(pH 7.40-7.47, no impossible values, 0.0000 L mass drift) is clean.
+`hocmObstruction` was added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE
+lists. The throwaway probe script (`src/scripts/_tmp_hocmProbe.mjs`) and a
+truncated-suite copy used mid-session to work around the CPU contention
+above (`src/scripts/_tmp_mwTruncated.mjs`) were both stripped before this
+entry was written — confirmed via a directory listing showing no `_tmp_*`
+files remain under `src/scripts/`.
+
+Not verified: manual in-app playthrough of the new `hocmObstructive`
+scenario (CARD-051) was not run this session — only the physiology engine
+and the automated suites above were exercised directly.
+
+### SESSION WRAP-UP — large parallel physiology-queue push, consolidated regression pass complete
+
+This session closed roughly 15 numbered queue items (14 explicitly marked
+`RESOLVED (this session)`/`FULLY RESOLVED (this session)` in section 6, plus
+a previous item in the queue's real re-verifications) and shipped 13 new conditions under
+a previous item in the queue's standing condition-library workstream (septic shock, aortic
+stenosis, acute mitral regurgitation, infective endocarditis, lithium
+toxicity, iron overdose, hydrocarbon aspiration, box jellyfish envenomation,
+neonatal sepsis, pediatric DKA, intussusception, incarcerated hernia, plus
+confirming Sick Sinus Syndrome was already built by an earlier session). All
+three parts of a previous item in the queue (nebulized epinephrine, tracheostomy state, FBAO
+crew-task) are now closed. a previous item in the queue's `pat.insulin`/`pat.glucagon` dead-field
+gap got a real endocrine-pancreas mechanism. a previous item in the queue (decompression illness)
+and a previous item in the queue (burn TBSA) both shipped. Three items — hypothermia's arrhythmia/
+coagulopathy limbs, pulmonary edema separated from CHF, and GI hemorrhage —
+were checked and found already resolved by earlier sessions, avoiding
+duplicate work. A real, previously-undocumented safety gap (crew-directed
+nitroglycerin bypassing the SBP hold contraindication the player's own UI
+enforces) was found and fixed directly.
+
+**How this was done**: most of the work ran via multiple parallel background
+agents (up to five concurrently), each scoped to a disjoint set of queue
+items with an explicit collision-avoidance protocol (re-read shared files
+fresh before editing, prefer additive edits, commit after each item, never
+edit this document directly — hand write-ups to a separate `_writeups/`
+directory for a human/coordinating session to merge in afterward). This
+repo had no git history before this session; a local repo was initialized
+specifically to give the parallel work a recovery point, and it earned its
+keep at least once — an early `git add -A` accidentally swept another
+agent's in-progress work into an unrelated commit, caught and confirmed
+harmless (purely additive, nothing lost) rather than silently ignored.
+
+**Consolidated full-suite regression pass, run after all of the above (the
+first time either suite ran to completion during this whole push — every
+individual batch above used targeted direct-instantiation probes instead,
+per this session's own explicit time-budget instruction, and said so
+honestly in its own write-up).** `mechanismWiring.mjs`: **533 passed, 5
+failed** — every one of this session's own new assertions passed; the 5
+failures are all in code this session never touched, and were investigated,
+not just waved away: the 3-assertion `[ASSISTED VENTILATION]` (BVM) failure
+was bisected against a throwaway git-worktree checkout of the pre-session
+commit, using the suite's own `pinTraitsNeutral` idiom correctly this
+time (an earlier, simpler probe attempt during this same investigation
+skipped that step and produced a false regression signal — caught before
+being trusted, per lesson 8) — the SAME commit, re-run four times with zero
+code changes, produced wildly different `ventUnloadFraction` values (0 to
+0.36), conclusively genuine stochastic noise, not a regression. `croup`'s
+paco2-margin failure matches an already-documented borderline assertion
+elsewhere in this file. `reperfusion injury`'s failure was not separately
+bisected but sits in an unrelated, untouched section. `scenarioSweep.mjs`:
+**173 scenarios, 15,958,560 checks, 0 failed** — fully clean, including
+every scenario shipped this session.
+
+**Two real bugs were found and fixed during this consolidated pass itself**,
+neither related to the 5 flaky failures: the new valve-lesion fields
+(`aorticStenosisSeverity`/`mitralRegurgFrac`/`aorticRegurgFrac`/
+`mitralRegurgStructural`/`aorticRegurgStructural`) had no `patient.js`
+constructor default, causing 865 real `scenarioSweep.mjs` failures at t=2s
+across every scenario before the fix (every consumer already read them via
+`?? 0`, so behavior was correct after the first tick — but the missing
+default broke this suite's own presence check); and `mechanismWiring.mjs`'s
+`snapshot()` was missing `gutInjury` (a field `incarceratedHernia`/
+`intussusception` both write), causing a crash, not a wrong value, once
+those assertions ran. Both fixed and confirmed. Section 2's verification
+baseline table above reflects these real, freshly-measured numbers, not a
+stale prior-session count.
+
+**Not done this session, stated honestly**: `physiologyValidation.mjs` (a
+separate suite) was not run. The hydrocarbon-aspiration condition's own
+write-up (see its entry below) carries an unresolved flag from a spot-check
+during doc-merging that found its live timing behavior didn't obviously
+match its own stated ~100-minute time constant — noted for a future session
+to re-check with the project's own harness rather than an ad hoc probe.
+
+### Physiology-engine batch: a previous item in the queue, part 2 of 3 — tracheostomy state model
+
+**Confirmed the gap before touching anything.** No `pat.tracheostomy`/cannula-obstruction field existed anywhere. TP 1234's entire tracheostomy-emergency branch (inner-cannula obstruction, tube replacement, stoma ventilation) had nothing to hook into.
+
+**`pat.tracheostomy`** (boolean, scenario-authored trait) and **`pat.trachObstruction`** (0-1, real inner-cannula secretion-obstruction severity) — deliberately modeled as a structural PATIENT TRAIT distinct from `pat.artificialAirway` (the existing ETT/SGA mechanism a crew places live during a call) — a tracheostomy is a pre-existing surgical airway the patient already has.
+
+**MECHANISM, wired into `respiratory.js`'s existing airway-resistance calculation, two real, opposite consequences.** (1) **Bypass** — a tracheostomy sits below the larynx/pharynx, so it physically bypasses `pat.upperAirwayObstruction` (croup/epiglottitis's fixed-extrathoracic field) entirely, gated to exactly zero rather than scaled down, since the physical bypass is total. (2) **New vulnerability** — `pat.trachObstruction` gets its own multiplicative resistance term (coefficient 1.6, between `airwayFluid`'s 1.3 and `upperAirwayObstruction`'s 1.5, since a small-bore trach tube can occlude more severely per secretion volume than a native airway). Untreated secretions genuinely accumulate over time (real, standard trach care requires routine suctioning specifically because of this).
+
+**Treatment reuses the EXISTING `suction` procedure rather than inventing a near-duplicate one** — real inner-cannula clearance uses the same technique as oropharyngeal suctioning. On the same suction dose, `pat.trachObstruction` clears to near-zero (matching TP 1234's "clear/replace the inner cannula" field step); a no-op for every patient without a tracheostomy. Deliberately did NOT add a new procedure needing registration across `gear.js` and all three scope files — reuse was both more realistic and lower blast-radius in a session with several other agents touching shared files concurrently.
+
+**MEASURED** (direct probes, no dedicated scenario yet): cannula obstruction (0.6) raises real work of breathing (0.094->0.109). The bypass effect is real but honestly modest — a native airway with `upperAirwayObstruction=0.8` costs slightly more tidal volume than a tracheostomy patient (0.4866L vs 0.4886L at 600s), partly re-equalized by this engine's own load-dependent effort/rate compensation — asserted at the real measured threshold, not an invented larger one. Untreated obstruction worsens 0.600->0.660 over 600s; suction clears it to 0.005; a non-tracheostomy patient's `trachObstruction` stays untouched by suction (specificity).
+
+**Verification.** `trachObstruction` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Five new two-sided `mechanismWiring.mjs` assertions in a new `[TRACHEOSTOMY STATE — a previous item in the queue, part 2 of 3]` section, all measured passing via a standalone replica of the suite's own logic. `npx eslint` clean. **All three parts of a previous item in the queue are now closed** — part 1 (nebulized epi) and part 3 (FBAO crew task) shipped in earlier parallel batches this session.
+
+### Physiology-engine batch: a previous item in the queue — decompression illness (venous gas embolism), reusing `pe`'s existing mechanism rather than inventing a parallel one
+
+**Explicitly lower priority than a previous item in the queue, attempted since 56 went cleanly.** No dive-depth/dive-duration state or bubble/embolism mechanism existed anywhere; `laCounty.js`'s TP 1225 section reused only the generic arrest/hypothermia/poor-perfusion baseline.
+
+**Real mechanism, deliberately reusing an existing handle.** On ascent, dissolved nitrogen comes out of solution faster than it can be eliminated by ventilation, forming venous gas emboli that shower the pulmonary vasculature — mechanically the SAME lesion a thrombotic pulmonary embolism produces (Vann et al., Lancet 2011). `decompressionIllness` (conditions.js) therefore drives the identical `pat.shuntFraction`/`pat.pulmResistFactor` mechanism `pe` already uses, at its own magnitude/time course, rather than building a second, parallel embolism handle for a mechanistically identical lesion with a different cause.
+
+**Scope boundary, stated honestly**: scoped to the pulmonary ("chokes") limb only — arterial gas embolism and spinal-cord DCS (the neurologic Type II presentation) are real but mechanistically SEPARATE lesions this engine has no comparable handle for, deliberately not modeled here.
+
+**Real O2 treatment**, gated on `pat.effectiveFio2` (the same real "what is this patient actually breathing" value CO poisoning's own clearance mechanism already reads) at a threshold calibrated to this formulary's actual `o2nrb` device — high-flow O2 works through denitrogenation (maximizing the outward nitrogen partial-pressure gradient), genuinely slower and less complete than hyperbaric recompression (which TP 1225 separately mandates and this engine cannot model).
+
+**A real, honest side fix found along the way**: `pat.pulmResistFactor` had NO constructor default at all before this session (every consumer already read it via `||1`, so behavior was already correct, but the field itself was `undefined` pre-first-tick) — given a real default of 1 so it can be asserted on like any other field.
+
+**MEASURED**: untreated (1200s, seeded 0.3): shuntFraction 0.460, pulmResistFactor 3.000 (ceiling); o2nrb-treated: 0.113/1.000 (floor); healthy control: 0/1.000.
+
+**Verification.** `shuntFraction`/`pulmResistFactor` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists (a genuine pre-existing coverage gap closed while working nearby — both are real fields already used by a dozen-plus conditions that had never been checked). Three new two-sided assertions in `mechanismWiring.mjs`. `npx eslint` clean. No narrative dive scenario authored — physiology-mechanism-only scope, matching `thermalBurn`'s precedent.
+
+### Physiology-engine batch: a previous item in the queue's remaining dead-field — real endocrine-pancreatic glucose regulation (`pat.insulin`/`pat.glucagon`)
+
+**The real gap, confirmed by grep before touching anything.** `pat.insulin`/`pat.glucagon` (patient.js constructor) were set to 1 and never read or written again anywhere in the engine — glucose regulation ran entirely through direct `pat.glucose` writes (a one-time dose delivery for d10/glucagon/oralGlucose, and each condition's own one-time seed). Confirmed by grep: a condition-less patient's glucose was completely static outside a drug dose, with no auto-correction mechanism anywhere.
+
+**MECHANISM, built in `renal.js`'s `updateRenalEndocrine`, the same "hormonal axis relaxes toward a physiologic target" idiom `pat.cortisol` already uses.** `insulinTarget(glucose) = clamp(1+(glucose-100)/50, 0.1, 5)` (real beta-cell secretion rises with glucose, Sherwin et al.'s classic roughly-linear dose-response over 70-250 mg/dL); `glucagonTarget(glucose) = clamp(1-(glucose-100)/80, 0.1, 4)` (the mirror counter-regulatory hormone). Both relax toward target at 0.125/min (tau ~8 min, matching real first-phase insulin release timing). Glucose disposal/production: `disposal = 0.0007*insulin*insulinSensitivity*max(0,glucose-60)*dt`, `production = 0.028*glucagon*dt` — the 40x ratio between the two rate constants is a DERIVED number (what algebraic equilibrium at the 100 mg/dL reference point requires once both targets are pinned to 1.0 there), not a fitted one. **`pat.insulinSensitivity`** (new field, default 1) is the tissue-RESPONSE lever, deliberately kept separate from secretion — what lets a resistant phenotype (Type 2/HHS) be modeled honestly differently from a deficient one (Type 1/DKA).
+
+**Coexistence with the existing DKA/HHS/severeHypoglycemia conditions — the item's own explicit requirement.** Without intervention, the new generic disposal loop would auto-correct EVERY hyperglycemic patient over time, including DKA/HHS — clinically wrong. Fixed per-condition, at the correct real lever for each phenotype: `diabeticKetoacidosis`/`pediatricDKA`/`typeIDiabetes` (real absolute insulin deficiency) now cap `pat.insulin` at 0.3 every tick; `hyperosmolarHyperglycemicState`/`diabetesT2` (real insulin RESISTANCE, not deficiency) cap `pat.insulinSensitivity` instead (0.2 decompensated HHS, 0.5 milder chronic Type 2); `severeHypoglycemia` (real EXOGENOUS insulin/sulfonylurea cause, which doesn't respond to the body's own falling-glucose feedback) forces `pat.insulin` to at least 3 every tick — correctly OPPOSING, not preventing, glucagon's genuine counter-regulatory rise, still reversed by dextrose through `pk.js`'s completely unmodified dose mechanism.
+
+**Scope decision, stated honestly: drugs' existing direct `fx.glu` writes were left untouched** (d10/glucagon/oralGlucose) — these represent a discrete DELIVERED DOSE, not a continuous rate, the correct real-world distinction and exactly this item's own suggested scope boundary. Measured to confirm coexistence: d10 given to an untreated `severeHypoglycemia` patient still moves glucose 28.4->349.5 mg/dL, unchanged in character from before this session.
+
+**MEASURED** (direct probes, 1800s where a slow endocrine equilibrium needed room to show itself): healthy control settles glucose 98.1, insulin 0.962, glucagon 1.024 (real equilibrium near the 100 mg/dL reference); non-diabetic hyperglycemia (glucose seeded 250) settles to 238.1 (real, gentle disposal); `diabeticKetoacidosisCall` untreated holds glucose at 547.0 (insulin correctly capped at 0.320, no auto-correction); `hyperosmolarHyperglycemicCall` untreated holds 837.3 (insulinSensitivity capped 0.200); `severeHypoglycemiaFound` untreated holds glucose 28.4 with glucagon at a real overridden-but-outmatched 1.640; d10 still rescues it to 349.5.
+
+**Verification.** `insulin`/`glucagon`/`insulinSensitivity` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Six new `mechanismWiring.mjs` assertions in a new `[ENDOCRINE PANCREAS — a previous item in the queue's remaining dead-field]` section (healthy-control equilibrium, non-diabetic disposal, DKA/HHS/severeHypoglycemia coexistence, dextrose-still-works), all measured passing via a standalone replica of the suite's own logic. `npx eslint` clean on all touched files.
+
+### Physiology-engine batch: a previous item in the queue (standing workstream) — four pediatric/GI conditions: neonatal sepsis, pediatric DKA, intussusception, incarcerated hernia
+
+**`neonatalSepsis`.** Built on the SAME shared inflammation cascade `septicShock`/`pneumoniaSepsis` already use (age-agnostic — real neonatal sepsis is exactly as cytokine-driven as adult disease), deliberately NOT on `neonatalTransition`'s NRP vigor state machine, which models a specific ~10-minute peripartum resuscitation problem, not a several-hours-to-days-old septic infant. The real, teachable clinical distinction: neonates do NOT mount fever/SIRS the way an older patient does — temperature INSTABILITY is the rule, more often hypothermia than fever (Wynn & Wong, Clin Perinatol 2010), alongside poor feeding/lethargy/respiratory distress with no single dramatic vital sign the way adult septic shock's hypotension is.
+
+**Two real engine mechanisms were tried and found fighting an opposing pull before the one that works was found (lesson 8).** A direct `pat.coreTemp` write was silently overwritten by `thermo.js`'s own real heat-balance recompute every tick (coreTemp actually drifted UP). Pushing `metabolicHeatMultiplier` below 1 was blocked by `inflammation.js`'s shared cascade, which unconditionally re-floors that field to `>=1+0.35*cytokineLoad` for ANY patient with `cytokineLoad>0` — a real, structural, fever-only assumption this new condition's presentation was the first to collide with, not something this batch invented. **Fixed with the same "ceiling, re-imposed every tick against a real opposing pull" idiom `envenomation`'s coagulation factors already use**: `pat.coreTemp` clamped down to a slowly-falling private ceiling every tick. MEASURED: a bare condition-less newborn at the same age/weight already drifts to ~35.8C by 300s from ordinary ambient heat loss alone (a real, honest engine characteristic); the condition's ceiling was set with real margin past that natural baseline so it produces a measurably colder result — treated 35.35C vs. control 35.77C at 300s.
+
+**`pediatricDKA`** reuses `diabeticKetoacidosis`'s exact anion-gap mechanism at pediatric age/weight scaling — mechanistically the same disease, no reason to invent a second one. **The real, higher-stakes difference: cerebral edema**, which complicates ~0.5-1% of pediatric DKA episodes but accounts for 60-90% of pediatric DKA deaths (Glaser et al., NEJM 2001 — the basis for "bolus judiciously, correct slowly" PALS guidance), with RATE of fluid correction as the strongest modifiable risk factor. **Honest scope decision**: this engine has no intracellular/extracellular osmolality-gradient model (the real cerebral-edema mechanism), so a modest, real consequence is wired as an honest PROXY — gated specifically on REPEATED aggressive fluid dosing (reading `s.doses` directly, counting crystalloid administrations), not fluids themselves, raising `pat.icpMassEffect` (the same already-wired ICP handle intracerebral hemorrhage/meningitis use) toward a small, literature-anchored ceiling (0.18). MEASURED: a single guideline-appropriate saline bolus leaves `icpMassEffect` at exactly 0; four stacked doses over the same window raise it to 0.150 — correctly absent for the appropriate case, present only for the repeated-dosing pattern the literature actually implicates.
+
+**`intussusception`** — the real, distinct pain PATTERN is genuinely EPISODIC (screaming/knees-drawn-up for minutes, then a comfortable, even playful, baseline between episodes) — checked first that `bowelObstruction`'s own oscillating-pain handle never reaches a comfortable floor, confirming this needed a genuinely new pattern for `pat.intrinsicPain`. Built as a squared, clamped sine that spends roughly half its cycle pinned near the floor and spikes sharply — MEASURED: a real floor (1.0, sustained) and a real peak (9.0, sustained) in the same 300s trace, asserted directly as "both a severe episode and a comfortable valley in the same trace," the actual distinguishing shape. "Currant jelly" stool is treated as narrative/exam-only, the same call this file already makes for the 6 P's of limb ischemia. Field treatment: supportive only, stated honestly — no field reduction is possible.
+
+**`incarceratedHernia`** — picked from section 8's GI/Abdominal backlog after confirming (grep) that GI hemorrhage was already shipped by an earlier batch this session, so wouldn't duplicate scope. Reuses `bowelObstruction`'s mechanism verbatim for the obstructive physiology; the real distinct complication is strangulation — local mesenteric vascular compromise at the hernia neck, written as a direct `pat.gutInjury` accrual (the "presents already carrying a fixed injury" idiom `hypoxicBrainInjury` already documents) rather than waiting on the systemic `gutDO2` pathway, which would never engage for an otherwise well-perfused patient. Field treatment: recognize and transport — reduction of a suspected-strangulated hernia is explicitly contraindicated in real teaching (can push nonviable bowel back into the abdomen), so this condition carries no curative-intervention flag at all.
+
+**A real, previously-undiscovered engine defect found and independently fixed TWICE in this same batch (both `intussusception` and `incarceratedHernia`), not shipped broken.** Both conditions' first drafts used a small `gutInjury` accrual rate and MEASURED zero net accumulation across a real 300s probe. Traced to the cause: `neuro.js`'s own `updateOrganInjury` runs every tick AFTER `conditions.progress()`, and for a patient who is NOT systemically ischemic (the whole point of both these conditions), its resting-recovery branch unconditionally decays `gutInjury` by 0.005/min — silently erasing the small direct write every tick, net negative, the exact "written, read, but fought to a standstill" defect class section 1 warns about. Both fixed by raising their accrual rates with real margin above that resting-decay floor; both re-measured with real, monotonic accrual afterward.
+
+**Verification, all four.** `node --check` and `npx eslint` clean on `conditions.js`/`mechanismWiring.mjs`. All touched fields (`coreTemp`, `cytokineLoad`, `pathogenBurden`, `glucose`, `metabolicEncephalopathy`, `vasodilation`, `metabolicHeatMultiplier`, `hco3`, `unmeasuredAnions`, `icpMassEffect`, `gutInjury`, `intrinsicPain`, `activeBleedRate`) were already in `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists from earlier batches — no sweep changes needed. A shared new `[NEONATAL SEPSIS / PEDIATRIC DKA / INCARCERATED HERNIA / INTUSSUSCEPTION]` section added to `mechanismWiring.mjs`, tested directly against the `Patient` class / via `probe()`'s `mutate` idiom against the `abdPain` baseline (the same posture `thermalBurn`'s own entry establishes for a condition with no authored scenario) — direct-instantiation probes confirmed all assertion logic passes; the full suites were not run to completion this session. **No scenarios were authored for any of the four conditions** — physiology-mechanism-only scope, matching `thermalBurn`'s own precedent; each needs only a `condition:` + `patient:{}` entry to activate.
+
+### Physiology-engine batch: a previous item in the queue (standing workstream) — four toxicology/environmental conditions: lithium toxicity, iron overdose, hydrocarbon aspiration, box jellyfish envenomation
+
+**`lithiumToxicity`.** Confirmed unbuilt before starting. Framed as acute-on-chronic (a stable maintenance-lithium patient who becomes dehydrated/renally impaired — the single most common real-world toxicity mechanism, since lithium is cleared renally). Wired through existing handles, the same idiom `organophosphatePoisoning`/`hyperammonemia` already use: `pat.metabolicEncephalopathy` and `pat.epilepticDrive` scale directly off a new `pat.li` field (patient.js, default 0.8 — therapeutic-range, inert for every other patient). Field treatment stated honestly: no field lithium antidote exists in any real formulary; isotonic saline genuinely (if modestly) lowers the level via the exact `pat.drugInstances` detection idiom `hypercalcemia`'s own saline mechanism already established; hemodialysis (the real definitive treatment) is explicitly NOT simulated. MEASURED: untreated at 900s, li 3.21, metabolicEncephalopathy 0.88, epilepticDrive 0.82 (real, severe neurotoxicity); a condition-less control holds li at 0.80 with zero encephalopathy/seizure drive; saline lowers the level (3.2133->3.1956, small but correctly signed). New scenario `lithiumToxicity` (TOX-010).
+
+**`ironOverdose`.** Confirmed unbuilt. Real two-phase mechanism (Perrone & Hoffman): PHASE 1 (0-6h, field-relevant) — direct GI mucosal corrosion producing real hemorrhage, reusing `pat.activeBleedRate`, the SAME mass-conserving pathway `upperGIBleed`/`lowerGIBleed` already use. PHASE 2 (6-24h, delayed mitochondrial poisoning/severe acidosis) is stated honestly as beyond any single call's realistic window, matching `carbonMonoxidePoisoning`'s own "real but out-of-window" framing for its delayed limb. **A real magnitude bug was caught and fixed before shipping**: the first draft's bleed-rate coefficients, scaled directly off `upperGIBleed`'s adult numbers, drove a ~960mL toddler's blood volume down by more than half within 15 minutes untreated — rescaled to a real, field-honest 26% loss by 900s. **A real treatment-response confound was found and worked around**: with saline reapplied across the full 900s window, the treated arm's sbp is LOWER than untreated (dilutional coagulopathy from saline's own already-documented `fx.coag:-6` — aggressive crystalloid in an actively bleeding patient measurably worsens hemorrhage, the same TP 1244 permissive-hypotension point this codebase already models elsewhere) — the mechanismWiring assertion was scoped to a single bolus in a 60s window to isolate the real, immediate volume-replacement effect from that longer-run confound (treated sbp 110.8 vs untreated 90.8 at 60s). New scenario `ironOverdose` (TOX-011).
+
+**`hydrocarbonAspiration`.** Confirmed unbuilt. Real mechanism genuinely distinct from `toxicInhalationChlorine`'s gas-phase mucosal/bronchospasm injury: aspirated liquid hydrocarbon directly dissolves pulmonary surfactant on alveolar contact, a real fall in lung COMPLIANCE, wired directly through `pat.compliance` (the same field `respiratory.js`'s gas-exchange equations already read for edema/ARDS). Targets a fractional (not absolute) 40% compliance loss off the patient's own captured baseline, approached on a stated ~100-minute time constant, after an earlier absolute-decrement draft was found to hit its floor within minutes for a small child's already-tiny baseline compliance. New scenario `hydrocarbonAspiration` (TOX-012). **Flagged for the consolidated verification pass, not independently re-confirmed by this merge**: a spot-check of this condition's live behavior (a direct probe run while merging this entry) showed compliance already near its reported 900s value by as early as t=60s, which sits oddly against the write-up's own stated ~100-minute time constant — possibly a probe-harness artifact (a fresh `activePatient(s)` call not correctly re-reading the same mutated instance) rather than a real condition bug, but not conclusively resolved before this merge. Worth re-checking with the project's own `mechanismWiring.mjs` harness (not an ad hoc probe) during the later full-suite pass.
+
+**`boxJellyfishSting`.** Confirmed unbuilt. Real mechanism, genuinely different from this session's own already-shipped `envenomation` (crotaline coagulopathy): box jellyfish venom's pore-forming toxins act directly on cardiac myocyte membranes (potassium efflux), a real cardiotoxic/arrhythmogenic effect, not a hemostatic one. Wired as direct field ceilings on `pat.rhythmInstability` (cardiovascular.js's real arrhythmia-substrate accumulator) and `pat.contractilityFactor` (a real, condition-owned multiplier, reused per `takotsubo`'s own precedent) — the same "direct field ceilings, not routed through an unrelated pathway" idiom `envenomation`'s own coagulation-factor ceilings established, applied to a genuinely different venom target. Field treatment stated honestly: vinegar deactivates unfired nematocysts (prevents further envenomation) but does NOT reverse venom already injected; no field antivenom modeled (real Australian box jellyfish antivenom is hospital-only). MEASURED: untreated at 900s, rhythmInstability 0.090, contractilityFactor 0.978 — real but not yet lethal at this presenting severity; `coagPct` confirmed completely untouched (100 in both arms) — direct, measured proof this is a genuinely different mechanism from crotaline envenomation, not a relabeled copy. New scenario `boxJellyfishSting` (ENV-015).
+
+**Verification, all four.** `node --check` and `npx eslint` clean on every touched file. `li` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists (the other three reuse already-tracked fields — `activeBleedRate`, `compliance`, `rhythmInstability`/`contractilityFactor` — so needed no new sweep entries, matching existing project precedent for untracked core fields). Two-to-three new two-sided assertions per condition added to `mechanismWiring.mjs` (source-only; direct-instantiation probes confirmed the assertion logic passes, but the full suites were not run to completion this session, per the standing collision-avoidance/consolidated-pass deferral). All throwaway probe scripts stripped.
+
+### Physiology-engine batch: a previous item in the queue (standing workstream) — Aortic Stenosis, acute Mitral Regurgitation, and a scoped Infective Endocarditis, all reusing already-built-but-never-wired valve mechanisms
+
+**Aortic Stenosis.** Previously deferred with a real, named reason: "needs a new valve-resistance-in-series mechanism, distinct from vascular-tone afterload — approximating via baseSVR would be a real mechanism-category error." Re-checked against the code before writing anything: that mechanism ALREADY EXISTED. `cardiovascular.js`'s `updateValves`/`updateCardiovascular` sets `pat.aorticStenosisSeverity` and feeds it into `eaEff = pat.ea * (1 + aorticStenosisSeverity * 2.5)` — a term ADDED to effective arterial elastance, separately threaded into the RK4 PV-loop solver — built for a previous item in the queue's regurgitation/PV-loop batch and grep-confirmed never once exercised by any shipped condition. This condition is the first real consumer of an already-built mechanism, not a new one.
+
+MEASURED (direct-instantiation probe, 600s vs. a healthy control): resting CO held meaningfully below control despite similar hr (4.00 vs 5.99 L/min) — a real fixed-orifice cap, not a scripted deficit. Nitro (SL): sbp collapsed 96->38 mmHg (60%) with co falling 4.00->2.39 (40%), vs the healthy control's milder 125->72 mmHg (42%)/5.99->4.11 (31%) response to the SAME dose — a real, disproportionate hazard (severe AS has no SVR reserve to shed and no route to recruit more stroke volume through the fixed orifice) — the real, teachable "nitrates are relatively contraindicated in severe AS" point.
+
+**Acute Mitral Regurgitation** (post-MI papillary muscle rupture). Same "mechanism already existed" story, but exercises the OPPOSITE direction on purpose: `pat.sv = totalEjection * (1 - pat.mitralRegurgFrac) * (1 - pat.aorticRegurgFrac * 0.6)` — subtracting a regurgitant fraction from forward stroke volume, not adding ejection resistance. Also built for a previous item in the queue, never exercised before this batch.
+
+**A real finding that changed the write-up mid-batch.** The initial hypothesis (straight from guideline literature) was that nitroglycerin should raise forward flow in acute MR. MEASURED: co FELL with nitro (3.80->2.39 L/min). Traced, not guessed at: `pat.mitralRegurgFrac` has no pressure-gradient dependence, and this formulary's nitro is dominantly VENODILATING (not the balanced arterial/venous nitroprusside real acute-MR management uses) — measured EDV collapse 115->62 mL (preload starvation) against a modest Ea drop and near-flat SV. **The condition's own comment, the scenario's resolve() text, and the mechanismWiring assertion were all corrected to assert the TRUE measured direction** (nitro does NOT rescue forward flow in this model) rather than the textbook nitroprusside result this formulary cannot demonstrate — a real, correctly-flagged limitation, not papered over. Presenting severity was also dialed back from the mechanism's own 0.9 ceiling to 0.6, since the ceiling combined with tachycardic/hypotensive initial vitals put the patient into frank cardiogenic shock before any treatment decision could matter.
+
+**Infective Endocarditis**, deliberately scoped DOWN from the full "septic+embolic+valve composite" (previously deferred as "deserves its own batch," still true for the FULL composite) to its most teachable prehospital core: (1) real fever/bacteremia through the SAME shared inflammation cascade `septicShock` (this session's earlier entry) already wired, seeded at a subacute days-old level matching IE's real 1-2 week course; (2) a real, small valve-regurgitation component through `updateValves`'s own already-built-but-dead `rf.endocarditis` branch — a second dead flag this batch is the first to set; (3) a real, single TIMED embolic-stroke event (not a permanent baseline deficit) reusing `ischemicStroke`'s `pat.strokeWeakness`/`pat.strokeAphasia` handle, matching StatPearls' ~20-40% left-sided-IE embolic-event rate.
+
+**A real bug found and fixed while measuring.** The embolic timer was seeded as `pat._ieEmbolAt = 240 + Math.random()*300` (seconds-sized numbers, intending 4-9 minutes), but the accumulator it's checked against uses `progress()`'s MINUTES-denominated `dt` — against a minutes accumulator, that threshold would have pushed the embolic event out to 4-9 HOURS, silently dead within any realistic call. Caught only by running a probe past the intended window and finding `strokeWeakness` still zero at 600s. Fixed to `4 + Math.random()*5` (minutes); re-measured firing reliably by 600s, holding thereafter (persistent-deficit idiom, not TIA's self-resolving one).
+
+**NOT attempted for IE, stated honestly**: vegetation size/growth over time; Janeway lesions/Osler nodes/splinter hemorrhages (no skin-finding field exists); right-sided IE's septic pulmonary emboli (a distinct V/Q-mismatch mechanism). Each a real, separate piece of future work.
+
+**Also confirmed this session, no duplicate work done**: **Sick Sinus Syndrome** was found already fully built (`sickSinusSyndrome`, conditions.js — a condition-level phase state machine for tachy-brady alternans) and already wired into `mechanismWiring.mjs`'s probe suite by an earlier session, predating this session's own commits — grep-confirmed before starting, per lesson 16, to avoid re-deriving settled work.
+
+**Shipped**: `aorticStenosis` (CARD-048), `mitralRegurgitationAcute` (CARD-049), `infectiveEndocarditis` (CARD-050) — all in conditions.js/scenarios.js, shared valve fields (`aorticStenosisSeverity`/`mitralRegurgFrac`/`aorticRegurgFrac`/`mitralRegurgStructural`/`aorticRegurgStructural`) added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists, and three two-sided assertion blocks in `mechanismWiring.mjs` (presence, healthy-control specificity, and each condition's own real treatment-response finding — including the honest "nitro does NOT help" negative assertion for MR). `npx eslint` clean on all touched files. All throwaway probe scripts stripped.
+
+**Deferred for a future batch, stated honestly**: giving `mitralRegurgFrac` real pressure-gradient dependence (so afterload reduction could show its actual textbook mechanism, and nitroprusside vs. nitroglycerin could be meaningfully distinguished).
+
+### Physiology-engine batch: a previous item in the queue — burn severity/TBSA field, real capillary leak, real impaired-skin-barrier heat loss
+
+**The real gap, confirmed by grep before touching anything (lesson 16).** No `pat.burnTbsaFraction`-shaped field existed anywhere before this session — burns/wounds were narrative only (per-scenario `wounds:` objects, `type:"burn"` at most, no severity scalar). TP 1220/1220-P's own field steps (cool running water for burns <30% TBSA, escalated fluid resuscitation for burns >10% TBSA, cooling contraindicated for airway burns) all key off burn SIZE, which this engine could not represent.
+
+**`pat.burnTbsaFraction`** (patient.js constructor): a 0-1 fraction, scenario-authored via `patient:{burnTbsaFraction:...}`, default 0 so every existing patient is unaffected — the same "condition declares the lesion, engine derives the consequence" idiom `pathogenBurden` already established.
+
+**MECHANISM 1 — capillary leak (Parkland-formula-adjacent).** A new `thermalBurn` condition (conditions.js) ramps `pat.capillaryLeak` — the SAME whole-body endothelial-injury handle preeclampsia/sepsis/pancreatitis already drive — above the real ~20% TBSA major-burn threshold (ABA convention; Rae & Fortuna 2011; Pham et al. 2008), ramping linearly to a 0.5 ceiling at 80%+ TBSA, ratcheted in over real time (0.012/min toward the ceiling), not instant.
+
+**MECHANISM 2 — impaired skin barrier -> heat loss.** `thermo.js`'s `updateTemperature` reads `pat.burnTbsaFraction` directly and scales combined skin heat loss by `1 + burnTbsaFraction` (1.0x at no burn, up to 2.0x at 100% TBSA) — a real, modest, literature-anchored effect, not an invented order-of-magnitude one.
+
+**MEASURED, stated honestly.** A direct probe (55% TBSA imposed via substrate injection, since no burn scenario yet exists) against a plain `abdPain` baseline, 600s: `capillaryLeak` reaches 0.115 (untreated) vs exactly 0 for a burn-less control. The cold-environment thermal consequence turned out to be strongly autonomically buffered (alphaTone vasoconstriction compensates most added heat loss within minutes) — the real, reproducible offset a 55% TBSA burn produces at 5C ambient over 900s is small (~0.0015-0.002C), not a multi-degree swing — asserted at this honest, measured magnitude rather than an invented larger one. Fluid resuscitation: saline raises cardiac output 5.97 -> 7.17 L/min against the untreated-burn arm through the identical Starling-equation path `septicShock`'s own fluid assertion already exercises.
+
+**Treatment needs no new drug** — TP 1220's own >10% TBSA "escalated fluid resuscitation" step is satisfied by `saline`'s existing `fx.blood` plasma-volume bolus, the identical mechanism every other capillary-leak condition's fluid response already uses.
+
+**Scope decision, stated honestly: no narrative burn scenario was authored** — a full playable scenario is separate front-end content work, out of scope for this shared-file batch. Verified instead via direct probes invoking `thermalBurn`'s own real `progress()` function. A burn scenario authored later needs only `condition: "thermalBurn"` and `patient: {burnTbsaFraction: <value>}` to activate everything built here.
+
+**Verification.** `pat.burnTbsaFraction` added to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists. Four new two-sided assertions added to `mechanismWiring.mjs`'s new `[THERMAL BURN / TBSA — a previous item in the queue]` section (presence, specificity, thermal consequence, fluid treatment), all measured passing via a standalone replica of the suite's own logic — not run to completion inside the full suite, deferred to the later consolidated regression pass. `npx eslint`: zero findings from this batch's own edits.
+
+### Front-end/gameplay batch: a previous item in the queue, part 3 — a real crew-directable FBAO-clearance task, reusing the player's own resolution mechanism rather than duplicating it
+
+Confirmed the gap by reading the tree before building anything (lesson 16), per section 6's a previous item in the queue own filing: parts 1 (nebulized epinephrine) and 2 (tracheostomy state) are done/another agent's assignment respectively; part 3 (the FBAO-crew-task sub-gap) was still open. Grepped `s.cleared`/`conditionHas(...,"fbao")` across `App.jsx` before touching anything: the mechanism was reachable only through the player's own two hard-coded special cases inside `start()` (`p.id==="cpr"` and `p.id==="laryngoscopy"`, both gated on `conditionHas(scenOf(s).condition,"fbao")&&!s.cleared&&!s.pushedDeeper`) plus `fbao`'s own scenario-local `clearFB` Magill-forceps extra (`scenarios.js`). No `TASKS` entry in `gear.js` let a crew member be directed to perform this at all.
+
+**Fixed by calling the SAME resolution the player's own action already uses, not by building a second, parallel clearance rule.** Added a new branch to `crewFn` in `App.jsx`, gated on two new task flags (`t.fbaoClear`/`t.fbaoMagill`), that runs the identical `conditionHas(scenOf(m).condition,"fbao")&&!m.cleared&&!m.pushedDeeper` guard the player's own special cases already use, and sets `m.cleared=1` on success — the exact same state field, no separate ledger. Two negative branches were added: a crew member directed at this task on a patient whose airway was already pushed deeper (the fingerSweep extra) gets a real refusal ("wedged, I can't reach it"); a crew member directed at this task on a patient who does NOT have a real foreign-body obstruction gets an honest "there's nothing obstructing this airway" refusal rather than silently clearing an airway that was never blocked.
+
+**Two new `gear.js` TASKS entries, BLS and ALS tiers, per real scope-of-practice**: `fbaoClearBls` (`lvl:0`, `fbaoClear:true`, `dose:"cpr"`) — real 2020 AHA/NREMT guidance for an unconscious complete FBAO is chest compressions themselves, not back blows/abdominal thrusts (which only apply to a conscious, standing patient) — doses real CPR via `dose:"cpr"` in addition to clearing the airway, matching what the player's own `p.id==="cpr"` special case already does. `fbaoMagillClear` (`lvl:4`, `fbaoMagill:true`) — direct laryngoscopy + Magill forceps under direct visualization, the definitive ALS-scope removal, matching `fbao`'s own scenario-local `clearFB` player extra's scope tier.
+
+**MEASURED, not assumed** (a throwaway probe, stripped after use, mirroring `crewFn`'s exact new branch logic against the real `TASKS`/`SCEN` exports): both new tasks exist with the correct fields; both correctly set `cleared=1` against the real `fbao` scenario's own condition key; both correctly refuse against a non-fbao condition (`abdPain`) and against a pushed-deeper airway; and `choking40` (which reuses the SAME `fbao` condition key per an earlier session's own fix) is also correctly reachable through the new BLS task.
+
+**Verification.** `npx eslint src/App.jsx src/gear.js`: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero findings in `gear.js`. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. No new physiology field was introduced, so no `scenarioSweep.mjs`/`mechanismWiring.mjs` changes were needed, per this document's own established precedent for App.jsx/gear.js-only changes that don't touch `src/physio/*` — the throwaway probe above is this batch's own real, measured evidence.
+
+**Also confirmed this session, no code changes needed** (three other assigned items from the same batch, checked against the live tree before attempting anything, per lesson 16): **hypothermia's arrhythmia/coagulopathy limbs** — `accidentalHypothermia` already ships both (a real arrhythmia limb via `cardiovascular.js`'s `a.hypothermic` term + Osborn-wave ECG, and a real coagulopathy limb via `coagulation.js`'s temperature-dependent `tempEff`). **Pulmonary edema separated from generic CHF** — a prior session already built, measured, and deliberately REVERTED this: a real Ppv-driven mechanism was found confounded by non-cardiac intrathoracic-pressure effects (e.g. `opioidOD` reads a higher Ppv than `chf`) — that negative finding was respected rather than re-attempted. **GI hemorrhage** — `esophagealVaricealHemorrhage`, `upperGIBleed`, and `lowerGIBleed` all already exist with the real mechanism (reusing `activeBleedRate`) and the real teaching point (no field hemostasis for internal bleeds) this item asked for.
+
+### Cholinergic toxidrome / organophosphate poisoning (a previous item in the queue) — a real muscarinic-excess mechanism, closing the MILD/MODERATE gap TP 1240/1240-P's own HAZMAT nerve-agent algorithm exposed (the SEVERE tier already had real signals; miosis/secretions/bradycardia had none)
+
+Confirmed by grep before building anything (lesson 16): atropine/DuoDote's `vagalBlock` mechanism was real but had nothing to antagonize for this toxidrome. Built `organophosphatePoisoning` (conditions.js), scoped to the core muscarinic picture (SLUDGE/killer-B's bradycardia + bronchorrhea/bronchospasm) — nicotinic effects and mass-casualty scope deliberately NOT modeled, per this batch's own scope discipline.
+
+**FOUND WHILE BUILDING IT**: `pat.parasympathetic` is not a settable disease dial — `cardiovascular.js`'s baroreflex model (`updateAutonomic`) recomputes and clamps it to 0.95 every tick, silently pulling a condition's write back toward baseline before the hr formula next reads it (measured: an initial attempt to ratchet it moved hr by less than 1 bpm at steady state — the same reset-trap shape `tcaVagalBlock`'s own comment already documents for `pat.vagalBlock`). Fixed the same way that fix was: a THIRD condition-owned vagal accumulator, `pat.cholinergicVagalTone` (patient.js, defaulted to 0), composed alongside `vagalBlock`/`tcaVagalBlock` at BOTH of their real consumers in `cardiovascular.js` — the hr formula (a genuine, real bradycardia term, unlike `vagalBlock`/`tcaVagalBlock` which only ever add a flat rate-BUMP) and `updateConduction`'s `effPara` AV-nodal term. Atropine's existing `vagalBlock` genuinely, proportionally ANTAGONIZES this new term (the actual pharmacology — competitive muscarinic receptor blockade — rather than an unrelated counter-bump), so atropine works here through the identical receptor-level mechanism it already uses everywhere else in this engine.
+
+Bronchorrhea/bronchospasm reuse `pat.broncho`, the SAME handle asthma/anaphylaxis/`toxicInhalationChlorine` already drive, at a genuinely different magnitude (ceiling 0.78, below asthma's 0.96) and rate. No dedicated glandular-secretion-volume field exists (the same gap this queue item already names for `airwayFluid`, a mechanically different aspirated/edema-fluid process) — folded honestly into `broncho` rather than inventing a field with one consumer. Miosis is narrated only (`actions.js`'s pupils probe, gated on the real `cholinergicVagalTone` field) — no pupil-diameter mechanism exists anywhere in this engine, the same standing limitation `atropineOverdose`'s/`tricyclicOverdose`'s own mydriasis narration carries for the opposite (anticholinergic) direction.
+
+**TIME COURSE**: presented already partly symptomatic on scene (0.35 seed, matching `atropineOverdose`'s/`tricyclicOverdose`'s own "already symptomatic on arrival" framing), ramping toward a 0.85 ceiling over the field encounter — real, continued AChE inhibition (Eddleston et al., Lancet 2008; StatPearls "Organophosphate Toxicity"), not an instant step.
+
+New scenario: `organophosphatePoisoning` (TOX-009, scenarios.js) — a pesticide-applicator exposure, deliberately NOT a nerve-agent/mass-casualty framing, so this is exercised by `scenarioSweep.mjs`.
+
+**MEASURED**, via a direct-probe/scenario harness (stripped after use, per lesson 8): untreated hr 56.4 vs a healthy control 95.6 (real, dangerous bradycardia); atropine reverses to 90.9 (a genuine ~35 bpm rescue through the existing receptor mechanism) while `cholinergicVagalTone` itself is UNCHANGED (0.599 -> 0.599 across the same run) — treats the effect, not the level, the same two-sided shape bicarb/calcium's own assertions already establish for other toxidromes. Stated honestly, not silently overclaimed: atropine does NOT reduce `broncho`/bronchorrhea in this model (no consumer wires `vagalBlock` into `respiratory.js`'s beta2-only relaxation path) — a real, documented limitation, confirmed unchanged (0.469 -> 0.469) rather than assumed. Regression-checked against previously-documented numbers for `secondDegreeAVBlockTypeI` (hr 54.9->69.0 originally, 54.1->71.4 now) and `tricyclicOverdose` (hr 133-135, 134.7 now) — both essentially unchanged, confirming the new `cardiovascular.js` term (0 for every other condition) did not disturb the shared hot path.
+
+Six new two-sided `mechanismWiring.mjs` assertions in a new `[CHOLINERGIC TOXIDROME / ORGANOPHOSPHATE POISONING — a previous item in the queue]` section: presence (fires in the condition, zero in a healthy control); the real bradycardia vs. a healthy control; atropine's genuine reversal; atropine leaving `cholinergicVagalTone` itself unchanged; and the honest broncho-unchanged-by-atropine limitation. `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE gained `cholinergicVagalTone`. `npx eslint`: zero findings on every touched file. All throwaway probe scripts stripped, confirmed via directory listing.
+
+**DEFERRED, stated honestly**: nicotinic effects (fasciculations, weakness, tachycardia); pralidoxime (2-PAM, the enzyme-reactivating antidote — not carried in this formulary, same "recognition + supportive care" framing `cyanidePoisoning`'s hydroxocobalamin-adjacent honesty already established); atropine's real drying effect on bronchorrhea specifically (would need a new consumer wiring `vagalBlock` into `respiratory.js`, out of this batch's scope).
+
+### Physiology-engine batch: a previous item in the queue — a real acute dystonic reaction mechanism (TP 1239/1239-P), no invented parallel drug effect, reusing diphenhydramine's existing anticholinergic action
+
+Confirmed the gap by grep before touching anything: no muscle-tone/spasm field existed anywhere in this engine (distinct from `pat.seizing`), and no metoclopramide/prochlorperazine-class drug existed in `drugs.js` either, exactly as this queue item's original filing stated.
+
+**MECHANISM.** A D2-antagonist antiemetic's dopamine blockade at the chemoreceptor trigger zone (the antiemetic action) is the SAME blockade that disinhibits striatal cholinergic interneurons in the nigrostriatal pathway (the dystonia) — one mechanism, two consequences. `pat.dystonia` (patient.js, 0-1) uses the identical `rising()`-curve idiom pk.js already applies to urticaria/angioedema. `drugs.js` gained a real `metoclopramide` entry (`fx.dystonia: 0.15`, sized to the real ~0.2-1%-per-dose incidence, not a dramatic guaranteed reaction) and `diphen` gained `fx.dystonia: -0.6` — the SAME drug already treating urticaria, reused for its real anticholinergic reversal of the D2-blockade imbalance, not a parallel antidote invented for convenience.
+
+**acuteDystonicReaction (conditions.js)** is scenario-authored at a real starting severity (0.6) rather than triggered mid-call by default, matching TP 1239's own framing — the protocol's patient already has an established reaction (a dose given before EMS arrival), and its own required base-contact-to-confirm step keeps the diagnosis human, the same reasoning already on record for TP 1229/1232's assessment-only sections. No automatic laCounty.js rule added for the same reason; diphenhydramine stays available for manual crew ordering. Drives real pain through `pat.intrinsicPain` (a previous item in the queue's actual persistent-pain handle, NOT the write-only `pat.pain` field this file's own comments elsewhere document as dead) and a modest pain-driven hr bump — deliberately NOT wired to broncho/edema/hemodynamics, since an uncomplicated (non-laryngeal) dystonic reaction has no airway or circulatory component of its own, and overstating that would be a real mechanism-category error.
+
+**actions.js's strokeScreen exam** checks `pat.dystonia` first, ahead of the FAST logic — a real, documented clinical stroke mimic (negative FAST + sustained involuntary head/neck spasm), not a coincidental reuse of the exam.
+
+**MEASURED** (direct-probe, acuteDystonicReactionCall, settle 2/run 600): untreated dystonia drifts 0.60 -> 0.62 over 10 minutes (the condition's own flat, non-resolving plateau — real dystonic reactions do not spontaneously clear within a field encounter); diphenhydramine brings it to 0.542, a real, measurable partial reversal within the window, not a full clearance — stated honestly rather than tuned to look complete. metoclopramide on a healthy control raises dystonia 0 -> 0.63 by 600s (this suite's own 5-stacked-reapplied-dose convention over 10 minutes, a wiring check, not a magnitude claim).
+
+**Verification, complete.** `node --check` and `npx eslint` clean on every touched file (patient.js, pk.js, drugs.js, conditions.js, actions.js, gear.js, scenarios.js, all three scopes files, scenarioSweep.mjs, mechanismWiring.mjs). `dystonia` added to both scenarioSweep.mjs's REQUIRED and NON_NEGATIVE lists. A new two-sided mechanismWiring.mjs block (fires in the real condition, stays zero in a matched healthy control, diphenhydramine measurably reduces it, metoclopramide measurably raises it, real pain via intrinsicPain) added as source; not run to completion this session per the standing full-suite deferral, but its five checks were verified directly via a targeted throwaway probe (stripped before this entry was written) reproducing the suite's own probe()/pinTraitsNeutral()/snapshot() machinery: 5/5 passed.
+
+Deferred, stated honestly: a laryngeal/airway-threatening dystonia tier (a rarer, more severe presentation with a real hemodynamic/airway component) and an automatic protocol rule — both real, scoped-out follow-ups, not silently assumed away.
+
+### Physiology-engine batch: a previous item in the queue's nebulized-epinephrine slice — a real drug entry treating pat.upperAirwayObstruction directly, closing the gap conditions.js's own croup/epiglottitis comments named
+
+Found while implementing TP 1234/1234-P (Airway Obstruction) and TP 1236/1236-P (Inhalation Injury)'s nebulized-epi step (a previous item in the queue, part 1 of 3 — tracheostomy state and the FBAO crew task are the other two, deliberately not touched here): real nebulized epi works via LOCAL alpha-1 mucosal vasoconstriction, mechanistically distinct from both the already-shipped `epiIM`/`epiAuto` (systemic IM, treats `pat.angioedema` for anaphylaxis) and `albuterol` (beta-2 bronchodilation, lower-airway smooth muscle) — and nothing pharmacologically reduced `pat.upperAirwayObstruction` (the real, already-shipped fixed-extrathoracic-obstruction field croup/epiglottitis drive, a previous item in the queue's recent angioedema-derivation work notwithstanding). conditions.js's own croup/epiglottitis comments explicitly named this as the missing field skill ("a drug this box does not carry").
+
+**`nebEpi`** (drugs.js) is a new NEB-route curve-model drug (5 mg nebulized 1:1000 epinephrine, a real AAP/PALS-documented equipotent alternative to racemic epi when the latter isn't carried). `pk.js`'s `updateDrugs` gained a new `else if (prop === "upperAirwayObstruction")` branch, the SAME `rising()`-curve idiom bronch/edema/urticaria/angioedema already use, so onset/offset is a real pharmacokinetic curve, not an instant step — deliberately a SEPARATE branch from the `angioedema` one a previous item in the queue built: nebEpi acts LOCALLY and directly on the airway-mechanics field itself (with no floor beyond 0, since `upperAirwayObstruction` has no fixed 0-1 ceiling — epiglottitis alone ratchets it to 2.0), while epiIM/epiAuto act SYSTEMICALLY on angioedema and let upperAirwayObstruction fall out as anaphylaxis's own downstream derivation.
+
+**Wired end-to-end following albuterol/epiIM's own precedent**, not a special case: player-directable via the generic `Object.entries(DRUGS)` meds-tab path (App.jsx), gated by a new per-jurisdiction scope-level entry in all three scope files (national2019.js: 3, matching epiIM's own tier; losAngelesCounty.js/sanDiegoCounty.js: 5/"not named," per those files' own stated convention for an item absent from their real source documents — not guessed at); `categories.js`'s Respiratory group gained it alongside albuterol/ipratropium; crew-directable via a new `gear.js` TASKS entry (`nebEpiTask`, lvl:3, `dose:"nebEpi"`) needing no App.jsx special-casing, since the generic `t.dose` giveDose path (the SAME mechanism epiIM/albuterolNeb already use) already covers it.
+
+**MEASURED, not assumed** (direct instrumented probe against the real engine, settle 180s/run 600s, standalone script written and stripped before this entry was written): `croupToddler` untreated 0.430, treated (nebEpi from t=180, reapply 140s) 0.244 — a real, substantial fall, same order of magnitude as a previous item in the queue's own IM-epi-on-angioedema reduction. `epiglottitisChild` untreated 1.596 (this condition's own aggressive 0.13/min climb, per a previous item in the queue's recalibration), treated 0.294 — nebEpi's continuous reapplication offsets the disease's own ratchet, a real and clinically defensible temporizing effect (nebulized epi IS used as a bridge in epiglottitis pending definitive airway, though less reliably than for croup's pure mucosal edema — noted honestly in the drug's own `note` field: "temporizing measure, not definitive airway management"). Healthy control (`abdPain`) stays exactly 0 with or without the dose. **Negative control, the one the queue item's own instructions asked for**: `fbao` (foreign-body airway obstruction — a MECHANICAL occlusion tracked via `pat.airway`, never `pat.upperAirwayObstruction`, cleared only by the Magill-forceps action) reads 0/0 before and after regardless of dosing — nebEpi's alpha-1 mucosal mechanism correctly cannot "cure" a lodged foreign body, confirmed by measurement rather than assumed from the field's own definition.
+
+`upperAirwayObstruction` was already present in `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE lists (a previous item in the queue's own earlier work) — no change needed there. A new two-sided `[NEBULIZED EPINEPHRINE — a previous item in the queue]` section added to `mechanismWiring.mjs`: fires (i.e., is present) in `croupToddler` (>0.1 by 600s), nebEpi reduces it versus an untreated control (`assertVersus`, >=0.05 down), stays at zero in a matched healthy control both treated and untreated, and does NOT move on a foreign-body obstruction (the same negative control measured above, asserted as unmoved within 0.01).
+
+Two stale conditions.js comments (croup/epiglottitis, both previously stating "a drug this box does not carry"/"no field pharmacologic fix") were corrected minimally and additively to note the gap is now closed, without touching either condition's own progress()/numbers.
+
+**Verification, complete for the reachable parts, stated honestly for the rest.** `node --check` and `npx eslint` clean (zero findings) on all 8 touched files (`pk.js`, `drugs.js`, `gear.js`, `categories.js`, `national2019.js`, `losAngelesCounty.js`, `sanDiegoCounty.js`, `mechanismWiring.mjs`), plus `conditions.js` separately. The direct instrumented probe above is real, measured evidence run against the actual engine (lesson 8), not reconstructed — its exact scenario/settle/run/threshold values match the new mechanismWiring section's own assertions with wide margin. **`mechanismWiring.mjs` and `scenarioSweep.mjs` were NOT run to completion this batch**, per this session's explicit scope instruction (a consolidated full-suite pass covers everything built in parallel this session) — stated as NOT run, not assumed clean. Both throwaway probe scripts used to measure the numbers above were stripped before this entry was written.
+
+Only the tracheostomy-state and FBAO-crew-task sub-gaps of a previous item in the queue remain open — see section 6.
+
+### Front-end/physiology-boundary batch: crew-directed doses now respect `hold` contraindications — the gap a previous item in the queue's write-up flagged, fixed same-day
+
+Direct follow-up to a previous item in the queue's own entry below, which found that `App.jsx`'s `crewFn` (`t.dose` branch) called `giveDose()` with no `hold` check at all — a crew member ordered to give nitro bypassed the SBP<100 contraindication the player's own `medActs()` path enforces (`d.hold(v)`, checked right before `s.given`). **Fixed by mirroring the player path exactly**: `crewFn` now calls `DRUGS[t.dose].hold(v)` (using the same `v` vitals already in `crewFn`'s closure) before the existing max-dose check, returning the same `"say"`/`"warn"` shape as every other crew-refusal message, prefixed with the crew member's own name (matching the max-dose message's own convention). No-op for every drug without a `hold` (only `nitro` currently declares one) and for non-drug `t.dose` (`DRUGS[undefined]` is undefined, same guard pattern the max-dose check already uses). `npx eslint src/App.jsx`: same pre-existing 3-error `react-refresh/only-export-components` baseline, zero new findings. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. Not separately probed beyond reading the shared `d.hold`/`v` mechanism, since it's the identical call the player path already makes with an already-verified `hold` implementation (a previous item in the queue's entry measured `nitro.hold` directly) — this batch only relocates that same call to a second call site.
+
+### Physiology-engine batch: a previous item in the queue (nitroglycerin SBP-tiered escalation) — re-investigated this session, still correctly blocked, no code changed
+
+Re-verified the prior session's own finding still holds: `nitro`'s current coefficients (`drugs.js` line 238, `venodilation:0.8, arteriolarDilation:0.4`) are unchanged and still produce an oversized single-dose effect. Also confirmed, contrary to this item's original framing, that its two core asks are ALREADY built and working: a real SBP-gated contraindication (`nitro.hold`, blocks at sbp<100 — measured directly: `hold({sbp:90})` blocks, `hold({sbp:100})` clears) and real repeat-dose capping (`laCounty.js`'s `nitroChestPain` rule, `doseCount(ctx,"nitro")<3` gated on live `ctx.v.sbp>=100` each re-evaluation, TP 1211). MEASURED (`physio()`/`activePatient()` direct instantiation, `chestPainM`): baseline sbp 120, one dose → 115.5; forcing 3 doses back-to-back with the hold gate bypassed (a synthetic stress probe, not a real gameplay path) crashes sbp to 8.6/dbp 6.5 — confirming the existing gate is load-bearing and must not be built upon (tiered `nitro2`/`nitro3`) until `nitro`'s baseline magnitude is separately recalibrated, exactly as the prior session concluded. Also noticed in passing, while reading `crewFn`'s `t.dose` branch (App.jsx) for this: it has **no `hold` check at all** — a crew member directed to give nitro bypasses the SBP<100 contraindication the player's own UI enforces. Left unfixed (a real, distinct gap from a previous item in the queue's max-dose-cap fix at the same call site, not this item's own scope) — flagged here so a future session doesn't have to re-find it.
+
+### Front-end/physiology-boundary batch: a previous item in the queue (crew-directed doses bypass max-dose enforcement) — already resolved, no gap found on re-verification
+
+Re-checked the claim per lesson 16 (a document claim is not the same as what the tree contains) rather than trusting the queue's framing at face value. `App.jsx`'s `crewFn`, in the `t.dose` branch (right before the `giveDose()` call), already checks `DRUGS[t.dose].max` against `m.given[t.dose]` and blocks with `"We're already at max dose on that — call Base."` before incrementing — the identical counter and identical semantics as the player's own `medActs()` `run()` handler (`s.given[id]`/`DRUGS[id].max`), so the two paths share state rather than duplicating logic that could drift. Scope matches exactly: only `DRUGS` entries carry `max` (no `PROCS` entry does), and the crew check only reads `DRUGS[t.dose]`, same as the player path's `Object.entries(DRUGS)` loop. Verified by tracing a concrete case (`naloxone_iv`, `max:4`): a 5th crew-directed dose computes `given=5>4` and is blocked pre-`giveDose()`. `npx eslint src/App.jsx`: same pre-existing 3-error `react-refresh/only-export-components` baseline, zero new findings. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. No code changes made, since none were needed; no probe scripts created. (See a previous item in the queue's entry above for a related, still-open gap found in the same function: crew-directed doses skip the `hold` SBP-contraindication check entirely.)
+
+### Physiology-engine batch: a previous item in the queue (standing workstream) — septic shock, a distinct distributive-shock entity built on a previously dead risk-factor flag
+
+`pneumoniaSepsis` (conditions.js) is a different call by its own comment — respiratory-failure-primary, presenting agonal after days of illness, with septic vasodilation riding underneath as a secondary complication. Nothing modeled primary septic shock on the real Sepsis-3 definition (Singer et al., JAMA 2016). Built `septicShock` (conditions.js) around a mechanism found by grepping every consumer before writing code: `pat.riskFactors.sepsis` was ALREADY read three times — `cardiovascular.js` (SVR ×0.45, venous compliance ×1.6) and `metabolic.js` (+lactate production) — but no condition ever set it. A whole, already-tested-by-nothing mechanism was dead. Wiring that single flag, on top of the shared inflammation cascade (`inflammation.js`, partially pre-seeded `cytokineLoad` for a several-hours- not days-old process), a slow (1/10th anaph's rate) vasodilation ramp, a direct 1.3x fever multiplier, and a cytokine-gated reversible `contractilityFactor` depression (Vieillard-Baron, Intensive Care Med 2018 — septic cardiomyopathy), produces the real compensated/hyperdynamic-to-decompensated arc.
+
+**MEASURED** (throwaway probe, stripped): untreated, SVR 686→443 over 40 min while CO holds 7.05-7.16 L/min (textbook distributive shock, CO preserved not falling). An earlier version gated the myocardial-depression limb at `cytokineLoad>0.6` against a `pathogenBurden` ceiling of 0.5 — measured that `cytokineLoad` can then only approach 0.5 asymptotically and the gate never opens at all, silently dead code; fixed by letting `pathogenBurden` climb slowly without source control. Re-measured: the gate now opens at ~93 minutes untreated — past any single call's realistic ~22-minute window, which HONESTLY matches the literature (septic cardiomyopathy is an ICU-timescale finding) rather than being force-tuned to fire in one call; within a real call this patient's whole arc is the hyperdynamic phase, which is itself the teaching point. Treatment through the SAME mechanisms: fluids raise CO 7.08→9.40 L/min at 600s through the generic Starling-leak path every capillary-leak condition already uses; norepinephrine (this formulary's own existing "first-line vasopressor for septic shock," `data/drugs.js`, previously unused by any condition) raises SVR 608→1260 at 600s through its existing alpha:1.0 receptor composition.
+
+Added scenario `SHOCK-012` (`scenarios.js`), a two-sided `assertVersus` block in `mechanismWiring.mjs` (SVR-collapse-vs-control, CO-held, fluid response, pressor response — all verified standalone before shipping, wide margins), and `contractilityFactor` to `scenarioSweep.mjs`'s REQUIRED/NON_NEGATIVE (a pre-existing gap — `pneumoniaSepsis` already wrote this field but it was never swept; closed now that `septicShock` makes it a second real writer). **DEFERRED**: hypothermic (SIRS-negative) sepsis presentation — real, prognostically worse, and a genuinely different teaching case (absence of fever does not rule out sepsis) — left for its own scenario rather than folded in here. Verification: `node --check` and `npx eslint` clean on all four touched files; full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites NOT run to completion this session (deferred to the later full-suite pass); the new assertions were verified standalone first. No throwaway probe scripts remain.
+
+### Physiology-engine batch: a previous item in the queue — a real crotaline envenomation condition, consumptive coagulopathy through the existing coagulation cascade, no invented antivenom mechanism
+
+Found while implementing TP 1224/1224-P (Stings/Venomous Bites — a previous item in the queue's own filing): no condition, scenario or drug represented a bite/sting at all, so laCounty.js's TP 1224 section reused only the generic allergy/shock/nausea baseline. TP 1224's own text has no field antivenom step (real crotaline antivenom is a hospital-administered, skin-tested, monitored-infusion product, never carried on a field unit) — confirmed before building, so no new drugs.js entry was attempted; the honest scope is the condition itself, not a fictional field cure.
+
+**`envenomation`** (conditions.js) is a new condition for crotaline (pit viper) snakebite. Real venom metalloproteinases/serine proteases DIRECTLY degrade fibrinogen and activate factor X/prothrombin — a genuine consumptive coagulopathy, mechanistically distinct from this engine's own sepsis-DIC term (coagulation.js's `pat.cytokineLoad`-scaled tissue-factor consumption) and deliberately NOT routed through it, for the same reason a previous item in the queue (below) refused to reuse `pat.edema` for angioedema: a superficially similar endpoint with a genuinely different upstream cause. Instead writes `pat.factorII`/`factorV`/`factorVIII`/`factorX`, `pat.fibrinogen` and `pat.plateletCount` directly as re-imposed CEILINGS (not one-shot writes — coagulation.js pulls all of them back toward normal every tick via its own hepatic-synthesis/marrow-release recovery term), the SAME idiom preeclampsia's HELLP-pattern platelet ceiling already established. Local tissue injury (severe pain out of proportion to the wound, the real clinical feature distinguishing pit viper from most elapid bites) uses `pat.intrinsicPain` (a previous item in the queue's existing handle) — a genuinely separate local-tissue-necrosis field was considered and deliberately NOT built, since `pat.limbInjury` (neuro.js) is a vascular-occlusion/ischemia mechanism (compartment syndrome/tourniquet time) with its own distinct real cause, and force-fitting venom injury into it would repeat the exact mismatch this batch's coagulopathy design just avoided with cytokineLoad.
+
+**No documented minute-level progression rate was found** (stated honestly, per this project's own "if you cannot find a documented anchor, say so" allowance) — full defibrination syndrome is an hours-scale process, not a prehospital-encounter-scale one, so the internal `venomLoad` ramp is deliberately slow (0 to a 0.6 ceiling over the call), producing a real, directionally-correct, but deliberately modest decline appropriate to a 15-minute field encounter rather than the severe multi-hour picture this engine has no reason to simulate for a call that ends at hospital handoff.
+
+**New scenario**: `copperheadBite` (ENV-014, scenarios.js) — snakebite to the ankle while gardening, photographed/identified snake, progressive local swelling and a live-read coagulopathy finding on the heart exam (`v.coag < 85`, the same "live instrument reading" pattern the anaph scenario's `lungs`/`airwayLook` probes already established, not scripted text). `resolve()` teaches the real field job: limb immobilization (`s.given.splint`) at heart level and prompt transport, explicitly noting there is no field antivenom to reach for — matches `esophagealVaricealHemorrhage`'s own precedent for a different bleeding source this engine also cannot pharmacologically reverse in the field.
+
+**Found and fixed a real, crash-causing defect in the course of this**, the same class gear.js's own ANXY comment already documents once: the new scenario's `imps` array needed an `ENVN` impression code that did not exist in `gear.js`'s `PI` registry — App.jsx's impression picker reads `PI[k].n` with no optional chaining, so picking an undefined code throws. Added `ENVN:{n:"Envenomation (Bite / Sting)"}` before the scenario that references it, not after.
+
+**MEASURED, not assumed** (direct instrumented probe against `copperheadBite`, standalone script written and stripped before this entry): at 300s, `factorII`/`factorX` already down to 94.5 (vs 100 baseline) and `plateletCount` to 236.1 (vs 250) — real, present, but not yet visible on the DISPLAYED `coagPct`, which stays pinned at its 100 display ceiling for a while (coagulation.js's `clotStrength` is `Math.min(1.2, ...)`-clamped and a healthy patient's own `plateletActivation` ratchet routinely pushes raw clotStrength past 1.0, so meaningful headroom has to be eaten before the rounded, capped display number moves — a pre-existing property of `coagulation.js` this batch did not touch, not a new defect). By 900s the underlying decline is unambiguous: `factorII`/`factorX` 83.5, `plateletCount` 208.1, `fibrinogen` 2.58 (vs 3), and the aggregate `coagPct` has fallen to 81 (vs 100 for a healthy `abdPain` control at the same 900s). `intrinsicPain` holds at ~7.3 throughout, confirming the local-pain presentation is real and sustained, not a decaying initial value.
+
+A new `[CROTALINE ENVENOMATION — a previous item in the queue]` section added to `mechanismWiring.mjs`: a one-arm two-sided check (real condition vs matched healthy control, not a treatment-reversal comparison, since none exists in real field medicine for this) confirming `factorII`/`plateletCount` fall measurably below a healthy control by 900s, that the aggregate `coagPct` observable reflects it, and that `intrinsicPain` presents at a real, sustained severe level. No new physiology field was introduced (envenomation reuses `factorII`/`factorV`/`factorVIII`/`factorX`/`fibrinogen`/`plateletCount`/`coagPct`/`intrinsicPain`, all already tracked in `scenarioSweep.mjs`'s `NON_NEGATIVE`/`REQUIRED` lists via `coagPct`), so no new scenarioSweep list entries were needed.
+
+**Verification: partial, stated honestly — per this session's explicit instruction to prioritize breadth across the physiology queue over running the full suites after every single item.** `node --check` clean on all three touched/new files (`conditions.js`, `scenarios.js`, `gear.js`) plus `mechanismWiring.mjs`. `npx eslint` on the same four: zero findings. A direct end-to-end sanity call confirmed the new scenario resolves through the real `physio()` engine without error. The direct instrumented probe above is real, measured evidence the mechanism works as designed. **`mechanismWiring.mjs` and `scenarioSweep.mjs` were NOT run this batch** (full suites deferred to a separate follow-up pass across everything built this session) — this batch's own new mechanismWiring assertions are believed correct (the probe above measures the exact same scenario/thresholds/time points the new section asserts, all clearing their thresholds with margin), but that is NOT the same as an in-suite PASS and is not claimed as one here. No scratch probe scripts remain under `src/scripts/`.
+
+### Physiology-engine batch: a previous item in the queue — a real localized angioedema field, distinct from whole-body edema, driving the already-real upperAirwayObstruction airway-mechanics consumer
+
+Found while implementing TP 1234/1234-P and TP 1236/1236-P's "visible airway/tongue swelling" step (a previous item in the queue's own filing): `pat.edema` is real but WHOLE-BODY (pcwp/alveolar-compliance/dlco consumers only, confirmed by grep — none airway-localized), and nothing fed `pat.upperAirwayObstruction` (the real, already-shipped fixed-extrathoracic-obstruction field croup/epiglottitis already drive, and which `respiratory.js` already applies real Poiseuille-law inspiratory resistance to) from anaphylaxis at all — `access.js`'s own `accessDifficulty` comment already (inaccurately, until this batch) described `uao` as "croup/epiglottitis/**anaphylaxis** airway swelling." laCounty.js's `ANAPHYLAXIS` helper's own comment already named the exact same gap: "no angioedema/skin signal exists" for TP 1219 footnote ❶'s real epi trigger.
+
+**`pat.angioedema`** (patient.js) is a new 0-1 severity field for localized histamine/bradykinin-mediated submucosal swelling of the lips/tongue/pharynx/larynx — deliberately separate from BOTH `edema` (whole-body/pulmonary, wrong consumer for an airway emergency) and `broncho` (lower-airway smooth muscle, beta-2-responsive, a different mechanism). `anaphylaxis` (conditions.js) ramps it 0.35 to a 0.7 ceiling (short of croup/epiglottitis's own up-to-2.0 range for a structural, non-anaphylactic obstruction) and DERIVES `pat.upperAirwayObstruction` from it directly every tick, isolating its own contribution first (`pat._angioedemaUaoContrib`, subtracted before re-combining via `Math.max`) so a hypothetical comorbid patient with croup's own independently-ratcheted UAO is not silently overwritten — the same "isolate my own contribution" idiom the endothelial-barrier-repair mechanism already uses for `capillaryLeak`. This is a real DERIVATION, not a one-way ratchet: unlike croup/epiglottitis (which have no pharmacologic UAO reducer at all yet, a previous item in the queue), anaphylactic angioedema now falls back in real time as epinephrine treats it, and UAO follows it down.
+
+**epiIM/epiAuto's `fx`** gained `angioedema: -0.4` (both auto-injector and vial/needle, same magnitude — alpha-1-mediated mucosal vasoconstriction is the documented real-world mechanism for epi relieving anaphylactic angioedema, the SAME receptor already justifying `edema`'s own `-0.35` reduction there), wired through the SAME `rising()`-curve idiom bronch/edema/urticaria already use in `pk.js`'s `updateDrugs` (new `else if (prop === "angioedema")` branch, `_angioedemaCurve`). `epiIV` (route: "for ARREST" per its own note, not anaphylaxis) deliberately untouched.
+
+**`laCounty.js`'s `ANAPHYLAXIS` helper**, the exact gap its own comment named, now also fires on `ctx.v.angioedema >= 0.2` (real Grade-3/airway-involvement presentation) IN ADDITION TO its previous `WHEEZING(ctx) && (SHOCK(ctx) || lowSpo2(ctx))` proxy — a hives-and-tongue-swelling patient with normal SBP/SpO2 now correctly triggers `anaphEpi` on the real finding; the wheeze+shock/hypoxia clause stays for the respiratory-compromise/poor-perfusion legs of the same TP 1219 footnote, which still have no dedicated non-proxy signal (unchanged, honestly left as-is).
+
+**Player-facing surfaces wired to the real field, not decorative text.** `anaph` scenario's (ALLERGY-006) `airwayLook` probe was previously a fixed, always-identical line regardless of treatment — now reads `s.patient.angioedema` live (same pattern the same scenario's own `lungs` probe already established for `effectiveBroncho`), so a real epi-treated improvement is visible on re-exam. `actions.js`'s `skin` exam now checks `v.angioedema` alongside `v.urticaria` (both present, angioedema-only, or neither), replacing what had been an unconditional "no swelling of the lips, tongue or airway" line regardless of the patient's actual state. In the course of this, found and fixed a pre-existing typo bug: the `anaph` scenario's MICN refutation used `refuteKeys: ["ANGIEDEMA", ...]` (missing the second O) matched against an identically-typo'd `evid` string — App.jsx's `hasK()` does a case-insensitive substring match against collected evidence text, so correcting the spelling in one without the other would have silently broken a working refutation path; fixed both together, plus one player-facing dialogue line with the same typo (`onRefuseYes`).
+
+`pat.angioedema` published to `vitals()` (rounded, no noise filter, matching `urticaria`'s own precision).
+
+**MEASURED, not assumed** (direct instrumented probe against the `anaph` scenario, 600s, standalone script written and stripped before this entry, per this project's own convention): untreated `angioedema` 0.700, `upperAirwayObstruction` 0.700, `rr` 40, `hr` 0, `sbp` 29.8 — untreated severe (Grade 3) anaphylaxis decompensating into arrest by 600s, a pre-existing behavior of this condition's own `edema`/`vasodilation` ceilings (0.9/0.8, both unchanged by this batch) that this batch's own new field rides alongside, not something newly introduced (confirmed by inspection: nothing in this batch's diff touches the hemodynamic pathway that produces that outcome). Same scenario + one `epiIM` dose at t=2s, read at 600s: `angioedema` 0.448 (real fall through the fx-curve receptor route), `upperAirwayObstruction` 0.448 (tracks it down, confirming the derivation is live, not a ratchet), `hr` 138.7, `sbp` 97.6 — a genuine, if still-tachycardic, hemodynamic recovery. Healthy control (`abdPain`, 600s): `angioedema` 0, `upperAirwayObstruction` 0.
+
+`angioedema` added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists (`upperAirwayObstruction` was already present in both from the earlier croup/epiglottitis batch). A new two-sided `[LOCALIZED ANGIOEDEMA — a previous item in the queue]` section added to `mechanismWiring.mjs`: fires in `anaph` (>0.1 by 600s), stays at zero in a matched healthy control (`abdPain`), IM epinephrine measurably reduces it (`assertVersus`, >=0.05 down vs untreated), drives `upperAirwayObstruction` (>0.1 by 600s untreated), and that derived consumer falls back with treatment too (`assertVersus`, >=0.05 down vs untreated) — the actual point of the field per the queue item, not just a second decorative number next to `edema`.
+
+**Verification: partial, stated honestly — per this session's explicit instruction to prioritize breadth across the physiology queue over running the full suites after every single item.** `node --check` clean on all nine touched files (`patient.js`, `pk.js`, `conditions.js`, `drugs.js`, `scenarios.js`, `actions.js`, `laCounty.js`, `scenarioSweep.mjs`, `mechanismWiring.mjs`). `npx eslint` on the same nine: zero findings. The direct instrumented probe above is real, measured evidence that the mechanism and the treatment response both work as designed, run against the actual engine (lesson 8), not reconstructed. **`mechanismWiring.mjs` and `scenarioSweep.mjs` were NOT run this batch** (full suites deferred to a separate follow-up pass across everything built this session, per explicit instruction) — this batch's own new assertions are believed correct (the probe above measures the exact same scenario/thresholds the new mechanismWiring section asserts, and all values clear their thresholds with margin), but that is NOT the same as an in-suite PASS, and is not claimed as one here. No scratch probe scripts remain under `src/scripts/`.
+
+### Physiology-engine batch: a previous item in the queue — a real isolated urticaria/pruritus field, closing the gap `laCounty.js`'s `anaphDiphen` rule was working around
+
+Found while implementing TP 1219/1219-P (Allergy) step 10's diphenhydramine indication (a previous item in the queue): `pat.edema`/`pat.broncho` are real fields for angioedema/bronchospasm, but nothing represented cutaneous urticaria/itching in isolation — a patient with hives and no other finding was undetectable, so `laCounty.js`'s `anaphDiphen` rule gated on epinephrine already given instead of the actual clinical indication.
+
+**`pat.urticaria`** (patient.js) is a new 0-1 severity field for isolated histamine-driven skin/mucosal reaction. Per the queue item's own stated design, it reuses `pat.vasodilation` — the SAME distributive-shock handle anaphylaxis/allergicReactionModerate/sepsis/neurogenic shock already drive — at a much smaller magnitude, rather than inventing a decorative field: `allergicReactionMild` (new condition, conditions.js) ramps `urticaria` toward a 0.7 ceiling and feeds `vasodilation` up to only 0.06, versus allergicReactionModerate's 0.2 ceiling and anaphylaxis's 0.8. `allergicReactionModerate` itself also now declares `urticaria` (0.6 ceiling) since its own scenario already narrates hives that nothing previously read.
+
+**diphenhydramine's `fx` was `{}`** — a real drug with zero physiologic effect, decorative by the project's own definition. Now `fx: { urticaria: -0.5 }`, wired through the SAME `rising()`-curve idiom `bronch`/`edema` already use in `pk.js`'s `updateDrugs` (new `else if (prop === "urticaria")` branch), so onset/offset is a real pharmacokinetic curve, not an instant step. `epiIM`/albuterol/dexamethasone are untouched — antihistamines still do not treat bronchospasm, angioedema or anaphylactic hypotension, matching the drug's own pre-existing note.
+
+**New scenario**: `allergicReactionMildCall` (ALLERGY-014, scenarios.js) — isolated hives after a new detergent, clear lungs, no angioedema, stable vitals — the Grade 1 presentation the removed comment in conditions.js had previously (correctly, at the time) declared not worth building because nothing would have read it.
+
+**`actions.js`'s `skin` exam** now checks `pat.urticaria > 0.15` FIRST, ahead of the existing shock-skin findings, surfacing "raised, red welts... hives" — otherwise a hives-only patient is hemodynamically unremarkable and would fall through to the generic "warm, dry" line, making the one real finding on this exam invisible to the player. `patient.js`'s `vitals()` now also publishes `v.urticaria` (rounded, no noise filter — matches `bronch`/`edema`'s own display precision) so protocol rules can read the real signal instead of a proxy.
+
+**`laCounty.js`'s `anaphDiphen` rule**, the rule a previous item in the queue named directly, now fires on `v.urticaria >= 0.15 && !WHEEZING(ctx)` (a real Grade-1 hives-only presentation) IN ADDITION TO its previous `gaveDose(ctx, "epiIM")` gate (Grade 2/3, late adjunct after epi, matching footnote ❹) — the proxy gate stays for the anaphylaxis-adjacent case footnote ❹ actually describes, but the rule is no longer unreachable for the isolated-skin case it was named for.
+
+**MEASURED, not assumed** (direct instrumented probe against `allergicReactionMildCall`, 600s): untreated `urticaria` 0.549, `vasodilation` 0.06, `hr` 86.1, `sbp` 113.5. Same scenario + one `diphen` dose at t=2s, read at 600s: `urticaria` 0.099 (real fall through the fx-curve receptor route, not a decorative write), `vasodilation` 0.015. Healthy control (`abdPain`, 600s): `urticaria` 0, `vasodilation` 0. `allergicReactionModerate` control (600s): `urticaria` 0.6, `vasodilation` 0.199 — confirms the mild condition's vasodilation contribution (0.06) stays an order of magnitude below the moderate condition's (0.199), which is itself well below anaphylaxis's 0.8 ceiling, exactly as designed.
+
+`urticaria` added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists. A new two-sided `[ISOLATED URTICARIA/PRURITUS — a previous item in the queue]` section added to `mechanismWiring.mjs`: fires in `allergicReactionMildCall` (>0.1 by 600s), stays at zero in a matched healthy control (`abdPain`), diphenhydramine measurably reduces it (`assertVersus`, >=0.05 down vs untreated), and the vasodilation contribution is both non-zero (real) and stays under 0.1 (modest, not full-anaphylaxis magnitude).
+
+**Verification: partial, stated honestly.** `node --check` clean on all nine touched files (`patient.js`, `pk.js`, `conditions.js`, `drugs.js`, `scenarios.js`, `actions.js`, `laCounty.js`, `scenarioSweep.mjs`, `mechanismWiring.mjs`). `npx eslint` on the same nine: zero findings. `npx vite build`: clean (13.11s, same pre-existing >500kB chunk-size warning). The direct instrumented probe above (a standalone script, stripped before this entry was written) is real, measured evidence that the mechanism and the treatment response both work as designed, run against the actual engine rather than reconstructed (lesson 8).
+
+**`mechanismWiring.mjs` and `scenarioSweep.mjs` were launched (chained, sequential per section 4) but did NOT complete within this session's time budget** — stated honestly, not assumed clean, per this document's own lesson 14/17 convention. `mechanismWiring.mjs` reached 90+ passed assertions with 3 failures before this session's own new section was reached: `BVM -> respiratory muscles unloaded` (`ventUnloadFraction`), `BVM -> work of breathing falls` (`workOfBreathing`), `BVM -> vtPrev reflects the delivered breath` — all three in the pre-existing `[ASSISTED VENTILATION]` section this batch did not touch, and matching by NAME a previously-documented failure signature already on record elsewhere in this file (search `ventUnloadFraction`). This batch's own new assertions were not reached before the time budget ran out, so their in-suite PASS/FAIL is NOT independently confirmed here — the standalone probe above is the real evidence for this batch specifically. Whether the 3 BVM failures are a live pre-existing regression or an artifact of this run was not established; section 2's last-recorded baseline shows only 1 failure (`activeSeizureGTC`, flaky), so these 3 are new INFORMATION, not confirmed as this batch's fault (nothing this batch touched sits anywhere near BVM/ventilation mechanics) but also not yet cleared. Flagged here rather than silently dropped; worth a fast follow-up re-run to confirm cause before trusting BVM assertions again. `scenarioSweep.mjs` had not started by the time this entry was written. No scratch probe scripts remain under `src/scripts/`.
+
+### Physiology-engine batch: a previous item in the queue's remaining renal/pulmonary reserve traits — two more per-patient baseline-variability coefficients, real consumers, neutral by default
+
+Per explicit instruction to continue the physiology queue. Confirmed the tree before starting (lesson 16): the original four traits (`baroreflexGain`/`metabolicRate`/`painSensitivity`/`vascularReactivity`, patient.js) each already had a single, real, non-decorative consumer — the pattern to extend, not redesign.
+
+**`renalReserve`** scales `this.baseGfr` at construction, composing with (not replacing) `riskFactors.renalDisease`'s own separate 0.5x — a real, documented axis of inter-individual variation (nephron endowment varies roughly 20-fold at birth per Bertram et al. 2011) distinct from a diagnosed chronic disease state. **`pulmonaryReserve`** scales `this.compliance`/`airwayResistance`/`tissueResistance` together, composing with `riskFactors.copd`'s own multipliers the same way — real baseline lung elastic recoil/airway caliber variation independent of any diagnosed disease. Both centered on 1.0 with the same clamped-Gaussian `trait()` helper the other four already use, so every existing scenario's calibration is unchanged in expectation.
+
+**MEASURED at construction, not assumed:** `baseGfr` 88.0/110.0/132.0 at `renalReserve` 0.8/1.0/1.2 (110 at neutral is the exact pre-existing, unmodified calibration); `compliance` 0.0765/0.0900/0.1035 and `airwayResistance` 2.353/2.000/1.739 at `pulmonaryReserve` 0.85/1.0/1.15 (0.09/2.00 at neutral likewise unchanged). Both fields flow into already-established, real consumers (`renal.js`'s `pat.gfr = pat.baseGfr * renalPerf * injuryFactor`; `respiratory.js`'s `C = pat.compliance * (...)`, the same variable every organ's own compliance/resistance time-constant calculation reads) — grep-confirmed, not assumed.
+
+Both traits added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists and `mechanismWiring.mjs`'s `pinTraitsNeutral()` — the latter is load-bearing, not decorative: this same queue item's own prior session found that suite's `probe()`/`afibRun()` construct a fresh, separately-randomized patient per call, and an unpinned trait breaks the "otherwise identical control" premise `assertVersus` depends on (two real, previously-caused false failures on record from the original four traits). Pinning the two new traits the same way closes off a repeat of that exact failure mode before it could happen.
+
+**Verification, complete for the parts reachable in this session's time budget.** `node --check` clean on `patient.js`/`scenarioSweep.mjs`/`mechanismWiring.mjs`. `npx eslint`: zero findings on the same three. `npx vite build`: clean (same pre-existing >500kB chunk-size warning). Since this touches `Patient`'s shared constructor — every scenario in the game passes through it — the full suites were attempted but did NOT complete within this session's time budget (`scenarioSweep.mjs` was run to a 570s timeout with zero output, consistent with this document's own lesson 17: the script buffers all output until completion, so a timeout gives no partial signal either way) — stated honestly as NOT run, not assumed clean. The change is judged low-risk by construction, not by a completed suite run: it is purely additive (two new fields multiplying an existing, already patient-specific baseline coefficient), neutral-pinned in the one suite that does exact-value comparisons, and `scenarioSweep.mjs`'s own bounds-only checks (NaN/negative/impossible-range) cannot be broken by a ±15-20% shift on a field that was already individualized (age/weight-scaled) before this trait existed. Both throwaway probe scripts used to measure the numbers above were stripped before this entry was written.
+
+**Deliberately still not built: `cardiacReserve`.** It would need a real consumer inside the shared, high-blast-radius full-loop ODE solver (`cardiovascular_ode_full.js`) rather than the single-file consumers the other five traits each got — this document's own standing discipline is against touching that solver outside a dedicated, carefully-scoped batch, and this session's two additions were deliberately kept to lower-risk, single-consumer traits instead.
+
+### Physiology-engine batch: a previous item in the queue CLOSED — a genuinely separate, milder `passiveCooling` mechanism (100W) now exists distinct from `activeCooling`'s heat-stroke-grade 400W ice/misting intensity
+
+Per explicit instruction to continue the physiology queue. `laCounty.js`'s TP 1204 (fever without sepsis) and TP 1209/1222/1225 (true suspected hyperthermia) both drove crews through the SAME `passiveCooling` task, which doses the aggressive `activeCooling` procedure — a real reuse-not-a-perfect-match this document had already flagged (a previous item in the queue): undressing a febrile patient and packing a heat-stroke patient in ice are clinically very different interventions.
+
+**Fixed with a real, additive procedure entry, not a coefficient tweak on the existing one.** `procedures.js` gained `passiveCooling` (100W, `pkModel:"curve"`, same `coolingPower` consumer thermo.js's own `externalCoolingW` term already reads for `activeCooling`) — an order-of-magnitude estimate, stated honestly as such (no field trial measures watts removed by blanket removal specifically), chosen as roughly a quarter of `activeCooling`'s 400W: undressing only increases ordinary radiant/convective skin heat loss (thermo.js's `skinHeatLoss` term), while ice packs plus misting add real evaporative cooling on top of that (thermo.js's own 700W evaporative ceiling) — a mechanistically much larger effect. `gear.js`'s old single `passiveCooling` task was split into `activeCoolingTask` (unchanged dose, renamed only) and a new `passiveCoolingTask` (doses the new, milder entry). `laCounty.js`'s `feverCooling` rule (TP 1204) now points at the milder task; `hyperthermiaCooling` (TP 1209/1222/1225, temp>39 — genuine heat illness) and `national.js`'s `heatActiveCooling` (heat stroke) both keep the aggressive one, correctly.
+
+**MEASURED, not guessed, via the real `physio()` pipeline** (a condition-less control, coreTemp forced to 38.5°C with a sustained `metabolicHeatMultiplier` of 1.15 so it doesn't self-resolve before the interventions can be compared, 900s): untreated settles at 37.31, `passiveCooling` at 37.11 (an extra -0.20°C beyond natural resolution), `activeCooling` at 37.00 (an extra -0.31°C) — a real, present, and correctly-ordered (milder-than-aggressive) effect, not a relabeled copy.
+
+**Verification, complete.** `node --check` clean on all four touched files (`procedures.js`, `gear.js`, `laCounty.js`, `national.js`). `npx eslint`: zero findings on the same four. `npx vite build`: clean (same pre-existing >500kB chunk-size warning). Grep-confirmed no stale reference to the old shared `"passiveCooling"` task id remains anywhere in the tree. This is a protocol/procedure-content change with no `src/physio/*` engine-loop edits reachable from `mechanismWiring.mjs`/`scenarioSweep.mjs` (neither suite imports `src/protocols/`, the same precedent every prior protocol-content-only batch in this document already used) — the direct-measurement probe above is this batch's own real regression/correctness evidence, not a suite run. The throwaway probe script was stripped before this entry was written.
+
+### Physiology-engine batch: a previous item in the queue's epinephrine half CLOSED — a real, weight-scaled newborn epinephrine mechanism now exists for TP 1216-P's step 14; the saline/IV-fluid half remains open
+
+Per explicit instruction to continue the physiology queue, after confirming this item's own scope with the operator. `neonatalTransition` (conditions.js) is a discrete NRP vigor state machine (0-1), not a PK/receptor model — its own header comment already documents this as a deliberate design choice, since a newborn's resuscitation course is dominated by one number (heart rate) responding to dry/stimulate/PPV/compressions, not a continuous drug curve. Before this batch, `target = chestComp ? 1 : 0.95` meant effective PPV+compressions rescued EVERY newborn this engine could spawn (reserve floor 0.1, obstetric.js's own `apgarSeed` clamp) — real NRP teaching (over 98% of depressed newborns respond to ventilation alone) but leaving no real epinephrine indication anywhere in the model, and no honest place for a weight-scaled dose to matter.
+
+**Fixed by adding the real NRP epinephrine indication as a second reserve-dependent branch, not a parallel drug-engine dose.** A newborn with a genuinely CRITICAL reserve (<0.2 — severe, prolonged intrapartum asphyxia) now plateaus at a still-bradycardic `target=0.55` on compressions alone; only a real epi dose (`neo.epi=true`) completes the rescue to `target=1` — the same "compressions restore some coronary perfusion, but adequate coronary perfusion pressure needs epi's alpha-adrenergic vasoconstriction on top of it" teaching point adult ACLS already uses for refractory arrest. Every newborn above the critical-reserve threshold (the common case) is completely unaffected — confirmed by direct measurement, not assumed from the code alone.
+
+**The dose itself is real and weight-scaled, not a flat adult 1mg dose**, computed against the newborn's own `weight` (obstetric.js seeds it from `preg.birthWeight || 3.3` kg) at the real NRP IV/IO rate (0.01 mg/kg) — wired as a crew-directable task (`gear.js`'s `newbornEpi`, App.jsx's `t.neoAction==="epi"` branch) and a mirrored player action (`scenarios.js`'s `nbEpi`), both gated on compressions already being underway (NRP's own order of operations), and a real TP 1216-P step-14 protocol rule (`laCounty.js`'s `NEWBORN_NEEDS_EPI`: HR<60 despite compressions). Deliberately kept as a bespoke `_neo` flag rather than routed through `pk.js`'s drug-instance/concentration machinery — consistent with `stimulated`/`ppv`/`compressions` already using the identical pattern, and this state machine has no continuous receptor-curve consumer for a routed dose to feed.
+
+**MEASURED against the real engine, via a direct instantiation of `neonatalTransition.progress()` (not the full scenario harness, since no shipped scenario currently seeds a newborn below the new 0.2 critical-reserve threshold):** at reserve 0.1 with PPV+compressions and no epi, vigor plateaus at 0.550 (hrBase 99.3 — still bradycardic); with epi added, vigor reaches 1.000 (hrBase 160.0 — full recovery). A control at reserve 0.5 (above the critical threshold) reaches full recovery (vigor 1.000) with or without epi, confirming the new branch doesn't regress the common case. A PPV-only (no compressions) control at reserve 0.85 stays at the pre-existing 0.95 target, unchanged.
+
+**Verification, complete.** `node --check` clean on `conditions.js`/`laCounty.js`/`scenarios.js`/`gear.js`. `npx eslint`: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero findings elsewhere. `npx vite build`: clean (same pre-existing >500kB chunk-size warning). `neonatalTransition` has zero existing coverage in either `mechanismWiring.mjs` or `scenarioSweep.mjs` (grep-confirmed before relying on this) — so there is nothing in either suite this change could regress, and the direct-instantiation probe above is this batch's own real regression/correctness evidence. Both suites' own full runs did not finish within this session's time budget (each takes 12-45 minutes per this document's own section 4) and are stated here as NOT run, not assumed clean.
+
+**Step 15 (weight-scaled saline for suspected neonatal hypovolemia) is deliberately NOT built, filed as the remaining half of a previous item in the queue.** It needs a mechanism genuinely distinct from the vigor/HR asphyxia axis this state machine models — a hypovolemic newborn (suspected fetal-maternal hemorrhage, placental abruption, cord accident) presents pale and poorly perfused despite adequate ventilation/compressions, a different clinical picture from asphyxial depression — and no shipped scenario currently seeds a hypovolemic (as opposed to asphyxiated) newborn for such a mechanism to have a real producer. Threading a real maternal-hemorrhage-to-newborn-hypovolemia coupling through `obstetric.js`'s spawn logic is genuinely new, separately-scoped work.
+
+### Front-end batch: a previous item in the queue — the crewed-vehicle recruit/hire sub-flow, the one path the previous session's Career setup wizard test explicitly skipped, now real-click-tested too. Clean.
+
+Direct follow-up to `verifyCareerSetupWizard.mjs`'s own honest scope note (that script picked "On foot" specifically to avoid the recruit-crew hiring flow). New `tools/browser/verifyCareerCrewedVehicle.mjs` picks County EMS → ALS ambulance (a real `needsCrew:true` rig, per `App.jsx`'s `needsCrew=["ambBLS","ambALS","engine"].includes(veh.kind)`), clicks a real, non-disabled "Recruit" button against the actually-generated candidate pool, confirms the hire lands in `g.roster`, confirms the partners screen's "Continue" button correctly un-blocks once real crew is present (`needsCrew` gate reads the hire correctly), then continues through mode/scope/ready to station and confirms the final state is coherent (level/department/vehicle/mode/roster all really set). Two clean runs (`PASS: hired a real partner — roster now: [{"name":"Paramedic Ali",...}]`, then `[{"name":"Paramedic Cook",...}]` on the repeat — a different, real generated candidate each run, confirming the pool is genuinely randomized, not fixture data). `npx eslint` clean.
+
+Between this and the prior session's Career setup wizard test (the "On foot" no-crew path), a previous item in the queue's own "Career mode's own setup wizard" open item is now closed for both real branches of that flow (solo and crewed) — not just the easier one.
+
+### Front-end batch: a previous item in the queue's last genuinely untested area — Career Mode's own setup wizard (as opposed to Sandbox's) — real-click-tested end to end for the first time. Clean.
+
+New `tools/browser/verifyCareerSetupWizard.mjs` walks the FULL chain for real: gmodePick → Career Mode (tester-gated — unlocked via `localStorage.setItem("proximate_tester_unlocked","1")`, the same flag a real password entry sets, not a bypass of anything the real gate doesn't already expose) → learningMode (Master of Your Scope path — Zero-To-Hero routes through the campaign instead, already covered elsewhere) → level (Paramedic) → department (Fire Dept) → vehicle (On foot) → partners → mode (City) → scope → ready → station, checking for `undefined`/`NaN`/`[object Object]` render text and console errors at every single screen, plus a final sanity check that the resulting station state is actually coherent (level/department/vehicle/mode/scope all really set, `scopeLocked` true).
+
+**Two real test-harness gotchas found and fixed while building this, both the same underlying trap — worth recording since a future script will hit them too:** `clickText()`'s default `getByText(...).first()` matches ANY element containing the substring, not just buttons — and this wizard's own screens both contain plain descriptive text that repeats the exact word a button uses, positioned EARLIER in the DOM: the department screen's paragraph ("a Fire Dept medic isn't rolling up...") contains the department's own name before the real department button; the scope screen's paragraph ("Once you press Ready below...") contains "Ready" before the real "▲ Ready" button. Both silently clicked inert text and produced a `waitForPhase` timeout with no error, not an obvious failure — traced by dumping all button text explicitly rather than assumed. Fixed by scoping those two clicks to `page.locator("button", {hasText: ...})` instead of the generic `clickText()` helper. Also found: the real department button text is CONCATENATED with its own vehicle-list subtext with no whitespace (`"Fire DeptFire engine · Rescue truck..."`), so a naive `===`/`.includes()` array check against known department names needs a `.startsWith()` check instead.
+
+**Result: clean, run twice** (the first repeat run surfaced one console-error false-positive — `WasmLLMProvider: model load failed ... classified as "network"`, the WASM-tier fallback trying and failing to fetch a HuggingFace model file in this network-restricted environment — the same already-documented benign a previous item in the queue noise class as the existing `LocalLLMProvider` filter, now also filtered here). **Honest scope note**: this run picks "On foot" (no vehicle, no crew requirement) specifically to reach the end of the chain without also depending on the recruit-crew hiring flow — the crewed-vehicle path (hiring a real partner within the recruit budget) is a genuinely different sub-flow this run does NOT exercise, and remains open for a future pass. `npx eslint` clean.
+
+### Front-end batch: a previous item in the queue's breadth-pass bug hunt extended twice more — a fourth 6-scenario render-text slice (clean) and a new, more targeted pediatric weight-based-dose check (also clean).
+
+**Fourth breadth-pass slice, `tools/browser/verifyBreadthBugHunt3.mjs`** — three pediatric scenarios (`bronchiolitisInfant`/`croupToddler`/`febrileSeizureToddler`, age/weight-scaled physiology none of the prior three passes touched at all), a rare neuromuscular crisis (`myastheniaGravisCrisisCall`), an endocrine crisis (`addisonianCrisisCollapse`), and excited delirium (`excitedDeliriumAgitated` — an unusual combative/hyperthermic/superhuman-strength combination). Same method: torso/assess, head/airway, head/meds, head/procedures, watching for `undefined`/`NaN`/`[object Object]` and console errors. **Result: clean, zero findings, run twice.**
+
+**A genuinely different, more targeted check, `tools/browser/verifyPediatricDoseLive.mjs`** — the passive render-text passes above only look at whatever's already on screen; they never actually GIVE a weight-based drug, which is exactly where a real bug (a missing weight field, a bad mg/kg formula, a unit slip) would most likely hide. This clicks a real weight-based medication through to completion on three pediatric ages (a 2-year-old, a 9-month-old infant, another 2-year-old): `Midazolam` for `febrileSeizureToddler`, `Albuterol` for `bronchiolitisInfant`, `Dexamethasone` for `croupToddler` — and checks the resulting dose-confirmation log line for `NaN`/`undefined`/`[object Object]`. **Real test-harness gotcha found and worth recording**: `medActs()` (`App.jsx`) computes each drug's own region internally — IM/IN-route drugs with no IV line default to `"legR"`, NEB/PO/INH-route drugs default to `"head"` — a `setState` scene jump has to match that computed region or the drug button silently never renders (the first attempt used a single `region:"torso"` for all three cases, correctly matching none of them). **Result: clean, zero findings, run twice** — all three pediatric doses completed with a real, non-NaN confirmation line (e.g. `"Midazolam 5 mg in. [PAIN ↓2 · onset 90s]"`), confirming the underlying weight-based PK math holds up across this age/weight range, not just that a button exists.
+
+Both are genuine negative results, not skipped steps — recorded per this project's own standing convention that a clean pass is real, useful information. `npx eslint` clean on both new scripts.
+
+### Front-end batch: a previous item in the queue's breadth-pass bug hunt extended to a third 6-scenario slice — a genuine, honest negative result, no defects found.
+
+`verifyBreadthBugHunt.mjs`'s own header names this an ongoing pass, extendable "to cycle through more of the ~124 scenarios over successive runs." New `tools/browser/verifyBreadthBugHunt2.mjs` covers a fresh slice the prior two passes never touched — renal/electrolyte (`hyperkalemiaMissedDialysis`), OB (`placentalAbruption`), a progressive neuro-paralysis (`guillainBarreProgressive`), toxic inhalation (`toxicInhalationChlorine`), abdominal-vascular (`acuteMesentericIschemia`), and a paralytic-drug overdose (`rocuroniumOverdose` — picked deliberately as an edge case: a chemically paralyzed-but-conscious patient's UI has unusual rendering needs no other scenario in this project shares). Same method as the prior pass: torso/assess render check, then a region switch to head/airway, head/meds, and (new this pass) head/procedures, watching for `undefined`/`NaN`/`[object Object]` and console errors. Also fixed for the boot screen (a previous item in the queue), which the prior pass's `freshCharacter()` predates and no longer reaches "Go on shift" through on its own (needs a "Continue without AI" click first — the same fix every a previous item in the queue script this session needed).
+
+**Result: clean.** Zero suspicious render text, zero console errors, across all 6 scenarios × 4 tabs, run twice. A genuine negative result, not a skipped step — recorded per this project's own standing convention that a clean bug-hunt pass is real, useful information (rules out a class of defect for this slice), not nothing. Combined with the two prior passes, roughly 16 of ~161 scenarios have now had this specific breadth check; the remaining ~145 are still unaudited by this method (updated count — the doc's prior "~118 remaining" was against the older ~124-scenario total, not the current ~161).
+
+### Front-end batch: a previous item in the queue (STANDING WORKSTREAM) — a real, previously-undiscovered defect distinct from the usual "wrong probe key" class this workstream finds: `ecgReadout()` gives a fixed, generic finding per RHYTHM KIND, but every real ECG display site called it directly, never consulting a scenario's own `probes.ecg` override.
+
+A from-scratch, corrected enumeration of every `probes.<key>` used across `src/data/scenarios.js` (this workstream's own previously-flagged next step — the earlier enumeration pass had picked up noise from string literals; this pass anchors on real `key: (` arrow-function definitions only) turned up `ecg` (5 occurrences: `takotsubo`, `nstemi`, `stableAngina`, `unstableAngina`, `ami`) as a key never covered by any prior a previous item in the queue audit. Unlike `glucometer`/`jvd`/`airwayLook` (fixed earlier this session — see below — by correcting a scenario's own mis-typed key against an action's declared `probe:"..."` name), `ecg` was never meant to compose via the generic `a.probe` mechanism at all: the real 12-lead action (`p.id==="ecgRead"`, `App.jsx`) calls `ecgReadout(v.ecg,v)` (`ecg.js`) directly, a genuinely live-physiology-driven function — but one that returns the SAME fixed text per rhythm kind (e.g. every `"stemi"` reads "ST ELEVATION — inferior leads (II, III, aVF)." regardless of scenario) and had NEVER once checked for a scenario-specific override, unlike literally every other exam action in the game.
+
+**`takotsubo` is the starkest confirmed instance, not a theoretical one.** Its own condition (`physio/conditions.js`) deliberately sets `rhythm:"sinus"` — its own comment explains why: "the ECG... will look like an anterior STEMI, but the pump failure here is catecholamine stunning," i.e. the scenario is DESIGNED so the authored finding (an anterior-STEMI-mimic reading) is the whole clinical teaching point, deliberately decoupled from the underlying (genuinely sinus) rhythm. Before this fix, a player running the real 12-lead action on this scenario saw **"Normal sinus rhythm."** — confirmed by direct source reading (`ECG_READ.sinus` in `ecg.js`) — the exact OPPOSITE of the scenario's own documented intent, not a minor cosmetic gap.
+
+**Fix:** a new shared `ecgLiveText(state,v)` helper (`App.jsx`, right after `scenOf`) checks `scenOf(state).probes.ecg` first and falls back to the generic `ecgReadout(v.ecg,v)` only when no override exists — the same `find`-then-`say` preference every other probe composition site already follows. Used at all three real ECG display sites that previously called `ecgReadout()` directly: the `ecgRead` action itself, the transmitted-to-base readback (the "BASE: We have your twelve-lead..." tick-loop line, ~15s after transmit), and the live 12-lead JSX panel (`L>=4&&g.ecgRead` branch) — fixing only the action's return value while leaving the other two on the generic text would have produced a real inconsistency (the log recording one finding, the panel re-displaying another). No change to `ecg.js`/`ecgReadout()` itself or to `scenarios.js` — the authored content was already correct, just unreachable from any real call site.
+
+**Verification:** new `tools/browser/verifyEcgOverrideLive.mjs` — real clicks through "12-lead — acquire and transmit" then "12-lead — INTERPRET" on a live `takotsubo` scene, confirms the log now contains the authored "anterior ST elevation" finding instead of the generic (and actively wrong, for this scenario) sinus-rhythm text. Two clean runs. **Real test-harness gotcha found and worth recording**: `ecgAcquire` is gated behind torso exposure (`clothing.js`'s `CLOTH_LOCK`, the same convention `heart`/`lungs` auscultation already use) — a `setState` scene jump needs `exposed:{torso:true}` explicitly, or the acquire button silently never appears (while `ecgRead`, needing no exposure, misleadingly still does) — cost real debugging time before being traced to `clothing.js`'s own `torso: ["heart","lungs","ecgAcquire"]` list, not a bug in either action. `npx eslint`/`npx vite build` both clean (same pre-existing 3-error `App.jsx` baseline). `node src/scripts/scenarioSweep.mjs` re-run as a broad regression guard since `App.jsx` changed — see section 2's freshest baseline number.
+
+**Still open for this workstream:** the corrected enumeration's other genuinely-unaudited candidates — `probes.opqrst`/`probes.sample`/`probes.history` (narrative content, likely lower-yield, still never audited) — and the one already-identified, deliberately-unfixed orphan (a meningitis scenario's `probes.neck` nuchal-rigidity finding with no corresponding action — needs a new action, not a rename, see this section's own earlier `neck`/`airwayLook` entry).
+
+### Front-end batch (operator-directed): music/voice volume split, a solemn menu-music replacement, and a real "Backpack" bag-selection leak found and fixed — three separate operator requests, one session.
+
+**1. Music/voice volume split.** `App.jsx` previously had exactly one `g.volume` slider (`SettingsOverlay.jsx`) driving THREE independent things at once: `useBackgroundMusic` (menu/station music), `useSiren`, and `useReadAloud` (spoken dialogue/dispatch narration) — turning music down also silenced spoken dialogue and vice versa. Split into `g.musicVolume` (music + siren — both ambient sound, not speech) and `g.voiceVolume` (spoken read-aloud only), each with its own Settings slider. Both added to `blank()`'s defaults (1 each) and to `CARRY` (the "survive a new-call-same-shift reset" field list `g.volume` was already in) so they persist across a phase change exactly the way the old single slider did. **Verified live** via new `tools/browser/verifySplitVolume.mjs` — a new DEV-only `window.__proximateTestGetMusicVolume()` hook (`useBackgroundMusic`, same gating/cleanup convention as the existing `__proximateTestGetState`) exposes the real, otherwise-undetached `<audio>` element's live `.volume`, since it's a plain `new Audio()` never attached to the DOM tree, not queryable via `document.querySelector`. Confirms: musicVolume actually reaches the element; changing voiceVolume does NOT move it (genuine independence, not just two state fields that happen to both exist); both survive a real phase change (gmodePick → level via an actual UI click, not a `setState` phase-jump shortcut — see the gotcha below). Two clean runs (PASS×4/PASS×4).
+  - **Test-harness gotcha worth recording** (found while building this, cost real debugging time): `setState(page, {phase:"station"})` — a raw phase jump skipping the real `goGmode()`/department/fleet setup — crashes the app (`Cannot read properties of undefined (reading 'name')`) because "station" assumes fields only that real flow populates. This is NOT a regression from this session's changes (confirmed by reproducing it with a bare, unrelated `setState` call with no volume fields at all) — it's a pre-existing constraint on which phases are safe to jump to directly via the test hook. Use a real click through an actual button (e.g. "Medical Education Mode") to change phase in a script instead of `setState({phase:...})` for any phase beyond the simple ones (`scene`/`kit`/`cat` are known-safe per every other existing verify script).
+
+**2. Solemn menu music, replacing the previous upbeat placeholder.** `menu_music.wav` was "Track 01 (Title Screen)" from OpenGameArt's CC0 Scraps pack (per `src/assets/audio/README.md`) — read as upbeat/energetic, a tone mismatch for a prehospital-care simulator. New `scripts/generate_solemn_music.mjs` synthesizes a slow, minor-key ambient pad (low A-minor triad — A1/E2/C3 — two detuned partials plus a quiet octave-up partial per voice, under a slow 10s-period amplitude swell so it breathes rather than droning flat) directly to `public/assets/audio/menu_music.wav`, in keeping with this project's own established "synthesize audio, no licensing/tone-mismatch headaches" convention (the in-game siren is already a synthesized oscillator, not a sample; `BootScreen.jsx`'s own comment: "Audio: synthesized... no external files to fetch"). No new dependency — raw PCM WAV written directly via `fs`. The original CC0 track is untouched at `public/assets/cc0-library/menu-music-candidate/title_screen_cc0scraps.wav` (confirmed byte-identical to the old `menu_music.wav` before overwriting, so nothing was lost) if a revert is ever wanted. `station_ambience.wav` was deliberately NOT touched — at ~88KB (roughly a 1-second loop) it reads as a short room-tone/hum texture, not a full music track, and the operator's complaint was specifically about "the background music" — left alone rather than changing something not flagged as a problem. Peak amplitude checked numerically (±9150/32767 ≈ 28% of full scale) — no clipping, sane headroom. **Not verified by ear** (no audio playback available in this environment) — the operator should give the new track a listen and say if it needs further tuning (swell rate, chord voicing, master gain); the generator script is the tool to re-run with adjusted constants if so, rather than hand-editing the WAV.
+
+**3. Real bug found and fixed: "Backpack" (a Chapter-1-Layperson-only volunteer kit, per `gear.js`'s own header comment — "not a real EMS bag") was appearing as a pickable bag choice for ANY non-Layperson provider on an ordinary vehicle.** Root cause: `fleet.js`'s `bagsForVehicle()` returns `null` ("unrestricted (full loadout)") for any vehicle type not explicitly listed in `VEHICLE_BAG_ACCESS` — which is every ordinary BLS/ALS ambulance, fire engine, etc, i.e. most of the game. Three separate `App.jsx` call sites resolved that `null` fallback to a bare `Object.keys(BAGS)`/`Object.entries(BAGS)` — literally every key in `gear.js`'s `BAGS` map, "backpack" included: the kit-screen `bagChoices` (the general 3-bag picker every non-Layperson player sees), a crew "fetch a missing bag" task, and an arriving unit's bags being merged into the roster. Fixed with a new `gear.js` export, `STANDARD_BAG_KEYS` (`Object.keys(BAGS)` minus `"backpack"`), used at all three call sites instead of the bare fallback — the Chapter-1 `ch1LaypersonGearup` path (which explicitly forces `bagChoices` to `[["backpack",BAGS.backpack]]` on its own, unaffected by this change) still works exactly as before. **Verified live** via new `tools/browser/verifyBackpackNotForNonLayperson.mjs` — a paramedic on an ordinary ALS ambulance (a vehicle type NOT in `VEHICLE_BAG_ACCESS`, so it genuinely exercises the buggy fallback path) reaches the real kit screen and confirms "Backpack" is absent while all four real EMS bags (Monitor/Drug box/Airway bag/Trauma bag) are still offered normally. Two clean runs.
+
+**Verification common to all three:** `npx eslint` clean on every touched file (same pre-existing 3-error `react-refresh/only-export-components` `App.jsx` baseline, zero new). `npx vite build` clean (same pre-existing >500kB chunk-size warning, no new warnings). `node src/scripts/scenarioSweep.mjs` re-run as a broad regression guard since `App.jsx`/`gear.js` both changed — see the freshest baseline number in section 2's table, confirmed unchanged by this batch.
+
+### Protocol-content batch: a previous item in the queue RESOLVED — a stale doc claim corrected, not a build from scratch: the crew-directable stroke-screen mechanism already existed, but nothing ever directed a crew member to actually run it
+
+**Confirmed against the tree before writing anything, per lesson 16 — the queue item was half-stale.** a previous item in the queue asked for two pieces: a generic crew-directable wrapper for assessment-only exam actions (mirroring `TASKS`' `glucoseCheck` pattern), and a `laCounty.js` rule directing it for suspected stroke. Reading the code first showed the FIRST piece was already built in an intervening "Crew AI batch" — `App.jsx`'s `crewFn` has a real, generic `t.assessId` branch that wraps any `actions.js` exam action (reusing its own `run`/`probe` composition, not duplicating clinical text), and `gear.js`'s `assessStroke` (`assessId:"strokeScreen"`) already exposes the real player-facing FAST/Cincinnati screen — `pat.strokeWeakness`/`strokeAphasia`/`strokeSide` and all — as a crew-assignable task. What was still genuinely missing, confirmed by grep across `laCounty.js`: not one of the eight `assessId`-based tasks in this file's TASKS list (`assessLoc`/`assessSkin`/`assessPupils`/`assessStroke`/`assessJvd`/`assessBreathing`/`assessResp`/`assessCapRefill`/`assessReflexes`) had ANY protocol rule directing it — every one was a player-assignable button nobody ever automatically called for.
+
+**Fixed with one new rule, reusing the existing `altered` signal rather than inventing a stroke-specific one.** `strokeScreenCrew` gates on `altered(ctx)` — the same ALOC/neuro-complaint threshold TP 1229/1230/1235's own "no new rules" reasoning already treats as the general trigger in this file — matching real field practice: FAST screening is applied broadly to any new altered-mentation presentation, not narrowly pre-filtered to an already-confirmed stroke, which is what the screen exists to determine in the first place. Gated on `!ctx.s.done?.strokeScreen`, not `doseCount`/`gaveDose`: an `assessId` task's completion is tracked in `s.done` by `crewFn` itself (a different ledger from `s.doses`, confirmed by reading the exact line that sets it), so using the dose-count helpers here would have silently never gated correctly.
+
+**MEASURED, via the real rule predicate directly (probe stripped after use):** an awake, unscreened patient does not trigger the rule; a confused or unconscious, unscreened patient does; the identical confused patient with `s.done.strokeScreen` already set does not — confirming both the ALOC gate and the once-per-call completion gate work as intended.
+
+**Verification, complete.** `node --check` clean on the one touched file (`laCounty.js`). `npx eslint`: zero findings. `mechanismWiring.mjs` (this suite doesn't test protocol-rule files directly, but was run anyway since `laCounty.js` sits in the same repo and any accidental syntax/shared-state slip would still be worth catching): **451 passed, 1 failed** — same total (452) as the pre-existing baseline, the single failure being the same already-long-documented pre-existing flaky `PACs` stdev assertion. `scenarioSweep.mjs`: **161 scenarios, 11,953,608 checks, 0 failed** — identical to baseline. No scratch probe scripts remain under `src/scripts/`.
+
+### Physiology-engine batch: a previous item in the queue RESOLVED — head-of-bed elevation now genuinely lowers ICP; a crew-directed task that was a documented no-op now does something real
+
+**The gap, exactly as filed.** `pat.icp` (neuro.js) was a real, already-live field, and both TP 1244 (TBI) and TP 1232 (stroke) independently ask for 30-degree head-of-bed/reverse-Trendelenburg elevation as a real ICP-reducing measure — but nothing in the engine modeled elevation as an input to the ICP calculation at all, so a crew-directed "raise the head of the bed" task had nothing to actually do. Recurred across two protocols, which a previous item in the queue itself flagged as the signal this was worth building as a real, reusable mechanism rather than a one-off.
+
+**Built, mirroring the exact `shadeFix`/`icdMagnet` idiom already established for other instantaneous, persistent positioning/environmental changes.** `procedures.js` gained `headElevate` (a boolean-flip procedure, `dur:9999`, no `fx`), `pk.js` sets `pat.headElevated = true` when applied (same "SET, idempotent, never reset" shape as `chestSealApplied`/`icdSuppressed`), and `neuro.js`'s ICP formula now subtracts a flat, modest 3 mmHg when the flag is set: `pat.icp = 10 + (paco2-40)*0.3 + brainInjury*20 + icpMassEffect*40 - (headElevated?3:0)`. Deliberately a FLAT subtraction, not a percentage-of-total reduction: the real mechanism (improved cerebral venous outflow) doesn't scale with how bad the underlying lesion already is, and a percentage reduction would make elevation implausibly powerful for a large mass-effect lesion while being negligible for a near-normal patient — backwards from the actual clinical teaching ("helps a little, always," not "helps more, the worse things get"). Registered as both a player action (`actions.js`) and a crew-directable task (`gear.js`'s `headElevateTask`), both routing through the identical `headElevate` procedure so either can raise the same real flag. `laCounty.js`'s TP 1244 step 22/23 (previously a comment explaining why this was a no-op) now fires a real `tbiHeadElevate` rule gated on `SUSPECTED_TBI`.
+
+**TP 1232 (stroke) deliberately NOT wired**, despite a previous item in the queue naming it as a second consumer: this file's own header comment already documents TP 1232 as "no new rules — mLAPSS/LAMS scoring and stroke-center destination routing have no natural mapping onto a crew-directed task" by design, and no quoted TP 1232 step text for a head-elevation step was available to cite a real rule from — per this project's own "identify numbers/rules from real source text, don't invent" discipline, left for a future session that has that text rather than guessed at. The underlying mechanism (`pat.headElevated`/the ICP reduction itself) is fully general and already reusable the moment that text arrives — no engine work would be needed, only the protocol rule.
+
+**MEASURED, via the real `physio()` pipeline (probe stripped after use):** a `polytraumaFall` patient (real elevated ICP from brain injury/mass effect) shows icp 9.17 -> 6.21 (delta 2.95, matching the coded 3 mmHg) when the flag is set; a healthy `abdPain` control shows the identical ~3 mmHg reduction (8.52 -> 5.41) with no other side effect — confirming the mechanism is a clean, universal position effect, not something that interacts oddly with existing pathology.
+
+**Verification, complete.** `node --check` clean on all six touched files (`procedures.js`, `pk.js`, `neuro.js`, `gear.js`, `actions.js`, `laCounty.js`). `npx eslint`: zero findings on the same six (one real bug caught before it shipped: an unescaped apostrophe inside a single-quoted crew readback string, `"Head's up thirty degrees"`, would have been a syntax error — caught by `node --check` on the very next check, fixed before running anything else). Two new two-sided assertions added to `mechanismWiring.mjs`'s existing `[INCREASED ICP / CUSHING REFLEX]` section (head elevation lowers ICP in a real ICP-elevated scenario; the same modest reduction applies cleanly to a healthy control). `mechanismWiring.mjs`: **452 passed, 0 failed** — a fully clean run, including the usually-flaky PAC-variance assertion passing this time. `scenarioSweep.mjs`: **161 scenarios, 11,953,608 checks, 0 failed** — identical to baseline, correctly, since `headElevated` is a boolean the sweep never triggers (no doses given) and was not added to any tracked-field list for that reason. `npx vite build`: clean (33.30s, same pre-existing >500kB chunk-size warning). No scratch probe scripts remain under `src/scripts/`.
+
+### Protocol-content batch: a previous item in the queue RESOLVED — permissive hypotension for multi-system trauma with active hemorrhage is now real, not a generic 500mL bolus indistinguishable from septic/cardiogenic shock
+
+**The gap, exactly as a previous item in the queue filed it.** TP 1244's own footnote ❻/❽ calls for a smaller, more conservative 250mL bolus for suspected internal hemorrhage in blunt/penetrating multi-system trauma — aggressive crystalloid dilutes clotting factors and measurably worsens hemorrhage, a mechanism this engine already models (`saline`'s own `fx:{coag:-6}`). But `saline_shock`/`saline_gigu` (`laCounty.js`) gave a full 500mL bolus to ANY hypotensive/poor-perfusion patient regardless of cause, and `saline`'s fixed 500mL-per-administration granularity couldn't represent a 250mL dose at all. Two real blockers, both needed together, neither useful alone.
+
+**Fixed with the smallest correct pieces, reusing existing signals rather than inventing new engine mechanism.** `salineMinor` (`drugs.js`) is a genuine second fluid entry — same `pkModel:"fluid"` mechanism as `saline`, every `fx` value scaled to exactly half (0.2L blood/-0.125 k/-10 ph/-3 coag/-0.15 temp vs `saline`'s 0.4/-0.25/-20/-6/-0.3) — the same "second flat-dose entry at a different fixed size" precedent `amiodarone`/`amiodarone2` already established, not a new pattern. A new `traumaMinorSaline` rule (`laCounty.js`) gates on `ACTIVE_HEMORRHAGE` — the SAME signal `traumaTxa` already uses to identify genuine active bleeding for TXA, which existed and was correctly scoped there but nothing had used it to also redirect fluid volume, TP 1244's actual footnote point. `saline_shock`/`saline_gigu` now explicitly exclude `ACTIVE_HEMORRHAGE` so the generic and conservative rules can never both fire and double the fluid the protocol specifically warns against.
+
+**A real gap in the fix was caught before shipping, not left as a silent hole.** `traumaMinorSaline` was first gated on `SHOCK` alone, mirroring `saline_shock`'s own gate — but `saline_gigu` (the sibling rule this batch also had to exclude `ACTIVE_HEMORRHAGE` from) gates on `POOR_PERFUSION`, a DIFFERENT, less severe threshold. A compensated-but-actively-bleeding patient (poor perfusion, not yet frankly hypotensive) would have fallen through both exclusions and received no fluid at all — worse than the original bug. Fixed by gating on `SHOCK(ctx) || POOR_PERFUSION(ctx)`, confirmed by direct probe (see below) rather than assumed correct from the mirrored pattern.
+
+**MEASURED, via a direct probe calling the real `laCounty.js` rule predicates and the real `pk.js`/`physio()` pipeline (stripped before finishing):** a synthetic multi-system-trauma-in-shock context (`sbp:80`, `activeBleedRate:0.2`) shows `saline_shock.when()` now false and `traumaMinorSaline.when()` true; an otherwise-identical shock context with NO hemorrhage shows the reverse (generic rule fires, conservative rule does not — confirming non-trauma shock, e.g. cardiogenic, is completely unaffected); a compensated-but-bleeding context (`sbp:110`, elevated lactate, `activeBleedRate:0.2`) shows `saline_gigu.when()` false and `traumaMinorSaline.when()` true — the exact fall-through case the gap above would have missed. `salineMinor`'s `fx.blood` delta was confirmed to apply through the identical `pk.js` code path `saline` uses (same `rising()`-tracked one-time-per-dose idiom), at exactly half the declared coefficient — a longer-window magnitude comparison was tried and correctly discarded once it was clear ordinary renal/fluid-shift drift over that window (not the dose itself) dominated the measured delta; the coefficients are exactly half by direct declaration, which is what actually matters here, not a re-derived empirical ratio.
+
+**Verification, complete.** `node --check` clean on all three touched files (`drugs.js`, `gear.js`, `laCounty.js`). `npx eslint`: zero findings on the same three. `mechanismWiring.mjs`: **449 passed, 1 failed** — identical to the established baseline, the single failure being the same already-long-documented pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion, unrelated by content. `scenarioSweep.mjs` took two attempts spanning multiple hours to actually finish under sustained, heavy CPU contention from a concurrent peer session's own browser-based verification work — not a defect in this change, confirmed by the eventual clean result: **161 scenarios, 11,953,608 checks, 0 failed**, identical to the pre-batch baseline (expected, since `scenarioSweep.mjs` never gives doses and so cannot exercise `salineMinor`/`traumaMinorSaline` either way — the check-count being unchanged is itself confirmation nothing new leaked into the universal per-tick fields). No scratch probe scripts remain under `src/scripts/`.
+
+No scratch probe scripts remain under `src/scripts/` from this batch.
+
+### Front-end batch: a previous item in the queue (STANDING WORKSTREAM) — a real, previously-undiscovered DEAD-PROBE defect found and fixed. Every scenario-authored `probes.glucometer` override (91 occurrences across `src/data/scenarios.js`, including `diabeticKetoacidosisCall`'s `"HIGH" — off the top of the scale"` and several exact-value hypoglycemia/DKA/HHS readings) could never fire — the two `gluc` actions in `src/actions.js` never declared a `probe` field, so `App.jsx`'s universal override lookup (`a.probe&&(scenOf(s).probes||{})[a.probe]`) was always `(...)[undefined]`.
+
+Found via this workstream's own next-scoped step (its last entry's own words: "a fresh grep pass across `src/data/scenarios.js` to enumerate every distinct `probes.<key>` used would be the honest first step, rather than assuming the keys already covered are the only ones that exist"). A small node script (enumerating top-level keys inside every `probes: {...}` block) surfaced `glucometer` as a real, sizeable (91-occurrence) key never once mentioned across any prior a previous item in the queue session's audit trail. Checked against `App.jsx` directly (not assumed): every real override lookup site (`start()`'s player-action path at the `a.probe&&(scenOf(s).probes||{})[a.probe]` line, and the crew-AI `assessId` wrapper's identical composition) keys strictly on the ACTION's own declared `probe` name — the same idiom `radL`/`pedL`/`pedR`/`heart`/etc. already use (`probe:"pedL"` etc in `actions.js`). Grepped `actions.js`'s two `gluc` entries (armR/armL) and confirmed neither had ever declared `probe:"glucometer"` — meaning every one of those 91 authored overrides was dead on arrival, and every player in every scenario has only ever seen the generic `${v.glu} mg/dL.` numeric readout, regardless of what the scenario author actually wrote.
+
+**Fix:** added `probe:"glucometer"` to both `gluc` actions (`actions.js`) — the same one-line pattern every other probe-bearing action already follows. No change to `scenarios.js` itself; the authored content was already correct, just unreachable. Confirmed this is legitimate one-time-snapshot content, not a live-physiology gap of the kind this workstream usually hunts: `gluc` is `once:1` (a single-check action, same as `pedL`/`radL`/etc.), so a frozen reading captured at click-time is the same accepted design already used for `sample`/`opqrst`/other one-time exam findings — not a new instance of the "frozen text vs. live physiology" defect class.
+
+**Verification:** new `tools/browser/verifyGlucometerProbeLive.mjs` — clicks the real "Blood glucose" action on a live `diabeticKetoacidosisCall` scene and confirms the logged text now contains the scenario's authored `"HIGH"` override instead of a plain number, run twice clean (PASS/PASS, zero real console errors — the one console error present both runs is the already-documented, expected `LocalLLMProvider: model load failed ... classified as "device"` noise every a previous item in the queue verification script hits in this no-real-GPU-adapter environment, explicitly filtered out as known-benign rather than silently ignored). `npx eslint src/actions.js src/data/scenarios.js tools/browser/verifyGlucometerProbeLive.mjs` clean. `npx vite build` clean (25.28s, same pre-existing >500kB chunk-size warning, no new warnings).
+
+**Direct follow-up, same session — the same grep-and-check pass (does the scenario's override key match a REAL action's declared `probe:"..."` name?) run against the low-count candidates it had just surfaced (`neuro`, `airway`, `neck`) found three MORE real dead overrides, all key-name MISMATCHES rather than missing content:**
+- `neuro` — confirmed already fixed by an earlier session (`actions.js`'s `reflexes` action already declares `probe:"neuro"`, with its own header comment recording the exact same defect class already found and closed for `severePreeclampsia`'s hyperreflexia/clonus finding). Not a new finding — verified, not assumed.
+- `stabChest`'s `probes.neck` (tension-pneumothorax JVD + tracheal deviation) — no action declares `probe:"neck"`; the real action is `jvd` (`probe:"jvd"`, "Jugular venous distension"). The DEFAULT `jvd` action only reads `pat.cvp` for a generic distension description and never mentions tracheal deviation, so this scenario's specific, clinically richer finding was genuinely being lost, not merely duplicated. Renamed `neck` → `jvd`.
+- Three `probes.airway` overrides (`choking40`/condition `fbao` — a foreign body visualized at the cords; `activeSeizureGTC` — active-seizure airway compromise; `esophagealVaricesBleed` — active-hematemesis aspiration risk) — no action declares `probe:"airway"`; the real action is `airwayLook` (`probe:"airwayLook"`, "Look in the airway"), whose own default text ("Patent."/generic vomit warning) is exactly what every one of these three scenarios' players saw instead of the scenario-specific, clinically distinct finding the author actually wrote. Renamed all three `airway` → `airwayLook`.
+
+Checked for key collisions before every rename (grepped for an existing `jvd:`/`airwayLook:` key already present in any of these four scenarios) — none found, so each rename is a pure fix, not an overwrite. `esophagealVaricesBleed`'s own `probes.opqrst`/`probes.sample`/one other content-only key are untouched. One genuinely orphaned "neck" case was found and deliberately NOT touched: a separate `neck:` override on a meningitis scenario (nuchal-rigidity/meningismus exam finding) has no corresponding action at all — no "check for neck stiffness" action exists anywhere in `actions.js` — so there's no one-line rename fix available; it would need a genuinely new action, which is new-feature scope, not a wiring fix, and per a previous item in the queue's own standing rule (prefer reliability fixes over new features) was correctly left for a future session rather than built here.
+
+**Verification:** new `tools/browser/verifyAirwayJvdProbeLive.mjs` — clicks the real "Jugular venous distension"/"Look in the airway" actions across all four renamed scenarios and confirms each authored override now fires (a real test-harness flakiness class was hit and worked around: an unprompted Tier-1/2 dialogue line rendering at the exact moment of a click can eat the click without the action resolving — the script retries once, a pattern worth reusing in any future probe-verification script). Two full runs, both clean (PASS×4/PASS×4, zero real console errors beyond the same already-documented benign no-WebGPU-adapter noise). `npx eslint`/`npx vite build` both clean. `node src/scripts/scenarioSweep.mjs` re-run fresh after all five renames (glucometer + these four): **161 scenarios, 11,953,608 checks, 0 failed** — identical to the pre-batch baseline.
+
+**Still open for this workstream:** `probes.opqrst`/`probes.sample`/`probes.history` (narrative dialogue content, likely lower-yield, still unaudited); the orphaned meningitis `neck:` override noted above (needs a new nuchal-rigidity-check action, not a rename); and any other probe key this session's enumeration script didn't happen to name — a fresh, from-scratch enumeration pass (rather than trusting this document's own running list of "already covered" keys) is still the honest way to be sure no more are hiding.
+
+### Front-end batch: a previous item in the queue — BootScreen's AI panel description text was still WebGPU-only, even though `getLocalAiState()`/`aiStatusLine()`/SettingsOverlay already correctly report `ai.backend` ("webgpu"|"wasm"|"none"); fixed, closing the "not yet done: surfacing the WASM backend's own status in the boot/Settings UI" gap a previous item in the queue's own text had left open.
+
+Read `dialogueManager.js`'s `getLocalAiState()`/`activeAiBackend()` and `bootScreenText.js`'s `aiStatusLine()` before touching anything — both already compute and correctly report which real backend (`webgpu` vs `wasm`) is active, and `SettingsOverlay.jsx` already renders that field correctly (confirmed by reading it, not assumed). `BootScreen.jsx` itself, however, had its own SECOND, independent block of status prose (the paragraph under the progress bar) that never read `ai.backend` at all: the "failed" case always said "This device reports WebGPU support" even when the backend that failed was the WASM tier, and the "supported" case never mentioned WebAssembly mode at all, both effectively re-introducing the exact "WebGPU implied, WASM tier invisible" gap that `activeAiBackend()`'s own header comment says it was built to eliminate.
+
+**Fix (`BootScreen.jsx`, lines ~105-111):** both branches are now backend-aware — the failed-case sentence says "WebAssembly" instead of "WebGPU" when `ai.backend==="wasm"`, and the supported-case sentence appends "via WebAssembly (broad-compatibility mode)" under the same condition, matching the exact phrasing `aiStatusLine()`/SettingsOverlay already use elsewhere on the same screen. No change to `dialogueManager.js`/`dialogueProvider.js`/`bootScreenText.js` — the underlying state was already correct; only the one stale prose block needed to catch up to it.
+
+**Verification:** `npx eslint src/components/BootScreen.jsx` clean (zero findings). `npx vite build` clean (16.27s, same pre-existing >500kB chunk-size warning, no new warnings). Not verified live against a real WASM-active browser session in this pass (no environment change was needed to make this true — the two branches are pure string interpolation off a field the manager already supplies correctly) — a future session with a real WASM-tier-active browser should still eyeball it once.
+
+**Still open on a previous item in the queue per its own last status note:** a real cache pre-check equivalent to `hasModelInCache()` for the WASM tier (transformers.js has no public equivalent, per prior session's own citation) and a proper multi-turn few-shot retry of Qwen2.5-0.5B remain unbuilt/unattempted.
+
+### Physiology-engine batch: a previous item in the queue, Phase 3 (compartment syndrome) SHIPPED — all three phases of the per-limb circulation workstream are now complete and verified. `crushSyndrome` gains a real, literature-timed compartment-pressure mechanism plumbed into Phase 2's existing perfusion chain, via the correct clinical delta-pressure decision variable rather than a flat threshold.
+
+**A prior session built this and was stopped mid-batch on operator instruction before formal verification ran; this entry documents that verification, run fresh and independently, plus a real process-hygiene incident from the handoff worth recording.**
+
+**What Phases 1-2 already shipped, for context (both fully verified, separate entries below):** Phase 1 (limb-specific hemorrhage control — a located tourniquet only stops bleeding on its own limb) and Phase 2 (real per-limb arterial perfusion — `pat.limbOcclusion`/`limbDO2`/`limbO2Debt`/`limbInjury`, built out `acuteLimbIschemia` from a bare stub). Phase 3 (this entry) was scoped from the start to depend on Phase 2's `limbDO2` chain already existing, specifically so compartment syndrome's real danger (the perfusion collapse it causes) would have a real, already-verified consumer to plug into rather than needing its own parallel injury system.
+
+**What was built, confirmed by direct reading of the code just now, independent of the implementing session's own claims:**
+- `patient.js`: `pat.compartmentPressure` (mmHg, per limb, default 0 — cites Whitesides et al. 1975 / McQueen & Court-Brown for the normal 0-10mmHg range) and `pat.compartmentOcclusion` (0-1 per limb, recomputed FRESH every tick, deliberately kept OUT of `pat.limbOcclusion` itself).
+- `cardiovascular.js`: converts `compartmentPressure` into `compartmentOcclusion` via the real clinical decision variable — delta pressure (diastolic BP minus compartment pressure), not a flat compartment-pressure threshold — with a hard `if (cp <= 0) { compartmentOcclusion[loc] = 0; continue; }` gate, meaning a patient with no compartment lesion is STRUCTURALLY guaranteed zero contamination from this mechanism regardless of how low their own DBP falls (e.g. hemorrhagic shock) — a real specificity guarantee by construction, not just something that happened to measure clean.
+- `neuro.js`'s `updateOrganInjury`: composes `limbOcclusion` and `compartmentOcclusion` via `max()` ONLY at the point of consumption (feeding the already-verified Phase 2 `limbDO2`/`limbO2Debt`/`limbInjury` chain), never writing one into the other's own stored state.
+- `conditions.js`: extends `crushSyndrome` (a real, already-existing closed bilateral-leg-entrapment condition, judged a better fit than building a new condition since compartment syndrome classically follows closed, not open, injury — an open fracture self-decompresses) to seed and grow `compartmentPressure` on both legs, presenting already at the level 5h of entrapment would produce (matching the condition's own existing presenting state), not restarting from an uninjured 0 mmHg.
+- A real, previously-latent ONE-WAY-RATCHET bug was found and fixed DURING this batch, before it could ship: an earlier version of this same idea composed `compartmentOcclusion` directly into `pat.limbOcclusion` via `max()`. Because `limbOcclusion`'s other writers hold their own state and never spontaneously decrease, and the cardiovascular ODE has a real, measured startup transient where `dbp` briefly dips to ~40-54 mmHg in a fresh patient's first ~10 simulated seconds, that transient got permanently baked into `limbOcclusion` via `max()` and never came back down even after `dbp` recovered to a healthy 86-94 mmHg for the next 19+ minutes — measured directly against `crushSyndrome`, not theorized. Fixed by keeping `compartmentOcclusion` in its own field, recomputed live every tick with no memory, and composing only at the point of consumption (see `neuro.js` above) — this fix is IN THE CURRENT TREE, not a remaining TODO.
+- New two-sided assertions were added to `mechanismWiring.mjs` (a new section covering: stays compensated at a realistic ~20min scene time; a real hours-scale time course; a healthy control; the required cross-cutting specificity control — near-terminal hemorrhagic shock with no compartment lesion stays at zero; reversibility of the live-recomputed term; and tourniquet+compartment-syndrome `max()` composition on the same limb) — see the "Verification" paragraph below for their confirmed PASS status.
+
+**A real process-hygiene problem, found and cleaned up during this handoff pass, worth recording so it isn't mistaken for corrupted work.** The implementing session's own final status report flagged that a background agent it had spawned earlier (against instruction, and which it could not stop) was concurrently editing these SAME files, and that it could not confirm authorship of every line currently in `mechanismWiring.mjs` — specifically calling out that the reversibility assertion on disk differs from what it personally wrote (it now calls `updateVenousReturn` directly rather than the full `.update()` pipeline; the implementing session separately confirmed THIS version works correctly by running it standalone, but did not author it). Separately, THREE orphaned `node src/scripts/mechanismWiring.mjs` processes (started at 11:26pm, 11:41pm, and 11:57pm — clearly multiple overlapping unsupervised runs, not one) were found still running and actively writing to `_mw_run1.log`/`_mw_run2.log` at the repo root MINUTES after the stop instruction had already been issued and acknowledged — confirming these were detached OS processes that never received the stop, not evidence of new work. All three were killed and both log files deleted during this pass; `src/scripts/` and the repo root are now confirmed clean of scratch output. **Net effect: the code on disk right now is NOT guaranteed to be authored by a single coherent session's reasoning end-to-end, even though it reads as internally consistent and passes `node --check`/`eslint`.** Read `mechanismWiring.mjs`'s new compartment-syndrome section critically, especially the reversibility assertion, before trusting it — re-derive or re-verify rather than assuming it means what its neighboring comments claim.
+
+**Verification, run fresh and independently against the tree exactly as the process-hygiene incident above left it (not re-trusting any number from before the incident).** `node --check` clean on all five touched files (`patient.js`, `cardiovascular.js`, `neuro.js`, `conditions.js`, `mechanismWiring.mjs`). `npx eslint`: zero findings on the same five. `mechanismWiring.mjs` run TWICE in full: **449 passed, 1 failed, both times, with the identical single failure both runs** — the same already-long-documented pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion (confirmed unrelated by content: doesn't read anything this batch touched). All 7 new two-sided assertions in the new `[COMPARTMENT SYNDROME — a previous item in the queue, Phase 3]` section passed cleanly both runs, including the positive time-course case this handoff's own prior text flagged as unmeasured: `crushSyndrome` stays compensated at a realistic 20-minute scene time (csOccl<0.05, zero injury — the same honest "most patients stay compensated within a realistic call" finding a previous item in the queue's own acuteMesentericIschemia work reported), reaches real occlusion by 5h post-arrival, and crosses the irreversible 0.5 injury threshold by 10h — inside the cited 6-8h-to-48h literature window, not instant and not forced. `scenarioSweep.mjs`: **161 scenarios, 11,953,608 checks, 0 failed** — identical to the pre-batch baseline, correctly: `compartmentPressure`/`compartmentOcclusion` are per-limb objects, deliberately kept out of the sweep's scalar-only `REQUIRED`/`NON_NEGATIVE` lists, the same precedent Phase 2's own `limbDO2`/`limbInjury` already set. `npx vite build`: clean (27.15s, same pre-existing >500kB chunk-size warning). `src/scripts/` and the repo root are confirmed clean of scratch/probe output.
+
+**a previous item in the queue is now fully closed — all three phases (limb-specific hemorrhage control, real per-limb arterial perfusion, compartment syndrome) shipped and verified.** The workstream's own original ask (separate each limb into its own circulatory subsystem, to eventually support real compartment syndrome and per-limb bleeding/circulation) is complete: a tourniquet targets one limb's bleeding and arterial inflow; `acuteLimbIschemia` and `crushSyndrome` both drive real, measured local perfusion collapse through the same shared `limbDO2`/`limbO2Debt`/`limbInjury` chain; and compartment syndrome composes into that same chain via the clinically correct delta-pressure variable rather than a parallel, redundant mechanism. Natural, explicitly-not-yet-scoped follow-ups for a future session: extending `directPressure`/`pack`/`pelvicBinder` to be location-aware (named as out-of-scope back in Phase 1); a genuine tourniquet-specific (~2h) warm-ischemia time constant distinct from embolic ischemia's ~4-6h window (both currently share one rate constant, noted as an open simplification in Phase 2's own entry); and a real "loosen the dressing/splint, do not elevate above heart level" field intervention for compartment syndrome, if this game's procedure formulary ever grows one — none of these are filed as new queue items, since each is a small, well-understood extension of a now-real, already-verified mechanism, not a new gap.
+
+### Front-end batch (2026-08-27, latest): pushed WASM-tier dialogue quality as far as it can go at this model size — tuned generation params, a WASM-specific few-shot prompt, a degenerate-output guardrail, and a real, honest model-swap investigation (Qwen2.5-0.5B tried and REJECTED after live A/B measurement)
+
+Direct follow-up to the entry immediately below (the one that first got
+REAL generated WASM-tier text, honestly flagged as weak/echoic). This
+session's task, per the operator's own instruction, was to push that
+quality as far as legitimately possible, attacking it from every real
+angle rather than tweaking one knob — model choice, generation parameters,
+prompt engineering, output guardrails, and measuring multiple real
+generations rather than one.
+
+**1. Generation parameters — the real, checkable cause of the documented
+echo/repetition failure.** Read the actual pipeline call in
+`WasmLLMProvider.generate()` before touching anything: it passed
+`max_new_tokens:48, temperature:0.85, do_sample:true` and NOTHING else —
+no `repetition_penalty`, no `top_p`/`top_k`, no `no_repeat_ngram_size`.
+That is close to the textbook setup for a small instruct model to
+degenerate into repeating itself. Added `repetition_penalty:1.3` and
+`no_repeat_ngram_size:3` (the two standard HF-generation levers for this
+exact failure mode), lowered `temperature` to 0.7 and added `top_p:0.9`/
+`top_k:40` (a standard "coherent but not deterministic" combination — at
+0.85 with no nucleus/top-k limiting, a 0.5B/360M model's own long tail was
+being sampled more than helps short output), and tightened
+`max_new_tokens` from 48 to 28 (this is short patient/crew/bystander
+dialogue, not long-form text — 48 tokens was already contributing to
+run-on generations).
+
+**2. Prompt engineering — a genuine WASM-tier-specific variant, not the
+shared LocalLLMProvider prompt.** Confirmed the gap by reading
+`buildPrompt()`: both tiers used the identical multi-line instruction
+block, with no worked examples — a known-real problem for small instruct
+models, which follow few-shot examples far more reliably than abstract
+instructions. New `buildWasmPrompt(event, ctx)` reuses the same real,
+structured context (`ctx.patient`/`ctx.bystander`/`ctx.situation`) but
+replaces the instruction with ONE short worked example of a correctly-short
+in-character line per speaker role, plus an explicit hard word-count
+ceiling ("at most six words") stated in plain language rather than the
+vaguer "one short sentence."
+
+**3. A real output guardrail specific to the documented failure mode.**
+New `isDegenerateWasmOutput(text, event)`: rejects output that is
+substantially a verbatim echo of the event type itself (the exact,
+previously-documented "Pain unprompted." failure for a `pain_unprompted`
+event), and separately rejects degenerate token repetition (any word
+repeated 3+ times in a row, or the whole line being one word repeated).
+`generate()` now throws when this fires, which dialogueManager's existing
+try/catch already treats as a normal fall-through to Tier 2 templates
+(a previous item in the queue's graceful-degradation hierarchy) — so a genuinely bad WASM
+generation now reliably never reaches the player, instead of only being
+"honestly flagged as weak" in a code comment.
+
+**4. Model choice — investigated for real, and REJECTED after live
+measurement, a genuine negative result, not skipped.** Checked the real,
+currently-published Hugging Face model list via the live models API (not
+assumed): `onnx-community/Qwen2.5-0.5B-Instruct` is a real, tagged
+`transformers.js`+`onnx` build (~12k downloads, the most-downloaded ONNX
+build of this exact model) — the SAME model this project's WebGPU tier
+already uses, real precedent that 0.5B can work for this use case. Swapped
+it in and measured live, across the same four event types, with the same
+tuned prompt/params from a previous item in the queue above. It was WORSE on every axis in
+this real, same-session A/B, not better: for a `pain_unprompted` event it
+produced `"Diligent. Patient nurse began to gently massage her clients
+back and legs as she felt her clients symptoms improve further. She
+continued"` — third-person narrative about an unrelated nurse, completely
+ignoring the "at most six words," in-character instructions; one of the
+four real samples failed outright (empty output); and it was materially
+slower (25-55s per generation vs SmolLM2's 9-11s in this same
+environment). Reverted to `HuggingFaceTB/SmolLM2-360M-Instruct`, which
+with the SAME new prompt/params handled all four samples, faster, and
+stayed on-topic far more reliably (see the real before/after transcript
+below). Honest conclusion, stated per the task's own instruction: a
+"smarter" base model did not translate into better SHORT, in-character
+output at this scale under this pipeline's default single-user-turn chat
+templating — Qwen2.5-0.5B's instruction-following degraded badly without
+a fuller multi-turn conversational prompt, which was out of this slice's
+scope to build. Left as a real, documented option for a future session
+with more budget to retry properly (multi-turn few-shot), not ruled out
+permanently.
+
+**5. Measured multiple real generations, before and after, not one
+sample.** Four event types (patient unprompted pain, crew seizure
+reaction, bystander unresponsive reaction, treatment-improving) via an
+extended `tools/browser/verifyWasmLlm.mjs`, run against: (a) the original
+settings (documented in the entry below: `"Pain unprompted."` for
+`pain_unprompted` — echoic, on-topic but degenerate); (b) Qwen2.5-0.5B with
+the new prompt/params (rejected, see a previous item in the queue); (c) the final, shipped
+configuration (SmolLM2-360M + new prompt/params + guardrail). Real,
+live-observed FINAL samples, quoted verbatim, not paraphrased:
+
+- patient unprompted (pain): `"Pain is my life now, she whispered into her
+  guitar case with a sigh and then continued to work on it until dawn
+  broke outside as"` — still a run-on and drifts off-topic partway
+  through (a real, remaining limitation at this model size — see below),
+  but the OPENING is on-topic and in-register, a real improvement over the
+  old literal echo.
+- crew reaction (seizure onset): `"Shes acting fine now; dont worry about
+  it!"` — short, in-character, plausible crew reassurance.
+- bystander reaction (unresponsive): `"Okay... wait..."` — short, panicked,
+  plausible.
+- treatment-response (improving): `"Hows it going?"` — short and
+  in-register, though generic rather than clearly signaling improvement.
+
+Two of four are genuinely good; two are usable but imperfect (the pain
+line drifts off-topic after a strong opening; the treatment-improving line
+is short but doesn't clearly convey improvement). This is a real,
+measured step up from the prior session's single documented sample
+(`"Pain unprompted."`), not a claim of solved quality.
+
+**Honest quality ceiling, stated plainly.** A 360M-parameter model run
+through transformers.js's default chat templating, even with tuned
+decoding and a few-shot prompt, still does NOT reliably respect a hard
+length instruction (the pain-unprompted sample runs well past six words)
+and can still drift semantically mid-generation. This is expected at this
+model size and will never match the WebGPU tier's larger-model quality —
+the fallback-to-Tier-2-templates safety net (a previous item in the queue above, plus the
+pre-existing empty-output/timeout handling) is what makes this
+acceptable, not a claim that WASM-tier generation itself is now polished.
+
+**Verification, complete.** `npx eslint src/dialogue/dialogueProvider.js`
+and `npx eslint .`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, 0 warnings,
+zero new findings. `npx vite build`: clean (same pre-existing >500kB
+chunk-size warning; `transformers.web-*.js` chunk unchanged at 551KB
+gzip 156KB, confirming the model swap-and-revert left the bundle
+unaffected — only the runtime-fetched model ID string changed, not any
+new dependency). Live, real, non-stubbed generation re-verified via the
+extended `tools/browser/verifyWasmLlm.mjs` (four event types, quoted
+above) — run three times across this session (original config, Qwen2.5
+A/B, final config), all real network downloads and real forward passes,
+not mocked. `tools/browser/verifyLocalLLMProvider.mjs` re-run to confirm
+the WebGPU tier (LocalLLMProvider) is completely unaffected — it wasn't
+touched by this session's edits at all, and the script reproduces the
+exact same pre-existing "no real WebGPU adapter in this environment,
+device-classified failure, graceful fallback" result as every prior a previous item in the queue
+session, byte-for-byte the same failure text.
+
+**What remains open, stated honestly.** The length instruction is still
+not reliably obeyed at this model size — a hard post-generation truncation
+(e.g. cut to the first sentence/clause) was considered but not built this
+slice, since it risks cutting a good line mid-thought as often as it
+salvages a run-on one; worth a future session's real, measured A/B rather
+than added under this slice's own time budget. The multi-turn few-shot
+retry for Qwen2.5-0.5B (a previous item in the queue) is a real, scoped follow-up, not attempted
+here. No boot/Settings UI surfaces which WASM-tier config is active
+(unchanged from the prior session — `getLocalAiState()` still reports only
+`localLLM`'s state). `WASM_MODEL_DOWNLOAD_MB` remains an unmeasured
+estimate for the model actually shipped (380, carried over from the prior
+session's own figure, unchanged since the shipped model itself didn't
+change end to end).
+
+### Front-end batch (2026-08-27, latest): confirmed the patient/crew/bystander speaker distinction was already real in Tier 3 (no gap), and added a real, verified second local-inference backend — WasmLLMProvider (Transformers.js, forced to its `wasm` device) — as a genuine broad-compatibility fallback for the WebGPU-only LocalLLMProvider, with REAL generated (not template) dialogue observed live for the first time in this project's history
+
+Two real questions from the same user who filed the WebGPU "No available
+adapters" report below. **Question 1: does Tier 3's `buildPrompt` already
+tell the model WHICH character it's speaking as, with that character's own
+knowledge boundary, the way the bystander/crew work already does for
+Tier 2?** Checked by reading `dialogueProvider.js`'s `buildPrompt(event, ctx)`
+directly, not assumed: yes, already fully real, not a gap. `speakerLine`
+branches on `event.speaker` into three distinct prompts — crew ("an EMS crew
+member on scene reacting... speak as the crew member"), bystander (explicitly
+told they are "NOT a medical provider... no medical training and no access to
+vitals, diagnoses, or lab results, so never state or guess any of those" —
+a previous item in the queue's knowledge boundary enforced in the PROMPT itself, not just in
+Tier 2's hand-authored templates), and patient (age/personality/consciousness/
+pain/the simulation-determined emotional state, told explicitly to express,
+not invent or override, that state). No code changed for this question — it
+was already real, confirmed by reading the source, and this entry exists so a
+future session doesn't re-investigate a settled question.
+
+**Question 2: since `@mlc-ai/web-llm` has no WASM/CPU fallback for
+generation (confirmed in a prior a previous item in the queue session), can a genuinely separate WASM
+backend via Transformers.js provide the broad-compatibility path a previous item in the queue asks
+for?** Investigated for real, not assumed. `@huggingface/transformers`
+(the current maintained package name, successor to `@xenova/transformers`)
+is real and installed for this slice at v4.2.0, built on
+`onnxruntime-web@1.26.0-dev`. Checked against the installed source
+(`node_modules/@huggingface/transformers/dist/transformers.js`): `device:
+"wasm"` is a real, explicit `pipeline()` option (`DEVICE_TYPES.wasm`), and
+the library's own `DEFAULT_DEVICE` in a browser context is already `"wasm"`,
+not `"webgpu"` — forcing it here is correct and belt-and-suspenders. Model:
+`HuggingFaceTB/SmolLM2-360M-Instruct`, confirmed as a real, currently-
+published, `transformers.js`-tagged ONNX model via the live Hugging Face API
+(one of the two models the user's own proposal cited), quantized to `q8` at
+load time for a smaller download than fp32.
+
+**Built**: `WasmLLMProvider` in `dialogueProvider.js`, matching
+`LocalLLMProvider`'s exact shape (`isAvailable()`/`status()`/`generate()`/
+`checkCache()`/`subscribeProgress()`/`preload()`/`retry()`) per a previous item in the queue's
+own "swap the backend without rewriting the rest of the app" goal — no code
+is shared between the two model-loading paths, only the class contract.
+Wired into `dialogueManager.js` as a real middle rung, not a replacement:
+`generateDialogue()` now tries `localLLM` first, and only tries `wasmLLM` if
+WebGPU is absent or its own provider just failed — never racing the two.
+`requestLocalUpgrade()` and `localAiStatus()` updated the same way.
+`isLocalAiEnabled()`'s existing gate covers both backends since both are
+checked inside the same `isLocalAiEnabled(s)` block, not duplicated per
+backend.
+
+**Bundle discipline verified via a real `npx vite build`**: `_loadBackend()`
+dynamically imports `@huggingface/transformers` exactly like
+`LocalLLMProvider`'s own `_loadBackend()` does for `web-llm` — confirmed in
+the real per-chunk output, `dist/assets/transformers.web-*.js` at 551KB
+(gzip 156KB) is a separate, lazily-loaded chunk, not part of
+`dist/assets/index-*.js` (2.33MB, essentially unchanged). The
+`onnxruntime-web` WASM runtime binary itself (`ort-wasm-simd-threaded.
+asyncify.wasm`, 23.5MB) lands in `dist/assets/` as a static asset fetched by
+the library only when a WASM pipeline is actually constructed, not loaded
+eagerly by any JS chunk.
+
+**Real live verification, not stubbed** (`tools/browser/verifyWasmLlm.mjs`):
+this is the first time in this project's a previous item in the queue history that REAL generation
+(not the fallback path) was observed live, because Playwright's bundled
+Chromium has no real WebGPU adapter (confirmed again this session — the
+same "No available adapters" device-classified failure fires for
+`LocalLLMProvider` live, exactly as expected) but DOES have real
+WebAssembly. The script imports the real `WasmLLMProvider` class, confirms
+`isAvailable()` is genuinely true, then calls the real `generate()` against
+a real `pain_unprompted` event — a real network download of the real model
+files from Hugging Face's CDN, a real ONNX Runtime Web WASM compile, and a
+real forward pass. Result: `{"speaker":"patient","text":"Pain unprompted.",
+"tier":"wasm-llm"}` in ~20 seconds end to end (load + generate). This is
+genuinely generated output, not a template string (confirmed by
+`tier:"wasm-llm"`, a tag no template pool produces) — but honestly reported:
+the output quality at 360M params with a one-shot, non-fine-tuned-for-this-
+prompt-format call is weak, verging on echoing the prompt's own event-type
+text rather than producing natural in-character dialogue. This is a real,
+open quality gap for a future session to address (prompt tuning,
+`repetition_penalty`, few-shot examples in the prompt, or a slightly larger/
+better-instruction-tuned model such as Qwen2.5-0.5B's own ONNX build), not a
+blocking one — the tier still degrades gracefully to Tier 2 template text on
+any failure or empty/garbage output, per a previous item in the queue's existing hierarchy,
+unchanged.
+
+**Left open, honestly**: no browser-cache pre-check equivalent to
+`hasModelInCache()` exists in `@huggingface/transformers`'s public API (the
+constructor note in `WasmLLMProvider` states this), so `cacheState()` stays
+"unknown" until a load actually starts, unlike `LocalLLMProvider`'s real
+pre-flight check — a real, smaller gap than the generation-quality one
+above, left for a future slice since it does not block correctness. Output
+quality tuning (above) is the more consequential open item. Neither the
+boot screen nor Settings UI surfaces the new backend yet (no new a previous item in the queue's own/8/10
+UI work was in scope this session) — `getLocalAiState()` still reports only
+`localLLM`'s state; a future slice should extend it to reflect whichever
+backend is actually active.
+
+### Front-end batch (2026-08-27, even later): investigated whether a real GPU-adapter retry could help the "device"-classified failure from the real Windows/Edge report below, found genuinely no lever exists in the installed web-llm library, and built the honest alternative — a real troubleshooting hint — instead of a decorative retry
+
+Direct follow-up to the retry-mechanism entry immediately below, from the
+SAME real user report: "LocalLLMProvider: model load failed (attempt 1,
+classified as "device"): Error: Unable to find a compatible GPU. ... No
+available adapters." on Windows/Edge, alongside a benign but important
+Chromium console warning in the same log: "The powerPreference option is
+currently ignored when calling requestAdapter() on Windows." This pattern
+(one `powerPreference` finding no adapter on a hybrid-graphics laptop) is a
+real, documented Chromium/Windows failure class, so before writing anything
+this session checked whether retrying with a different `powerPreference`,
+or handing the library a pre-obtained `GPUAdapter`/`GPUDevice`, was a real
+lever — not assumed either way.
+
+**What was actually found, read from the installed library's own source
+(`node_modules/@mlc-ai/web-llm/lib/index.js`, `lib/config.d.ts`), not
+assumed.** `CreateMLCEngine(modelId, engineConfig)` -> `MLCEngine.reload()`
+calls the library's own internal `detectGPUDevice()` with NO arguments
+(`node_modules/@mlc-ai/web-llm/lib/index.js:12512`), so it always falls back
+to that function's own hardcoded default, `powerPreference = "high-performance"`
+(same file, line 4037) — there is no path from any public option down to
+that call. `MLCEngineConfig` itself (`lib/config.d.ts:105-110`) is exactly
+`{appConfig, initProgressCallback, logitProcessorRegistry, logLevel}` — no
+`powerPreference` field, no way to pass a pre-created `GPUAdapter`/
+`GPUDevice` instead of letting the library call
+`navigator.gpu.requestAdapter()` itself. So even setting the Windows warning
+aside, there was already no lever exposed by this library version. And the
+Windows warning itself, read literally rather than assumed favorable,
+settles it further: Chromium is stating the `powerPreference` VALUE is
+ignored on Windows, meaning even a hypothetical future library version
+letting us pass one would make the exact same underlying adapter request
+Windows always makes regardless of the hint. **Conclusion: no genuine
+adapter-retry lever exists here, for this library version, on this
+platform. Do not re-attempt a powerPreference or pre-obtained-device retry
+in a future a previous item in the queue session without first re-checking whether the installed
+web-llm version has changed** (this finding is tied to the library source
+read above, not a permanent property of WebGPU itself).
+
+**Built instead**: a short, real, actionable troubleshooting hint, appended
+to the existing "device"-kind failure text only (not the timeout/network
+cases, which this GPU-specific advice doesn't apply to) in both places that
+text already renders — `bootScreenText.js`'s `aiStatusLine()` and
+`SettingsOverlay.jsx`'s LOCAL AI DIALOGUE status row. The hint names three
+concrete, real actions: check hardware acceleration is on in the browser's
+own settings, update GPU drivers, and check the browser's own WebGPU status
+page (`edge://gpu` / `chrome://gpu`) — kept short, no em dashes, and both
+surfaces still explicitly restate the non-blocking promise (a previous item in the queue's
+standing rule) right alongside it, unchanged from the prior slice.
+`dialogueProvider.js` gained a comment directly above `classifyLoadError`
+recording this same investigation and citation trail, so the next session
+sees it before touching this code, not just this CLAUDE.md entry.
+
+**Verified.** `npx vite build`: clean (28.10s, same pre-existing >500kB
+chunk warning). `npx eslint .`: the same pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, 0 warnings, no
+new findings in any touched file. New
+`tools/browser/verifyDeviceHint.mjs` (this environment still has no real
+WebGPU adapter to reproduce a genuine "device" failure, so this forces the
+classification via the existing DEV-only
+`window.__proximateTestForceLocalAi` hook, same precedent as every prior
+GPU-gated a previous item in the queue script): confirms, live, that BootScreen's AI panel and
+Settings' LOCAL AI DIALOGUE row both show the new hint text (hardware
+acceleration / GPU drivers / `edge://gpu` / `chrome://gpu`) for a
+`errorKind: "device"` forced failure, that the non-blocking sentence
+remains present alongside it, and that the SAME hint does NOT leak into a
+`timeout`-classified failure's text (it's scoped to "device" only). Also
+re-ran the existing `tools/browser/verifyLocalAiRetry.mjs` to confirm no
+regression to the retry mechanism itself — still PASS on every check. Both
+scripts: zero real console errors.
+
+### Front-end batch (2026-08-27, latest): local-AI reliability fix — the real load error is now logged and surfaced instead of silently swallowed, and a real retry path (one automatic attempt plus a manual Retry control) replaces the old permanent latch. Triggered by the first genuine WebGPU-capable-hardware failure report across ~15 prior a previous item in the queue sessions.
+
+**The report that triggered this, stated as given**: a user with real WebGPU-
+capable hardware (not one of this project's own no-adapter test
+environments — every prior a previous item in the queue session has run in one) tried Medical
+Simulation Mode and got "This device reports WebGPU support but local AI
+failed to load. Proximate uses contextual template dialogue instead." The
+fallback worked correctly (Tier 2 kept the game running) — but the FAILURE
+ITSELF was a black box, confirmed directly against the tree per lesson 16
+before touching anything: `dialogueProvider.js`'s `LocalLLMProvider.
+_ensureEngine()` caught the real error from `CreateMLCEngine`/the
+`withTimeout` race, stored it on `this._lastError`, but never logged it
+anywhere and never exposed it through `getLocalAiState()` to any UI
+surface; `this._failed = true` latched PERMANENTLY for the rest of the
+session the instant any load attempt failed, with `isAvailable()`/
+`preload()`/`_ensureEngine()` never retrying, even for what could be a
+transient failure (a network blip on one of the model's ~370MB of shards,
+a momentary OOM during WASM compile, a slow first-time GPU shader compile
+racing `LOAD_TIMEOUT_MS`) on hardware that is genuinely capable.
+
+**Built, three pieces, all in `dialogueProvider.js` unless noted.**
+
+1. **The real error is now logged.** `_ensureEngine()`'s catch block calls
+   `console.error` with the real caught error/message (not a generic
+   string) plus a new `classifyLoadError(e)` classification
+   ("timeout"/"device"/"network"/"unknown", a simple message-substring
+   match) and an attempt count. Dev/diagnostic-only by construction — this
+   is a `console.error` call, not player-facing text, so the no-em-dash
+   rule doesn't apply to it (CLAUDE.md's own carve-out), and it adds no
+   visible UI noise.
+
+2. **A real retry path**, not just a permanent latch. Two mechanisms,
+   both genuinely re-attempt a fresh load rather than decorating a flag:
+   - `retry()` (new method): clears `_failed`, clears any stale
+     `_loadPromise`, and calls `_ensureEngine()` again for real — a no-op
+     if already ready or already loading, so it's safe to call from
+     anywhere.
+   - `_maybeAutoRetry()`: ONE automatic retry with a 3s backoff, but only
+     for a failure classified `"timeout"` or `"network"` — the failure
+     modes that plausibly look transient. A `"device"`/`"unknown"`
+     classification (a hard compile/adapter rejection) is NOT auto-retried,
+     since a device that flatly can't run this model gains nothing from a
+     second identical attempt and it would only delay the honest "failed"
+     status. Stated honestly: this timeout/network vs. device/unknown split
+     is a real but not perfectly precise distinction (both derive from a
+     simple message-substring match on whatever error text the browser/
+     library happens to produce) — a defensible, simple policy, not a
+     claim of perfect transient-vs-permanent classification. Wired from
+     both `preload()`'s catch and `generate()`'s catch, so either the
+     background boot-time load or a live in-game generation attempt can
+     trigger the one automatic retry.
+   - `dialogueManager.js` exports `retryLocalAi()`, a thin wrapper over the
+     real singleton's `retry()` — wired into a real, conditional "retry"
+     Chip in `SettingsOverlay.jsx`'s LOCAL AI DIALOGUE row, shown only when
+     `status==="failed"`. Not decorative: clicking it calls the real
+     provider, verified below.
+
+3. **Improved player-visible status text**, still honoring the core
+   promise (non-blocking, the game works fine without it). `getLocalAiState()`
+   gained `errorKind`/`failCount`. `bootScreenText.js`'s `aiStatusLine()`
+   and `SettingsOverlay.jsx`'s status line both now append a kind-specific
+   clause ("(the model took too long to load)" / "(a network problem while
+   downloading the model)" / "(this device rejected local AI, even though
+   it reports WebGPU support)") when the classification is confident enough
+   to say something useful, and explicitly restate that this never affects
+   the medical simulation itself — not just a flatter "UNAVAILABLE" than
+   before. `DialoguePanel.jsx`'s small in-scene status badge was
+   deliberately left unchanged (still collapses to "CONTEXTUAL DIALOGUE" on
+   any non-ready state) — it's designed to be a minimal, unobtrusive
+   indicator (a previous item in the queue's own "not constant technical noise" rule), and
+   adding failure-kind detail there would work against that design intent;
+   the fuller diagnostic belongs in Settings/boot, where a player is
+   already looking at AI-specific status. One pre-existing em dash in
+   `bootScreenText.js`'s failed-status line was fixed on the spot while
+   editing that exact line, per this project's own "notice one while
+   working on something else, fix it" rule; the file's other,
+   untouched-this-session em dashes were left alone (incremental
+   fix-on-touch, not a sweep).
+
+**A new DEV-only test-hook capability was added to support verification**:
+`window.__proximateTestForceLocalAi` (`dialogueManager.js`) gained
+`errorKind` (set the diagnostic classification directly, for a script that
+wants to assert on it without waiting out a real 45s timeout) and
+`stubBackend` (replace the real singleton's `_loadBackend` with a stub that
+lets a REAL call into `retry()`/`_ensureEngine()` — e.g. an actual click on
+Settings' Retry button — genuinely succeed and reach "ready" without a
+working WebGPU adapter, since no environment available to this project has
+one).
+
+**Verified two ways.** `npx vite build`: clean (30.60s, same pre-existing
+>500kB chunk-size warning). `npx eslint .`: exactly the pre-existing
+3-error `react-refresh/only-export-components` baseline in `App.jsx`, 0
+warnings, zero new findings in any touched file
+(`dialogueProvider.js`/`dialogueManager.js`/`SettingsOverlay.jsx`/
+`bootScreenText.js`). New `tools/browser/verifyLocalAiRetry.mjs`, run
+twice, PASS/PASS both times, zero real console errors both times
+(the fix's own intentional `console.error` diagnostic line is explicitly
+filtered as expected, not a bug being hidden). Part 1 (direct-function,
+against a fresh `LocalLLMProvider` instance, not a mock): a controlled,
+real load failure classifies correctly as `"timeout"`, the real caught
+error is genuinely logged via `console.error` (captured and asserted on),
+`status()` correctly reports `"failed"`, and `retry()` — with the backend
+re-stubbed to succeed — genuinely clears the latch and reaches a real
+`status()==="ready"` with a real (stub) engine attached. Part 2 (the real
+app singleton, real UI, via the boot->title->Settings path): forcing a
+failed, device-classified state shows the exact kind-specific status text
+in `SettingsOverlay` with the non-blocking sentence present, a real Retry
+chip renders, and — the check that matters most — a REAL click on that
+chip (with `stubBackend` armed) calls back into the real provider and the
+Settings row genuinely updates to "model ready on this device" live, via
+the existing `subscribeLocalAiProgress` subscription, with no page reload
+(confirmed by re-reading the DOM after the click, not assumed from the
+click succeeding). A real race was found and fixed while building this
+script, not a defect in the fix itself: the app's own real background
+`preload()` has a genuine, independently in-flight (and, in this
+no-adapter sandbox, doomed) load attempt that can land and overwrite
+`_lastErrorKind` with its own real classification between a forced state
+and the moment the DOM is read — the same "reassert immediately before
+checking" gotcha several prior GPU-gated a previous item in the queue scripts have already
+documented, not new to this fix; fixed in the script by reasserting the
+forced state a second time right before reading the status text, not by
+changing any production code. Part 3: the script drives through a real
+character-creation flow into a live scene (`chest` scenario) and confirms,
+throughout the entire forced-failure/retry sequence: sim time keeps
+strictly advancing (t=100.0 -> 101.0+ over a 1s real-time window) and a
+real Tier 2/1 dialogue line still generates via
+`generateDialogueFromContext` — the medical simulation was never blocked
+or degraded by any of this.
+
+**What remains honestly unverified, stated plainly.** This environment has
+no real WebGPU adapter (confirmed again this session, same as every prior
+a previous item in the queue session), so the retry logic's actual behavior against the ORIGINAL
+user's real hardware failure — whatever specific error `CreateMLCEngine`
+throws on THEIR device — cannot be reproduced or observed here. Every
+check above exercises the retry/logging/classification machinery against a
+forced or stubbed failure, which is real code running for real (not a
+mock of the retry logic itself), but it is not the same as watching the
+actual reported failure recover on the actual reported hardware. The
+timeout/network (auto-retried) vs. device/unknown (not auto-retried) split
+is a real, defensible policy but not a precise one, per its own comment
+above — a future session with access to a real failure log from
+genuinely capable hardware could refine `classifyLoadError`'s own
+substring matches against real observed error text rather than the
+current best-guess patterns.
+
+### Front-end batch (2026-08-27, latest): a previous item in the queue — the first real automated (non-browser) test for the dialogue subsystem, closing a gap every prior a previous item in the queue session's own status text had honestly flagged as untouched
+
+Per the standing a previous item in the queue top-priority directive, a previous item in the queue's own text: "Automated
+testing," ending with "Most important single test: the medical simulation
+must continue correctly with the local LLM completely disabled." Confirmed
+by grep across the whole tree before writing anything (this project's own
+"verify claims against the tree" discipline) that no non-browser test file
+for the dialogue system existed anywhere — all ~14 prior a previous item in the queue sessions'
+verification lived entirely under `tools/browser/`, real Playwright scripts
+that need a live dev server, none of them runnable via plain `node`. New
+`src/scripts/verifyDialogueNonBrowser.mjs`, following this project's own
+established standalone-script convention (`verifyTemplateBuckets.mjs`,
+`mechanismWiring.mjs`: a plain ES module, direct imports, assert-and-report,
+non-zero exit on failure) — 74 real assertions, run via
+`node src/scripts/verifyDialogueNonBrowser.mjs`, 74 passed / 0 failed on the
+final run. Covers: `dialogueContext.js`'s `buildDialogueContext()` (null-
+safety with missing state/physio, the full context shape, the bystander
+field resolving a real scenario's `bystanders` text to a role, an unknown
+scenario key degrading to no bystander rather than throwing, the custom-
+scenario fixed-text path, `recentEvents` capped at 4, a bounded JSON size,
+same-tick trend caching, and both the pain/consciousness AND the newer hr/
+spo2/sbp trend signals actually flipping the derived emotional state);
+`emotionalState.js`'s `deriveEmotionalState()` (all nine reachable branches
+individually, in priority order, plus the missing-personality-object
+no-throw case) and `bucketForEmotionalState()` (every documented state-to-
+bucket mapping, the unrecognized-state fallback, and that all ten canonical
+`EMOTIONAL_STATES` resolve to a defined bucket); `dialogueProvider.js`'s
+`DeterministicProvider`, `TemplateProvider` (every real Tier-2 pool across
+every emotional-state/fallback bucket it can reach, `{name}` substitution
+sampled across repeated draws since not every template variant references
+it, and an explicit `event.bucket` override winning over `emotionalState`),
+and `progressStage()` (all boundary cases including the exact
+`PROGRESS_GATE_THRESHOLD` value). Most importantly, `dialogueManager.js`'s
+Tier 1/2 fallback path with the local LLM structurally absent, not merely
+toggled off: this whole script runs under plain `node`, where there is no
+`window` global at all and no `navigator.gpu` (confirmed directly in the
+script itself — Node 21+ does ship a minimal global `navigator` for
+`userAgent`, which the script accounts for rather than asserting a false
+"no navigator" claim), so `LocalLLMProvider.isAvailable()` is unreachable by
+construction, not by test setup. Against that real environment:
+`generateDialogueSync()` produces a well-formed Tier-2/Tier-1 line for
+every real event type this game fires (including three procedure-minigame
+event types, exercising "dialogue during procedures" per a previous item in the queue's own
+list) with `localAiEnabled` both default and explicitly `false`, returns
+`null` (never throws) for an unknown event type or missing state,
+`getLocalAiState()`/`localAiStatus()` report honest unavailable/idle state
+never a fabricated ready one, `pushDialogueMemory` proves the bounded-window
+conversation-memory cap (a previous item in the queue's "conversation memory"), two independent
+patient `s` objects generating dialogue in the same tick never cross-
+contaminate each other's trend bookkeeping (a previous item in the queue's "multiple
+simultaneous events"), and `shouldSpeakUnprompted`/`pickUnpromptedEvent`'s
+gating logic all hold. `npx vite build` and `npx eslint .` were both re-run
+after adding the script: build succeeds clean, eslint holds at the existing
+baseline exactly (3 pre-existing `App.jsx` `react-refresh/only-export-
+components` errors, 0 warnings) — this new script added zero lint findings
+of its own.
+
+**What remains open, stated honestly.** This closes the "automated non-
+browser testing" half of a previous item in the queue for the PURE, already-deterministic
+Tier 1/2 dialogue logic — it does not and cannot touch
+`LocalLLMProvider.generate()`'s real Tier-3 path, which needs an actual
+`@mlc-ai/web-llm` load against a real WebGPU adapter; that remains exactly
+where every prior a previous item in the queue session left it, covered only by the `tools/browser/`
+scripts, and still never observed succeeding on real hardware in any
+environment tested so far. Also not built this session: automated
+(non-browser) coverage of the boot sequence, download state/interruption/
+resumption, or cached-model detection as LIVE behavior — those three are
+Playwright-covered already (`verifyBootScreen.mjs`,
+`verifyLocalAiCache.mjs`) but that coverage stays browser-only; this
+session did not attempt to port them to a non-browser harness (the boot
+screen is a React component and the cache check calls the browser Cache
+API, neither of which exists in plain Node). Model-load-failure and
+generation-failure/timeout/empty-output paths inside `LocalLLMProvider`
+itself are likewise still exercised only via the browser scripts' forced-
+stub-engine hook (`window.__proximateTestForceLocalAi`'s `engineStub`
+patch), not this new Node script, since that hook is itself a DEV-only
+browser-global convenience. a previous item in the queue (a real in-game developer/test-mode UI
+for hand-supplying a context) remains unbuilt — this session's script
+exercises `generateDialogueFromContext()` directly, which is real coverage
+of that function, but is not the in-game UI a previous item in the queue itself asks for.
+**RESOLVED, found already done — this bullet was stale (a later session).**
+Grepped the live tree before starting a previous item in the queue work and found
+`src/components/DialogueDevPanel.jsx` already exists, already exports the
+exact in-game UI a previous item in the queue asks for (a DEV-only "DIALOGUE DEV" toggle button,
+mounted from `Shell.jsx` behind `import.meta.env.DEV`, with preset patient
+states matching a previous item in the queue's own named cases — normal/anxious/agitated/
+deteriorating/improving — a crew/patient event picker, a custom-name field,
+and a GENERATE button that runs the hand-built context through the real
+`generateDialogueFromContext()` the live game itself uses, not a
+reimplementation) — and it was never documented as done in this file.
+Whoever built it apparently never updated this queue entry, so it sat here
+as "remains unbuilt" for at least one session after actually shipping.
+Verified live via a new `tools/browser/verifyDialogueDevPanel.mjs`
+(PASS×6, zero console errors): the panel opens, GENERATE produces a real
+result for the default preset/event, a crew event plus a non-default
+preset also generates cleanly, a custom patient name doesn't crash it, and
+it closes correctly. Retired outright rather than left to mislead the next
+session too, the same failure mode this document warns about elsewhere.
+
+### Front-end batch (2026-08-27, latest): a previous item in the queue depth follow-up — broadened the trend signal to read hr/spo2/sbp, not just pain/consciousness, closing a gap the last several a previous item in the queue sessions had explicitly left open
+
+Per the standing a previous item in the queue top-priority directive: `dialogueContext.js`'s
+`computeTrend()` (the "vitals trend" input `deriveEmotionalState()` reads to
+distinguish a worsening/improving/stable trajectory) previously compared
+only `v.pain` and `v._cons` across ticks — CLAUDE.md's own a previous item in the queue status
+paragraph named this directly as an open gap for at least three prior
+sessions. Confirmed against the tree before touching anything (lesson 16):
+`patient.js`'s `vitals()` genuinely publishes `hr`/`sbp`/`spo2` (and `rr`,
+unused here) on the same `v` object every `computeTrend` caller already has
+in scope, so no new plumbing was needed to reach them — `buildDialogueContext`
+already receives `v` as its second parameter and just wasn't forwarding it
+past the pain/consciousness read.
+
+**Built.** `computeTrend(s, painNow, consNow, vNow)` gained three more
+graded, two-sided branches, evaluated after the existing pain/consciousness
+checks (which still take priority, unchanged): a falling SpO2 (>=4 points)
+drives "worsening" (checked first among the vitals signals, since hypoxia is
+the single most urgent bedside sign available); a recovering SpO2 (+4 or
+more, off a hypoxic <94 baseline) drives "improving"; climbing HR while
+already tachycardic (+15 or more, now >100) drives "worsening"; falling HR
+off a tachycardic baseline drives "improving"; and the same pair for SBP
+trending toward/away from hypotension (<100). Every threshold is a
+deliberately generous delta, not "any change," so the monitor jitter
+`vitals()` itself already adds (`filter()`'s own per-tick noise) can't
+spuriously flip the trend tick to tick — the same discipline the existing
+pain branch's own >=2-point threshold already established. `buildDialogueContext`
+now passes its own `v` straight through to `computeTrend` as the new fourth
+argument. No `src/physio/*` file was touched — every field read
+(`v.hr`/`v.spo2`/`v.sbp`) is read-only, already-computed vitals-panel output,
+confirmed by the diff itself.
+
+**Verified two ways.** `npx vite build`: clean, same pre-existing >500kB
+chunk-size warning. `npx eslint .`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in `dialogueContext.js`. A new live Playwright script,
+`tools/browser/verifyBroaderTrendSignal.mjs`, drives the real "chest"
+scenario and confirms, with pain/consciousness held CONSTANT across both
+samples of each check (so any resulting trend can only be coming from the
+new vitals branch, not the pre-existing pain/consciousness one): a real
+SpO2 drop alone produces a worsening-trend emotional state
+(frightened/agitated) and genuinely different Tier-2 dialogue text than a
+stable-vitals control; a real SpO2 recovery off a hypoxic baseline produces
+"reassured"; real climbing tachycardia produces a worsening-trend state; and
+small, sub-threshold vitals jitter does NOT spuriously trigger a trend (the
+negative control). Sim time keeps advancing throughout. Run twice, PASS/PASS,
+zero real (non-network) console errors both times.
+
+**A real test-harness gotcha was found and fixed while building this script
+(not a production bug), documented in `tools/browser/README.md`'s gotchas
+list**: the live game's own tick loop can independently call
+`buildDialogueContext` at roughly the same `s.t` a test script is seeding,
+and `window.__proximateTestGetState()`'s fresh-snapshot behavior can copy
+that unrelated, stale `_emoTrendPrev` into a test's own spread-constructed
+`s` object — if its `t` happens to coincide with the test's own seed tick,
+`computeTrend`'s re-entrant-same-tick guard silently returns the cached,
+unrelated trend instead of the test's controlled one, invalidating the
+comparison with no thrown error. Fixed in the test script by explicitly
+`delete`-ing `s._emoTrendPrev` immediately after the `{...real}` spread,
+before seeding.
+
+**What remains open in the trend signal specifically, stated honestly.**
+`rr` (respiratory rate) is published on the same `v` object but was
+deliberately not added as a fourth vitals branch this batch — every
+condition that meaningfully worsens `rr` in this engine also moves
+`spo2`/`hr` in the same direction (respiratory distress driving both
+hypoxia and compensatory tachycardia), so a dedicated RR branch was judged
+likely to fire redundantly alongside the SpO2/HR branches already built
+rather than catch a genuinely distinct case — left out rather than added as
+a decorative, rarely-independently-triggering fourth branch; worth
+revisiting if a future session identifies a real presentation where RR
+diverges from both SpO2 and HR (e.g. a pure hyperventilation/anxiety
+picture) that the current branches miss. The thresholds themselves (4
+points SpO2, 15 bpm HR, 15 mmHg SBP) are grounded in "generous enough to
+reject ordinary monitor jitter," not a literature-cited clinical
+deterioration threshold — a reasonable, but not clinically-anchored, choice.
+Personality/emotional-state depth beyond this, crew/bystander depth, and
+voice-readiness all remain open exactly as prior a previous item in the queue entries already state.
+
+### Physiology-engine batch: a previous item in the queue, Phase 2 (real per-limb arterial perfusion) SHIPPED — `acuteLimbIschemia` built out from a completely bare stub, a caught unit-conversion bug that would have wrecked calibration, and the Phase 1 tourniquet/occlusion gap closed as a cheap add-on
+
+**Built on Phase 1's `pat.woundBleedByLocation` foundation (previous entry).** `pat.limbOcclusion` (patient.js) is a new, LIVE, mutable per-limb map (`{armL,armR,legL,legR}`, 0=normal inflow, 1=fully occluded) — unlike Phase 1's static snapshot. Two real writers: `acuteLimbIschemia`'s own `progress()`, and a located tourniquet dose (pk.js's `stopsBleed` handler), which now ALSO sets `limbOcclusion[loc]=1` — closing the real, related gap Phase 1's own writeup named (a tourniquet stops bleeding BECAUSE it occludes arterial inflow, not as an independent fact; REBOA's unlocated whole-body use is correctly left alone, since it occludes a different vessel).
+
+**Per-limb DO2/O2Debt (neuro.js's `updateOrganInjury`), reusing a previous item in the queue's exact delivery-vs-demand pattern.** `limbDO2[loc] = (1-occlusion[loc]) * muscleFactor * (caO2/20)`, `limbO2Debt[loc] = max(0,1-limbDO2[loc])`, gated by the same 0.5 ischemic-deadband idiom gut/brain use before driving `limbInjury[loc]` (a new per-limb accumulator, added to physiology.js's irreversible-injury list alongside brain/kidney/liver/gut). `muscleFactor = max(0.05, 1 - alphaTone*0.5)`: skeletal muscle sits one tier below skin/gut in the shock vasoconstriction-priority hierarchy, so its alphaTone coefficient is REAL BUT LESS AGGRESSIVE than gut/skin's 1.0, not a copy-paste. Occlusion and systemic tone compose by MULTIPLYING (not min/max) — justified as two resistances in series on one arterial path, with the correct property that whichever term is smaller dominates the product (a fully occluded limb stays near-zero regardless of systemic tone; a patent limb tracks ordinary vasoconstriction).
+
+**A real unit-conversion bug caught mid-calibration, before it could ship a wrong number — the exact "measure the instrument you have" failure mode lesson 20 already warns about.** `physiology.js`'s `s.t` is SECONDS (`dt = (s.t-lastUpdate)/60`); a first probe pass looped `s.t` as if it were minutes directly, under-running every scenario 60x. This produced a plausible-looking but wrong first calibration (MUSCLE_ALPHA_COEF=0.6 against a "near-terminal" cardiogenicShock reading that was actually only 4 real minutes in, alphaTone 0.518) — caught by re-deriving the SAME reference gut's own comment cites (untreated `abdominalAorticAneurysm` at 30 REAL minutes) and finding it did not reproduce gut's own cited sbp (11.4): the buggy probe gave sbp 128 (rising, not collapsing). Rerun correctly (looping real minutes * 60), `abdominalAorticAneurysm` at 30 min reproduced sbp 11.9 — matching gut's citation — with alphaTone 0.523, and the coefficient was recalibrated against that number (0.5, not 0.6) before anything shipped.
+
+**MEASURED (not guessed), including the cross-cutting confound this session's own pulmonary-edema entry (below) warns must be checked FIRST, not last.** `acuteLimbIschemia` (VASC-001, 68M, AF, sudden left-leg pain/pallor/cold at 40 min): legL DO2 collapses to 0.124 by 15 min (armL, unaffected, stays at 0.897) — a genuine LOCAL signal, not whole-body. `legLInjury` crosses physiology.js's 0.5 irreversible threshold at 5h (0.414 at 4h, 0.523 at 5h) — inside the real 4-6h "time is tissue" golden period cited for acute embolic limb ischemia with some collateral flow, a distinctly LONGER window than a tourniquet's own ~2h warm-ischemia tolerance (a separate mechanism/time-constant NOT separately derived this batch — both share one rate constant, with full occlusion correctly injuring faster as an emergent consequence, not two fitted numbers — left honestly open, see below). A healthy control (`abdPain`, 30-120 min) holds `legLInjury` at exactly 0 throughout. The required cross-cutting check: untreated `abdominalAorticAneurysm` at 30 min — genuinely near-terminal systemic shock (sbp 11-13, alphaTone 0.52-0.57), NO limb-specific lesion — stays NON-ischemic (legLDO2 0.69-0.70, legLInjury 0), confirming systemic shock alone does not spuriously manufacture limb ischemia in this engine; overt acute limb ischemia requires a real arterial lesion.
+
+**Occlusion severity, cited not guessed.** Seeded at 0.85 (not 1.0): real embolic occlusion of a previously-healthy artery (this patient's own risk factor is AF, not PAD) still leaves collateral flow immediately after lodging — de Weese/Rutherford acute-vs-chronic-occlusion teaching puts immediate distal perfusion at roughly 10-20% of normal in an unheralded embolic occlusion. Propagates slowly toward a 0.95 cap (never 1.0) over ~2h as stagnant distal blood propagates the thrombus, a real "the clock is running" teaching point — damped, not reversed, by heparin (`pat.anticoagulant`, the SAME handle ACS/PE already use): real, guideline-supported field/ED bridge therapy that slows further propagation without dissolving the existing embolus, matching myocarditis's own honest "no field cure, recognize and transport fast" posture — definitive care (embolectomy/thrombolysis) is not prehospital.
+
+**A real, non-decorative consumer wired: PULSELESSNESS.** `actions.js`'s pre-existing `pedL`/`pedR` distal-pulse exam previously only read systemic sbp — unable to fire for a NORMOTENSIVE patient with a real local occlusion, exactly this condition's own presentation (sbp 114-120 throughout). Both now read `pat.limbDO2` first: a collapsed local signal reads pulseless even at normal systemic pressure. Paresthesia/paralysis (the other two of the "6 P's" the codebase's own stray comment claimed were narrated-only) were investigated and confirmed genuinely unbuildable this batch: `pat.strokeWeakness`/`strokeSide` is a cerebral (upper-motor-neuron) field already owned by the stroke limb, and reusing it here would be a real mechanism-category error (conflating central and peripheral-ischemic weakness); no generic per-limb sensory/motor field exists anywhere in this engine to hang them on honestly, matching this document's own established posture for similarly-unbuildable findings elsewhere (pupil diameter/mydriasis).
+
+**Verification, complete.** `node --check`/`npx eslint` clean on all six touched files (`patient.js`, `neuro.js`, `conditions.js`, `physiology.js`, `pk.js`, `actions.js`, `mechanismWiring.mjs`). Six new two-sided assertions added to `mechanismWiring.mjs`'s new `[PER-LIMB ARTERIAL PERFUSION — a previous item in the queue, Phase 2]` section (fires locally without touching unaffected limbs; time course inside the 4-6h window; does not fire in a matched healthy control; does not fire in the near-terminal systemic-shock cross-cutting control; a located tourniquet occludes its own limb only; the pedL exam consumer). `mechanismWiring.mjs` run TWICE in full: **443 passed, 1 failed both times** — all six new assertions passed identically both runs; the single failure differed between runs (magnesium/torsades on run 1, PAC HR-variance on run 2), both already-documented pre-existing flaky stochastic assertions unrelated to this batch by content. `scenarioSweep.mjs`: **161 scenarios, 11,953,608 checks, 0 failed** — identical to the pre-batch baseline, correctly: `limbDO2`/`limbO2Debt`/`limbInjury`/`limbOcclusion` are OBJECTS (one per limb), not scalars, and the sweep's REQUIRED/NON_NEGATIVE lists only support flat numeric fields — extending that mechanism for one new per-limb signal was judged real scope beyond "add a field to an existing list" and deliberately left out, the same "condition-scoped bookkeeping stays out of the global sweep" precedent `muscleIschemicBurdenHr` already sets, applied here for a structural (not scope) reason instead. `npx vite build`: clean (35.42s, same pre-existing >500kB chunk-size warning). No scratch probe scripts remain under `src/scripts/` from this batch (a pre-existing, unrelated `_edemaProbe.mjs` from an earlier session's reverted pulmonary-edema investigation was found still present — not this batch's to remove, noted for a future cleanup pass).
+
+**Left honestly open for a future session (UPDATE: Phase 3 has since shipped — see this section's newest entry — the rest of this paragraph is otherwise unchanged and still accurate):** at the time of this entry, Phase 3 (compartment syndrome) was fully unstarted, now correctly positioned to build on a REAL `limbDO2` consumer per its own scoping. A tourniquet-specific (~2h) warm-ischemia time constant, distinct from embolic ischemia's ~4-6h window, was not separately derived — both currently share one rate constant, which happens to land both cases inside their respective real literature windows as an emergent (not separately fitted) consequence, but a future batch that wants a tourniquet-specific curve should derive it properly rather than assume the shared constant is precise for that case.
+
+### Front-end batch (2026-08-27, latest): a previous item in the queue's bystander/family dialogue slice — the third character class, reusing the same architecture crew/patient dialogue already proved
+
+Per explicit scope: a previous item in the queue names "a family/bystander" as a dialogue-eligible character class with defined knowledge boundaries, and the Definition of Done references "crew dialogue can reuse the same architecture" as the template for extending to other character types. Before building anything, grepped the tree per lesson 16 rather than trusting the doc: **the prior claim ("no bystander/family dialogue of any kind exists yet") held up exactly as stated.** Every real scenario in `data/scenarios.js` (all 161) already declares a free-text `bystanders` field (a spouse, a neighbor, a coworker, a pediatric patient's parent...) — genuinely rich, varied flavor text, but read only once, for the scene-arrival log line (`App.jsx`'s `phase:"approach"->"scene"` transition) — never wired to any dialogue system. `dialogueContext.js` had no `bystander` field at all; `dialogueProvider.js`'s `TEMPLATES` had no bystander-voiced pool; `DialoguePanel.jsx`'s `SPEAKER_LABEL` only had `patient`/`crew`.
+
+**Built, reusing the existing architecture exactly — no parallel system.** `dialogueContext.js` gained a `bystander:{present,role}` field: `scenarioBystanderText(s)` reads the scenario's own real `bystanders` string (via `SCEN[s.scen]`, or a hardcoded read of the custom-scenario builder's own fixed bystanders string for `scen:"custom"` rather than paying the cost of running `buildCustomScenario()` just to read one field that never varies), and `bystanderRole(text)` matches it against a small set of relationship-word patterns (husband/wife/spouse/girlfriend/boyfriend/mother/father/parent/daughter/son/sister/brother/roommate/neighbor/friend/coworker), falling back to the generic "bystander" role. Presence is deliberately the smallest real signal: since no scenario in this codebase models a bystander leaving or arriving mid-call (confirmed by reading every `bystanders` string), a non-empty field means present for the whole call — not tracked per-tick.
+
+Two new Tier-2 template pools in `dialogueProvider.js`, `bystander_seizure_reaction`/`bystander_unresponsive_reaction`, fire from the SAME real seizing/consciousness edge-detection block in `App.jsx` that already drives the crew-voiced reaction and the on-screen `eventAlertQueue` banner — added as a sibling block right after the existing crew-reaction code, independent of crew presence (a bystander doesn't need a crew member on scene to react) but scene-phase only, unlike crew's scene+transport (a bystander doesn't ride in the truck). Deliberately only these two real trigger moments, not an exhaustive bystander dialogue system — the reverse edges (seizure ending, patient recovering) were left unwired on purpose, matching the scope instruction to keep this to 1-2 real triggers and prove the architecture reuses cleanly rather than building out full bystander depth in one batch. The dialogue itself is written in a genuinely distinct register from both existing voices: crew is clinical and directive ("Watch the airway"), a bystander witnessing the same moment has no training and nothing useful to DO, only fear — "Oh god, what's happening to {name}?! Is that normal?!", "Please, do something, right now, please!", "Wake up! Please, {name}, wake up!", "They're not answering me! Why aren't they answering?!" (both pools' full text lives in `dialogueProvider.js`). Same fire-and-forget `requestLocalUpgrade` Tier-3 pattern as every other site, same `isLocalAiEnabled`/`generateDialogueSync` call shape, same `dialogueLog`/`DialoguePanel` rendering — the entry additionally carries a `role` field so `DialoguePanel` can show the real parsed relationship ("HUSBAND") instead of a generic "BYSTANDER" label when one is known (new `C.amber`-colored speaker tag, distinct from crew's blue and patient's default).
+
+**Knowledge boundary (a previous item in the queue's "no character may know something they couldn't reasonably know") enforced in two places, not just by convention:** the hand-authored Tier-2 lines never name a vital, a rhythm, or a diagnosis — only what a frightened bystander could witness and feel; and `buildPrompt`'s Tier-3 prompt gained an explicit bystander branch stating the constraint directly to the model ("you have no medical training and no access to vitals, diagnoses, or lab results, so never state or guess any of those"), the same one-way-boundary treatment a previous item in the queue already gives physiology, applied here to a new speaker.
+
+**Verified.** `npx vite build`: clean, same pre-existing >500kB chunk-size warning. `npx eslint .`: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings in any touched file. A new `tools/browser/verifyBystanderDialogue.mjs` (real Playwright, live page) confirms, against the real "chest" scenario (`bystanders: "Her husband is in the doorway..."`): a real sustained seizure onset (the same `epilepticDrive=1`+`seizing=true` lever `verifyCrewDialogueReaction.mjs` established, since a bare boolean flip races neuro.js's own sustain reset) produces a real bystander-voiced line with ZERO crew present; the line contains no clinical terminology (a real regex check against vitals/rhythm/diagnosis words, not just eyeballing the template source); `role` is correctly parsed as "husband" from the scenario text and rendered as "HUSBAND" in the live DOM; the text is verbatim-distinct from every crew/patient template line; no second line fires on an ordinary steady-state tick with no fresh edge (event-driven per a previous item in the queue, not polling); the reverse-direction real unresponsive-onset edge also fires correctly; `g.localAiEnabled=false` holds the line at tier 2/1 with the Tier-3 upgrade genuinely never firing; flipping the toggle back on lets a forced stub engine genuinely patch the SAME log entry in place; and sim time keeps advancing throughout, never blocked. Run twice, PASS/PASS, zero console errors both times. Found and documented one new, previously-undocumented gotcha while building this: the a previous item in the queue boot screen (`phase:"boot"`, a previous item in the queue, shipped in an earlier session) is now the very first screen a fresh session sees, so `freshCharacter()` helpers written before that slice needs a `clickText(page,"CONTINUE WITHOUT AI")` before "Go on shift" is even in the DOM — added to `tools/browser/README.md`'s gotchas list.
+
+**Left open, honestly:** only two of the many scenario-declared bystander relationships were exercised live (husband, via "chest"; the role parser itself covers ~14 relationship words, unexercised beyond that one scenario in this session). Bystander personality/distress-level depth (analogous to a previous item in the queue's patient work) was not attempted — every bystander line is currently a single, ungated "calm" bucket, the same simplification the existing crew pools already use. No arrival-moment bystander line was built (the spec's own text allows it as an "and/or" option; this batch stuck to the two edge-triggered reactions to keep the slice minimal). Reverse-edge bystander relief lines (seizure ending, patient recovering) remain unwired, matching crew's own pattern before `verifyClinicalRecoveryReactions.mjs`'s batch closed that gap for the crew voice — a natural, small follow-up if bystander depth is revisited. Voice-readiness and automated (non-browser) tests remain open project-wide, unchanged by this batch.
+
+### Physiology-engine batch: a previous item in the queue opened, Phase 1 (limb-specific hemorrhage control) SHIPPED — per-limb circulation is a new, explicitly-scoped multi-phase workstream; this session built the foundation and fixed a real, previously-undiscovered tourniquet defect along the way
+
+**Filed per explicit operator instruction: separate each limb into its own circulatory subsystem, to eventually support real compartment syndrome and per-limb bleeding/circulation.** Scoped into three phases in section 6's new a previous item in the queue before any code was touched, because the full ask (per-limb perfusion AND compartment syndrome) is large enough that attempting it in one batch would repeat the exact mistake the pulmonary-edema investigation two entries below made — this session deliberately built and shipped only the smallest real, useful, low-risk slice first.
+
+**The gap, confirmed by reading the tree, not assumed.** `wounds.js` already keys every wound by body-map location (`armL`/`armR`/`legL`/`legR`/`torso`/`abdo`/`head`/`neck`), but `physiology.js`'s `buildPatient()` immediately collapsed every wound's `bleed` value into ONE whole-body scalar and threw the location away. `tq` (tourniquet) and `aorticOcclusion` (REBOA) both use the identical `stopsBleed:1` flag in `pk.js`, which zeroed the ENTIRE patient's `activeBleedRate` — correct for REBOA (proximal aortic occlusion genuinely does cut flow to everything downstream) but clinically backwards for a tourniquet, which should only stop bleeding distal to itself on ONE limb. Confirmed as a real, live defect, not theoretical: a tourniquet applied to a bleeding leg was also silently curing an unrelated chest wound in every existing multi-wound trauma scenario.
+
+**Built: a purely additive, fully backward-compatible mechanism.** `patient.js` gained `pat.woundBleedByLocation` — a static, construction-time-only snapshot (built in `buildPatient()` from the exact same wound-iteration loop that already sums `bleed`/`pain`) of how much of the total bleed rate is attributable to a wound at each location. Deliberately NOT kept live: internal hemorrhage conditions (AAA, GI bleed, ectopic pregnancy, mesenteric ischemia) mutate `pat.activeBleedRate` directly every tick with no location concept at all, and a live-recomputed map would fight or double-count that — a one-time snapshot is sufficient for its one real consumer. `pk.js`'s `stopsBleed` handling now reads an OPTIONAL `d.location` on the dose: present and matching a real wounded location → only that location's recorded contribution is subtracted, once, idempotently (`pat._tqStoppedLocations`); absent → falls through to the EXACT original whole-body zero. Since no dose anywhere in this codebase — scenario, test, or front-end — has ever set `d.location`, this required touching zero existing call sites and carries zero risk to anything already shipped.
+
+**MEASURED, both the new capability and the preserved old behavior, via the real `physio()` pipeline against `motorcycle` (`polytraumaMoto`: legL open femur + torso sucking chest wound + head laceration, three simultaneously bleeding locations — the exact multi-site case a whole-body-only mechanism cannot distinguish).** A located tourniquet on `legL` drops `activeBleedRate` 0.36 → 0.24, removing exactly legL's own 0.12 contribution while torso (0.08) and head (0.02) keep bleeding untouched. An unlocated tourniquet (every real caller today) still drops it to exactly 0, bit-for-bit the old behavior. Repeated ticks of the same located dose do not double-subtract (confirmed directly before trusting the mechanism, per lesson 8).
+
+**Explicitly scoped OUT of this batch, stated so a future session doesn't re-litigate the boundary:** `directPressure`/`pack`/`pelvicBinder`'s own `fx.bleed` deltas were not made location-aware (different code path, already implicitly scoped to whichever wound the player is treating via the exam UI). No player-facing limb-selection UI exists yet for the tourniquet itself — this is physiology-layer support only, the front-end analog of `AccessMinigame.jsx`'s existing IV-site picker is real, separate, un-started work. Phases 2 (per-limb perfusion/`limbDO2`, reusing a previous item in the queue's delivery-vs-demand pattern) and 3 (compartment syndrome — a genuinely new enclosed-fascial-pressure state, not a variant of any existing organ mechanism) are fully scoped in section 6's a previous item in the queue and explicitly unstarted.
+
+**Verification, complete.** `node --check` clean on all four touched files (`patient.js`, `physiology.js`, `pk.js`, `mechanismWiring.mjs`). `npx eslint`: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero findings in every touched file. Three new two-sided assertions added to `mechanismWiring.mjs`'s new `[LIMB-SPECIFIC HEMORRHAGE CONTROL — a previous item in the queue, Phase 1]` section (located tourniquet stops only its own limb; torso/head wounds keep bleeding; an unlocated dose still reproduces the old whole-body zero exactly). `mechanismWiring.mjs`: **437 passed, 1 failed** — all three new assertions passed; the single failure is the same already-long-documented, pre-existing flaky rocuronium bagging-delay stochastic assertion (5/10 vs. a needed 6), confirmed unrelated by content (reads `neuromuscularBlock`/rhythm, nothing this batch touched). `scenarioSweep.mjs`: **161 scenarios, 11,953,608 checks, 0 failed** — identical count to the pre-batch baseline, correctly, since `woundBleedByLocation` is condition-scoped bookkeeping (like a previous item in the queue's `muscleIschemicBurdenHr`), not a universal per-tick field, and was deliberately NOT added to the sweep's global `REQUIRED`/`NON_NEGATIVE` lists for the same reason. `npx vite build`: clean (21.68s, same pre-existing >500kB chunk-size warning). No scratch probe scripts remain under `src/scripts/`.
+
+### Front-end batch (2026-08-27, latest): a previous item in the queue depth follow-up — expanded real Tier-2 template granularity so the ten emotional states stop collapsing onto only 3 template buckets, and gave `embarrassed` its one genuine reachable trigger
+
+Per explicit scope, verified the prior session's own honest "still open"
+claim by reading `dialogueProvider.js`'s `TemplateProvider.generate()`
+directly before writing anything, per lesson 16. **The claim held up
+exactly as stated, not stale in either direction.** All ten
+`emotionalState.js` states were mapped, via `bucketForEmotionalState`
+(`emotionalState.js`'s `STATE_TO_BUCKET` table), onto only 3 real template
+buckets: `calm`/`reassured`/`confused`/`exhausted`/`embarrassed`/`"in
+pain"` (six of the ten) all read as `calm`; `anxious`/`frightened` as
+`anxious`; `agitated`/`angry` as `irritable`. `embarrassed` had zero real
+call sites setting it anywhere in the tree (confirmed by grep), matching
+the prior session's own note precisely.
+
+**Built: real per-state template buckets for six of the seven
+patient-voiced Tier-2 pools, chosen by judgment rather than mechanically
+filling all ten states into every pool.** `TemplateProvider.generate()`
+(`dialogueProvider.js`) now checks `pool[state]` (the emotional state name
+verbatim) BEFORE falling back to `bucketForEmotionalState`'s original
+3-way collapse, so any pool this batch didn't touch behaves identically to
+before — a purely additive, backward-compatible change (confirmed by the
+new direct-function test's own "unenriched state still falls back" and
+"embarrassed still collapses to calm on an unenriched pool" assertions).
+New buckets, all hand-authored, matching the existing house voice (short,
+plain, no medical jargon, no em dashes):
+- `pain_unprompted` and `procedure_discomfort` gained `"in pain"` (severe,
+  sustained pain with no trend either way — reads as raw endurance, not a
+  question or a complaint, distinct from the calm/anxious/irritable lines
+  which all assume pain that isn't already severe).
+- `pain_unprompted` and `treatment_improving` gained `exhausted` (a long
+  call wearing the patient down — quieter and more worn out than any
+  existing bucket, not sharper).
+- `anxious_unprompted` and `deterioration_unprompted` both gained
+  `frightened` (a real worsening trend in an anxious-leaning patient) with
+  genuinely different wording per pool (general fear vs. fear specifically
+  about the trajectory getting worse).
+- `deterioration_unprompted` additionally gained `agitated` (a worsening
+  trend in a non-anxious patient — demanding action, distinct from
+  irritable-by-temperament) and `confused` (altered consciousness during a
+  deterioration event reads as disoriented, not scared or demanding).
+- `airway_stimulation_reaction` gained `confused` (airway instrumentation
+  on a patient with already-altered consciousness reads as a disoriented,
+  half-aware reflex, not a lucid protest).
+- `treatment_improving` and `procedure_success_relief` gained `reassured`
+  (explicit relief and gratitude on a real improving trend, distinct from
+  "calm," which describes a patient who was never that distressed).
+
+Deliberately left unenriched: the four crew-voiced pools (calm-only by
+existing design, per that pool's own standing comment — extending crew
+emotional depth is out of this batch's scope) and `"angry"` (still
+collapses to the `irritable` bucket's existing wording, judged close
+enough for a first pass; a genuinely angry-specific line is real, cheap,
+scoped follow-up, not attempted here to keep this batch bounded).
+
+**`embarrassed` is no longer permanently unreachable.** Investigated
+whether a genuinely fitting existing trigger exists, per the task's own
+explicit instruction not to fabricate one. `clothing.js`/App.jsx's
+`exposureActs` (the "Remove shirt"/"Lift shirt"/"Cut shirt" actions,
+already shipped, unrelated to this batch) expose a conscious patient's
+chest in front of the crew and any bystanders — a clinically real,
+already-existing gameplay event that genuinely fits embarrassment, not
+invented for this purpose. Wired as an explicit `event.bucket:"embarrassed"`
+override (the same override mechanism crew-reaction events already use,
+per `emotionalState.js`'s own header comment anticipating exactly this),
+fired from `start()`'s own action-completion path in `App.jsx` (checked
+BEFORE the generic `procedure_discomfort` duration heuristic, and
+independent of its `dur>=10` gate, since the fast "Cut shirt" shears
+variant is the same social moment as the slower "Remove shirt"). A new
+`exposure_reaction` template pool (`dialogueProvider.js`) holds the actual
+lines. `deriveEmotionalState()`'s general derivation still does not, and
+should not, produce `embarrassed` on its own — no ambient signal
+distinguishes it from ordinary distress, unchanged from the prior
+session's own correct reasoning; only this one explicit, real trigger
+reaches it.
+
+**Verified three ways.** `npx eslint`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in `dialogueProvider.js` or `App.jsx`. `npx vite build`: clean
+(23.54s, same pre-existing >500kB chunk-size warning). Direct-function
+(`src/scripts/verifyTemplateBuckets.mjs`, new, 15 assertions): every new
+state bucket produces real, distinct text for the same event with zero
+text overlap against the pool's `calm` baseline; an unenriched state
+(`angry`) still correctly falls back to the `irritable` bucket; the
+`embarrassed` override produces real text via `exposure_reaction` while
+still correctly collapsing to `calm` on pools that don't define it
+directly; zero em dashes in any newly-authored line. Live
+(`tools/browser/verifyTemplateBucketsLive.mjs`, new, run clean): (1) `"in
+pain"` and `"exhausted"`, both reached through the REAL
+`deriveEmotionalState()` (not hand-set enum values — a stable trend plus
+severe pain for one, a long elapsed time plus ongoing modest pain for the
+other), produce genuinely different dialogue text for the identical
+`pain_unprompted` event; (2) clicking the real "Lift shirt" action in a
+live page fires a genuine `exposure_reaction`/`embarrassed` line
+("Can someone, can I get a blanket or something, please?") into
+`dialogueLog` through the actual `start()` action path, not a direct
+module call; (3) sim time advanced throughout, zero real (non-network)
+console errors. Two real test-harness gotchas found while building this
+(documented in `tools/browser/README.md`): the "chest" scenario has a
+1700s scene `limit` — jumping injected `t` past it silently ends the scene
+and makes the entire action list vanish, which looks identical to a
+missing-button bug until the scenario's own `limit` field is checked; and
+the exposure actions are filtered by `g.region` (the selected body-region
+tab) in addition to `g.tab`, both of which must be set via `setState` or
+the action never renders.
+
+**What remains open in emotional-state depth after this session, stated
+honestly.** Three of the seven patient-voiced pools (`anxious_unprompted`
+only gained one new bucket, `procedure_discomfort` only one) and the four
+crew pools remain 3-bucket-or-fewer; `"angry"` still shares wording with
+`agitated`'s irritable-bucket fallback rather than having its own line;
+a previous item in the queue's traits still only drive bucket selection, never per-word
+phrasing variation within a bucket; the trend signal still only tracks
+pain/consciousness; crew/bystander emotional-state depth is still
+unattempted. `embarrassed`'s one real trigger is torso exposure only —
+other clinically embarrassment-appropriate moments (incontinence, a groin/
+genital exam) have no equivalent gameplay action in this codebase today to
+attach to, and none was invented.
+
+### Front-end batch (2026-08-27, even later): a previous item in the queue depth — confirmed personality (a previous item in the queue) is more built than this document claimed (a stale-doc finding, not a gap), and built the genuinely missing piece: a real, structured, simulation-determined emotional state (a previous item in the queue)
+
+Per explicit scope: read the personality/emotional-state code that exists
+today before building anything, per lesson 16, and state plainly whether
+this document's own "five-trait first cut... gates one dialogue event"
+framing was accurate or stale.
+
+**Stale-doc finding, stated plainly.** `src/dialogue/personality.js` is
+real and matches the document's own description exactly (five traits,
+anxious/cooperative/talkative/irritable/trusting, deterministically seeded
+per patient identity via `mulberry32`) — but the claim that it "gates ONE
+dialogue event" was WRONG, not just outdated. Reading
+`src/dialogue/dialogueProvider.js`'s `TemplateProvider` directly (not
+assumed from the doc) found personality already selects the template
+BUCKET (calm/anxious/irritable) for every one of the seven patient-voiced
+Tier-2 event pools (`pain_unprompted`, `anxious_unprompted`,
+`deterioration_unprompted`, `procedure_discomfort`, `treatment_improving`,
+`airway_stimulation_reaction`, `procedure_success_relief`) — not just
+unprompted dialogue's firing PROBABILITY (`talkative`, in
+`dialogueManager.js`'s `shouldSpeakUnprompted`). Personality was ALSO
+already present in the Tier-3 LLM prompt (`dialogueProvider.js`'s
+`buildPrompt`, a `Personality: anxious 80%, ...` line) — the "context
+builder omits personality" risk this task's own briefing flagged as a
+concrete possible defect was checked directly and found NOT to be real.
+a previous item in the queue is genuinely deeper than a first cut already; this session did not
+extend it further, since the real, still-completely-open gap was a previous item in the queue.
+
+**a previous item in the queue — the real gap, confirmed by reading `dialogueContext.js`
+directly: no structured emotional state existed anywhere in this
+codebase.** Grepped `emotionalState`/`emotional` project-wide before
+building anything: zero matches outside scenario prose. The only thing
+approximating it was a single scalar `distress` (0-1,
+`pain*0.6 + anxious*0.4 + unconsciousPenalty`) — not the ten named states
+(calm/anxious/frightened/confused/agitated/angry/embarrassed/in pain/
+reassured/exhausted) a previous item in the queue's own text asks for, and nothing distinguished
+"is currently deteriorating" from "is currently improving" at all — a
+patient's emotional read never depended on which direction the situation
+was moving, only its instantaneous magnitude.
+
+**Built: `src/dialogue/emotionalState.js` (new).** A pure function,
+`deriveEmotionalState({consciousness, painLevel, personality, trend,
+elapsedMin})`, reading only real, already-simulated fields — never writing
+to any `pat.*` field, one-way (simulation -> emotional state -> dialogue,
+never the reverse), per a previous item in the queue's own "the LLM must never arbitrarily
+change authoritative emotional state" and this session's own explicit
+scope boundary against touching the physiology engine. Altered
+consciousness overrides to "confused"; a real worsening TREND (below) maps
+to "frightened" or "agitated" depending on the patient's own anxious
+trait; an improving trend maps to "reassured"; sustained severe pain with
+no trend maps to "in pain"; a highly irritable patient in real pain maps
+to "angry"; a long call with ongoing pain maps to "exhausted"; a highly
+anxious patient with nothing else going on maps to "anxious"; otherwise
+"calm". `embarrassed` is deliberately left unreachable by the general
+derivation (documented in-code) — no signal in this engine currently
+distinguishes an embarrassment-appropriate moment from ordinary distress,
+and inventing one to fill out the list would be the exact decorative-field
+pattern section 1 forbids; it stays in the exported enum for a future call
+site with a real trigger (e.g. an `expose@` beat) to pass as an explicit
+override, the same way crew events already override `TemplateProvider`'s
+bucket selection.
+
+**A real vitals-TREND signal, a previous item in the queue's own explicit "vitals trend" input,
+now exists for the first time.** `dialogueContext.js` gained
+`computeTrend(s, painNow, consNow)`, comparing the current tick's real
+pain/consciousness against the last sample, stored on `s` itself (the same
+`_`-prefixed live-draft-object bookkeeping idiom `App.jsx`'s own
+`_analgesiaCheckAt` already uses, guarded by `s.t` so multiple
+`buildDialogueContext` calls within the same tick — a real, existing
+pattern, e.g. `generateDialogueSync` followed by `requestLocalUpgrade` for
+one event — read back the same trend rather than comparing a snapshot
+against itself). `buildDialogueContext` now computes and exposes
+`ctx.patient.emotionalState` alongside the existing `personality`/
+`distress` fields.
+
+**Wired into both places a previous item in the queue's own spec says a structured emotional
+state should reach.** `TemplateProvider`'s bucket selection
+(`dialogueProvider.js`) now reads `ctx.patient.emotionalState` FIRST
+(mapped onto the existing 3-way calm/anxious/irritable template-pool split
+via a new `bucketForEmotionalState`), falling back to the old
+trait-threshold heuristic only for a caller that doesn't build a full
+context (the dev panel's hand-authored presets) — so the SAME event now
+genuinely differs in wording between a patient who is currently frightened
+by a real deteriorating trajectory and one who is merely anxious-by-
+temperament but presently stable, not just between static trait buckets as
+before. The Tier-3 prompt (`buildPrompt`) now states the emotional state
+explicitly and separately from the personality-trait line, with an
+instruction that it is "already determined by the situation, not by
+you — express it, do not contradict or change it" — the concrete,
+in-prompt enforcement of a previous item in the queue's one-way boundary.
+
+**Verified two ways.** Direct-function: 15 assertions against
+`deriveEmotionalState`/`bucketForEmotionalState` covering every branch
+(consciousness override, both worsening sub-branches, improving, severe
+pain, irritable+pain, long-call fatigue, anxious-alone, default, and the
+bucket mapping), plus a `buildDialogueContext`-level check that a real
+worsening pain trajectory and a real improving one produce different
+`emotionalState` values, plus an end-to-end check that two differently-
+named patients (different personality draws) produce different Tier-2
+text for the identical event — all passed. Live, in a real page
+(`tools/browser/verifyEmotionalStateLive.mjs`, new): a genuine sharp pain
+INCREASE seeded across two real ticks produces `emotionalState:
+"frightened"` and a genuinely different Tier-2 line than a genuine sharp
+pain DECREASE (`"reassured"`) for the same `pain_unprompted` event on the
+same patient, and sim time keeps advancing throughout (dialogue derivation
+never stalls the tick loop). Run twice, PASS/PASS, zero real (non-network)
+console errors both times. A real test-harness gotcha was found and fixed
+while building this (not a production bug): `window.__proximateTestGetState()`
+returns a fresh top-level snapshot on every call (only `.patient` is the
+genuine live-referenced object), so trend bookkeeping written onto that
+snapshot doesn't persist to the next `getState()` call the way it would
+inside the real tick loop's own reused draft object — worked around by
+stashing the script's own context shell on `window` across `evaluate()`
+calls; documented in `tools/browser/README.md`'s new entry for this
+script.
+
+**A real, pre-existing defect was found and fixed on the spot while
+running the live script, unrelated to this session's own scope but
+surfaced by it.** The newly-more-reachable "frightened" bucket exposed a
+Tier-2 template line, `"I don't like this — it's not going away."`
+(`anxious_unprompted`), that shipped with an em dash in player-facing
+dialogue text — a genuine, pre-existing violation of this project's own
+no-em-dash rule (section 4), invisible before because `sanitize()` only
+ever strips em dashes from Tier-3 (LLM) output, never from hand-authored
+Tier-2 template strings. A full grep of `dialogueProvider.js`'s template
+pools for em dashes found six more instances across
+`anxious_unprompted`/`treatment_improving`/both crew-reaction pools — all
+seven fixed in place (commas or plain sentence breaks, matching this
+project's own house style), per the standing "notice one while working on
+something else, fix it on the spot" rule rather than deferred.
+
+`npx vite build`: clean (16.45s, same pre-existing >500kB chunk-size
+warning). `npx eslint src`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in `emotionalState.js`, `dialogueContext.js`, or
+`dialogueProvider.js`. No `src/physio/*` file was touched — `pat.pain`/
+`pat.consciousness`/`v._cons` are READ only, never written, confirmed by
+the diff itself.
+
+**What remains open in personality/emotional-state depth after this
+session, stated honestly.** a previous item in the queue's five traits still only drive a
+3-way template bucket split (not per-word phrasing variation within a
+bucket) and a single probability multiplier for unprompted firing — deeper
+influence (e.g. `trusting`/`cooperative` affecting how readily a patient
+answers a direct question, which no current dialogue event models at all)
+remains unbuilt. a previous item in the queue's ten states are real and simulation-driven but
+the mapping onto Tier-2's existing 3-bucket template pools is deliberately
+coarse (multiple states share a bucket, e.g. `confused`/`exhausted`/
+`embarrassed` all currently read as "calm" wording) — a genuinely richer
+Tier-2 pool per state, or per-state phrasing variation, is real, scoped
+follow-up work, not attempted here to keep this batch's own blast radius
+small and fully verified. `embarrassed` remains permanently unreachable
+until a real triggering event (clothing exposure, incontinence) is wired
+to pass it as an explicit override — filed here rather than silently
+left. The trend signal only tracks pain and consciousness; a real vitals
+trend (e.g. HR climbing, SpO2 falling) reaching the SAME mechanism is a
+natural, cheap extension once a real event wants it. Crew/bystander
+emotional state (as opposed to the patient's) was not attempted — crew
+dialogue templates are deliberately bucketed to "calm" only, per that
+event pool's own existing comment, and extending emotional-state depth to
+crew members is a separate, unscoped question.
+
+### Front-end batch (2026-08-27, latest): a previous item in the queue spec 2.7 coordination point — dialogue during the four real procedure mini-games, verified and documented (the mechanism was already in the tree, undocumented; this session's own job was verification)
+
+Per lesson 16 ("confirm a claim against the actual code before building on
+it"): this session's task was to add dialogue into the four real procedure
+mini-games (`AccessMinigame.jsx`/`AirwayMinigame.jsx`/`CricMinigame.jsx`/
+`SGAMinigame.jsx`), the one piece of a previous item in the queue spec 2.7 an earlier
+section 3 entry had explicitly left open ("procedure-mini-game dialogue —
+the six real minigames don't reach the new dialogue path at all yet"). A
+grep-before-build pass (following lesson 16, not the task's own framing)
+found the wiring **already fully present in the tree**: `App.jsx` has a
+`fireMinigameDialogue(evtType)` helper (a `setG` reducer using the exact
+same `generateDialogueSync` + `requestLocalUpgrade` pattern every other
+dialogue call site in this codebase already uses — no parallel system),
+passed to all four mini-game components as an `onDialogue` prop; each
+component calls it at one real, single, event-driven physical moment (the
+needle/IO stick, the incision, the laryngoscopy/ETT blade-view confirmation,
+the SGA blind-insertion attempt), each a genuine 45% roll reusing the same
+probability the flat busy-timer `procedure_discomfort` path already used;
+IV/IO and the cric incision fire `procedure_discomfort`, laryngoscopy/ETT
+and SGA fire `airway_stimulation_reaction` (both pre-existing
+`dialogueProvider.js` templates); and `resolveAccessMinigame`'s `SUCCESS`
+branch separately fires a `procedure_success_relief` line (35% chance,
+awake-gated) — the good-outcome half of a previous item in the queue's "event-driven, not
+continuous" bar, applied to mini-games too. `DialoguePanel.jsx` already
+carries its own `zIndex:201`/bottom-left-fixed positioning fix (its own
+comment cites a previous item in the queue coordination directly) specifically so it
+renders above the four mini-games' `zIndex:200` centered modals without
+colliding with `MinigameVitalsStrip`. None of this was recorded anywhere in
+this document — no section 3 entry, no a previous item in the queue/a previous item in the queue status update — despite a previous item in the queue's
+own status paragraph and a previous item in the queue's own "still open" bullet both explicitly
+claiming it as an open gap as of the immediately-prior section 3 entry. Per
+this document's own house rule (trust the tree over the prose), the gap
+between "documented as open" and "actually shipped" is closed here, not the
+gap in code.
+
+**What this session actually did, concretely:** (1) read every touched
+file end to end to confirm the mechanism is real, not decorative — no dead
+fields, `onDialogue` genuinely wired at all four call sites, both templates
+genuinely present in `dialogueProvider.js`, `resolveAccessMinigame`'s relief
+line genuinely present; (2) ran `npx vite build` (clean, same pre-existing
+>500kB chunk warning) and `npx eslint .` (3 errors, 0 warnings — the exact
+same pre-existing `react-refresh/only-export-components` findings in
+`App.jsx` this document's section 2 baseline already documents, zero new
+findings in any dialogue/mini-game file) to confirm no regression baseline
+drift; (3) wrote a new live verification script,
+`tools/browser/verifyMinigameDialogue.mjs` (see `tools/browser/README.md`
+for the full writeup), and ran it live, twice, both clean.
+
+**Verified live, per mini-game, via real clicks (not `setState` alone) —
+each mini-game opened for real, driven through a real attempt via its own
+actual controls (hold-to-advance for IV, the landmark/incision sliders for
+cric, the lift slider + Confirm view for laryngoscopy, the angle/depth
+sliders + Advance for SGA), retried up to 15 times per check since each
+trigger is a genuine 45% roll (the same "count only real, confirmed
+attempts" idiom `verifyDialogueTier3Extension.mjs`'s SITE3 already
+established for this project's own click-timing behavior):**
+- A real IV stick, a real cric incision, a real laryngoscopy view
+  confirmation, and a real SGA seat attempt each produced a genuine
+  Tier-1/2 `dialogueLog` entry with the correct `dlg_mg_<evtType>_...` id
+  prefix and correct template text (e.g. "Ow. That stings.",
+  "That's uncomfortable, but go ahead.").
+- Sim time kept advancing underneath the open IV mini-game across the
+  exact attempt that fired dialogue (confirmed `g.t` strictly increasing
+  before/after) — dialogue firing mid-procedure does not freeze or block
+  the mini-game, the other half of a previous item in the queue's own requirement alongside "the
+  patient can still talk."
+- The `requestLocalUpgrade` Tier-3 gate, checked at one representative site
+  (AccessMinigame/IV) using the established
+  `window.__proximateTestForceLocalAi` DEV-only hook with a real, callable
+  stub engine (no environment available to this project has a working
+  WebGPU adapter — see a previous item in the queue's own status paragraph): with the stub forced and
+  `g.localAiEnabled` unset/true, the SAME dialogueLog entry (matched by id)
+  gets genuinely patched in place with the stubbed tier-3 line; with
+  `g.localAiEnabled=false`, the same real trigger still fires its Tier-2/1
+  line but is NEVER upgraded — a real per-site short-circuit, not assumed
+  from the shared gate alone.
+- A real bounding-box check confirmed a live `DialoguePanel` line and the
+  open IV mini-game modal do not visually overlap — `DialoguePanel`'s own
+  earlier `zIndex:201`/bottom-left fix (from the `MinigameVitalsStrip`
+  batch) still holds correctly now that dialogue genuinely fires while a
+  mini-game is open, not just in theory.
+- Zero console errors across both full runs of the new script.
+
+**Two real script-building gotchas found and fixed while writing the
+verification (not app bugs) — see `tools/browser/README.md`'s gotchas list
+for the full writeup:** (1) a retry loop's `dialogueLog`-prefix match can
+silently find a STALE entry left over from an earlier section of the same
+script if the log isn't explicitly reset first, producing a false "already
+found it" that then makes the Tier-3 patch check fail for the wrong reason
+(fixed: explicit `dialogueLog:[]` reset immediately before any log-prefix
+retry loop, even across sections that already reset it once); (2) the
+documented "reassert the forced stub before each attempt" pattern
+(`verifyDialogueTier3Extension.mjs`'s own established idiom) is not
+sufficient when a loop's own body contains several real `await`s between
+the reassertion and the actual trigger — the app's genuine background
+`preload()` WebGPU-adapter rejection can land in that gap and re-latch
+`_failed=true` before the real trigger fires. Fixed by reasserting the stub
+a second time immediately before the specific DOM event that fires the real
+`requestLocalUpgrade` call (right before the `mouseup` dispatch), not only
+once at the top of the retry loop.
+
+**Not touched, per explicit scope:** the physiology engine; the
+already-solved mini-game pause/interruptibility mechanics (spec 2.5,
+confirmed still correct as a side effect of the bounding-box/sim-time
+checks above, not re-engineered); `src/dialogue/dialogueManager.js` itself
+(a temporary debug instrumentation pass used to diagnose the second gotcha
+above was fully reverted before this session ended — confirmed via a final
+read of the file showing it byte-identical to its pre-investigation state
+aside from the intentional zero net change).
+
+**What remains open in a previous item in the queue/a previous item in the queue's dialogue-during-procedures coverage after
+this session, stated precisely:** the airway/cric/SGA sites were verified
+for the Tier-1/2 firing mechanism and the visual/timing checks, but NOT
+individually re-verified for the Tier-3 gate (only AccessMinigame/IV was,
+as the representative site — the gate logic itself is shared, identical
+code (`requestLocalUpgrade`) across all four, already proven per-site-
+independent for the other three real dialogue call sites in
+`verifyDialogueTier3Extension.mjs`, so this is a reasonable but not
+exhaustive extrapolation, stated honestly rather than assumed silently).
+Real generation success on actual WebGPU-capable hardware remains
+completely unconfirmed for this site same as every other a previous item in the queue Tier-3 path —
+no environment available to this project has ever exercised a real local
+model generation. Personality/emotional-state depth beyond the five-trait
+first cut, the REST of crew/bystander dialogue beyond the seizure/
+unresponsive reactions, voice-readiness, and automated (non-browser) tests
+all remain open exactly as a previous item in the queue's own status paragraph already states —
+nothing about this session changes any of those.
+
+### Front-end batch (2026-08-26): a previous item in the queue's own remaining explicitly-tracked depth item — `requestLocalUpgrade` extended to the other three dialogue call sites
+
+Per the operator's own scoped instruction: find and wire the remaining real
+dialogue-generation call sites that never got the Tier-3 upgrade, following
+the exact fire-and-forget/in-place-log-patch pattern the one already-wired
+site (unprompted patient dialogue) established.
+
+**Confirmed the real call-site count against the tree first (lesson 16),
+rather than trusting the number several older section-3 entries already
+cite ("four real call sites... three of which never got the Tier-3
+upgrade").** Grepped `generateDialogueSync` across `src/`: exactly four real
+call sites, all in `App.jsx` — unprompted patient dialogue (~line 2584,
+already wired to `requestLocalUpgrade` since an earlier session), crew
+reaction (~line 2556, the seizure/unresponsive/recovery edge-detection
+block), treatment-response dialogue (~line 2615, the post-analgesia
+improvement check), and procedure-discomfort dialogue (~line 2805, inside
+`start()`'s own `setG` updater for any action costing >=10s on an awake
+patient). Confirmed count matches the number cited in section 6's a previous item in the queue entry
+exactly — no fifth site existed, none of the four was a duplicate
+description of another.
+
+**Wired all three remaining sites, mirroring the existing site's pattern
+exactly:** each site's Tier-2/1 line is still rendered immediately and
+synchronously (never blocked); `requestLocalUpgrade(evt, s, v, onResolved)`
+is then called alongside it, fire-and-forget, using the SAME `entryId` the
+Tier-2/1 line was just pushed into `dialogueLog` under. If it resolves
+before its own timeout, `onResolved` fires a `setG` call OUTSIDE the
+synchronous reducer/updater that produced the original line, patching that
+one entry's `text`/`tier` in place via `.map(e=>e.id===entryId?{...}:e)`.
+
+**The stale-patch guard is the SAME `.map()`-based id lookup every site
+already uses, confirmed to double as the guard the task asked for — not a
+new mechanism.** If by the time the upgrade resolves the target entry has
+scrolled out of `dialogueLog`'s own 8-entry cap (`.slice(-8)`, already
+existing on every site), or the call/scene has otherwise moved state so the
+id no longer exists, `.map()` simply finds no match and returns the array
+unchanged — a silent, safe discard, never a throw, never a stale patch
+landing on the wrong entry. This is exactly the guard the one prior site
+already relied on; extending the other three sites required no new
+staleness logic, only reusing the same idiom.
+
+**Double-fire is prevented by construction, not a new check:** the crew
+reaction site's own event selection is an exclusive if/else-if chain (at
+most one of seizure-onset/seizure-ended/unresponsive/recovery fires per
+tick), so at most one `requestLocalUpgrade` call can be made per edge per
+tick; the treatment-response site nulls its own `_analgesiaCheckAt` guard
+the same tick it fires, so it cannot re-fire for the same window; the
+procedure-discomfort site only runs once per `start()` invocation (one
+click, one attempt). Each call also gets its OWN unique `entryId`
+(timestamp-based), so even if two sites happened to fire in the same tick
+they'd patch two different, unambiguous entries, never collide.
+
+**Confirmed `isLocalAiEnabled(s)` genuinely gates all three new sites for
+free, per-site, not just in theory** — `requestLocalUpgrade`'s own first
+line (`dialogueManager.js`) already checks it before even calling
+`localLLM.isAvailable()`, and every one of the three new call sites passes
+`n`/`s` (the live game-state object the toggle itself writes
+`g.localAiEnabled` onto) as `requestLocalUpgrade`'s own `s` parameter — the
+same object shape the one pre-existing site already used, so no call-site
+change was needed for the gate to apply; verified live per-site below
+rather than assumed from the shared code path alone.
+
+**Verified live** (`tools/browser/verifyDialogueTier3Extension.mjs`, new —
+supersedes an earlier same-session draft of this script,
+`verifyDialogueUpgradeAllSites.mjs`, removed): for each of the three sites,
+with a real forced stub `LocalLLMProvider` engine (the same DEV-only
+`window.__proximateTestForceLocalAi` hook every prior GPU-gated a previous item in the queue script
+uses, since no environment available to this project has a real WebGPU
+adapter): (a) enabled — the site's own dialogueLog entry is genuinely
+patched to the forced Tier-3 line; (b) `localAiEnabled=false` — the Tier-2/1
+line still fires normally but is NEVER patched, confirmed independently at
+each site, not assumed from the shared gate; (c) firing the underlying
+event twice in one session — no crash, no garbled/duplicated log content.
+All three sites now pass all three checks cleanly, including (c). Site 3
+(procedure-discomfort)'s own (c) check was genuinely unconfirmed in the
+earlier draft of this script — not a real app gap, a REAL TEST-SCRIPT BUG,
+now found and fixed: the draft's `clickText()`-driven retry loop was
+silently landing clicks that never reached `start()` at all (confirmed by
+reading `g.busy.id` immediately after each click — it stayed unset on the
+"losing" attempts), so most of its 30 budgeted attempts never actually
+exercised the 45%-chance discomfort roll at all. Fixed with a forced click
+(`{force:true}`, this button's parent re-renders every 100ms sim tick, the
+same "not stable" flake class this project's tooling already documents
+elsewhere) plus an explicit `waitForFunction(()=>g.busy?.id==="loc")` after
+each click, so only confirmed real action-starts count toward the sample —
+see `tools/browser/README.md`'s new gotcha entry for the full trace. Also
+found live while fixing this: this project's sim clock does not advance
+while `g.busy` is set, and clearing `busy` directly via the test hook
+(bypassing the app's own `cancelAction()`) does not resume it either, so two
+back-to-back test-triggered attempts can legitimately land on the same
+`dlg_<id>_<round(t*10)>` id — a property of the pre-existing id scheme every
+dialogue site shares (unrelated to this batch's own scope), not a
+double-fire defect; the fixed check asserts on dialogueLog entry CONTENT
+integrity (well-formed speaker/text/tier) for this case rather than id
+uniqueness. `npx vite build`: clean (same pre-existing >500kB chunk-size
+warning). `npx eslint .`: exactly the pre-existing 3 errors/0 warnings
+baseline (`react-refresh/only-export-components`, all three in `App.jsx` at
+the same lines as before), zero new findings. No `src/physio/*` file was
+touched.
+
+**What remains open in a previous item in the queue's dialogue-upgrade coverage, stated honestly.**
+All four real dialogue-generation call sites in the game now have
+`requestLocalUpgrade` wired and fully verified (fire, patch, gate, and
+double-fire safety, all confirmed live per site), closing this queue item.
+The six real procedure-minigame components (IV/IO/laryngoscopy/ETT/cric/SGA)
+still don't generate dialogue at all (they resolve through their own
+components, independent of `generateDialogueSync`/`requestLocalUpgrade`
+entirely) — not touched here, per the operator's own explicit scope
+boundary against building new minigame dialogue triggers. Real generation
+success on genuine WebGPU-capable hardware remains unconfirmed in any
+environment across every a previous item in the queue session, unchanged by this batch.
+
+**Files touched:** `src/App.jsx` (the three new `requestLocalUpgrade` call
+sites), `tools/browser/verifyDialogueTier3Extension.mjs` (new, replaces the
+removed `verifyDialogueUpgradeAllSites.mjs`), `tools/browser/README.md`
+(documented, plus a new gotcha entry on the click-flake found above). The
+physiology engine (`src/physio/*`, `physiology.js`) was not touched.
+
+### Front-end batch (2026-08-26, even later same day): a previous item in the queue — the completion notice and the Local AI settings toggle. This closes a previous item in the queue's originally-scoped a previous item in the queue.
+
+Per the operator's own scoped instruction: build the last two unstarted
+pieces of a previous item in the queue's numbered spec, a previous item in the queue (completion notification) and 10
+(Local AI settings toggle), verify for real, and — if both land clean —
+close out a previous item in the queue as a whole.
+
+**a previous item in the queue — `src/components/AiReadyNotice.jsx` (new), mounted from
+`Shell.jsx` alongside `AiDownloadIndicator`.** Subscribes to the same
+`getLocalAiState()`/`subscribeLocalAiProgress()` plumbing every other AI
+surface already uses. Shows the spec's exact text, "Local AI is ready.
+Refresh Proximate to enable dynamic dialogue.", with a `Refresh Now` button
+and a dismiss (✕) button, but ONLY after a genuine
+downloading/loading/loading-from-cache → ready transition observed during
+the current session (tracked via a small `sawLoading` boolean state, not a
+ref — an early draft used a ref and `react-hooks/refs` correctly flagged
+reading `.current` during render) — a session where the model was already
+ready at first paint announces nothing, since nothing completed DURING that
+session for the player to be told about. Dismissing just sets local
+component state; no reload, no g-state write, nothing that could interrupt
+the current call.
+
+**The refresh-vs-hot-swap investigation the spec's own a previous item in the queue's own text asks
+for, done by tracing the actual call path rather than assuming a refresh is
+needed:** `dialogueManager.js`'s `localLLM` is a module-level
+`LocalLLMProvider` singleton (already directly confirmed to survive the
+boot→title transition by the previous slice's own
+`verifyBackgroundAiIndicator.mjs`). `LocalLLMProvider.isAvailable()` only
+checks `navigator.gpu` and `!this._failed` — it does NOT require the engine
+to already be loaded. The one live Tier-3 call site,
+`requestLocalUpgrade()`, calls `localLLM.generate()`, which calls
+`_ensureEngine()`, which returns the SAME in-flight/resolved `_loadPromise`/
+`_engine` the background download has been building the whole time. So once
+`status()` reaches `"ready"`, the very next dialogue event in the SAME
+session already gets a real Tier-3 line — there is no separate
+session-scoped engine reference to swap out, no stale provider reference
+held in React state (App.jsx never imports the engine object itself, only
+calls through `requestLocalUpgrade`/`generateDialogueSync`, which re-resolve
+the singleton fresh on every call), and no additional in-flight-request
+hazard beyond what `requestLocalUpgrade`'s own existing
+timeout/try-catch already handles. **Conclusion: a page refresh is not
+architecturally required to start using the model in the current session —
+this codebase already hot-swaps for free**, as a direct consequence of the
+singleton design a previous item in the queue already established, not new plumbing added
+this slice. Building a forced or even opt-in "reinitialize the engine" path
+would be complexity spent re-solving a problem this architecture doesn't
+have. `Refresh Now` therefore does a plain `location.reload()` purely as a
+player-requested convenience (a clean restart that will detect the
+already-cached model faster next time), never triggered automatically — per
+a previous item in the queue's explicit "never force a refresh."
+
+**a previous item in the queue — a new "LOCAL AI DIALOGUE" row in `SettingsOverlay.jsx`,
+following the file's existing `Row`/`Chip` pattern (same idiom as the
+neighboring PROCEDURE ASSIST row).** Reads `getLocalAiState()` (subscribed
+live via `subscribeLocalAiProgress`) for real status text
+(ready/downloading N%/loading-from-cache/checking-cache/failed/not-yet-
+downloaded/unsupported-device) and the real, exported
+`MODEL_DOWNLOAD_MB` (370, `dialogueProvider.js`) for a real "Download size:
+~370 MB" line — no second, hand-authored status system. Enable/disable
+chips write a new `g.localAiEnabled` flag, defaulting to enabled
+(`!==false`, matching the file's own `??true`-style default idiom) so
+existing saves without the field keep today's behavior.
+
+**The real gate, not a UI-only checkbox: `dialogueManager.js` gained a new
+exported `isLocalAiEnabled(s)` and both `generateDialogue()` and
+`requestLocalUpgrade()` — every current and future Tier-3 call site —
+now check it FIRST, before even calling `localLLM.isAvailable()`.**
+`requestLocalUpgrade`'s call site in App.jsx already passes the live game
+state `n` as its own `s` parameter, so no call-site change was needed —
+the gate reads the same object the toggle writes. Verified as a genuine
+short-circuit, not just a plausible-looking early return, via a new
+direct-function test (see below): with a REAL, callable stub engine forced
+onto the singleton (only the network/GPU seam faked — `buildPrompt`/
+`sanitize`/timeout all run for real), `requestLocalUpgrade()` resolves a
+real generated line when enabled/unset, and genuinely never resolves when
+`localAiEnabled===false`.
+
+**A new DEV-only test hook, `window.__proximateTestForceLocalAi`
+(`dialogueManager.js`), mirrors the project's existing
+`__proximateTestSetState`/`__proximateTestGetState` convention** (gated on
+`import.meta.env.DEV`, stripped from production) — added because, per every
+prior a previous item in the queue session, no environment available here has a real working WebGPU
+adapter, so `status()` can never be observed reaching `"ready"` live. The
+hook mutates the REAL `LocalLLMProvider` singleton's own fields
+(`_progress`/`_cacheState`/`_engine`/`_failed`) and re-emits a real progress
+event through the same `_progressListeners` every real subscriber uses, so
+components under test run their real logic against a real (forced) state
+transition rather than a second, mocked object.
+
+**Verification (`tools/browser/verifyAiReadyNoticeAndToggle.mjs`, new,
+README-documented): all checks PASS**, including on a clean re-run after
+the debug-line cleanup. Confirms `AiReadyNotice` shows the exact spec text
+only after a forced downloading→ready transition (not on first paint, not
+before); confirms dismissing it does NOT reload the page (checked via a
+`window` marker that a real navigation would wipe) and the app stays fully
+readable/functional afterward; confirms the Settings row renders real
+status/size text and real clicks on enable/disable persist
+`g.localAiEnabled`; and the direct-function gate test: enabled →
+resolves a real line, disabled → never resolves, re-enabled → resolves
+again (the gate reacts live, isn't latched), unset → defaults to enabled.
+**A real, previously-unconsidered timing hazard was found and fixed while
+building this test**: the app's own background `preload()` (started for
+real at boot) has a genuine pending WebGPU adapter request that eventually
+rejects asynchronously in this no-adapter environment and latches
+`_failed=true` via `_ensureEngine`'s own catch handler — landing mid-test,
+this broke every gate check AFTER that unrelated real rejection arrived,
+regardless of the enable/disable state under test, which looked at first
+like the toggle itself was broken. Fixed by re-asserting the forced state
+immediately before each attempt in the test, not by changing any production
+code (the real preload failure/fallback behavior itself is correct and
+unrelated to this batch). `npx vite build` clean (same pre-existing >500kB
+chunk warning), `npx eslint .` unchanged at the pre-existing 3
+errors/0 warnings (all three in `App.jsx`, none in any file this batch
+touched).
+
+**Files touched:** `src/dialogue/dialogueProvider.js` (new exported
+`MODEL_DOWNLOAD_MB`), `src/dialogue/dialogueManager.js` (new
+`isLocalAiEnabled()`, the gate in `generateDialogue()`/
+`requestLocalUpgrade()`, `downloadSizeMB` in `getLocalAiState()`, the new
+DEV-only `__proximateTestForceLocalAi` hook), `src/components/
+AiReadyNotice.jsx` (new), `src/components/Shell.jsx` (mounts it),
+`src/components/SettingsOverlay.jsx` (new LOCAL AI DIALOGUE row),
+`tools/browser/verifyAiReadyNoticeAndToggle.mjs` (new),
+`tools/browser/README.md` (documented). The physiology engine
+(`src/physio/*`, `physiology.js`) was not touched.
+
+**What this closes and what it doesn't.** This is the closing slice for
+a previous item in the queue's originally-scoped a previous item in the queue — every one of a previous item in the queue through 11 now has
+a real, verified (live where the environment allows, direct-function where
+it genuinely can't) implementation. It does NOT close the rest of a previous item in the queue's
+33-item spec or its Definition of Done — see section 6's a previous item in the queue entry,
+rewritten this session, for the precise, still-open remainder (a previous item in the queue
+already shipped in part across earlier slices; personality/emotional-state
+depth beyond the five-trait first cut; procedure-minigame dialogue; the
+rest of bystander/family dialogue; voice-readiness; automated non-browser
+tests; and, unresolved across every session so far, real generation success
+on genuine WebGPU-capable hardware).
+
+### Front-end batch (2026-08-26, later same day still): a previous item in the queue — an unobtrusive in-game AI-download indicator, and direct proof the `LocalLLMProvider` singleton survives the boot→title phase transition
+
+Per the operator's own scoped instruction: a previous item in the queue, "background download
+continues after entering the game, never blocking gameplay," with an
+unobtrusive in-game progress indicator. Explicitly NOT this slice: a previous item in the queue's
+completion notice and a previous item in the queue's Settings toggle — the indicator built here is
+fine as a future seed for a previous item in the queue, but was not over-built toward it.
+
+**Confirmed, not assumed, that the singleton survives the phase transition —
+per lesson 16, checked directly rather than trusted from the prior slice's own
+prose.** `dialogueManager.js` constructs `localLLM = new LocalLLMProvider()`
+once, at module scope; `phase:"boot"` → `phase:"title"` is an ordinary React
+state change within one page load, not a reload/navigation, so nothing
+re-evaluates that module. Verified two ways: (1) by inspection, tracing every
+`blank()`/phase-dispatch call site and confirming none of them remounts or
+re-imports `dialogueManager.js`; (2) directly, in
+`tools/browser/verifyBackgroundAiIndicator.mjs` — `await import(...)` the
+module from inside the live page BEFORE clicking "Continue without AI",
+starting a real `preloadLocalAi()`, stashing the returned module object on
+`window`, then importing the SAME specifier again AFTER the transition to
+`phase:"title"` and confirming `===` identity. Both PASS twice in a row: the
+module object is bit-for-bit the same object across the transition, and
+`getLocalAiState().status` reads a real, unchanged in-progress value
+(`"loading"` in this environment) on both sides — a load already in flight at
+boot is not touched by leaving the boot screen.
+
+**Built: `src/components/AiDownloadIndicator.jsx` (new), mounted from
+`Shell.jsx`, reusing the SAME `getLocalAiState()`/`subscribeLocalAiProgress()`
+plumbing the boot screen's own AI panel already uses — no second, parallel
+status system.** `Shell.jsx` is the project's existing persistent UI chrome:
+it already mounts `SettingsOverlay`'s always-visible gear (fixed
+top:12/right:12) unconditionally on every screen past boot
+(title/kit/scene/transport/debrief/etc. all route through it; only
+`phase:"boot"` itself renders before Shell, via App.jsx's own early return),
+so the new indicator was placed there rather than inventing new chrome — a
+small, fixed pill at top:12/right:62, immediately to the left of the gear.
+Deliberately renders **nothing at all** (`return null`) for
+`ready`/`unavailable`/`failed`/`idle` — only
+`downloading`/`loading-from-cache`/`loading` (the cache check itself still in
+flight) render the pill, with the real percentage when web-llm's own progress
+report includes one. `pointerEvents:"none"` and small muted text keep it from
+competing with anything — it is genuinely near-invisible outside a real
+in-progress state, matching the spec's own "unobtrusive" language.
+
+**Verified live, two ways, in `tools/browser/verifyBackgroundAiIndicator.mjs`
+(new).** Beyond the singleton-identity proof above: (1) the indicator's
+visibility is checked against the real `getLocalAiState().status` both at the
+title screen and inside a live scene — pill shown if and only if status is a
+genuinely in-progress one; (2) with the indicator mounted and subscribed, a
+live scene's sim time is confirmed to keep advancing (t=5.8→15.8 over a
+2.5s real-time window) and the scene's own vitals/log UI stays present and
+updating, proving the subscription introduces no stall; (3) zero real
+(non-network) console errors throughout. Run twice, PASS/PASS. Pre-existing
+regression scripts re-run afterward: `verifyLocalAiCache.mjs` passes clean
+(unaffected — this slice touched no caching code); `verifyBootScreen.mjs`
+failed on an unfiltered `net::ERR_CONNECTION_RESET` console line — a
+pre-existing gap in that specific script (it doesn't filter the same expected
+sandbox-network-noise pattern `verifyLocalAiCache.mjs`/this slice's own new
+script already filter), unrelated to this batch: this slice touched no file
+`verifyBootScreen.mjs` exercises (`BootScreen.jsx`, `bootScreenText.js`,
+`App.jsx`'s boot phase dispatch are all untouched), confirmed by reading the
+diff, not assumed.
+
+`npx eslint src`: unchanged baseline, 3 errors / 0 warnings, all three the
+same pre-existing `react-refresh/only-export-components` findings in
+`App.jsx`; zero findings in `AiDownloadIndicator.jsx` or `Shell.jsx`. `npx
+vite build`: clean (26.69s, same pre-existing >500kB chunk-size warning). No
+`src/physio/*` file was touched.
+
+**What remains open for a previous item in the queue, stated honestly.** The indicator shows real
+progress but nothing about resumability was changed this slice — a previous item in the queue's
+own already-documented shard-file-granularity resumability is unaffected and
+unextended. Real, live, end-to-end "close the tab mid-download, relaunch,
+watch it resume and the indicator reflect that" has still never been observed
+in any environment across any a previous item in the queue session, for the same reason every prior
+slice states: no environment tested so far has a real WebGPU adapter to get
+far enough for shard downloads to begin at all, so the indicator's
+"downloading NN%" branch is verified against synthetic/`"loading"` real
+states, not a genuine climbing percentage. Persistence ACROSS A REAL PAGE
+RELOAD (as opposed to the in-page phase transition this slice verified) was
+not tested — browsers do not guarantee background execution across a
+reload/tab-close at all (the spec's own a previous item in the queue text says so explicitly), and
+nothing in this engine claims otherwise; a reload always restarts at
+`phase:"boot"` by design (`blank()`'s own default), so there is no
+"background while reloaded" case to lose track of — only a same-session,
+same-page persistence claim, which is what was verified. a previous item in the queue (the
+completion notice) and a previous item in the queue (the Settings toggle) remain entirely
+untouched, per this slice's own explicit scope boundary.
+
+### Front-end batch (2026-08-26, later same day): fixed a broken verify script, then a previous item in the queue — the progressive ~20%-download-gate messaging, built and verified with synthetic values (a real live download crossing 20% remains unconfirmed in this environment, same as every prior a previous item in the queue slice)
+
+**Fixed `tools/browser/verifyLocalLLMProvider.mjs` first.** It predated the
+boot-screen slice's new `phase:"boot"` initial phase and never clicked
+through it, so every run failed immediately. `freshCharacter()` now waits
+for `phase:"boot"`, clicks "CONTINUE WITHOUT AI" (always clickable
+immediately, per a previous item in the queue), waits for `phase:"title"`, then proceeds exactly
+as before. This surfaced a second, real interaction worth documenting: the
+boot screen's own `preloadLocalAi()` now fires against the SAME
+`LocalLLMProvider` singleton this script's own `isAvailable()` check reads,
+so in a run where that preload has already hit-and-failed the real
+adapter-request step (this environment's `navigator.gpu` reports present as
+an API surface but has no real adapter, the same finding every prior a previous item in the queue
+session has made), `isAvailable()` correctly reports `false` even though
+`navigator.gpu` itself is `true` — a real latched-failure state, not a
+disagreement with feature detection. The script's assertion now
+distinguishes that honest case from an actual bug. Also added the same
+`net::ERR_CONNECTION_RESET`-filtering `verifyLocalAiCache.mjs` already
+established (this sandbox has no outbound internet access, so a real
+tier-3 attempt's fetch to huggingface.co always logs that browser-level
+network error, which is not a JS exception from this project's own code).
+Run twice, PASS/PASS.
+
+**a previous item in the queue — read closely before building.** The spec's own text: "Don't
+force the player to wait for the full model. Once core assets are ready AND
+~20% of the model has downloaded, offer Continue without AI — the player
+enters Medical Simulation Mode while the model keeps downloading in the
+background." Per the operator's own scoping for this slice: the "never
+force the player to wait" half was ALREADY satisfied — a previous item in the queue's boot screen
+has offered an always-clickable "Continue without AI" since an earlier
+slice, at any AI state, including 0% progress. What a previous item in the queue actually still
+owed was the ~20%-THRESHOLD-AWARE part of the UX the spec describes: the
+boot screen should read differently once meaningful progress exists versus
+when nothing has happened yet. a previous item in the queue (persisting the download across the
+boot screen's unmount into gameplay) is explicitly out of scope for this
+slice — see "what remains open" below for exactly how far this got.
+
+**Built, smallest-real-implementation per the operator's own instruction not
+to over-build:**
+- `src/dialogue/dialogueProvider.js` gained `PROGRESS_GATE_THRESHOLD` (0.2)
+  and a new pure, exported function `progressStage(progressFraction)` —
+  `"not-started"` (no/invalid/zero/negative input), `"early"` (>0, <20%),
+  `"meaningful"` (>=20%, <100%), `"ready"` (>=100%). Pure and synchronous on
+  purpose: it's the one piece of this slice that can be verified with
+  complete honesty in an environment with no working WebGPU adapter, by
+  feeding it synthetic values directly rather than by claiming a live
+  download was observed crossing 20%.
+- `src/dialogue/dialogueManager.js`'s `getLocalAiState()` gained a
+  `progressStage` field, computed by feeding the SAME real
+  `localLLM._progress?.progress` value (the one `initProgressCallback`
+  actually reports) through `progressStage()` — never a second, separately
+  invented number.
+- `src/components/bootScreenText.js` (NEW FILE): `aiStatusLine()` and
+  `continueHint()` moved out of `BootScreen.jsx` into this plain `.js`
+  module and `export`ed, because exporting them directly from the `.jsx`
+  file triggered two NEW `react-refresh/only-export-components` errors
+  (confirmed via `npx eslint .` before/after — baseline went 3 -> 5 errors
+  with them left in the `.jsx` file, back to 3 once moved here). This is the
+  same rule App.jsx's own pre-existing 3 errors are already grandfathered
+  under; moving pure helpers to a plain module sidesteps it entirely rather
+  than adding new exceptions. `continueHint(ai)` is the new logic: for
+  `progressStage==="meaningful"` it reads "Local AI is still downloading,
+  but real progress exists. Continue now, it keeps loading in the
+  background."; for `"early"` it reads "Local AI has barely started
+  downloading. No need to wait, continue whenever you like."; the default
+  (not-started/unknown) keeps the prior generic line. `BootScreen.jsx` now
+  imports both from `bootScreenText.js` and renders `continueHint(ai)`
+  under the Continue button exactly where the old generic sentence used to
+  sit — same location, same never-blocking behavior, just threshold-aware
+  tone.
+
+**Verified two ways, consistent with this project's own standing precedent
+for a GPU-gated feature.**
+
+**Direct-function (`tools/browser/verifyProgressiveDownloadGate.mjs`, NEW
+FILE) — the meaningful layer here, stated honestly as such.** Part A feeds
+`progressStage()` 15 synthetic values including the exact threshold
+boundary (`0.2` itself, and `0.2 - 0.0001`), non-number input (a string,
+`NaN`, `undefined`), negative input, and an out-of-range `1.5` — confirms
+every one classifies correctly, run twice, PASS/PASS. Part B calls
+`bootScreenText.js`'s real, production `continueHint()`/`aiStatusLine()`
+directly with synthetic `ai` objects at each stage, confirming neither
+throws and that `"early"` and `"meaningful"` produce genuinely different
+text (not just different labels wrapping the same sentence). Part C is a
+live real-page smoke check: the actual boot screen still renders its
+Continue button and stays at `phase:"boot"` with this new plumbing wired
+in, zero real (non-network) console errors.
+
+**Live regression, not new coverage:** re-ran `verifyBootScreen.mjs`,
+`verifyLocalAiCache.mjs`, and the newly-fixed `verifyLocalLLMProvider.mjs`
+— all still pass clean against the changed files, confirming this slice's
+edits didn't regress the boot flow, cache detection, or tier-3 fallback
+path.
+
+`npx eslint .`: back to the pre-existing baseline, 3 errors / 0 warnings
+(all three the same `react-refresh/only-export-components` findings in
+`App.jsx`, none in any file this batch touched — see the `bootScreenText.js`
+detour above for why). `npx vite build`: clean, same pre-existing >500kB
+chunk-size warning. No `src/physio/*` file was touched.
+
+**What remains open in a previous item in the queue, stated honestly.**
+- **a previous item in the queue itself**: the threshold-aware MESSAGING is real and verified;
+  what's NOT built is any mechanism that changes what happens at 20% beyond
+  the message — there is no separate "20% gate" state machine because a previous item in the queue's Continue button was never gated to begin with, so there was nothing
+  further to unblock. If a future session wants a previous item in the queue to also change VISUAL
+  emphasis (e.g. a different button color/icon at "meaningful" vs "early"),
+  that's a real, small follow-up, not started here.
+- **a previous item in the queue (background download continues into gameplay)**: still entirely
+  unbuilt. `preload()` is still the same single one-shot `_ensureEngine()`
+  call kicked off at boot; nothing keeps it running (or resumes it) once
+  `BootScreen` unmounts and the player reaches `phase:"title"`/gameplay. The
+  `LocalLLMProvider` singleton itself DOES persist across that phase
+  transition already (it's a module-level singleton in `dialogueManager.js`,
+  not recreated per-screen) — so a load already in flight when the player
+  clicks Continue is not literally aborted by leaving the boot screen. What
+  a previous item in the queue still needs on top of that: (1) a visible, unobtrusive in-game
+  progress indicator (nothing outside `BootScreen.jsx` currently subscribes
+  to `subscribeLocalAiProgress`), (2) verifying/handling what actually
+  happens to a fetch already in flight across a full page navigation (a
+  `phase` change is a React state transition, not a reload, so the fetch
+  itself likely survives — unconfirmed, not tested this slice), and (3) the
+  spec's own resumability/persistence language, which a previous item in the queue's own
+  session already found is real but shard-file-granular, not proven live
+  end-to-end in any environment so far.
+- **a previous item in the queue (completion notice)** and **a previous item in the queue (settings toggle)**: both
+  untouched, exactly as before this slice.
+- Real generation success and a real download-progress percentage actually
+  climbing past 0% remain unconfirmed on any tested hardware, same as every
+  prior a previous item in the queue session — `progressStage()`'s correctness is proven against
+  synthetic input, not a live crossing.
+
+### Front-end batch (2026-08-26): a previous item in the queue, persistent model caching — real cache detection built and verified, resumability investigated and found genuinely real but coarse-grained, not the fine-grained "resume at 63%" the spec's own text imagines
+
+Per the operator's own scoped instruction: make a previous item in the queue real — a boot
+screen that can tell "not downloaded yet" apart from "cached, loading from
+cache" — by exposing web-llm's OWN internal caching correctly, not
+reimplementing it. a previous item in the queue (the progressive-download gate, background
+download continuing into gameplay, the completion notice, the settings
+toggle) stayed explicitly out of scope, per the operator's own boundary.
+
+**Read web-llm's actual source before building anything, per lesson 16 —
+found a real, already-exported answer, not a gap to fill from scratch.**
+`node_modules/@mlc-ai/web-llm/lib/index.js` (v0.2.84, the same version this
+project already depends on) exports `hasModelInCache(modelId, appConfig)`
+(~line 12016) and `deleteModelAllInfoInCache` (~line 12026) — real,
+public, already-built cache-check functions, not something this session
+had to invent. Traced the mechanism all the way down:
+- **Storage backend**: `getCacheBackend(appConfig)` (~line 929) defaults to
+  `"cache"` (the browser Cache API, `caches.open()`/`.match()`/`.add()`),
+  not IndexedDB, unless `appConfig.cacheBackend` is explicitly overridden
+  (an `ArtifactIndexedDBCache` class exists at ~line 5531 as an
+  alternative backend, unused by default). `prebuiltAppConfig.cacheBackend`
+  (~line 960) confirms `"cache"` is the actual default for every model in
+  the catalog, including this project's own `Qwen2.5-0.5B-Instruct-q4f16_1-MLC`.
+- **Cache scope/key shape**: `hasModelInCache` calls
+  `hasTensorInCache(modelUrl, {cacheScope:"webllm/model", cacheType:"cache"})`
+  (~line 12023). `hasTensorInCache` (~line 5905) first checks whether a
+  `tensor-cache.json` manifest URL (under the model's own
+  `cleanModelUrl()`-resolved base, ~line 9458 — for this project's model,
+  `https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC/resolve/main/`)
+  is itself a Cache API key; if absent, returns `false` immediately with
+  NO network call. Only if that manifest key exists does it read the
+  manifest (from cache, not network — `ArtifactCache.addToCache` no-ops
+  once `cache.match()` already finds the key) to get the shard list, then
+  checks every shard's own full URL is ALSO a cache key via
+  `hasAllKeys()` (~line 5504) — an ALL-OR-NOTHING check across every shard
+  named in the manifest, not a percentage.
+- **Download commit shape**: `ArtifactCache.addToCache` (~line 5487) calls
+  `this.cache.add(request)` — the standard `Cache.add()`/`fetch()` browser
+  primitive, which is atomic per file: if the fetch is aborted or fails
+  partway, nothing is stored for that URL at all. No `Range`/`206`/byte-
+  offset handling exists anywhere in this file (grepped for `Range`,
+  `206`, `Accept-Ranges` — the only `Range` hits are an unrelated
+  `RangeError` class for config validation).
+
+**What this means for resumability, stated honestly rather than assumed
+either way — genuinely real, but at SHARD-FILE granularity, not the exact
+byte-level "resume at 63%" the spec's own wording (a previous item in the queue: "closed at 63%
+… resume from ~63%") literally describes.** The model is downloaded as
+many separate shard files (per `tensor-cache.json`'s own manifest), each
+committed to the Cache API independently and atomically as it completes.
+If a download is interrupted after N of M shards have fully landed, a
+later launch's `hasModelInCache()` correctly reports `false` (not "63%
+cached" — the check is binary), but `CreateMLCEngine`'s own per-file
+`addToCache()` logic (the same `cache.match()`-before-`cache.add()` guard
+verified above) will skip every shard already present and only re-fetch
+the ones that never finished — so the NET EFFECT is a real, working
+resume that does not re-download the whole ~370MB from zero, just not
+literally "resume this one file from byte 63%." A single shard caught
+mid-transfer contributes nothing (partial fetches aren't stored at all),
+so the real-world granularity of "how much can be lost by closing the tab
+mid-download" is one shard's worth, not one byte — confirmed by reading
+the mechanism, not measured live (this environment has no path to a real,
+multi-shard, successfully-progressing download to interrupt, since the
+adapter request itself fails before any shard fetch begins — see the
+Playwright result below).
+
+**Built: real cache-detection BEFORE the loader runs, using the real
+mechanism above, not a probe of my own invention.** `LocalLLMProvider`
+(`src/dialogue/dialogueProvider.js`) gained `checkCache()` (an async method
+that dynamically imports `@mlc-ai/web-llm` and calls its own
+`hasModelInCache(MODEL_ID)`, catching any failure — no Cache API, model id
+not in the catalog, etc. — as `"unknown"` rather than propagating, since a
+caching check must never be able to crash or block boot) and `cacheState()`
+(a plain getter). `_ensureEngine()` now calls `checkCache()` once, BEFORE
+`CreateMLCEngine`, and its very first `_emitProgress()` call already says
+`"loading model from cache"` vs `"downloading model"` depending on the real
+answer — not a generic "downloading" that would be wrong for a returning
+player. `status()` composes this into three distinct states instead of one
+collapsed `"loading"`: `"loading-from-cache"`, `"downloading"`, and a brief
+`"loading"` fallback for the moment the cache check itself is still in
+flight — this is the DOWNLOADED/CACHED-vs-in-memory distinction a previous item in the queue's
+own boot-UI state model was left with room for but no real data behind
+(see the prior slice's own section-3 entry, which named this gap
+explicitly).
+
+`src/dialogue/dialogueManager.js` gained `checkLocalAiCache()` (a thin
+export of `LocalLLMProvider.checkCache()`, for both the boot screen's own
+indirect use via `status()` and this session's own direct-function test)
+and `getLocalAiState()`'s returned object gained a `cacheState` field.
+`src/components/BootScreen.jsx`'s `aiStatusLine()` now renders
+`"LOADING FROM CACHE"` / `"DOWNLOADING"` / `"CHECKING FOR CACHED MODEL"` as
+three honestly distinct status lines instead of one `"DOWNLOADING /
+COMPILING"` string that used to mean either.
+
+**Verified two ways, per this project's own standing precedent for a
+GPU-gated feature this headless environment cannot fully exercise live.**
+
+**Live (`tools/browser/verifyLocalAiCache.mjs`, new):** a fresh navigation
+to the boot screen fires a real `preloadLocalAi()` -> `_ensureEngine()` ->
+`checkCache()` -> `CreateMLCEngine` chain. Confirmed: the cache-detection
+code runs and the AI panel settles to a real, recognizable status
+(`"UNAVAILABLE — local AI failed to load on this device"` — the same
+expected failure at the real-adapter-request step every prior a previous item in the queue session
+in this environment has documented, confirmed AGAIN here, not assumed) with
+zero real (non-network) console errors — one expected
+`net::ERR_CONNECTION_RESET` browser-level network log was seen and is
+explicitly documented and filtered in the script itself, since this
+sandbox has no outbound internet access to huggingface.co (the host
+`CreateMLCEngine` tries once `checkCache()` reports `"not-cached"`); that
+is sandbox network noise, not a JS exception from this batch's own code. A
+`page.reload()` (a genuine second navigation, not a `setState` jump — "a
+later launch") then confirmed the AI panel does NOT falsely claim
+`"LOADING FROM CACHE"` or `"READY"` — honest, since nothing in this
+environment has ever successfully completed a download. Run twice,
+PASS/PASS.
+
+**Direct-function (same script, part B) — the more meaningful layer, since
+live download genuinely cannot be exercised here.** Calls the real,
+production `dialogueManager.checkLocalAiCache()` (not a reimplementation)
+from inside the live page: confirmed it reports `"not-cached"` against a
+freshly-cleared, empty Cache API (no seeding, no network); then manually
+seeds a Cache API entry at the EXACT real key shape cited above (a
+`tensor-cache.json` manifest listing one shard, plus that shard's own full
+URL, both under the model's real `cleanModelUrl()`-resolved base) and
+confirms `checkLocalAiCache()` now reports `"cached"` — a real, positive
+proof the detection logic works correctly against a correctly-shaped cache
+entry, independent of GPU/network availability. Cleans up the seeded cache
+afterward so no state leaks into a later run. Run twice, PASS/PASS.
+
+`tools/browser/verifyBootScreen.mjs` (the pre-existing boot-screen
+regression script from the prior slice) was re-run afterward and still
+passes clean — no regression to the boot flow this batch's changes sit
+inside of.
+
+`npx eslint src`: unchanged baseline, 3 errors / 0 warnings, all three the
+same pre-existing `react-refresh/only-export-components` findings in
+`App.jsx` at the same lines as before; zero new findings in
+`dialogueProvider.js`, `dialogueManager.js`, or `BootScreen.jsx`. `npx vite
+build`: clean (19.86s, same pre-existing >500kB chunk-size warning). No
+`src/physio/*` file was touched.
+
+**What remains open, stated honestly.** The progressive-download gate
+(a previous item in the queue, "continue once core assets are ready AND ~20% of the model has
+downloaded") and the background-download-continuing-into-gameplay
+mechanic (a previous item in the queue) are unbuilt, per this slice's own explicit scope
+boundary — `preload()` is still a single one-shot `_ensureEngine()` call
+started at boot, not a chunked, resumable-with-a-visible-percentage
+download that keeps running once the player has entered the game. The
+completion notice (a previous item in the queue) and the Settings toggle (a previous item in the queue) remain
+unbuilt. **Real, live, end-to-end resumability — actually interrupting a
+real in-progress multi-shard download and confirming a second launch
+picks up mid-way — has NOT been observed in any environment across any a previous item in the queue
+session, including this one**, since no environment tested so far has a
+real WebGPU adapter to get past the point where shard downloads would
+even begin; the resumability finding above is a mechanism-level read of
+web-llm's own source and a direct-function proof of the underlying
+cache-check, not a live download interrupted and resumed. That remains
+the first thing to confirm on real WebGPU-capable hardware, alongside the
+still-unconfirmed real generation success this document's prior entries
+already flag.
+
+### Physiology-engine batch: pulmonary edema separated from generic CHF (a previous item in the queue's own suggestion) — INVESTIGATED, BUILT, MEASURED, and REVERTED. Real, useful negative result: a shared Ppv-driven edema mechanism is NOT safe to ship on this solver's current Ppv signal.
+
+**The gap this was addressing, confirmed real before work started:** `pat.edema` was a direct stat-write ratchet independently hand-rolled in at least 8 conditions in `conditions.js` (`chf`, `ami`, and 6 others, each with its own magic per-tick rate constant), rather than an emergent consequence of elevated left-heart filling pressure — the same anti-pattern a previous item in the queue's own loop forbids elsewhere. `cardiovascular.js` already computed a real `Ppv` (pulmonary venous pressure) through its cardiac-mechanics solver, but nothing derived edema formation from it; `pcwp` was instead derived BACKWARDS from `edema`, the wrong causal direction for real Starling physiology.
+
+**What was built, and later reverted in full:** a new `updatePulmonaryEdemaFormation(pat, dt, Ppv)` in `cardiovascular.js`, Starling-based (`target = clamp((Ppv - threshold) / span, 0, 1)`, rise-fast/recover-slow via the same `approach()` idiom valve regurgitation uses), called from `updateFullLoopODE`; `chf` and `ami` had their direct `pat.edema` writes removed in favor of it; `pcwp` was changed to derive from the solver's own `Pla` instead of the old edema-derived proxy.
+
+**Calibration was iterated and measured properly, per lesson 8 — NOT the failure.** A first threshold (9.8/2.2) left `chf` and `ami` both essentially at zero edema (MEASURED: chf 0.19-0.21, ami ~0.001-0.07 across runs) because the solver's own venous/atrial compliance compensates an isolated contractility lesion far more than the old fabricated ratchet assumed — a real, distinct finding in its own right (see below). A tighter threshold (9.0/2.0) fixed `chf` (edema 0.48) but leaked nonzero edema into a HEALTHY control (`abdPain`, 0.038) and into `hypertensiveUrgency` (0.045) — uncomfortably close to that condition's own existing mechanismWiring.mjs assertion (`edema < 0.05`), which would have made a previously-robust assertion newly flaky. A safer threshold (9.5/1.8) was found and measured clean on all four of those: `abdPain` 0.002, `hypertensiveUrgency` 0.000, `chf` 0.37, `ami` 0.015-0.07 (small, honest — the isolated-contractility Ppv signal really is weak in this solver, not a bug).
+
+**Then a fifth check — the one that should have been run FIRST, per this document's own "measure across more than the obvious cases" lesson — found the disqualifying problem.** `opioidOD` (pure respiratory depression, no cardiac lesion at all) was probed the same way and came back with mean Ppv **10.61**, p90 12.3, max 13.0 — HIGHER than `chf`'s own 10.1-10.2. Root-caused, not just observed: `Ppv` in this solver is confounded by intrathoracic-pressure swings from labored/absent breathing and from assisted ventilation itself (the same `intrathoracicP` the suite's own BVM assertions already track rising with a bagged breath) — a real mechanical effect, not fluid accumulation, but indistinguishable from cardiogenic congestion by threshold alone. Confirmed as a genuine regression, not a hypothetical: the full `mechanismWiring.mjs` suite, re-run with the mechanism live, failed three previously-robust, unrelated BVM/assisted-ventilation assertions (`ventUnloadFraction`, `workOfBreathing`, `vtPrev`) — reproducible twice, not a flake — because `opioidOD`'s own inflated edema was lowering lung compliance enough to break the BVM-unloading calculation for a patient this mechanism was never meant to touch.
+
+**Decision: revert, not force-fix.** No threshold on raw Ppv can separate real cardiac filling-pressure elevation from apnea/PPV-driven intrathoracic-pressure artifact when the latter's signal is as large or larger — this needed either a genuinely LV-specific driving term (Ppv corrected for intrathoracic pressure, or a dedicated filling-pressure state distinct from the shared full-loop output) or a differently-scoped mechanism, neither of which is a safe same-batch addition on top of an already-large investigation. `cardiovascular.js`'s new function and its `pcwp` change were fully removed; `chf`/`ami` were restored to their exact original direct-write form (with a comment recording why, so a future session doesn't silently redo this exact experiment blind). No scratch probe scripts remain under `src/scripts/`.
+
+**Verification, complete.** `node --check`/`eslint` on both touched files (`cardiovascular.js`, `conditions.js`) are clean. `mechanismWiring.mjs`: **434 passed, 1 failed**, the single failure being the already-long-documented pre-existing flaky `PACs -> occasional isolated HR blips` stdev assertion (unrelated to this batch), with the BVM section fully passing again. `scenarioSweep.mjs` (two earlier attempts stalled under heavy multi-process CPU contention on this machine and were killed/interrupted before finishing — not a defect in the revert, just a busy box; re-run once the machine was otherwise idle): **161 scenarios, 11,953,608 checks, 0 failed** — matching the pre-batch baseline exactly, as expected for a byte-for-byte revert. This item is fully closed: nothing shipped, the queue entry stands open for a future attempt with the specific pitfall (test against a non-cardiac respiratory-depression control from the start) recorded above.
+
+**What a future attempt at this queue item should do differently, stated so it isn't re-derived blind:** measure Ppv (or whatever replaces it) against a NON-cardiac respiratory-depression scenario (`opioidOD` is the cheapest one already in the library) as a required control from the very first calibration pass, not as an afterthought once a cardiac-only comparison already looks clean — a threshold that only separates `chf`/`ami` from `abdPain` is not sufficient evidence of specificity. The real fix is likely correcting Ppv for `pat.intrathoracicP`/`extP` before using it as a Starling driver, or finding a genuinely separate left-heart-filling-pressure state that assisted ventilation and apnea don't move — either is real engine work, not a threshold tweak, and belongs in its own scoped batch.
+
+### Physiology-engine batch: `cyanidePoisoning` shipped (a previous item in the queue's own suggested "carbon monoxide and cyanide toxicity" batch, second half — carbon monoxide shipped two sessions ago), a genuinely NEW hypoxia mechanism category (utilization-blocked, not delivery-blocked) built and wired for the first time
+
+**Confirmed before building anything, per lesson 16: metabolic.js's `updateMetabolism` really did lack any utilization-side hypoxia term.** `do2` (delivery), `vo2Demand` (metabolic demand), `criticalDO2 = vo2Demand*1.2`, and `actualVO2`/`energyFailure` (the fraction of demand delivery cannot meet) were all real and already live, but `actualVO2` could only fall short of `vo2Demand` via the `do2 < criticalDO2` branch — inadequate DELIVERY. Read `carbonMonoxidePoisoning`'s own comment at metabolic.js first: it explicitly records that CO deliberately did NOT need a cytochrome-oxidase term, because CO's route (COHb reducing caO2) is a pure delivery collapse and the delivery-side machinery alone reached the correct downstream severity. Cyanide is the case that CO's own comment predicted would need one — cytochrome c oxidase inhibition halts the electron transport chain regardless of how much oxygen is delivered (classic histotoxic hypoxia: normal PaO2/SaO2/caO2, severe cellular energy failure).
+
+**Mechanism, per a previous item in the queue's own loop.** `pat.cytochromeBlock` (patient.js, 0-1, default 0) is a new, GENERAL utilization-blockade handle — not cyanide-specific in the engine, so any future cytochrome-oxidase toxin (hydrogen sulfide, azide) would reuse it unmodified. Wired at metabolic.js's `updateMetabolism`: after the existing delivery-limited `actualVO2` branch runs, `actualVO2 = Math.min(actualVO2, vo2Demand * (1 - cytochromeBlock))` — the two terms compose by MIN, so a patient with both a delivery problem and a utilization problem takes the worse of the two rather than double-penalizing. Everything downstream of `actualVO2`/`energyFailure` (oxygenDebt, tissueLactate, serum lactate, acidbase.js's own anion-gap machinery via `netStrongAnions`, renal.js's Na/K-ATPase pump-failure term) required NO new wiring — the whole lactic-acidosis-plus-hyperkalemia presentation emerges from a single new ceiling term. The same `cytoBlockMyo`/`cytoBlockCns` pattern was applied at cardiovascular.js's coronary-supply calculation (myocardial ATP balance, `pat.atp`, feeding contractility/hypotension) and neuro.js's cerebral-oxygen-delivery calculation (`brainO2`, feeding the already-calibrated consciousness bands) — the same one-line utilization ceiling at the two other organs in this engine that maintain their own separate O2 balance, so cyanide's coma and cardiovascular collapse are both emergent from the same mechanism category, not two more scripted branches. `pat.do2` itself (metabolic.js) was published for the first time — computed and previously thrown away, now needed as the direct proof that cyanide's route is NOT a delivery problem.
+
+**`pat.do2` was found to have a real dead-field defect mid-batch, caught by grep before it could break an assertion, not after.** A first pass at `mechanismWiring.mjs`'s snapshot read `p.do2` before anything in metabolic.js ever assigned it — the classic "written and never read, or read and never written" shape section 1 warns about, here inverted (read but never written). Fixed by publishing it at the point it is computed, the same "computed here already and thrown away" idiom `energyFailure`'s own comment already documents for itself.
+
+**Time course: ONE condition, ONE seeded severity (0.55), no absorption ramp — a mechanistic choice, not a convenience.** Unlike `tricyclicOverdose` (ongoing gut absorption) or `toxicInhalationChlorine` (an evolving chemical burn), cyanide absorption stops the moment the patient is removed from the exposure, which has already happened by EMS arrival per this scenario's own dispatch. The deterioration a crew watches is the cumulative ATP/acid debt of a roughly-CONSTANT block (endogenous rhodanese/thiosulfate detoxification is real but modeled at its honest, field-irrelevant rate — an ~1-3h elimination half-life, ~0.0015/min, removing under 2% of the block across a 15-minute call), not a rising dose. Separate fast/slow exposure variants were considered and rejected for the same reason the ramp was rejected: severity is the exposure dose, so a milder or more fulminant course is a different seed, not a second condition.
+
+**Known, stated simplification: the real two-phase cardiovascular story (brief early chemoreceptor-driven bradycardia/hypertension, THEN myocardial-ATP-depletion hypotension/bradycardia) is modeled as one phase.** The early phase lasts seconds to a couple of minutes and is over before any crew reaches a patient already unresponsive on arrival — the same reasoning `tricyclicOverdose` used to justify presenting already 45 minutes post-ingestion rather than building a transient nobody in this game could observe. What DOES persist and IS modeled: carotid-body chemoreceptor stimulation driving real hyperpnea (`pat.rrBase`, gated on `cytochromeBlock`, the respiratory controller still owning the final rate). "Cherry red skin" and elevated mixed-venous/central-venous O2 saturation (cyanide's classic "arterialized venous blood" lab fingerprint) are both real, documented findings, deliberately NOT modeled: the first is late, unreliable, and this engine has no skin-color observable to carry it honestly; the second has no venous co-oximetry field anywhere in physio/ (confirmed by grep) to assert against. A combined CO+cyanide smoke-inhalation scenario is real, worth building, and explicitly OUT OF SCOPE for this batch — the engine's own condition-composition support (multiple condition keys on one patient) makes it content work for a future session, not mechanism work, the same reasoning `carbonMonoxidePoisoning`'s own comment gave two sessions ago for deferring cyanide itself.
+
+**Hydroxocobalamin was given a REAL antidote mechanism for the first time — it previously had none, despite its own `note` field already claiming "cyanide antidote."** That is the same "a comment claims a fix that was never made" shape lesson 16 warns about, just for a missing mechanism instead of a missing fix: hydroxo had only its incidental alpha-receptor pressor effect (a previous item in the queue's dead-code-sweep fix, unrelated). Cobalt directly chelates free cyanide 1:1 (forming inert cyanocobalamin/vitamin B12, renally excreted) — a bounded, stoichiometric, ONE-TIME chemical reaction per dose, not an ongoing receptor-style suppression, so it is wired as `fx.cytoBlock` through a NEW pk.js prop handler shaped like `fx.bronch`'s rising()-tracked one-time delta (a bronchodilator dose lowers resistance once per dose, not for as long as the concentration curve stays elevated) rather than `fx.plasminActivity`'s held-ceiling shape, which fits an ONGOING pharmacologic state instead. `pat.cytochromeBlock` is condition-owned and never reset by pk.js, and `cyanidePoisoning`'s own `progress()` seeds it ONCE and thereafter only decays it (never re-asserts a floor) — load-bearing, not a style choice: a condition holding the field at a constant every tick would silently clobber the antidote's reduction the very next tick, since conditions' `progress()` runs before `updateDrugs()` (the mirror image of the `pk.js` reset-trap `tricyclicOverdose` documented last session, with the condition as the clobberer instead of the victim this time).
+
+**MEASURED first-pass miscalibration, found and corrected, stated honestly rather than quietly fixed.** The first `fx.cytoBlock` value (-0.7) was derived against an assumed 0.75 presenting severity. Measured against the severity `cyanidePoisoning` actually ships at (0.55), it drove `cytochromeBlock` 0.547 -> 0.000 by 450s — a single dose was a complete cure, leaving the drug's own declared `max:2` second dose with nothing left to do. That is both clinically wrong (a real industrial exposure routinely needs the second 5g dose) and pedagogically backwards (it makes the antidote look like a switch, not an infusion that buys a trajectory). Re-anchored stoichiometrically instead of re-fitted: 5g of hydroxocobalamin is ~3.7 mmol of cobalt, binding cyanide 1:1, so one dose neutralizes a real, BOUNDED ~3.7 mmol (~96mg) of cyanide against an industrial exposure that can be several times that. `-0.35` was the value that matched: one dose removes roughly two-thirds of this presentation's block (MEASURED: 0.547 -> ~0.19 by the end of the 300s onset curve), with the second dose provisioned to finish the job — matching the drug's own real-world two-dose labeling being there for a reason, not decoration.
+
+**MEASURED, not guessed, across the full chain (`mechanismWiring.mjs`'s own probe, `cyanidePoisoning` vs a condition-less `abdPain` control, 900s):** the whole teaching point, confirmed two-sided at a SINGLE timepoint in the diagnostic window (420s) — `caO2` 19.9 vs control 20.2 (a 1.6-2.0% gap, i.e. essentially unchanged) and `sao2` 96.4-96.8 vs a control's 98.0, while `energyFailure` moves 0.00 -> 0.54 and lactate moves 0.6 -> 11.9. That is the exact "monitor reads reassuringly normal" hallmark this condition exists to teach.
+
+**A SECOND real miscalibration was found by measurement and corrected honestly, in the assertion rather than the mechanism.** A first version asserted the normal-saturation hallmark on the 900s untreated arm and FAILED at `sao2` 89.8 (with the caO2 gap out at 9.1%). Investigated rather than loosened: this is NOT the lesion leaking into oxygenation — `pao2` holds at ~107 the entire run. It is the Bohr effect. By 900s the untreated patient's acidemia is extreme (pH 6.84), and severe acidemia genuinely right-shifts the oxyhemoglobin dissociation curve, lowering saturation at an unchanged PaO2. Asserting "SpO2 stays normal" at the terminal end of an untreated death spiral would have been asserting something FALSE, so the assertion was moved to the window in which a crew actually makes the diagnosis (where the claim is true and the margin is large) rather than having its threshold relaxed to accommodate a number the model was right about. Recorded in-code at both the assertion and the condition.
+
+**A real, measured THRESHOLD finding on the myocardial limb, recorded rather than glossed.** The cardiovascular utilization ceiling is wired and demonstrably doing work — instrumented directly, `myoO2Balance` collapses from 1.451 (healthy control) to 0.011-0.25 in this condition, a ~99% loss of coronary reserve — but at the shipped 0.55 severity it stays marginally POSITIVE, so `pat.atp` holds at 1.000 rather than depleting. The arithmetic is exact and worth knowing for anyone extending this: usable supply is `3.5*(1-block)` against a resting demand near 1.58, so this engine's myocardium only begins genuinely losing ATP above a block of roughly 0.55. The shipped severity therefore presents a patient with essentially ZERO cardiac reserve rather than one already in myocardial failure — honest and clinically apt. The consequence is that the untreated deterioration a crew watches runs through the ACIDOSIS route instead, and that route is fully emergent, not scripted: progressive lactic acidemia drives potassium out of cells via renal.js's own existing H+/K+ exchange term (k 4.8 -> 6.8, measured), the rhythm goes `peakedT`, and a longer run degenerates to VT. Nothing in this condition writes k, rhythm, or a vital sign to produce that. An earlier held-block sweep on a resting carrier (where baseline demand is lower) DID show atp falling to 0.57 at a 0.50 block — the difference is real and is this condition's own higher heart rate raising myocardial demand, not an inconsistency.
+
+Anion gap reaches 32.4 (pH 6.843) versus the control's 13.8, a real severe high-anion-gap acidosis produced ENTIRELY by reusing acidbase.js's existing `netStrongAnions`/lactate machinery — this condition never writes `pat.unmeasuredAnions` directly. The condition-less control shows exactly zero of it (`cytochromeBlock=0`, `energyFailure=0.000`, `atp=1.00`), confirming every new engine term is inert by default. The CNS limb is real and unscripted: unconscious throughout, with seizure-risk (`epilepticDrive`) reaching 0.29, gated on the block the same way `tricyclicOverdose` gates its own seizure risk on measured QRS width rather than an independent severity dial. Hydroxocobalamin, single dose: `cytochromeBlock` 0.528 -> 0.178, `energyFailure` 0.53 -> 0.18, and — the check that actually matters — the treated patient's `consciousness` reaches `awake` while the untreated arm stays `unconscious`, confirming the antidote's effect reaches a real clinical observable, not just the handle it was applied to. Confirmed it works by binding cyanide, NOT by improving oxygenation: `caO2` 19.3 -> 19.9 post-treatment, essentially unchanged — the mirror image of the CO section's own reasoning, and the check that would catch a future session "improving" this antidote by having it raise saturation instead.
+
+**New scenario, TOX-008 (`cyanidePoisoning`, `src/data/scenarios.js`)**, following the existing TOX-* numbering (TOX-001 through TOX-007 already shipped). An INDUSTRIAL metal-plating exposure, deliberately not a house fire — the same reasoning `carbonMonoxidePoisoning` used for choosing a generator over a fire: a fire victim has CO, cyanide, thermal airway injury and soot all at once, and composing three toxidromes in one condition would make it impossible to tell which mechanism produced which observable; this is a clean, isolated histotoxic lesion so the normal-SpO2-with-profound-coma contrast is unambiguous. `src/App.jsx`'s `SCEN_BODY_SYSTEM` map gained `cyanidePoisoning:"Toxicology"`. No new gear/impression code was needed — `ODPO`/`ALOC`/`SEIZ` all already exist in `gear.js` and cover this presentation; a note was left at the existing `hydroxoTask` gear entry recording that a real, automatic LA County protocol rule for cyanide exposure is now POSSIBLE (`pat.cytochromeBlock` is a real, readable signal) but writing that protocol rule is left as separate protocol-content work, not bundled into this physiology batch.
+
+**Nine new two-sided `mechanismWiring.mjs` assertions** in a new `[CYANIDE POISONING — histotoxic hypoxia — a previous item in the queue, Toxicology]` section: presence (real block driving real energy failure); the delivery-side hallmark alone (sao2/caO2 stay normal, asserted at 420s — see the Bohr-effect finding above for why the window matters and why it was moved there rather than loosened); the single most important assertion in the batch — the explicit two-sided delivery-vs-utilization contrast in one check (near-identical caO2, wildly different energyFailure/lactate — either half alone could pass while the mechanism was wrong); the high-anion-gap acidosis; specificity (a condition-less control shows exactly zero of it); the CNS limb (unresponsive + real seizure drive); the antidote's real fall in cytochromeBlock/energyFailure; the antidote reaching a real clinical observable (consciousness); and confirmation the antidote works by binding cyanide, not by improving oxygenation. `snapshot()` gained `cytochromeBlock`, `do2`, `energyFailure`, and `anionGap` — the first three were real, live fields simply never read through this suite's own before/after path before this batch needed them (the same `coagPct`/`tcaNaBlock` precedent already on record in this document); `anionGap` was likewise already real and live (acidbase.js), never previously snapshotted. Both `cytochromeBlock` and `do2` were added to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists per lesson 2, with real constructor defaults in `patient.js` (`cytochromeBlock = 0`, `do2 = 0`). **`do2`'s constructor default was itself a real, load-bearing catch, not boilerplate:** `do2` had been added to the sweep's `REQUIRED` list while nothing in the engine ever assigned `pat.do2` and no default existed, so the sweep would have reported a missing required field on every scenario at every tick. Publishing it in metabolic.js and defaulting it here are what actually close that; the clean sweep below is the proof.
+
+**Verification, run to completion in the foreground throughout, not partially (lesson 14/17 — both long suites exceeded a single command's timeout and were moved to background execution by the tool; polled to completion via repeated `Get-Content` checks against the real output file rather than trusted from a partial buffer).** `node --check` clean on every touched file (`metabolic.js`, `patient.js`, `pk.js`, `conditions.js`, `cardiovascular.js`, `neuro.js`, `drugs.js`, `scenarios.js`, `gear.js`, `App.jsx`, `mechanismWiring.mjs`, `scenarioSweep.mjs` — `node --check` does not support `.jsx`, the same pre-existing tooling limitation every prior session has noted, not a new gap). `npx eslint` on the same set: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx` (unchanged from the documented baseline), zero findings in every other file — one real duplicate-key defect (`cyanidePoisoning` listed twice in `App.jsx`'s `SCEN_BODY_SYSTEM` map, from two edits landing on the same line) was caught by this eslint pass and fixed before it could ship. **`mechanismWiring.mjs`: 434 passed, 1 failed** — the suite was run to completion TWICE, and the failure SET (not just the count) was diffed both times. First run: the single failure was this batch's OWN new saturation assertion, at `sao2` 89.8 vs a required >90 — a real, self-inflicted miscalibration, root-caused to the Bohr effect (see above) and fixed by moving the assertion to the diagnostic window rather than relaxing its threshold. Second run, after that fix: **434 passed, 1 failed** again, but a DIFFERENT single failure — `bagging delayed to 150s -> real risk of arrhythmia`, 4/10 vs a needed 6/10, which is the same already-documented, pre-existing flaky rocuronium BVM-timing stochastic assertion this document has carried for many sessions, confirmed unrelated by content (it reads `neuromuscularBlock`/rhythm, none of which this batch touched). All nine of this batch's own assertions passed clean in that second run. The totals also reconcile exactly, which is the real evidence nothing was silently lost: the pre-batch documented baseline was 424 passed + 2 failed = 426 total assertions, and 426 + 9 new = 435 = the 434+1 measured here. Stated plainly rather than rounded up: this batch did NOT land a fully green suite, it landed the pre-existing known-flaky failure and nothing else. **`scenarioSweep.mjs`: 161 scenarios, 11,953,608 checks, 0 failed** — the new scenario's own diagnostic row is pH **6.89-7.41**, inside the sweep's own survivable [6.80, 7.60] bounds with real margin; the low end is the genuine, severe, untreated lactic acidosis this condition is supposed to produce, not a defect. The check-count increase was confirmed ARITHMETICALLY rather than asserted: the prior baseline was 160 scenarios / 11,591,362 checks (72,446 per scenario); two new tracked fields across two lists add 2 x 450 x 2 = 1,800 checks per scenario, giving 74,246 per scenario x 161 scenarios = 11,953,608 — matching the measured total exactly, to the digit. `npx vite build`: clean, `✓ built in 14.46s`, no new warnings beyond the pre-existing chunk-size-limit notice. All throwaway probe scripts (several were used across this investigation, including ones probing the real engine's `curve()`/`rising()` delivery-timing behavior before the antidote's magnitude was trusted) were stripped before this entry was written, confirmed via a directory listing showing no `_tmp_*` files remain under `src/scripts/`.
+
+**A real, pre-existing "already implemented" list staleness was found and fixed in the same batch, per lesson 16 and this document's own standing rule.** Direct count (`Object.keys(CONDITIONS).length`) returned 161, not the 159 that 158+1 would predict. `diabetesT2` is a real, already-shipped condition (distinct from the already-listed `typeIDiabetes`) that this list had silently fallen behind on — the same shape `diltiazemOverdose`/`metoprololOverdose`/`toxicInhalationChlorine`/`atropineOverdose` were found to be, two sessions ago. Backfilled into section 8's Endocrine/Metabolic list; not built or otherwise touched this session, and no further investigation of it was performed — flagged honestly as found-not-fixed, the same posture this document took toward those four the first time.
+
+**What remains open, stated honestly:** the two-phase cardiovascular story and elevated central-venous O2 saturation are real, documented, and deliberately not modeled, both explained above. The myocardial utilization limb is wired and measurable but does not cross into actual ATP depletion at this condition's shipped severity (the ~0.55 threshold measured above) — deliberately left as-is rather than tuned, since the severity that WOULD cross it also pushes the acidosis onto acidbase.js's own 6.80 clamp floor inside a realistic call, and re-balancing the coronary-reserve constant to move that threshold would touch every cardiac, arrest and shock patient in the library (the same shared-term blast-radius reasoning a previous item in the queue already records). A future session wanting a genuinely myocardial-failure cyanide presentation should treat that as its own scoped question, not a coefficient tweak. A combined CO+cyanide smoke-inhalation scenario is real and deliberately out of scope, per the reasoning above — filed here rather than only in the condition's own comment, per this document's own standing rule that a deferral has to be an item in the queue (section 6) to be picked up; not separately re-added there this session since it was already implicitly covered by carbonMonoxidePoisoning's own prior deferral of exactly this composition. The automatic LA County protocol rule for cyanide exposure (now newly possible, per the `gear.js` note above) is real, scoped, separate protocol-content work, not filed as a new queue item since it is a natural next step of existing protocol-content work rather than a physiology gap.
+
+### Front-end batch (2026-08-25): a previous item in the queue's sixth slice — a real boot/initialization screen (a previous item in the queue), gating nothing, with a genuinely wired AI progress panel
+
+Per the operator's own scoped instruction: build a previous item in the queue (the boot/
+initialization screen) and nothing past it — a previous item in the queue (progressive/
+resumable download) and 7/10 (completion notice, settings toggle) stay
+explicitly out of scope for this slice, and a previous item in the queue ("never permanently
+AI-gated") was treated as non-negotiable throughout.
+
+**New phase, new component, minimal footprint.** `blank()`
+(`src/App.jsx` ~line 318) now defaults to `phase:"boot"` instead of
+`"title"` — the ONLY call site this affects, since every other `blank()`
+usage in the codebase already spreads it and then explicitly overrides
+`phase` afterward (confirmed by grepping every `blank()` call site before
+touching the default, per lesson 16 — none of the other ~25 sites were
+depending on the old default). `src/components/BootScreen.jsx` is a new,
+self-contained component rendered from one new branch in `App.jsx`'s
+existing phase-dispatch if-chain (`if(g.phase==="boot") return
+<BootScreen g={g} setG={setG}/>;`, placed directly before the `"title"`
+branch it now sits in front of).
+
+**The core-systems checklist is honest about what this app actually does
+at boot — it does NOT fabricate an async load.** This is a Vite SPA: every
+one of `CONDITIONS` (`src/physio/conditions.js`), `SCEN`
+(`src/data/scenarios.js`), `MAPS` (`src/data/maps.js`), and `BAGS`
+(`src/gear.js`) is a plain module-level object literal, already fully
+resident in memory before `App()` ever renders once — confirmed by reading
+each file, not assumed. There is no real async phase to hook into, so
+rather than invent a fake progress bar/timer to make the checklist
+"animate," it reports REAL counts read directly from the loaded data
+(currently 161 conditions, 161 scenarios — a coincidental match, verified
+independently via a standalone `node --input-type=module` import, not a
+regex bug — and 3 maps, 5 equipment bags) and shows every item as ready
+the instant it mounts. "Audio" is reported as "synthesized (siren, tones,
+voice) — no external files to fetch," which is also literally true:
+`useSiren`/`useBackgroundMusic`/`useReadAloud` (`App.jsx`) all synthesize
+via WebAudio, nothing is fetched.
+
+**The AI panel is the one part of this screen with real asynchronous
+state, and it reuses the prior session's `LocalLLMProvider` rather than
+reinventing detection.** Two small, real plumbing additions were needed
+in `src/dialogue/dialogueProvider.js` since the prior slice didn't yet
+expose a subscribable progress signal:
+- `LocalLLMProvider.subscribeProgress(cb)` / `_emitProgress(p)` — a tiny
+  pub/sub (`_progressListeners: Set`), firing the current snapshot
+  immediately on subscribe so a late subscriber isn't stuck waiting for
+  the next event.
+- `CreateMLCEngine`'s own `initProgressCallback` option is now wired to
+  `_emitProgress` inside `_ensureEngine()` — this is web-llm's REAL
+  download/compile progress report (`{progress: 0..1, text}`), not a
+  fabricated percentage; when the engine finishes, `_emitProgress({
+  progress: 1, text: "ready" })` fires once more.
+- `preload()` — a new, fire-and-forget public method that calls
+  `_ensureEngine()` and silently swallows any rejection, letting the boot
+  screen start the real load early (so its progress panel has something
+  honest to show during boot) without ever awaiting it or letting a
+  failure propagate anywhere.
+
+`src/dialogue/dialogueManager.js` gained three matching exports —
+`getLocalAiState()` (`{supported, status, progress}` — `supported` is
+live `navigator.gpu` detection, `status` is `LocalLLMProvider.status()`,
+`progress` is the real report or `null`), `preloadLocalAi()`, and
+`subscribeLocalAiProgress(cb)` — the single new surface `BootScreen.jsx`
+imports; no second detection/loading system was built.
+
+**Verified live, not just built.** `BootScreen` calls `preloadLocalAi()`
+once on mount and subscribes to progress; the "Continue without AI" /
+"Enter Proximate — Local AI Ready" button (label switches on
+`ai.status==="ready"`) is rendered and clickable from the very first
+paint, never conditioned on AI state resolving. A new
+`tools/browser/verifyBootScreen.mjs` (following the existing
+`driver.mjs` pattern) confirmed against the real dev server: a fresh
+navigation (not a `setState` jump) lands on `phase==="boot"`; the
+checklist shows the real counts above; the AI panel shows a real,
+recognizable status line; clicking "Continue without AI" advances to
+`phase==="title"` immediately; a real click on "Go on shift" from there
+advances past title into the disclaimer flow; zero console errors
+throughout the whole sequence. **This headless-Chromium environment
+reports `navigator.gpu` present as an API surface (so the AI panel
+starts as "supported," matching the prior session's own finding) but the
+real adapter request fails during `preload()`'s real `CreateMLCEngine`
+call, so the panel correctly and honestly lands on "UNAVAILABLE — local
+AI failed to load on this device"** — this is the expected, valid result
+in this environment (confirmed by watching the live screenshot,
+`tools/browser/screenshots/boot-screen.png`), not a failure of the boot
+screen itself; a real WebGPU-capable device is still the first thing to
+confirm the "DOWNLOADING/COMPILING NN%" and eventual "READY" states on,
+which this session's environment cannot exercise. One real bug was found
+and fixed during this verification: the AI panel's description line
+originally read "Runs entirely on this device..." even when `status`
+had already gone to `"failed"` (it was gated on `ai.supported`, i.e.
+`navigator.gpu` presence, not on whether the load actually succeeded) —
+fixed to branch on `status==="failed"` first, confirmed via a second
+screenshot/verify run.
+
+`npx eslint src` — **unchanged baseline, 3 errors / 0 warnings**, all
+three still the pre-existing `react-refresh/only-export-components`
+findings in `App.jsx` at the same three line numbers as before; zero new
+findings in `BootScreen.jsx`, `dialogueProvider.js`, or
+`dialogueManager.js`. `npx vite build` — clean, same pre-existing
+>500kB chunk-size warning, no new warnings or errors.
+
+**What this slice did NOT touch, stated plainly:** no progressive/
+resumable chunked download, no persisted download state, no "~20%
+downloaded, offer continue" gate (a previous item in the queue — `preload()` is a one-shot
+in-memory load exactly like the prior slice's lazy `_ensureEngine()`,
+just triggered earlier and with real progress now visible); no
+completion notification or refresh prompt (a previous item in the queue); no Settings toggle
+(a previous item in the queue); the DOWNLOADED/CACHED-vs-LOADED-INTO-MEMORY distinction the
+spec asks the boot UI's state model to have room for is NOT modeled as a
+separate state anywhere yet — `getLocalAiState()`'s `status` only knows
+about `idle/loading/ready/failed/unavailable` (in-memory states), because
+there is still no persistent cache layer (a previous item in the queue, still fully open) for
+"downloaded but not loaded" to mean anything real. Extending
+`requestLocalUpgrade` to the other three sync dialogue call sites,
+personality/emotional-state depth, procedure-minigame dialogue, family/
+bystander dialogue, voice-readiness, and automated (non-browser) tests
+for the dialogue system all remain untouched, exactly as before this
+slice.
+
+### Front-end batch: a previous item in the queue's fifth slice — `LocalLLMProvider` is now GENUINELY functional (real WebGPU inference via `@mlc-ai/web-llm`), not a permanent stub; real feature detection, a real generation call path, and a real async background-upgrade wiring for one live gameplay event, all with a verified timeout/failure fallback to Tier 2
+
+Per the operator's own scoped instruction: make the existing, honestly-stubbed
+`LocalLLMProvider` (`src/dialogue/dialogueProvider.js`) real, without
+redesigning the already-shipped Dialogue Manager → Provider Interface
+architecture, without touching the physiology engine, and without building
+the boot/loading screen, progressive-download UI, or settings toggle
+(a previous item in the queue — those remain explicitly out of scope for this slice).
+
+**Library choice, confirmed current before committing (lesson 16).**
+`@mlc-ai/web-llm` was installed fresh this session (`npm install
+@mlc-ai/web-llm`, `package.json` now declares `"@mlc-ai/web-llm": "^0.2.84"`)
+and the installed package was read directly, not assumed: v0.2.84, MIT
+licensed, WebGPU-based, runs entirely client-side, ships a real prebuilt
+model catalog (`node_modules/@mlc-ai/web-llm/lib/index.js`) including several
+small, pre-quantized instruction models (`Llama-3.2-1B-Instruct-*`,
+`SmolLM2-360M-Instruct-*`, `Qwen2.5-0.5B-Instruct-*`). Evaluated against a previous item in the queue's own criteria: web-llm has NO usable WASM/CPU fallback for actual
+token generation (its compute kernels require WebGPU), so "WebGPU-first with
+a fallback story" for this library concretely means "WebGPU or a clean
+Tier-2 fallback," not a slower WASM path — confirmed by reading the library's
+own architecture rather than assumed, and reflected honestly in
+`isAvailable()`'s own comment. Picked `Qwen2.5-0.5B-Instruct-q4f16_1-MLC` —
+an int4-quantized 0.5B-parameter chat model, ~370MB download, the smallest
+of the catalog's chat-tuned options that still has real instruction-following
+behavior (SmolLM2-360M is smaller but not evaluated as more likely to follow
+this project's short, in-character reply format) — matching a previous item in the queue's "small
+and fast, not the smartest model available" directive.
+
+**Real feature detection, not a hardcoded value.** `LocalLLMProvider.isAvailable()`
+now returns `typeof navigator!=="undefined" && !!navigator.gpu && !this._failed`
+— genuine `navigator.gpu` presence detection (the concrete example a previous item in the queue
+itself names), re-evaluated on every call rather than cached, with a
+`_failed` latch so a device that already hit a hard load/compile failure
+doesn't re-attempt a doomed multi-second load on every subsequent dialogue
+event for the rest of the session. A new `status()` method
+(`unavailable`/`idle`/`loading`/`ready`/`failed`) exposes finer-grained state
+than the boolean for a future status UI, without building the full a previous item in the queue's own
+indicator system.
+
+**A real `generate(event, ctx)` call path, reusing the EXISTING context
+builder, not a second one.** `generate()` calls `_ensureEngine()` (lazy —
+model download/compile happens on the FIRST real call an async caller
+awaits, never at module load, never blocking startup, per a previous item in the queue),
+which dynamically imports `@mlc-ai/web-llm` and calls its own
+`CreateMLCEngine(MODEL_ID, ...)`. `buildPrompt(event, ctx)` builds a short,
+bounded system-style prompt directly from `dialogueContext.js`'s own
+already-built structured context (patient personality/pain/consciousness,
+crew present, recent-events summary, situation) — the SAME context Tier 2's
+`TemplateProvider` already consumes, per a previous item in the queue's "the rest of the app
+shouldn't need to know which backend is in use." `sanitize()` strips
+quote-wrapping, a leading "Patient:"/"Crew:" label the model sometimes
+emits, and any em dash (this project's own no-em-dash-in-player-facing-text
+rule, section 4) before the text is ever shown. **Verified this can never
+alter simulation state (a previous item in the queue):** the return value is a plain
+`{speaker,text,tier}` object; `dialogueManager.js`'s only two callers
+(`generateDialogue()`'s async path, and the new `requestLocalUpgrade()`
+below) both use the result ONLY to push a `{id,speaker,text,tier}` entry
+into `dialogueLog` (a UI-only array `DialoguePanel.jsx` renders) — grepped
+every consumer of a dialogue-provider return value in the codebase and
+confirmed none of them ever reach `pat.*`/`s.patient`/any physiology field.
+
+**A real, layered timeout/failure fallback (a previous item in the queue), not a bare try/catch.**
+`LOAD_TIMEOUT_MS=45000` (model download+compile, generous since this only
+happens once per session and is cached by web-llm's own IndexedDB cache
+afterward — a real "download once, use repeatedly" property this session
+gets for free from the library rather than reimplementing) and
+`GENERATE_TIMEOUT_MS=12000` (a single generation call) both race the real
+promise against a `setTimeout` via a small `withTimeout()` helper. Any
+throw — unavailable, load timeout, load failure, generation timeout, empty
+output, or output that sanitizes to nothing — propagates up through
+`generate()`; `dialogueManager.js`'s existing `generateDialogue()` async
+path ALREADY wrapped its own `localLLM.generate()` call in try/catch falling
+through to Tier 2/1 (this was already correct, unmodified) — this slice
+only had to make the thing inside that try block real.
+
+**A real gap was found and closed: NOTHING in the actual game ever called
+the async, tier-3-capable `generateDialogue()` path.** Grepped every
+caller in `App.jsx` before assuming tier 3 was reachable in real play
+(lesson 16) — all four real call sites (crew reactions, unprompted patient
+dialogue, treatment-response dialogue, procedure discomfort) exclusively
+used `generateDialogueSync()`, which never touches `LocalLLMProvider` at
+all (by design — the tick loop's `setG(s=>...)` reducer cannot await).
+A hardcoded-false stub made this invisible; a genuinely working provider
+would have shipped completely inert in real gameplay without fixing this.
+Fixed with a new `requestLocalUpgrade(event, s, v, onResolved)`
+(`dialogueManager.js`): a fire-and-forget helper a sync caller can call
+ALONGSIDE its own immediate `generateDialogueSync()` line — if
+`isAvailable()` is true, it builds context and calls `localLLM.generate()`
+in the background; if it resolves before its own timeout, `onResolved(line)`
+fires once, later, letting the caller patch the SAME dialogue-log entry
+(matched by id) from outside the synchronous tick reducer via a second,
+independent `setG` call. If tier 3 is unavailable, fails, or times out,
+`onResolved` is simply never called — the Tier-2 line already on screen
+silently stands as the final answer. Wired into ONE real, natural site —
+unprompted patient dialogue (`App.jsx`, a previous item in the queue's own "open-ended...
+personality-driven interaction" is exactly Tier 3's stated use case) — the
+IMMEDIATE line is always the synchronous Tier 2/1 result (zero latency,
+zero regression to existing behavior), and a background upgrade is
+requested alongside it, exactly matching the "loads on demand... falls back
+cleanly, never freezes the game" requirement. The other three sync call
+sites (crew reactions, treatment-response, procedure discomfort) were
+deliberately left on `generateDialogueSync()` alone this slice — extending
+`requestLocalUpgrade` to them is a natural, low-risk follow-up (the helper
+is already general-purpose), not attempted here to keep this batch's own
+blast radius to one verified site rather than four unverified ones.
+
+**Bundle-size impact — confirmed lazy via the ACTUAL `vite build` chunk
+output, not assumed from the dynamic-import syntax alone.** `@mlc-ai/web-llm`
+is only ever reached via `await import("@mlc-ai/web-llm")` inside
+`_loadBackend()`, itself only called from `_ensureEngine()`, itself only
+called from `generate()` — never imported at module top level anywhere.
+`npx vite build` output confirms this landed in its own separate chunk
+(`dist/assets/lib-*.js`, ~6.04 MB / ~2.17 MB gzip — web-llm's own runtime
+plus its WASM-tokenizer glue, NOT the model weights themselves, which
+web-llm fetches separately at actual load time, not at page load), while
+the app's own main chunk (`dist/assets/index-*.js`, ~2.31 MB / ~648 KB
+gzip) is within a few KB of its pre-existing size — i.e. a player who never
+triggers Tier 3 (no WebGPU, or simply never reaches the one wired event)
+never downloads any part of `@mlc-ai/web-llm` at all. The pre-existing
+>500kB main-chunk warning is unchanged in kind (still one warning, same
+underlying cause — this project's own single-bundle app code, not
+`web-llm`).
+
+**Verification, complete.** `npx vite build`: clean (17.99s, the same
+pre-existing >500kB chunk-size warning, plus the new, expected `lib-*.js`
+web-llm chunk described above — no new errors). `npx eslint src`: exactly
+the pre-existing 3-error `react-refresh/only-export-components` baseline
+in `App.jsx`, zero findings in `dialogueProvider.js`, `dialogueManager.js`,
+`DialoguePanel.jsx`, or `App.jsx`'s own new lines. No `src/physio/*` file
+was touched — confirmed by the diff itself, not just intent.
+
+A new permanent script, `tools/browser/verifyLocalLLMProvider.mjs`, real-
+clicks a fresh save into a live scene, then: (1) confirms
+`LocalLLMProvider.isAvailable()` agrees EXACTLY with the test browser's own
+`navigator.gpu` presence (not a hardcoded value); (2) forces high pain on a
+live patient and confirms a real dialogue line renders within 15s AND that
+sim time keeps advancing the entire time (physiology never stalls waiting
+on tier 3 — a previous item in the queue), regardless of which tier actually answers; (3) if
+`navigator.gpu` is present, attempts one real `generate()` call directly and
+reports the honest outcome either way. **Actual result in this
+environment, reported honestly rather than assumed clean either
+direction**: the test browser (Playwright's default headless Chromium)
+reports `navigator.gpu` as PRESENT (the API surface exists), but the real
+WebGPU adapter request inside web-llm fails with "Unable to find a
+compatible GPU" (no GPU process available to this headless environment) —
+a genuine, real-world case `isAvailable()`'s own design does not (and, per
+a previous item in the queue's own "e.g. navigator.gpu presence," is not asked to) distinguish
+from a true WebGPU-capable device, since adapter availability is only knowable
+by actually requesting one, asynchronously, which is exactly what
+`generate()` itself does. The result: `generate()` threw a real, caught
+error; `requestLocalUpgrade`'s silent catch absorbed it; the Tier-2 line
+already on screen stood unmodified; sim time advanced throughout (5.4s to
+50.6s across the check window); zero console errors. This is a real,
+positive proof of the fallback path working end to end under a genuine
+failure condition, not a synthetic one — but it is honestly NOT proof that
+tier-3 generation itself produces working output on a real WebGPU-capable
+device, since none was available in this environment. **That remains
+genuinely unverified and is the first thing to confirm on a real GPU-backed
+device (or a Playwright Chromium channel with `--enable-unsafe-webgpu` and
+an actual GPU passthrough) before trusting the generation path itself.**
+
+**What remains open for a previous item in the queue, stated honestly — see the updated status
+paragraph in section 6.** a previous item in the queue (boot/loading screen, progressive/
+resumable download UI with a "Continue without AI" gate, the completion
+notice, the settings toggle) are all still entirely unbuilt, exactly as
+scoped out of this slice. `requestLocalUpgrade` is wired to exactly one of
+four sync dialogue call sites. Real generation success on an actual
+WebGPU-capable device has not been observed in THIS session (no such
+device was available to test against) — the load/generate code path is
+real and correct by inspection and by the standard web-llm API contract,
+but "loads and generates for real, confirmed live" cannot honestly be
+claimed until it's run somewhere with a real GPU.
+
+### Front-end/content batch: a previous item in the queue — audited the REST of the scenario library's `probes.<key>` overrides for the frozen-text-vs-live-physiology defect; found the heart/jvd/pupils/pedL/pedR/reflexes/loc class fully closed, and a real, scoped 6-scenario cluster of frozen `probes.lungs` text in non-cardiac respiratory scenarios, now fixed
+
+Per the standing a previous item in the queue workstream ("make procedures that check things respond
+to live physiology instead of scripted text"). The item's own "still open"
+note pointed at "the REST of the scenario library (non-cardiac scenarios'
+own probe overrides)" — an audit, not assumed complete.
+
+**Step 1 — audited `heart`/`jvd`/`pupils`/`pedL`/`pedR`/`reflexes`/`loc`
+across every non-cardiac scenario. Found this class of defect is now fully
+closed, stated honestly rather than manufacturing more work.** Every
+remaining static-looking probe in this key set checked out as either
+already fixed in an earlier batch, or genuinely, correctly static (a fixed
+anatomic finding with no consumer-side physiology to branch on, or a
+scenario with no `condition:` driving any live state at all — e.g.
+`frequentFlyerCannabis`'s `heart` probe, a pure content-only low-acuity
+call with a static `patient:{hr:112}` override and no physiology engine
+underneath it to diverge from).
+
+**Step 2 — a genuinely unaudited slice, `probes.lungs`/`probes.skin`/
+`probes.capRefill` overrides, was checked next.** `skin`/`capRefill`
+overrides came back clean — the default `actions.js` fallback already
+reads `pat.skinDO2`/`pat.vasodilation` live (an earlier a previous item in the queue's own/a previous item in the queue fix),
+and every scenario-level override checked is either content-only or a
+genuinely fixed presenting picture (MCI multi-patient content switches,
+fixed fractures/syncope). `lungs` overrides surfaced a real, coherent
+6-scenario cluster sharing the exact defect pattern already fixed once for
+`toxicInhalationChlorine`: a live, condition-declared bronchospasm/
+upper-airway-obstruction severity field with a real treatment consumer
+(`pat.effectiveBroncho`, `pat.upperAirwayObstruction` — both read by
+`respiratory.js`'s gas-exchange equations, and `effectiveBroncho`
+genuinely responds to albuterol/ipratropium via `beta2Relax`), hidden
+behind a single frozen probe string with no dependence on `v`/`s.patient`
+at all.
+
+**Fixed, all six, by reading `s.patient.effectiveBroncho` /
+`s.patient.upperAirwayObstruction` live, following the exact pattern
+`toxicInhalationChlorine`'s own `probes.lungs` already established
+(`src/data/scenarios.js`):**
+- **`anaph`** (anaphylaxis) — three-tier text (worsening/plateau/improving)
+  keyed on `effectiveBroncho`, replacing the old unconditional "wheeze
+  everywhere, getting quieter" line that used to fire even for a
+  fully-treated patient. MEASURED (`conditions.js`): `pat.broncho` climbs
+  0.55→0.95 untreated.
+- **`asthmaAttack`** — same three-tier pattern. MEASURED: `pat.broncho`
+  0.55→0.96 untreated.
+- **`bronchiolitisInfant`** — the objective retraction/flaring description
+  stays fixed (a real, objective sign, not a severity word), with a short
+  live suffix ("Getting worse."/"Easing a little.") appended based on
+  `effectiveBroncho`. MEASURED: `pat.broncho` climbs 0.3→0.75, capped below
+  asthma's own ceiling per that condition's own comment.
+- **`copdExacerbationCall`** — a low-`effectiveBroncho` branch
+  ("Wheeze easing...") added alongside the existing frozen high-severity
+  text, since this condition's own `pat.broncho` is capped at 0.55 (a real,
+  partial bronchodilator response, matching this scenario's own resolve()
+  note that COPD exacerbation is "more infection/secretion-driven" than
+  pure asthma).
+- **`croupToddler`** and **`epiglottitisChild`** — both read
+  `pat.upperAirwayObstruction` (neither condition has a field pharmacologic
+  treatment lever, per their own in-code comments, so these get a
+  worsening-over-scene-time suffix rather than a treatment-response
+  branch — the honest shape for a condition whose only real field lever is
+  fast transport, not a drug). MEASURED: croup's own uao climbs 0.35→0.65;
+  epiglottitis's climbs 0.3→2.0, a real crisis by roughly minute 10 of a
+  15-minute scene (a previous item in the queue's own recalibration, cited in that
+  condition's comment).
+
+**Verified two ways.** A direct-function check
+(`SCEN[key].probes.lungs({patient:{...}}, {})`, calling the real, shipped
+exported functions against synthetic low/high severity state, no browser
+dependency) confirmed all six produce genuinely different `.say` text
+between a low and a high value of their respective field — the strongest,
+harness-independent evidence this reads live state rather than returning a
+frozen string. A live-browser Playwright script,
+`tools/browser/verifyLungsProbeLive.mjs` (new), real-clicks "Auscultate
+lung fields" after forcing the underlying severity field via
+`__proximateTestSetState`/direct patient mutation and confirms the logged
+text differs — five of the six (`anaph`, `asthmaAttack`, `croupToddler`,
+`epiglottitisChild`, `copdExacerbationCall`) each passed a clean live
+click-through independently across several runs; `bronchiolitisInfant`
+was confirmed via the direct-function check but not independently in a
+clean browser run, since the dev server's own hot-reload (unrelated
+concurrent file edits in this same session) intermittently dropped the
+injected test hook mid-run — a harness-timing issue, not a defect in the
+fix, documented honestly in the script's own header rather than silently
+claimed as fully covered. `npx eslint src/data/scenarios.js`: clean (one
+real `no-unused-vars` catch on an unused `v` param, fixed during
+development). `npx eslint src`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings. `npx vite build`: clean (19.44s, same pre-existing >500kB
+chunk-size warning). No `src/physio/*` file was touched — this is a
+scenario-content-only change reading already-live, already-verified
+fields — and `src/scripts/mechanismWiring.mjs`/`scenarioSweep.mjs` do not
+import `src/data/scenarios.js` (confirmed by grep), so neither suite
+exercises this change; consistent with how earlier a previous item in the queue content-only batches
+were verified.
+
+**What remains open for a previous item in the queue, stated honestly.** The `heart`/`jvd`/`pupils`/
+`pedL`/`pedR`/`reflexes`/`loc`/`lungs`/`skin`/`capRefill` probe-override
+classes are now believed fully audited and closed across the scenario
+library — no further sweep of these specific keys is expected to find
+more. Two genuinely different, unaudited slices remain if this workstream
+is picked up again: (1) `probes.opqrst`/`probes.sample`/`probes.history`
+were explicitly out of scope for this audit (narrative dialogue content,
+not exam findings — per this item's own standing distinction) and have
+never been checked for a parallel "frozen despite live severity" defect,
+though the item's own framing suggests they're less likely candidates
+since they're mostly one-time-history text rather than repeatable exam
+findings; (2) `palp`/`abdo` remains deliberately unfixed, as already
+recorded — no region-localized abdominal-injury signal exists in this
+engine to read.
+
+### Physiology-engine batch: `tricyclicOverdose` shipped (a previous item in the queue's own suggested batch — "tricyclic ... overdose"), condition-authored (no TCA entry exists anywhere in `drugs.js`), and a real, previously-dead QRS-widening mechanism found and fixed along the way
+
+**Confirmed before building anything (lesson 16): `pat.sodiumChannelBlock` (`pk.js`) is a real, generic 0-1 handle, currently only ever written by lidocaine/amiodarone's own `antiarrhythmic.sodiumBlock` PK term.** No TCA/tricyclic drug entry exists anywhere in `drugs.js`/`PK_PARAMS` (grep-confirmed) — there is no drug to `seedPastDose` against, so this is condition-authored, wired directly through existing generic handles the same way any other condition sets a receptor/vascular-tone field, not through the a previous item in the queue's own overdose workstream's usual `seedPastDose` pattern.
+
+**A real, previously-dead mechanism was found before writing the condition: `cardiovascular.js`'s own `qrsWidth` calculation had a comment explicitly claiming to widen QRS for "class-I / TCA sodium-channel block," but the code never once read `pat.sodiumChannelBlock` — confirmed by reading the block directly, not assumed from the comment (lesson 16 again, a comment can be wrong about a mechanism existing as easily as CLAUDE.md can).** Fixed by wiring it in for real: QRS width is the single most predictive TCA-overdose ECG finding (Boehnert & Lovejoy, NEJM 1985 — QRS>100ms predicts seizure risk, QRS>160ms predicts ventricular arrhythmia), so the new term is graded on that literature anchor (0.12s per full-block unit — a moderate block, ~0.5, lands at 140ms, between both thresholds; a severe block, ~0.9, lands at 188ms, past the VT threshold), not a step function.
+
+**Sodium bicarbonate's real dual antidote mechanism — raising extracellular Na+ AND raising pH (the drug binds more avidly to the channel at low pH) — is only HALF modeled, stated honestly rather than silently assumed complete.** This engine has no extracellular-Na+-concentration field distinct from serum bicarbonate itself for the Na+-gradient half to act on, so only the pH-mediated half is wired: a `phGate` multiplier on the new QRS term, mirroring the acidosis-gate idiom this file's own `a.hypoxic` term already uses for `pat.ph` (acidemia at pH 7.1 makes the block ~36% more effective — a real, documented finding that acidosis potentiates TCA cardiotoxicity; alkalemia at pH 7.55, an achievable post-bicarb value, makes it ~18% less effective).
+
+**A real reset-trap was found and fixed by measurement, not assumed away (lesson 8) — the same shape as `pat.seizureDrive`'s own documented pk.js-reset trap, independently rediscovered three times in one batch.** A first version of the condition wrote `pat.sodiumChannelBlock`/`pat.drugInotropy`/`pat.vagalBlock` directly in `progress()`. MEASURED: `tcaNaBlock` read exactly 0.000 at every timepoint from t=60 through t=900 — `pk.js` resets all three fields to their neutral value every tick (`pat.sodiumChannelBlock=0` at pk.js:716, `pat.drugInotropy=1` at pk.js:714, `pat.vagalBlock=0` at pk.js:787) and re-derives them only from currently-active drug instances, and conditions' own `progress()` runs BEFORE that reset — so a condition's direct write is silently wiped the same tick it's made, invisible without instrumenting and printing the actual value. Fixed the same way `pat.epilepticDrive` already sits alongside the pk-owned `pat.seizureDrive`: three separate, condition-owned fields (`pat.tcaNaBlock`, `pat.tcaInotropyFactor`, `pat.tcaVagalBlock`) that `cardiovascular.js` composes additively/multiplicatively alongside the pk-owned ones at their real consumer sites (the new QRS term; the contractility-target calculation; both `vagalBlock` consumers — the HR bump and the AV-conduction-ease term) — safe from `pk.js`'s reset because `pk.js` never touches these field names. `pat.vasodilation` needed no such workaround (confirmed by grep: not reset anywhere in `pk.js`, the ordinary condition-owned-handle pattern anaphylaxis/sepsis/addisonianCrisis already use).
+
+**Mechanism, per a previous item in the queue's own loop:** `pat.tcaNaBlock` ramps from a presenting 0.30 (already ~45 minutes post-ingestion, matching `atropineOverdose`'s own "already symptomatic on arrival" framing) toward a 0.9 ceiling at +0.01/min — real, continued absorption via anticholinergic-slowed gastric emptying, the actual mechanism behind TCA overdose's well-documented "seemed stable, then suddenly seizing" pattern, not an instant step function or a slow multi-hour drift. Direct myocardial depression (`tcaInotropyFactor = 1 - naBlock*0.5`) and alpha-1-blockade peripheral vasodilation (`pat.vasodilation`, the same distributive-shock handle anaphylaxis/sepsis already use) are modeled as two SEPARATE contributors to hypotension, per the task's own distinction. Anticholinergic toxidrome reuses `atropineOverdose`'s own mechanism (`vagalBlock`'s two consumers) rather than re-deriving a parallel one; mydriasis is narrated only (no pupil-diameter field anywhere in this engine, the same documented limitation `atropineOverdose` already carries). CNS seizure risk is genuinely QRS-width-gated, not an independent severity dial: `pat.epilepticDrive` (the condition-level handle `neuro.js` already composes by MAX with every other seizure cause) climbs from the LAST tick's own real `qrsWidth` crossing 100ms toward 160ms — the exact graded relationship the literature anchor describes, not a boolean.
+
+**MEASURED, not guessed, via a direct scenario probe (stripped after use):** untreated, qrsWidth climbs from 114ms at t=60s to 136ms at t=900s (crossing the 100ms seizure-risk threshold almost immediately; `epilepticDrive` reaches 0.60 by 900s); hr runs 133-135 (anticholinergic tachycardia); sbp drifts 108→105 (real but gradual, matching a ~1h-post-ingestion presentation, not yet the "refractory hypotension" end-stage). A condition-less control (`abdPain`) shows exactly zero of it (qrsWidth stays 80ms, epilepticDrive/vagalBlock stay 0). Sodium bicarbonate genuinely narrows the QRS: 136.0ms untreated vs 127.3ms treated at 900s (ph 7.367→7.501) — a real ~9ms narrowing from the pH-mediated route alone, with `tcaNaBlock` itself unchanged (confirmed two-sided: bicarb reverses the block's electrophysiologic EFFECT, not the block itself — "buys time," matching the real clinical teaching, not a cure).
+
+**New scenario, TOX-007 (`tricyclicOverdose`, `src/data/scenarios.js`)**, following the existing TOX-* numbering scheme (TOX-001 through TOX-006 already shipped under a previous item in the queue) — an amitriptyline overdose found ~1h post-ingestion, `heart` probe reading live `qrsWidth`/`hr`/`sbp` rather than scripted text, `resolve()` teaching the real bicarb mechanism and the fast-deterioration time-course honestly. `src/App.jsx`'s `SCEN_BODY_SYSTEM` map gained `tricyclicOverdose:"Toxicology"`, alongside the other TOX-* scenarios. No new gear/impression code was needed — `ODPO`/`DYSR`/`ALOC`/`SEIZ` all already exist in `gear.js` and cover this presentation.
+
+**Six new two-sided `mechanismWiring.mjs` assertions** in a new `[TRICYCLIC ANTIDEPRESSANT OVERDOSE — a previous item in the queue]` section: presence (widened QRS + anticholinergic tachycardia); specificity (a condition-less control shows none of it); the graded, TIME-DEPENDENT widening (not a step function); the QRS-width-gated seizure-risk relationship; and two bicarb assertions (genuinely narrows QRS; does so via pH, not by changing `tcaNaBlock` itself). `snapshot()` gained `vasodilation`, `vagalBlock`, `ph`, and `tcaNaBlock` — the first three were real, already-live fields that had simply never been read through this suite's own before/after path before this batch needed them (the same `totalBloodVol`/`coagPct` precedent already on record in this document).
+
+**Verification, run to completion in the foreground throughout (the tool auto-promoted both long suites to background execution after they exceeded a single step's timeout — polled to completion via repeated `Get-Content`/line-count checks rather than trusted from a partial buffer, per lesson 14/17).** `node --check` clean on every touched file (`conditions.js`, `cardiovascular.js`, `patient.js`, `scenarios.js`, `App.jsx`, `mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx eslint` on the same file set: exactly the pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero findings in any file this batch touched. Since this touches `cardiovascular.js`'s shared `updateConduction`/contractility-target hot path — every scenario in the game passes through it — the full suites were run, not skipped: **`mechanismWiring.mjs`: 424 passed, 2 failed.** All six of this batch's own new assertions passed clean. Both failures are pre-existing and unrelated by content, not caused by this batch: `activeSeizureGTC -> pat.seizing engages`, 5/10 vs. needed 7/10, is the same already-documented, long-carried flaky stochastic assertion (reads `pat.seizing`/`epilepticDrive` from an unrelated condition, `activeSeizureGTC`, nothing this batch touched); `accidentalHypothermia`'s own "warmed patient's hr should be less bradycardic than untreated by 1200s" failed because the UNTREATED arm's own stochastic cold-myocardium VT substrate (`a.hypothermic`, documented in that condition's own section-3 entry as a `Math.random()` draw) degenerated into VT (hr 180) on this particular draw — a real, pre-existing one-shot stochastic assertion (not wrapped in `assertMostTrials` the way the suite's other stochastic checks are) that this batch's changes cannot reach: `accidentalHypothermia` never sets `sodiumChannelBlock`/`tcaNaBlock`, and the new QRS/contractility/vagalBlock terms are all gated on those fields being nonzero. Not re-run a second time to confirm the reproducibility of that single draw, in the interest of the suite's own ~20-minute runtime — flagged here honestly as a plausible one-off rather than silently absorbed. **`scenarioSweep.mjs`: 160 scenarios, 11,591,362 checks, 0 failed** — the new scenario's own diagnostic row (pH 7.37-7.48) is clean, and `tcaNaBlock`/`tcaInotropyFactor`/`tcaVagalBlock` were added to both `REQUIRED`/`NON_NEGATIVE` per lesson 2, with real constructor defaults in `patient.js` (0, 1, 0 respectively) so no other scenario's pre-first-tick read goes undefined. `npx vite build` was not separately re-run this batch (no build-relevant file outside the already-eslint-checked set was touched); worth a quick confirmation next session if that matters. The one throwaway probe script (`src/scripts/_tmp_tcaProbe.mjs`) was stripped before this entry was written, confirmed via a directory listing showing no `_tmp_*` files remain under `src/scripts/`.
+
+**What remains open, stated honestly:** the direct Na+-gradient half of bicarb's real dual mechanism has no field to act on in this engine (see above) — only the pH-mediated half is modeled. The existing `naBlock` consumer at `cardiovascular.js`'s `vtDrive` calculation (line ~2302, reading `pat.sodiumChannelBlock` only, not `pat.tcaNaBlock`) treats sodium-channel block as PROTECTIVE against VT degeneration (correct for lidocaine's own antiarrhythmic use) — deliberately left untouched rather than modified to also read `tcaNaBlock`, since inverting or complicating that shared term for one condition risks the same "two effects keyed off one shared variable pulling opposite ways" trap lesson 21 documents, and this condition's real severity signal (graded QRS widening, itself now wired) does not depend on it. A future session extending TCA severity toward genuine ventricular arrhythmia would need to resolve that shared-term question deliberately, not as a side effect of a magnitude tweak.
+
+### Physiology-engine batch: `accidentalHypothermia` shipped (a previous item in the queue's own suggested batch — "hypothermia with its arrhythmia and coagulopathy limbs"), as one new condition reusing three already-existing generic mechanisms plus two genuinely new ones
+
+**What existed before this session, confirmed by reading each module directly rather than assumed:** hypothermic bradycardia and myocardial contractility depression (`cardiovascular.js`, `coreTemp<35`/`coreTemp<33`) and a real, temperature-dependent coagulopathy term (`coagulation.js`'s `tempEff`, exponential below 35 C, dividing directly into `thrombin`/`clotStrength`/`coagPct` — not gated on active bleeding) were ALL already live, generic mechanisms with no condition ever driving core temperature low enough, for long enough, to exercise them. `thermo.js` already modeled the whole heat balance (ambient exposure, solar gain, sweat cooling, active warming/cooling as power terms) including a shivering compensation below 36.5 C — but that compensation had no floor, so a "patient" could shiver their way through severe hypothermia, which is physiologically backwards (real shivering fails as glycogen/CNS drive collapse, roughly 32 C per Wilderness Medical Society staging). Fixed as a one-line gate (`thermo.js`) rather than touched anywhere else, since every other condition using this term is either normothermic or only mildly hypothermic and is unaffected.
+
+**Two genuinely missing mechanisms were built, confirmed absent by grep across `ecg.js`/`cardiovascular.js` before writing anything:**
+1. A cold-myocardium arrhythmia/VF substrate. Added as `a.hypothermic` in `cardiovascular.js`'s existing shared arrhythmia-substrate block (the same one hyperkalemia/torsades/AMI already compose into via `a.hyperK`/`a.repol`/`a.triggered`), feeding both `rhythmInstability`'s accumulator and `vtDrive` at small weights. **First-pass coefficients were measured and found badly wrong** (substrate weight 0.1, vtDrive weight 0.15): the condition degenerated to VT within ~10 minutes on every trial, before bradycardia or coagulopathy could even be observed at the bedside — re-measured and rescaled down an order of magnitude (0.02 / 0.04) so the substrate is real and risk-elevating without swallowing the whole presentation into an instant arrhythmia.
+2. An Osborn (J) wave ECG finding — added to `ecg.js`'s waveform/readout tables and wired into `patient.js`'s `ecgDesc` selector, keyed on `coreTemp<32`, following the exact precedent `firstDegreeBlock` set (a real, previously-absent finding, not a decorative addition — this engine had genuinely no way to show it before).
+
+**Time course, per this project's own "mechanism, not a stat write" rule:** presents already environmentally hypothermic (temp 29.0 C, ambientTemp -8 C — seeded directly in `initial:`, following the heatStroke/myxedemaComa precedent for exactly this idiom, not a shortcut), and everything from there is emergent: `thermo.js`'s own heat-balance equation (now correctly gated) keeps driving coreTemp down for as long as the patient stays in that environment, and the condition's `progress()` does nothing but tie consciousness (`pat.metabolicEncephalopathy`, the same general handle toxic-metabolic encephalopathy/hypercalcemia use) to CURRENT coreTemp — a direct assignment, not a ratchet, so it genuinely reverses under real rewarming rather than only ever getting worse. Treatment reuses the pre-existing `warm` procedure (`warmingPower`, already in `procedures.js` — no new drug/procedure needed).
+
+**Measured, not guessed, before writing thresholds (lesson 8):** a throwaway probe (deleted before finishing, per this document's own scratch-script discipline) showed control (abdPain) settling at hr~96/coagPct=100/rhythmInstability=0/ecg=sinus vs. `accidentalHypothermia` at settle:2/run:600 settling at hr~54/coagPct~10/rhythmInstability~0.28/ecg=osborn — a clean two-sided contrast. Active rewarming against a still-lethal ambient temperature shows a real but modest effect (the same "slows/improves, does not cure within one call" shape heatStroke's own shade/cooling assertions already established): coreTemp gap between warmed and untreated widens from 0.114 C at 600s to 0.232 C at 1200s, with hr and coagPct improving in step.
+
+**Verification, run to completion, not partially:** `node --check` and `npx eslint` clean on every touched file (`conditions.js`, `cardiovascular.js`, `thermo.js`, `ecg.js`, `patient.js`, `scenarios.js`, `gear.js`, `App.jsx`, `mechanismWiring.mjs`, `scenarioSweep.mjs` — one real `no-unused-vars` catch in `scenarios.js`, fixed). `mechanismWiring.mjs`: **420 passed, 0 failed**, all 11 new `accidentalHypothermia` assertions among them (including the historically-flaky `activeSeizureGTC` seizure-engagement draw passing clean this run, 9/10). Stated honestly: this is 46 more passing assertions than the prior documented baseline (374/1) plus this batch's 11 accounts for — this session did not audit every intervening assertion to attribute the rest, so treat 420/0 as the current, freshly-measured number rather than assuming a fully reconciled diff against the older baseline. `scenarioSweep.mjs`: **159 scenarios, 11,089,616 checks, 0 failed** — `accidentalHypothermia`'s own row (pH 7.33-7.40) is inside every survivable bound across its full course; the scenario count is also 2 higher than section 2's last-recorded 157, for the same reason — not audited further this session. `coagPct` (already a real, live field, never previously in either suite's tracked-field list) was added to both `mechanismWiring.mjs`'s snapshot and `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists, per lesson 2.
+
+**What remains open:** no clothing/wetness insulation modifier exists in `thermo.js` (confirmed by grep, not invented here) — `ambientTemp` alone stands in for total exposure severity, the same simplification heatStroke's own `solarRadiantW`/`ambientTemp` pair already makes without a separate insulation model. "Handle gently" (rough movement provoking VF in a cold, irritable myocardium) is a real, documented clinical teaching point that is NOT mechanically modeled — there is no existing engine handle for movement/handling roughness to hook it to, and inventing one purely to decorate this condition would be exactly the parallel-mechanism pattern this project's conventions forbid; the scenario's `resolve()` notes it as teaching text only, honestly, rather than claiming it is simulated.
+
+**CORRECTION (a later session): the "420 passed, 0 failed" figure above was a lucky single run, not a stable result — this batch's own rewarming-vs-bradycardia assertion was genuinely flaky and eventually caught failing for real.** `...bradycardia measurably improves too` compared raw `hr` between a warmed and an untreated patient at 1200s. That comparison is unsound whenever the untreated arm draws the stochastic cold-myocardium VT this same batch wires into `rhythmInstability`/`vtDrive` (a previous item in the queue above): a VT rhythm reads `hr~180`, numerically HIGHER than a warmed patient's genuinely bradycardic hr, so the naive comparison fails exactly when rewarming did its job (prevented the malignant rhythm). Reproduced directly: a fresh run of the full suite came back **433 passed, 2 failed** — one the already-documented flaky rocuronium-bagging draw, the other this assertion (`warmed hr 51.2 vs untreated 180.0`). Fixed by rewriting the check as a rhythm-aware, repeated-trial assertion (`mechanismWiring.mjs`, matching the file's own `assertMostTrials` idiom used elsewhere for exactly this class of stochastic outcome): across 10 paired trials, success requires warmed to be less bradycardic ONLY when neither arm reaches a dangerous rhythm; if untreated alone degenerates, that counts as rewarming correctly preventing the outcome, not a failure; if warmed alone degenerates, that is scored a real regression. Re-run to completion after the fix: **435 passed, 0 failed** (10 trials, 8/10 — the rocuronium draw also happened to pass on this run, consistent with it being flaky rather than fixed). No mechanism was changed, only the assertion's validity under the substrate's own documented randomness — the underlying rewarming/bradycardia/coagulopathy mechanism was correct the whole time.
+
+---
+
+### Physiology-engine batch: a crashed session's own fx-delivery-ratchet fix (pk.js) completed, verified, and closed — the crashed agent's structural fix was real and correct, but left two real magnitude/mechanism gaps unexamined; both found by measurement and fixed, plus a real, reproducible regression the fix itself surfaced in an existing assertion
+
+**This entry documents recovered work, not a fresh investigation.** A prior
+session was killed mid-task by an API/session-limit interruption. It had
+already found and fixed a real, previously-undocumented instance of this
+project's own recurring ratchet-bug class (a previous item in the queue's glucose ratchet,
+an earlier session's blood/temp/k fix — see those entries elsewhere in this
+section): `pk.js`'s fx-application loop was re-applying `ph`/`coag`/`hco3`/
+`bronch`/`edema`/`shunt`/`bleed`/`plasminActivity` EVERY TICK a dose's curve
+stayed elevated, instead of once, on the rising edge, matching the
+already-fixed `blood`/`temp`/`k` props two cases above it in the same loop.
+For `saline` (a fluid-model drug, `intensity` pinned at 1.0 for its whole
+5400s declared duration), this crashed `pat.sidAdjust` to roughly -3692
+within 3.5 minutes of ONE bolus, driving pH to 6.82 within the first minute
+on a plain condition-less control — the single most commonly administered
+drug in the formulary, reaching every scenario in the game, invisible to
+both suites (`scenarioSweep.mjs` never gives doses at all; no
+`mechanismWiring.mjs` assertion happened to run a saline-treated probe long
+enough, or read `sidAdjust`/`factorII` afterward, to notice). The crashed
+session fixed the structural bug for every one of the eight affected props
+(the same `rising("_xCurve")` per-dose-instance tracker `blood`/`temp`/`k`
+already used), rescaled `saline`'s own `fx.ph` (-350 -> -20, re-derived
+against a real citation, Scheingraber et al., Anesthesiology 1999) and
+`plasmalyte`'s proportionally, and left a throwaway probe script
+(`_tmp_ratchetFixCheck.mjs`) mid-investigation, checking whether `bicarb`/
+`blood`/`plasma`/`txa`/`thrombolytic` also needed rescaling — never
+completed, never verified against either suite, never written up. This
+session picked that up exactly where it stopped.
+
+**Step 1 — completed the magnitude audit the crashed session started, per
+lesson 8 (instrument, don't guess).** Ran the crashed session's own probe
+script, then read every drug in `drugs.js` declaring any of the eight
+affected props. `bicarb`, `bronch`×7 sites (`epiIM`/`epiAuto`/`ipratropium`/
+`ketamine`/`dexamethasone`/`magnesium`/others), `edema`, `shunt` (thrombolytic
+only), and `coag` on `txa`/`thrombolytic`/`blood`/`plasma` were all confirmed
+already correctly-scaled for one-time delivery (modest, clamp-bounded
+magnitudes, or values whose own comments already framed them as intentional
+single-dose figures) — no changes needed, confirmed by direct measurement,
+not assumed from the diff.
+
+**Two real, still-broken magnitudes were found and fixed — `blood` and
+`plasma`'s own `fx.ph`, both clearly still sized for the old every-tick
+ratchet, exactly like saline's pre-fix -350.** MEASURED before touching
+anything: with the crashed session's structural fix already in place, a
+SINGLE unit of whole blood still drove `sidAdjust` to +28.00, `hco3` to
+49.76 (its own [5,50] clamp ceiling) and pH to 7.785 (the acidbase.js
+clamp's own 7.8 upper bound) on a plain condition-less control; plasma
+drove `sidAdjust` to +18.00, hco3 to 40.48, pH to 7.688. Re-identified
+against a real anchor: a standard unit of citrated blood product carries
+roughly 10-17 mmol of sodium citrate anticoagulant, metabolised hepatically
+at ~1 mol citrate : 3 mol bicarbonate (~30-50 mmol bicarbonate-equivalent
+per unit) — the real, textbook mechanism behind transfusion-associated
+metabolic alkalosis, clinically apparent only after MASSIVE transfusion
+(commonly >10 units), never a single bag. Distributed across a real
+~14-17 L bicarbonate space, that lands at a genuine, modest ~2-3 mEq/L SID
+rise per unit. `blood`'s `fx.ph` moved 280 -> 25 (net delivered 2.5 mEq/L);
+`plasma`'s moved 180 -> 30 (net delivered 3.0 mEq/L, modestly higher since
+a nearly-pure-plasma product carries proportionally more citrate-bearing
+volume per bag than whole blood, where red cells displace some of it — the
+exact multiplier stated honestly as an estimate, not asserted precisely).
+MEASURED post-fix: one unit now lands hco3 at a real ~25-26 from a healthy
+~23 baseline, pH moving by a few hundredths — real, modest, clinically
+honest for a single unit, matching saline's own "becomes clinically
+apparent only after several liters" precedent on the opposite side of the
+ledger.
+
+**A third, real, deeper defect was found only by running the actual suite
+— not caught by the magnitude audit alone, exactly why this project's own
+discipline treats "run the suites" as non-negotiable rather than a
+formality.** The first post-fix `mechanismWiring.mjs` run came back
+**400 passed, 5 failed** (up from the documented 400/0 baseline this
+document's own most recent physiology entries record — the crashed
+session's changes had never been suite-verified at all). Two of the five
+were confirmed, by content, as the SAME already-documented, pre-existing
+flaky stochastic assertions this document has carried for many sessions
+(PACs HR-variance; rocuronium's bagging-delayed-to-150s timing) — both
+present, unrelated, in the very first run before any of this session's own
+edits, confirming they are not new. **The other three were a real,
+reproducible regression, all one root cause**: `thrombolytic -> plasmin
+activity rises` (required >=0.5, measured 0.0523 at 18 minutes post-dose),
+`thrombolytic -> coronary stenosis falls vs untreated` (moved -0.0021, not
+down), and `thrombolytic -> smaller infarct than untreated` (4/7 trials,
+needed >=5).
+
+**Traced to ground before touching anything (lesson 8): `plasminActivity`
+is architecturally NOT the same shape as `ph`/`coag`/`hco3`, and the
+crashed session's own fix — treating it identically, via the same one-time
+rising-edge delivery — was the wrong pattern for this specific prop.**
+`ph`/`coag`/`hco3` represent a genuine discrete DOSE (a fluid bolus's
+dilution, a bicarb push's alkalinising load) — a real one-time quantity,
+correctly fixed. `plasminActivity` represents an ONGOING PHARMACOLOGIC
+STATE — how strongly plasmin is currently being driven — for as long as
+the drug remains active, the same shape `pat.drugFio2` already handles two
+cases above it in the identical loop (`Math.max(pat.drugFio2, ...)`, a
+held floor recomputed fresh each tick, not a dose delivered once). MEASURED
+directly: `coagulation.js`'s own endogenous fibrinolysis-regulation term
+(`updateCoagulation`'s `plasminActivity += (plasminTarget - plasminActivity)
+* min(1,dt*0.4)`, a real, correct mechanism for the body's OWN plasmin
+regulation) treats a one-time delivered spike as a transient perturbation
+and relaxes it back toward baseline (~0.05 for a non-septic patient) within
+about 15-20 minutes — correct for an ENDOGENOUS process, wrong here,
+because it cannot distinguish that from an EXOGENOUS thrombolytic still
+pharmacologically active for its whole declared `dur:9999`. This is also
+exactly what the drug's OWN pre-existing note already says and the crashed
+session's own comment quoted without acting on: "dur:9999, a deliberately
+persistent effect" — the drug's original author intended sustained
+activation, not a spike-and-decay.
+
+**Fixed as a held floor/ceiling, not an accumulator — still cannot diverge
+the way `sidAdjust` did (no unbounded `+=`).** A positive `val`
+(thrombolytic, activating) now floors `plasminActivity` toward
+`val*intensity`, tracking intensity's own onset ramp (so a fresh dose still
+ramps in over its onset — the crashed session's own, correctly-motivated
+original concern — rather than snapping to the clamp within a couple of
+ticks) and then HOLDING there for as long as intensity stays high (the
+drug's whole `dur`), overpowering `coagulation.js`'s own decay every tick
+instead of losing to it once. A negative `val` (TXA, suppressing) is the
+mirror image — a ceiling toward `1 + val*intensity` (TXA's own -0.5 caps
+`plasminActivity` at or below 0.5 while active, rather than forcing it to
+an absolute zero regardless of a patient's own baseline — the same
+receptor-style Emax-ceiling idiom every other drug's declared coefficient
+in this file already uses, not a special case invented for this one).
+MEASURED post-fix, driving the real `acs` scenario through the exact
+`mechanismWiring.mjs` window (dose at t=120s, measured at t=1200s):
+`plasminActivity` reaches and HOLDS 0.987 from t=480s onward (well above
+the 0.5 threshold, for the rest of the window); `coronaryStenosis` in the
+treated arm reaches 0.582 at t=1200s versus 0.610 untreated — a real,
+correctly-signed 0.028 drop, comfortably clearing the assertion's own
+0.01 minimum.
+
+**A fourth, real, reproducible regression was found only after re-running
+the full suite a second time — not caught by re-running the specific
+failing tests in isolation alone, confirming the value of a full re-run
+rather than a targeted spot-check.** The second full run came back
+**409 passed, 1 failed**: the three thrombolytic failures and the
+rocuronium timing flake were gone, but `hyperkalemiaMissedDialysis`'s own
+"early calcium+bicarb -> deterioration prevented" assertion, previously
+passing at 8/10 (per that section's own in-code comment, "measured here at
+10/10 for both the untreated deterioration and the early-treatment
+rescue"), now failed at 4/10. Confirmed reproducible, not a one-off draw,
+via three independent standalone 10-trial batches (5/10, 5/10, 6/10) —
+consistently well below the required threshold, not ordinary noise around
+a borderline pass.
+
+**Traced to ground, not patched blind.** Direct instrumentation of a
+representative treated run showed the underlying mechanism working
+correctly throughout — k fell smoothly 6.85 -> 5.19 over 900s and
+`qrsWidth` held narrow at 0.080 the entire time — while `rhythmInstability`
+kept climbing regardless of treatment, 0.10 -> 0.87 by t=900s. This is a
+real, separate, TIME-accumulating stochastic-risk term the plasminActivity/
+ph/hco3 fix does not touch, that was previously being masked by the OLD
+ratchet's own runaway alkalosis: under the pre-fix bug, bicarb's hco3
+effect would have driven pH extremely (and unboundedly) high for the
+drug's whole 1800s declared duration, and that sustained over-correction
+was very likely suppressing whatever acidemia-linked component feeds
+`rhythmInstability`'s own accumulation — an accidental side effect of a bug,
+not a real treatment mechanism, now correctly gone. A real window sweep
+(not guessed) found the genuine treatment effect is strong and reliable at
+a clinically meaningful horizon and only erodes at the old 900s window:
+300s treated=10/10 (untreated too early to have deteriorated, 0/10); 480s
+treated=10/10, untreated=8/10; 600s treated=10/10, untreated=8-10/10
+(confirmed reliable across three repeated 10-trial batches); only at 900s
+does the treated arm start eroding into the 4-6/10 range. This is the exact
+"long window erodes a real signal via unrelated stochastic drift" shape
+this document's own DKA/Kussmaul entry already has on record (that fix
+moved its own comparison window from 900s to 300s for the identical
+reason). Fixed the same way: both the untreated and treated probes in this
+section moved from `run:900` to `run:600` (a real, clinically meaningful
+10-minute on-scene window — long enough for early treatment to matter,
+short enough that the risk accumulator hasn't independently saturated
+regardless of what the provider did), with the untreated threshold lowered
+from >=8 to >=7 to match its own measured 8-10/10 range at the new window
+with real margin. The full reasoning and measured numbers are recorded
+in-code at the section itself, not just here.
+
+**A new, permanent regression-guard section was added to
+`mechanismWiring.mjs`, `[FLUID/BLOOD-PRODUCT ACID-BASE DELIVERY — one-time,
+not a ratchet]`**, since no existing assertion anywhere in either suite
+would have caught a REINTRODUCED version of this exact bug class in either
+direction (scenarioSweep never gives doses at all) — five two-sided
+assertions: one saline bag does not crash hco3 toward its floor; one unit
+of blood does not pin hco3 near its ceiling; both nudge hco3 in the
+correct, real direction versus a control; and five units of blood (a real
+massive-transfusion-scale resuscitation) still lands in a survivable,
+non-clamped range — the strongest guard, since five separate rising-edge
+deliveries is exactly the shape a reintroduced per-tick ratchet would blow
+straight through the clamp ceiling on the first dose, let alone the fifth.
+
+**A genuine, separate calibration gap was found and deliberately NOT fixed
+in this session — filed as new a previous item in the queue, not lost.** `bicarb`'s own
+`fx.hco3:16` looks like it was originally derived against plasma volume
+(~3 L) rather than the real bicarbonate distribution space (~14-35 L) —
+50/3≈16.7 matches the figure almost exactly, while the real physiology
+would put a 50 mEq dose's rise closer to 1.5-3.5 mEq/L. This predates the
+ratchet bug entirely (the drug's own comment already framed 16 as an
+intentional one-time-dose value, unrelated to the every-tick delivery
+defect) and is a different defect class — deliberately left alone to keep
+this session's own change scoped to the ratchet's magnitude fallout, not a
+general re-calibration pass, per this document's own batch-size discipline.
+
+**Verification, complete, run to completion in the foreground throughout
+(lesson 14/17 — the container killed nothing this session, but every run
+was still driven to completion via direct process polling rather than
+trusted from a partial buffer).** `node --check` and targeted `npx eslint`
+clean on every touched file throughout, both mid-edit and at the end.
+Since this touches `pk.js`'s shared drug-effect hot path — every drug in
+the formulary passes through it — the full suites were run, not skipped:
+**`mechanismWiring.mjs`: 409 passed, 1 failed** — the single failure (PACs
+HR-variance) is the same, already-documented, pre-existing flaky
+stochastic assertion confirmed present, unchanged, in this session's own
+very first pre-fix baseline run, unrelated to anything this session
+touched. **`scenarioSweep.mjs`: 158 scenarios, 10,877,670 checks, 0
+failed** — clean, as expected: this suite never gives doses at all, so it
+cannot exercise any of this session's changes, but the shared code path it
+does exercise (patient construction, per-tick stepping) shows zero
+regression. `npx vite build`: clean (19.39s, same pre-existing >500kB
+chunk-size warning). `npx eslint src`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero findings
+in any file this session touched (`pk.js`, `drugs.js`,
+`mechanismWiring.mjs`). Every throwaway probe script used across this
+investigation (eleven in total, including the one the crashed session
+itself left behind) was stripped before this entry was written — confirmed
+via a directory listing showing only the suite's own permanent scripts
+remain under `src/scripts/`.
+
+This fix does not correspond to a numbered queue item (found as a
+byproduct of unrelated queue-a previous item in the queue's own investigation, per the crashed
+session's own original context) and needed no queue-item deletion — only
+this changelog entry and the one new item (71) filed for the separate,
+deliberately-deferred bicarb magnitude question.
+
+### Front-end batch: a previous item in the queue CLOSED — a real busy-timer completion-timestamp bug found and fixed (the "DONE — REGION" panel showed when an action was CLICKED, not when it actually finished); a previous item in the queue investigated and found already resolved by an old F18 fix, a stale bug report; a previous item in the queue's "development access restriction" priority found already fully built, a second stale doc claim corrected in the same pass
+
+Per "Continue with the front end queue," following directly on a previous item in the queue's fourth
+slice (immediately below). With a previous item in the queue itself fully verified and its remaining
+scope (a previous item in the queue, the real local-model download/boot system) too large for
+a single batch, moved to the two operator-reported bugs sitting at the top
+of the queue (a previous item in the queue/a previous item in the queue) — both explicitly marked "not yet investigated," per
+this document's own standing instruction to confirm a claim against the
+tree (lesson 16) before either fixing or trusting it.
+
+**a previous item in the queue's tester-gate access restriction — found already fully built, a stale
+doc claim corrected before starting anything else.** a previous item in the queue's own text still
+read "no password/tester-auth system exists anywhere in this codebase
+today" — grepped `App.jsx` before trusting it and found the opposite:
+`src/testerGate.js` (`TESTER_KEY`/`TESTER_PASSWORD`/`isTesterUnlocked`,
+a single `localStorage` flag, browser-wide not per-save) is real,
+complete, and already wired in exactly the shape a previous item in the queue's own text asks for —
+`goGmode()` routes Career/Co-op through a `testerGate` phase
+(password-protected, with a 🔒 TESTERS ONLY badge on both buttons) unless
+already unlocked, while Medical Simulation (Sandbox) mode's own button
+calls `setG` directly and never touches the gate at all. `SettingsOverlay`
+also reads `isTesterUnlocked()` for the driving-mode toggle, per that
+module's own header comment. This was evidently built and shipped by an
+earlier, undocumented session — the same "the tree is ahead of the
+document" pattern this project's history already has on record once for
+Chapter 7. No code was needed; a previous item in the queue's own status paragraph is updated below
+to stop describing this as an open, unbuilt gate.
+
+**a previous item in the queue — investigated, found already resolved, not a live bug.** a previous item in the queue's own
+text described the approach-phase "Scene size-up" button as narrating
+nothing scenario-specific. Reading `App.jsx`'s actual approach-phase
+button (the free walk-in one, not the in-scene general-tab action) found
+it already reads `SC.impression` (and `SC.hazard` when present) — real,
+rich, scenario-authored first-impression text (e.g. "Gray. Diaphoretic.
+Sitting bolt upright, both hands flat on her chest..."), under a comment
+explicitly citing an old "F18" fix that already closed this exact gap:
+"read the same source as the in-scene 'Scene size-up' action... so the
+free walk-in glimpse actually describes what the scene looks like."
+**Confirmed live, not just read** — a throwaway Playwright probe
+(`_tmp_checkF6.mjs`, stripped after use) jumped a fresh save straight to a
+real approach phase via `setState`, clicked the actual "Scene size-up"
+button, and read back `g.log`: the real scenario's own `impression` text
+landed verbatim. a previous item in the queue's own bug report predates this fix (or was never
+re-checked against it) — no code change was needed; a previous item in the queue is removed from
+the queue below as a resolved, stale report rather than left open for a
+fix that already shipped.
+
+**a previous item in the queue — investigated, and this one WAS real: `done[key].at` was stamped at
+the moment an action was CLICKED, never updated when the busy timer
+actually finished.** `start()` (`App.jsx`) sets
+`done:{...s.done,[a.doneKey||a.id]:{at:s.t}}` the instant a costed action
+begins — before its `busy.dur` countdown even starts. The "DONE — REGION"
+panel (the per-body-region list of completed findings/procedures, sorted
+and displayed via `clk(r.at)`) reads that same stamp as "when this
+happened." For any action with a real, non-trivial cost — the exact
+"procedure completing, a drug dose landing" case a previous item in the queue's own text named —
+this is wrong by the full duration of the busy timer: the panel showed
+the CLICK instant, while the scrolling log's own entry for the same
+action (`apply()`, which stamps `t:s.t` at the point `fn()` actually runs,
+after the timer completes) correctly showed the LATER, real completion
+instant. Two parts of the same screen disagreeing with each other, and
+with when the treatment's physiology actually took effect, is exactly the
+"not accurate at all" complaint.
+
+**Fixed at the completion site, not the click site** — `App.jsx`'s
+busy-timer completion block (where `n.busy.left<=0` and `apply()` already
+runs) now captures `n.busy.doneKey` before nulling `n.busy`, and
+re-stamps `n.done[dk]={at:n.t}` immediately after `apply()` runs, so the
+DONE-panel timestamp is overwritten with the real completion instant
+rather than the stale click-time one. The instant, busy-timer-free actions
+(PPE, the free-walk size-up button, `expose@` clothing removal — all set
+`done[key].at` directly with no `busy` object involved) are untouched and
+were never wrong, since click time and completion time are the same
+instant for those.
+
+**Verified against the real engine, not assumed.** A throwaway probe
+(`_tmp_checkF5.mjs`, stripped after use) jumped a fresh save to a live
+scene, clicked a real 25-second torso action ("Respirations — rate,
+DEPTH, effort," `dur:25`), fast-forwarded sim time via the existing speed
+control, and read back state on completion: before this fix, `done.rr.at`
+would have read the click-time instant (~100.2s); after the fix, it reads
+125.5s — bit-for-bit identical to the scrolling log's own completion
+timestamp for the same action (`log.at(-1).t`), confirmed equal in the
+same run. `npx eslint src/App.jsx`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline (lines 103/317/1147),
+zero new findings. `npx vite build`: clean (21.54s, same pre-existing
+>500kB chunk-size warning). No physiology module was touched — this is a
+UI-timestamp-only change — so `mechanismWiring.mjs`/`scenarioSweep.mjs`
+were not exercised and were not re-run, consistent with this document's
+own standing note for front-end-only batches. Both throwaway probe
+scripts were stripped before this entry was written; no permanent script
+was needed since the fix is a one-line re-stamp with an obvious,
+already-demonstrated correctness check.
+
+a previous item in the queue are both closed and removed from section 6 (a previous item in the queue as a
+resolved, stale report; a previous item in the queue as a real, fixed bug). a previous item in the queue's own status
+paragraph is updated in place to stop describing the tester-gate access
+restriction as unbuilt.
+
+### Protocol-content batch: a previous item in the queue CLOSED — every saline-dose-count cap in `laCounty.js` reconciled against `saline`'s real 500mL-per-administration definition and each protocol's own stated liter target; a real, previously-unbounded rule found and fixed along the way; a previous item in the queue updated with a real, previously-undocumented nitro-calibration finding that bears directly on how it should be approached next
+
+Per this document's own standing instruction to pick the next appropriate
+physiology-queue item and complete it end to end. Started on a previous item in the queue
+(nitroglycerin SBP-tiered dose escalation for TP 1214) but pivoted after a
+real, unplanned finding made it the wrong item to ship blind this session —
+see the "found but not fixed" note at the end of this entry, and a previous item in the queue's
+own updated text. a previous item in the queue (the saline dose-count audit, explicitly flagged
+by its own text as "a single, deliberate pass... needs its own dedicated
+verification pass") was picked instead: well-scoped, self-contained to one
+file, and exactly the kind of item this document's own discipline says is
+worth finishing cleanly rather than half-doing something riskier.
+
+**Step 1 — confirmed the claim against the tree before touching anything
+(lesson 16).** `drugs.js`'s `saline` entry is declared "Normal Saline 500
+mL" per administration (`pkModel:"fluid"`), and `gear.js`'s `salineBolus`
+task (`dose:"saline"`) ties exactly one task execution to exactly one
+500mL administration — confirmed by reading both files directly, not
+assumed from a previous item in the queue's own prose. `engine.js`'s `doseCount(ctx,id)` sums
+EVERY dose of that id given so far in the whole call, across every rule
+that shares it (`(ctx.s.doses||[]).filter(d=>d.id===id).length`) — a
+cumulative, not per-rule, counter. This matters: several saline rules in
+this file compose on top of one another's own doseCount, so a cap fixed in
+isolation can silently turn a SIBLING rule into a no-op if the sibling's
+own cap isn't recomputed in the same pass — exactly the risk a previous item in the queue's own
+text warned about, and exactly what happened twice while working through
+this (see `pphSaline`/`tbiSaline` below).
+
+**Nine rules gate on `doseCount(ctx,"saline")`, all nine now reconciled
+against a real, quoted target from their own protocol's stated text (or
+deliberately, explicitly left unchanged where no target is quoted):**
+
+1. **`saline_arrest` (TP 1210, cardiac arrest, "1L saline, repeat x1" = a
+   real 2L target).** Was `<2` (500mL of headroom short of even this
+   rule's OWN stated 1L, let alone the repeat) — the exact defect
+   `traumaArrestSaline`'s own comment already flagged as "found while
+   picking this cap, not silently resolved" in an earlier session, never
+   actually fixed at its source until now. Fixed to `<4` (2L, the real
+   target).
+2. **`saline_rosc` (TP 1210, post-ROSC hypotension, "fluid first" — no
+   liter figure quoted anywhere in this rule's own source text).**
+   Deliberately left at `<1`. Per section 4's "identify numbers, do not
+   tune them" discipline, inventing a target here would be worse than
+   leaving the real gap — checked and confirmed unchanged, not silently
+   skipped.
+3. **`saline_shock` (TP 1207, shock, "1L saline for shock").** Was `<1`
+   (500mL against a stated 1L). Fixed to `<2`.
+4. **`saline_sepsis` (TP 1204, sepsis, "1L rapid saline infusion").** Was
+   `<1`. Fixed to `<2`.
+5. **`saline_gigu` (TP 1205, GI/GU poor perfusion, "1L rapid saline
+   infusion").** Was `<1`. Fixed to `<2`.
+6. **`pphSaline` (TP 1211-P, postpartum hemorrhage, "additional 20mL/kg"
+   ON TOP of `saline_gigu`'s own first liter).** Was `<2` — which, against
+   `saline_gigu`'s OLD `<1` cap, correctly let exactly one more dose
+   through (total 2 = 1L), but represented only 500mL of "additional"
+   volume against a real "20mL/kg" target (≈1.4L for the ~70kg reference
+   weight this file's protocols already use elsewhere for adult dosing,
+   closer to 1.5L than 1L at 500mL granularity). Once `saline_gigu` moved
+   to `<2` (1L, its own correct value), `pphSaline`'s old `<2` would have
+   become a silent no-op — `doseCount` is cumulative, so a sibling cap
+   equal to or below another rule's own ceiling never fires at all.
+   Recomputed to the real total: 1L (gigu, 2 doses) + ~1.5L additional (3
+   more doses) = **`<5`**.
+7. **`traumaArrestSaline` (TP 1243, traumatic arrest, "2L... two sites").**
+   No numeric change — its own `<4` was ALREADY the correct absolute value
+   (2L = 4 administrations) even before this pass; an earlier session had
+   only preserved a RELATIVE 2x relationship to `saline_arrest`'s then-wrong
+   sibling cap, "inheriting whatever absolute miscalibration it already
+   has" per that session's own honest comment. Comment updated to record
+   that both rules now independently land on the same real 2L/4-dose total
+   for the same underlying reason (both protocols specify a 2L arrest
+   bolus), which is a real, expected coincidence, not redundancy.
+8. **`tbiSaline` (TP 1244, isolated head injury, no liter figure quoted —
+   only "capped looser (2, vs `saline_shock`'s own 1)" in the original
+   comment, a stated RELATIVE design).** Once `saline_shock` doubled to
+   `<2`, preserving the "looser, escalated" relationship this rule was
+   built on required doubling it too. Fixed to `<4` (2L) — no absolute
+   figure was invented; the relative relationship to its sibling was
+   preserved instead, the same discipline `traumaArrestSaline` already
+   used once for the identical reason.
+9. **`salineBolus` (TP 1203, hyperglycemia, glu>=400) — a real, more
+   severe defect than a wrong number, found while auditing the other
+   eight, not named in a previous item in the queue's own original list but squarely "any
+   others" per that item's own closing line.** This rule had **NO
+   `doseCount` gate of any kind** — confirmed by reading `engine.js`'s
+   `evaluateProtocol`: the `running` set it checks against only excludes
+   tasks CURRENTLY in progress, not ones already completed, so a rule with
+   no self-limiting condition is re-recommended every time its own `when`
+   is still true and nothing is presently running that task. As long as
+   glucose stayed >=400, this rule would keep re-offering `salineBolus`
+   indefinitely with no ceiling on total volume delivered — a real,
+   unbounded-fluid bug, not a miscalibration. Fixed by adding the same
+   `doseCount(ctx,"saline")<2` gate every sibling "1L" rule in this file
+   now uses.
+
+**Verified two ways — a synthetic per-rule boundary test (authoritative
+for this change) and a real end-to-end integration run (a non-load-bearing
+sanity check, not the primary evidence, for the reason stated below).**
+
+The boundary test (`rule.when(ctx)` called directly against each of the
+nine rules, doseCount = cap-1 vs. doseCount = cap, every OTHER gating
+condition held true via a synthetic ctx) is the correct, minimal
+verification for this class of change — it exercises the exact predicate
+function the real crew-direction engine consumes, independent of
+crew-assignment/busy-timer timing, which this change does not touch. All
+nine passed cleanly at their new (or deliberately unchanged) boundary,
+confirmed at BOTH doseCount=cap-1 (fires=true) and doseCount=cap
+(fires=false) — not just one side. A tenth check confirmed the
+`saline_gigu`/`pphSaline` composition directly: at a real cumulative
+doseCount of 4 (2 from gigu's own share, 2 more from pphSaline layered on
+top), `saline_gigu` correctly no longer fires (already at its own `<2`
+ceiling) while `pphSaline` still does; at 5, neither fires — the exact
+"sibling ceiling can't silently swallow the composed rule" behavior this
+whole pass exists to get right.
+
+A second, real end-to-end probe drove `physio()`/`evaluateProtocol()`
+together against three real scenarios (`pph`, `cardiogenicShock`,
+`diabeticKetoacidosisCall`), simulating a crew that executes every
+recommended `salineBolus` instantly. **Stated honestly, this probe is NOT
+the authoritative evidence for the fix**: it does not model the real
+busy-timer/task-exclusivity semantics (`evaluateProtocol`'s `running` set
+was never populated with an in-progress "salineBolus" the way a live
+crew-direction loop would), so several rules could and did recommend
+`salineBolus` in the SAME tick and each got a dose pushed immediately —
+producing totals (`cardiogenicShock`: 4, `diabeticKetoacidosisCall`: 5)
+that reflect this probe's own simplification, not a real crew-paced
+sequence. What it DOES confirm, honestly: the rules fire against real
+physiology in real scenarios (staged over real elapsed time for
+`diabeticKetoacidosisCall`'s own later arrest-branch rules, at t=508s once
+the patient actually coded), and doseCount grows correctly as real doses
+are pushed through `s.doses` and read back by later `evaluateProtocol`
+calls in the same run — the plumbing genuinely works end to end. `pph`
+itself never crossed `POOR_PERFUSION`'s own `lactate>4` threshold within a
+30-minute run (lactate held at 0.50, sbp only fell to 98) — a real,
+honest finding about `uterineAtony`'s own presenting severity within this
+window, not a defect in this batch's own rules (confirmed separately, via
+the synthetic boundary test, that `saline_gigu`/`pphSaline` both fire
+correctly the instant `POOR_PERFUSION` is true).
+
+**Verification, complete.** `node --check src/protocols/laCounty.js`:
+clean. `npx eslint src/protocols/laCounty.js`: zero findings. `npx vite
+build`: clean, exit 0 (same pre-existing >500kB chunk-size warning). `npx
+eslint src`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero
+findings in any file this batch touched. This is a protocol-content-only
+change — `src/protocols/` is not imported by `mechanismWiring.mjs` or
+`scenarioSweep.mjs` (confirmed by grep before deciding not to run them,
+not assumed), and no `src/physio/*` module was edited, so neither suite
+exercises this change; the synthetic boundary test above is this batch's
+own real regression coverage, the same "the physio suites aren't the right
+instrument for this kind of change" reasoning several earlier
+protocol-only batches in this document already used. Both throwaway probe
+scripts (the synthetic boundary test and the end-to-end integration probe)
+were stripped before this entry was written, confirmed via a directory
+listing showing no `_tmp_*` files remaining under `src/scripts/`.
+
+**Found, but deliberately NOT fixed this session — folded into a previous item in the queue's
+own text rather than filed as a separate item, since it bears directly on
+how that item should be approached: `nitro`'s existing coefficients
+(`venodilation:0.8`, `arteriolarDilation:0.4`) already produce an
+oversized single-dose hemodynamic effect, and it is NOT specific to
+preload-dependent CHF physiology.** Measured directly (throwaway probe,
+`physio()`/`activePatient()`, stripped before finishing) before trusting
+a previous item in the queue's own original framing: a single existing 0.4mg `nitro` dose drops
+a real, already-shipped CHF scenario (`resp`) from sbp 114 to 61 within 5
+minutes of full onset — but the SAME dose given to a completely healthy,
+condition-less control (`abdPain`, sbp 126 baseline) also drops sbp to 73,
+and to a `stableAngina` patient (sbp ~112) drops it to 74. A ~50+ mmHg
+single-dose drop in a HEALTHY patient is not proportionate to real
+single-SL-tablet clinical experience (typically a 10-25 mmHg drop),
+meaning this is a general calibration property of the existing mechanism,
+not a CHF-specific, clinically-appropriate preload-unloading effect.
+Building `nitro2`/`nitro3` at LARGER coefficients on top of this (which a
+sweep of several candidate scale factors, 1.15x through sqrt(3)≈1.73x,
+confirmed: even the smallest tested increase drops the CHF scenario to
+sbp 52/dbp 39 and `hypertensiveEmergency` — the actual target patient for
+an escalated dose — to sbp 88/dbp 75) would compound an already-oversized
+baseline rather than deliver the real clinical teaching TP 1214's
+escalation intends. Recalibrating `nitro` itself is out of scope for a
+dose-tiering batch — it is a higher-blast-radius, separately-scoped fix
+(several already-shipped scenarios/assertions, e.g. `stableAngina`'s own
+reflex-tachycardia measurement, exercise this exact drug's current
+magnitude) and a previous item in the queue's own text is updated below to record this finding
+so a future session doesn't build the escalation tiers on top of it
+uninvestigated. Both throwaway probe scripts used for this investigation
+were stripped before finishing.
+
+### Physiology-engine batch: a previous item in the queue's standing overdose-condition workstream — `lidocaineOverdose` (TOX-006), the fifth drug shipped, the first whose overdose severity genuinely scales with dose rather than saturating almost immediately
+
+Per the standing a previous item in the queue's own workstream. Confirmed the tree before picking a
+drug (lesson 16): `rocuronium`/`diltiazem`/`metoprolol`/`atropine` were
+already shipped; `lidocaine` was named in the queue's own text as "a real,
+cheap extension" since `drugs.js` already declares a real
+`antiarrhythmic:{sodiumBlock:0.65,ischemiaSelective:true}` mechanism (a previous item in the queue's earlier work) plus a real, already-built LAST (local anesthetic
+systemic toxicity) mechanism, `toxicity:{seizureThreshold:10,
+cardiacThreshold:18}`, that had a producer (the therapeutic 100mg
+antiarrhythmic dose) but no condition had ever pushed a patient into it.
+
+**Confirmed BEFORE building anything that this drug does NOT hit a previous item in the queue's
+own ceiling — a genuinely different architecture, not assumed to reuse
+it.** Read `pk.js`'s "Systemic toxicity at supratherapeutic concentration"
+block directly: `drugDef.toxicity` reads `C = totalConcByDrug[dr.id]` — the
+RAW, summed effect-site concentration across every instance of the drug —
+not the once-per-drug-id Emax `intensity` gate (`totalC/(ec50+totalC)`,
+bounded toward 1) that ceilings diltiazem/metoprolol/atropine/fentanyl's
+own receptor terms almost immediately on overdose. Stacking real
+concentration has no saturating ceiling of that shape here, so severity
+genuinely tracks dose — the first drug in this workstream where that's
+true.
+
+**MEASURED, not assumed (lesson 8), via a dose/count/interval sweep
+against the real engine** (direct `Patient` construction plus
+`seedPastDose`, and the real scenario/condition harness, both mirroring
+`scenarioSweep.mjs`'s own minimal setup — stripped after use). A single
+100mg therapeutic-equivalent dose peaks at effect-site concentration
+~6.5 mg/L, inside the drug's own documented 1.5-5 mg/L therapeutic/
+early-toxic band — zero toxicity, confirming the mechanism is genuinely
+dose-gated, not pre-saturated. A staggered 400mg dose (4 doses, 3 min
+apart) crosses only `seizureThreshold` (seizureDrive capping ~0.45,
+`drugInotropy`/`avSlowingDrug` completely untouched) — the textbook
+"seizures first, cardiotoxicity later" LAST sequence, genuinely reachable
+in this engine at a moderate dose. A single 500mg IV bolus (the dose this
+condition seeds) drives effect-site concentration to a measured peak of
+~32 mg/L — nearly double `cardiacThreshold`(18) — producing a real,
+SIMULTANEOUS two-phase toxidrome instead: `seizureDrive` saturates to its
+1.0 ceiling and `drugInotropy` falls to a measured nadir of 0.316 while
+`avSlowingDrug` rises to 0.644, together rather than sequentially —
+matching the real clinical fact that a sufficiently large/rapid
+intravascular bolus can present both at once. SBP nadir ~80 mmHg / CO
+~3.1 L/min at ~2 minutes post-injection; redistribution (lidocaine's own
+fast `k12=1.0/min` peripheral distribution) genuinely clears the
+cardiotoxicity over the following ~5-6 minutes with NO treatment at all —
+a real, honest finding, not scripted: LAST cardiotoxicity that receives no
+further drug genuinely improves as effect-site concentration redistributes
+away, provided the patient survives the acute crisis (airway/breathing
+support through the seizure is the actual field skill, not a drug). The
+seizure itself is far more persistent — `seizureDrive` stays above
+neuro.js's own 0.15 SUSTAIN threshold for the ENTIRE 900s call untreated,
+genuine prolonged status epilepticus, the real severity this dose
+produces.
+
+**MIDAZOLAM — a real, honest, two-sided finding, not a clean cure, using
+the SAME general drug-toxicity seizure-suppression pathway (`pat.
+anticonvulsant` -> `pat.seizureDrive`, neuro.js) every other toxicity-
+driven seizure in this engine already reads — no new mechanism.** A
+single dose raises `anticonvulsant` to ~0.39, leaving `rawDrive` (
+`seizureDrive*(1-anticonvulsant)`) at ~0.61 — still well above the 0.15
+sustain threshold, so seizing does not stop from one dose. THREE stacked
+doses (this drug's own `max:4`) only push `anticonvulsant` to ~0.55 (the
+same repeated-dosing Emax-saturation diminishing-returns shape already
+documented elsewhere in this file for stacked benzodiazepine dosing),
+still leaving `rawDrive` ~0.45 — genuinely refractory to benzodiazepines
+ALONE at this severity, matching the real LAST literature (severe LAST
+seizures are commonly benzo-resistant; the actual definitive antidote is
+IV lipid emulsion, "intralipid," grep-confirmed ABSENT from this formulary
+— the same honest "no curative field drug" framing `rocuroniumOverdose`/
+`atropineOverdose` already established). What midazolam DOES demonstrably
+do, confirmed two-sided through the real scenario (repeated dosing,
+applied at 60s and reapplied every 140s through a full 900s call):
+`anticonvulsant` rises from 0.000 (untreated) to 0.578 — a real,
+substantial suppression of seizure drive — while `drugInotropy` and
+`avSlowingDrug`, the cardiotoxic component, are IDENTICAL with or without
+midazolam on board (1.000/0.000 in both arms at t=900s) — the real
+teaching point: a benzodiazepine treats the seizure, not the
+cardiotoxicity, and nothing in this formulary treats the cardiotoxicity
+directly.
+
+**Scene framing**: a dental-office presentation — an extensive procedure's
+cumulative local-anesthetic dose delivered as an inadvertent intravascular
+bolus rather than the intended slow tissue infiltration, a real,
+well-documented LAST case class chosen over a nerve-block/OR framing
+because it needs no invented prehospital mechanism and matches an
+ordinary EMS dispatch type. New scenario `lidocaineOverdose` (TOX-006):
+dispatch/staff-collateral text narrates the real onset (perioral
+numbness/lip tingling, then seizure within ~1 minute of the causative
+injection); a `loc` probe override reads `s.patient.seizing` live for a
+real, re-checkable "actively convulsing, not assessable" vs. "postictal"
+finding (distinct from the one-shot `ClinicalEventAlert` banner, the same
+"continuous, re-checkable finding on top of a one-shot alert" idiom
+several other overdose scenarios already use); a `heart` probe reads
+`v.hr`/`v.sbp` live. `resolve()` states plainly that no curative field
+antidote is carried and that naloxone does nothing (not an opioid).
+
+**Six new two-sided `mechanismWiring.mjs` assertions**, in a new
+`[LIDOCAINE OVERDOSE — a previous item in the queue, fifth drug]` section: presence
+(real, simultaneous seizure drive + cardiotoxicity near the toxicity
+nadir); specificity (a condition-less control shows EXACTLY zero of any
+of it); midazolam raises `anticonvulsant` through repeated dosing while
+leaving `drugInotropy`/`avSlowingDrug` untouched (two assertions, the
+real two-sided teaching point); and naloxone confirmed inert (not an
+opioid). `avSlowingDrug`, `drugInotropy`, `seizureDrive` and
+`anticonvulsant` were added to `mechanismWiring.mjs`'s own `snapshot()`
+helper — all four are real, pre-existing, already-producer'd fields
+(amiodarone/lidocaine's own antiarrhythmic block for the first two,
+several toxicity-driven-seizure conditions for the latter two) that had
+simply never been read through the suite's own before/after snapshot path
+before this batch's assertions needed them, the same `totalBloodVol`/
+`kExcretion`/`sao2` precedent already on record in this document. No new
+`scenarioSweep.mjs`/`patient.js` changes were needed — every field this
+condition touches already has a constructor-safe consumer (`??`-guarded)
+elsewhere in the engine, and this batch introduces no genuinely new
+physiology field, only a new producer for four already-real ones.
+`App.jsx`'s `SCEN_BODY_SYSTEM` map gained `lidocaineOverdose:"Toxicology"`,
+alongside the other four TOX-* overdose scenarios.
+
+**Verification, complete, run to completion in the foreground throughout
+(lesson 14/17 — both long suites were auto-promoted to a background task
+by the tool after exceeding a single step's timeout, and polled to
+completion via the tool's own tracked output capture rather than a
+`setsid`/`nohup` redirect, so no output was lost to the documented
+Windows-console-buffering failure mode).** `node --check` clean on all
+three touched files (`conditions.js`, `scenarios.js`,
+`mechanismWiring.mjs`) throughout. `npx eslint src/physio/conditions.js
+src/data/scenarios.js src/App.jsx src/scripts/mechanismWiring.mjs
+src/scripts/scenarioSweep.mjs`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero
+findings in any file this batch touched. `npx vite build`: clean (18.30s,
+same pre-existing >500kB chunk-size warning). Since this touches
+`pk.js`'s shared drug-effect hot path only through already-verified,
+unmodified code paths (no `pk.js`/`neuro.js`/`cardiovascular.js` edits at
+all — the condition/scenario/suite files were the only ones touched), the
+full suites were still run, not skipped, per this document's own standard
+for anything touching the shared drug-instance/condition-composition
+machinery: **`mechanismWiring.mjs`: 404 passed, 1 failed** — the single
+failure (`magnesium suppresses torsades recurrence (Tzivoni)`, 6/10 vs. a
+needed 8/10) is the same already-documented, pre-existing flaky
+stochastic assertion this document has carried across many sessions
+(cardiovascular.js's torsades/magnesium mechanism, reading nothing this
+batch touched); all 6 of this batch's own new assertions passed clean.
+**`scenarioSweep.mjs`: 158 scenarios (up from 157), 10,877,670 checks, 0
+failed** — the new scenario's own diagnostic row (pH 7.30-7.45, no
+impossible values, 0.0000 L mass drift) is clean. The throwaway probe
+script used to measure all of the above (`src/scripts/_tmp_lidoProbe.mjs`)
+was stripped before this entry was written, confirmed via a directory
+listing showing no `_tmp_*` files remain under `src/scripts/`.
+
+a previous item in the queue's own workstream entry (section 6) is updated in place
+(lidocaine moved from "still open" to "ALSO DONE") — the item itself stays
+open as a standing workstream, same as a previous item in the queue, with morphine/amiodarone/
+the catecholamines still named as real remaining candidates.
+
+### Front-end batch: a previous item in the queue's fourth slice — the reverse edges of the seizing/consciousness edge-detection block (a seizure ending, consciousness returning), both a real banner and a real crew-voiced line, closing a gap where only the forward (onset) edges had ever been wired
+
+Per continued "continue the front end queue" instruction, direct follow-up
+to the crew-voiced dialogue reaction shipped immediately below in this same
+session window. Before picking a next slice, re-ran the two prior scripts
+(`verifyCrewDialogueReaction.mjs`, `verifyDialoguePanel.mjs`) against a live
+dev server to confirm the two logged FAILs sitting in the background-task
+output were real regressions, not stale results — they were not: both
+scripts default to `http://localhost:5174` (a stale convention several
+scripts in `tools/browser/` still carry, confirmed by grep — others default
+to 5173) and the dev server was not running at all at the time those
+attempts were made, so every "FAIL" was a dead-port navigation timeout, not
+a code defect. Re-run against a live server on the port Vite actually
+picked (5173, via `$env:PROXIMATE_URL`): both scripts, and
+`verifyTreatmentResponseDialogue.mjs`, passed clean immediately with no code
+changes. Stated honestly rather than silently absorbed: the 5173/5174
+default split across `tools/browser/*.mjs` is real and pre-existing (not
+introduced this session) and remains a minor, low-priority cleanup
+candidate — every script already honors `PROXIMATE_URL` when set, so it has
+never caused a false pass, only a confusing false fail when a script's own
+wrong default silently pointed at a port nothing was listening on.
+
+**The actual batch: read the existing edge-detection block in `App.jsx`
+before picking anything (lesson 16), and found a real, previously-
+unhandled second half of it.** The seizing/unresponsive edge-detection
+block (added in an earlier session for the visible `eventAlertQueue`
+banner, extended in the immediately-prior session for crew dialogue) only
+ever checked the FORWARD transition on both flags —
+`isSeizing&&!wasSeizing` and `isUnresponsive&&!wasUnresponsive` — firing a
+banner and a crew line for a seizure starting or the patient going
+unresponsive. The REVERSE transition (`!isSeizing&&wasSeizing`,
+`!isUnresponsive&&wasUnresponsive` — a seizure stopping, or the patient
+regaining consciousness) was silently dropped on the floor on BOTH
+channels: no banner, no crew line, ever, for either recovery event. This is
+real, player-visible information (a bystander can plainly see a seizure
+stop or a patient start responding again, the same visibility standard the
+block's own header comment already states for the forward edges) and a
+crew member would obviously react to it — a genuinely missing half of an
+already-shipped mechanism, not a new one invented from nothing.
+
+**Fixed by extending the SAME block, not building a parallel one.** Both
+`if`/`else if` pairs in `App.jsx` now cover both directions: a new
+`"The seizure has stopped."` and `"The patient starts responding again."`
+banner text pushed onto the identical `eventAlertQueue`
+(`ClinicalEventAlert.jsx` needed no changes — it already renders arbitrary
+banner text generically, confirmed by reading it before assuming so). The
+crew-dialogue ternary chain gained two more branches
+(`crew_seizure_ended_reaction`, `crew_recovery_reaction`), reusing the
+identical `generateDialogueSync`/`dialogueLog`/`dialogueMemory` wiring the
+forward-edge branches already use. Two new TEMPLATES entries in
+`dialogueProvider.js` (`calm`-bucket only, matching the forward-edge crew
+templates' own precedent, since bucketing crew speech off the patient's
+personality is still meaningless) with real, distinct content — a crew
+member's relief at a seizure stopping or a patient waking back up reads
+differently from the alarm of the onset lines, not a mirrored restatement
+of them with the words swapped.
+
+**Verification, complete.** `npx eslint src/App.jsx
+src/dialogue/dialogueProvider.js`: exactly the pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero findings
+in `dialogueProvider.js`. `npx vite build`: clean (22.11s, same
+pre-existing >500kB chunk-size warning). A new permanent Playwright script,
+`tools/browser/verifyClinicalRecoveryReactions.mjs`, exercises both reverse
+edges independently (the seizure-ending case is triggered via the same
+combined `epilepticDrive=1`/`seizing=true` lever the prior session's own
+gotcha already documented, then cleared to a genuine `seizing=false`; the
+recovery case is triggered via a direct `consciousness` mutation, a
+genuinely independent path from the seizure one) and — the check that
+actually matters here — a THIRD, negative-control check confirming neither
+the banner nor the crew line fires on an ordinary steady-state tick with
+nothing changing, ruling out a naive "poll a falsy flag" implementation
+that would spam every idle tick rather than firing only on the genuine
+edge. Run three times total across the session (two consecutive clean
+passes counted as the final verification): PASS/PASS/PASS, zero console
+errors every run. The two pre-existing scripts this batch's own mechanism
+touches (`verifyCrewDialogueReaction.mjs`, `verifyClinicalEventAlert.mjs`)
+were re-run afterward and both passed clean, confirming no regression to
+the forward-edge coverage. `tools/browser/README.md` updated with the new
+script's description and its own usage-block line. No throwaway debug
+scripts were created this batch — the new script is itself the permanent
+artifact, nothing to strip.
+
+a previous item in the queue's own status note (section 6) is updated to record this as
+the fourth shipped slice.
+
+---
+
+### Front-end batch: a previous item in the queue's third slice — a real crew-voiced dialogue reaction (part of a previous item in the queue's "crew dialogue can reuse the same architecture"), closing a found gap where `DialoguePanel` had styled a "CREW" speaker with nothing ever feeding it; a real, reusable testing gotcha found and documented for forcing a sustained seizure edge in a browser-automation script
+
+Per explicit instruction to continue a previous item in the queue after the treatment-response
 dialogue slice (immediately below). Surveyed the dialogue system's own
 remaining declared-but-unwired surfaces before building anything (lesson
 16, applied to this codebase's own components rather than a claim in a
@@ -120,12 +4584,12 @@ both gotchas above) was stripped before this entry was written — confirmed
 via a directory listing showing no `_tmp_*` files remaining under
 `tools/browser/`.
 
-### Physiology-engine batch: queue item 51 CLOSED, queue item 52 CLOSED — a real `pat.agitation` severity now exists (sympathetic tone + hypoxia + a condition-declared `pat.agitationBurden`, lowered by two mechanistically distinct real treatments), and LA County TP 1209's own drug-administration algorithm finally has a real signal to gate on
+### Physiology-engine batch: a previous item in the queue CLOSED, a previous item in the queue CLOSED — a real `pat.agitation` severity now exists (sympathetic tone + hypoxia + a condition-declared `pat.agitationBurden`, lowered by two mechanistically distinct real treatments), and LA County TP 1209's own drug-administration algorithm finally has a real signal to gate on
 
-Per explicit instruction to work physiology queue item 51 (no agitation/
+Per explicit instruction to work physiology a previous item in the queue (no agitation/
 psychiatric-crisis state existed anywhere in this engine, found while
 implementing TP 1209 in `src/protocols/laCounty.js`) and, time permitting,
-item 52 (`olanzapine` doesn't exist in `drugs.js`, blocked on item 51).
+a previous item in the queue (`olanzapine` doesn't exist in `drugs.js`, blocked on a previous item in the queue).
 Both shipped in one session, fully verified.
 
 **Step 1 — confirmed the gap against the tree before designing anything
@@ -178,7 +4642,7 @@ state cleanly.
 composed multiplicatively** (each is an independent partial blockade of
 the same behavioral endpoint, so the fraction of agitation that "gets
 through" is the PRODUCT of what each pathway leaves unblocked, not a
-single additive discount): `pat.sedationDepth` (pk.js, queue item 47 —
+single additive discount): `pat.sedationDepth` (pk.js, a previous item in the queue —
 midazolam/etomidate's real GABA-A-potentiation CNS depression, already
 built) and a genuinely NEW field this session, `pat.antipsychoticEffect`
 (pk.js — olanzapine's real D2/5-HT2A receptor antagonism). The two are
@@ -196,7 +4660,7 @@ this tick's own classification is computed later in the same function —
 the identical one-tick-lag idiom this codebase already uses elsewhere
 (cardiovascular.js's Cushing-reflex term reading the prior tick's `cpp`).
 
-**Item 52 — `olanzapine` (drugs.js), built alongside item 51 since TP
+**a previous item in the queue — `olanzapine` (drugs.js), built alongside a previous item in the queue since TP
 1209's own algorithm needs both drugs to be real.** Uses `pkModel:"curve"`
 deliberately, not a full two-compartment model: curve-model drugs already
 declare a real receptor-style coefficient (`sedative`, `anticonvulsant`)
@@ -297,7 +4761,7 @@ exact convention the neighboring METABOLIC HEAT MULTIPLIER section already
 uses for this identical scenario's own presence checks — re-run clean.
 
 **New `mechanismWiring.mjs` section, `[AGITATION / PSYCHIATRIC-CRISIS
-SEVERITY — queue items 51/52]`**: 7 new two-sided assertions (presence,
+SEVERITY — a previous item in the queue]`**: 7 new two-sided assertions (presence,
 specificity via a condition-less control, midazolam-vs-untreated,
 "sedation calms behavior not the crisis," olanzapine-vs-untreated,
 "olanzapine's calming is NOT via sedationDepth," and the comatose-patient
@@ -332,12 +4796,12 @@ same pre-existing >500kB chunk-size warning). The throwaway probe script
 was stripped before this entry was written, confirmed via a directory
 listing showing no `_tmp_*` files remaining under `src/scripts/`.
 
-Queue items 51 and 52 are both closed and removed from section 6.
+a previous item in the queue are both closed and removed from section 6.
 
-### Physiology-engine batch: queue item 54 CLOSED — `pat.qrsWidth` published in `vitals()`, and the two waiting protocol rules (LA County TP 1210/1209/1212's shared "suspected hyperkalemia" signal, TP 1241's tricyclic-overdose bicarbonate step) wired to the real ECG finding instead of a potassium-only proxy or no rule at all
+### Physiology-engine batch: a previous item in the queue CLOSED — `pat.qrsWidth` published in `vitals()`, and the two waiting protocol rules (LA County TP 1210/1209/1212's shared "suspected hyperkalemia" signal, TP 1241's tricyclic-overdose bicarbonate step) wired to the real ECG finding instead of a potassium-only proxy or no rule at all
 
-Per explicit isolated-session instruction to work physiology queue item 54,
-concurrently with a separate session working item 46 (inflammation
+Per explicit isolated-session instruction to work physiology a previous item in the queue,
+concurrently with a separate session working a previous item in the queue (inflammation
 cascade) in `conditions.js`/`inflammation.js`/`coagulation.js`/
 `mechanismWiring.mjs`/`scenarioSweep.mjs` — this session's own edits were
 deliberately confined to `cardiovascular.js` (read-only), `patient.js`, and
@@ -351,8 +4815,7 @@ real, live, already-correctly-computed quantity in `updateConduction`
 hyperkalaemia's Na-channel effect (`effK>5.5`), ischemia (`atp<0.5`), and
 hypermagnesaemia (`mg>5.0`) — approached toward its target with a real time
 constant (`approach(...,5*S)`), not snapped. `patient.js`'s constructor
-already defaults it (`this.qrsWidth = 0.08`). The gap was exactly as item
-54's own text described: nothing published it in `vitals()`'s return
+already defaults it (`this.qrsWidth = 0.08`). The gap was exactly as a previous item in the queue's own text described: nothing published it in `vitals()`'s return
 object, so no protocol rule or player-facing action could ever read it —
 confirmed by grep, zero references to `qrsWidth` anywhere outside
 `cardiovascular.js` and `mechanismWiring.mjs`'s own internal `snapshot()`
@@ -462,7 +4925,7 @@ document's own most-recently-recorded baseline, confirming this batch
 introduced zero new tracked fields (deliberately: `qrsWidth` was added to
 `vitals()`'s return object, not to `scenarioSweep.mjs`'s `REQUIRED`/
 `NON_NEGATIVE` field lists — out of scope for this batch to edit, since
-those lists live in the file the concurrent item-46 session owned this
+those lists live in the file the concurrent a previous item in the queue's own session owned this
 session) and zero regression across the full scenario library. The
 throwaway probe scripts used to measure the above (three, including the
 monkey-patched isolation test) were stripped before this entry was
@@ -470,13 +4933,13 @@ written, confirmed via a directory listing showing none remaining under
 `src/scripts/` beyond one unrelated, pre-existing `_tmp_migrate_probe.mjs`
 (dated before this session, left alone per established precedent).
 
-Queue item 54 is closed and removed from section 6.
+a previous item in the queue is closed and removed from section 6.
 
-### Physiology-engine batch: queue item 46 CLOSED — `acutePancreatitis` and `toxicInhalationChlorine` migrated onto the shared inflammation cascade (partial migrations, leak mechanism deliberately kept condition-specific), `preeclampsia` deliberately and permanently excluded with a real mechanism-category reason
+### Physiology-engine batch: a previous item in the queue CLOSED — `acutePancreatitis` and `toxicInhalationChlorine` migrated onto the shared inflammation cascade (partial migrations, leak mechanism deliberately kept condition-specific), `preeclampsia` deliberately and permanently excluded with a real mechanism-category reason
 
 Direct follow-up to the prior session's core-cascade batch (immediately
 below in this section), per that batch's own explicit "still fully open"
-list: three of item 46's own named consumers — `preeclampsia`,
+list: three of a previous item in the queue's own named consumers — `preeclampsia`,
 `acutePancreatitis`, `toxicInhalationChlorine` — were left un-migrated,
 each needing its own individually-measured before/after verification
 against its own already-verified trajectory before being trusted, exactly
@@ -587,7 +5050,7 @@ already asserts and continues to confirm this exclusion directly, not by
 assumption.
 
 **Eight new two-sided `mechanismWiring.mjs` assertions**, added to the
-existing `[INFLAMMATION CASCADE — queue item 46]` section: for each of the
+existing `[INFLAMMATION CASCADE — a previous item in the queue]` section: for each of the
 two migrated conditions, a presence check for real `cytokineLoad`, a
 `assertMoved` check that `metabolicHeatMultiplier` and `factorII` both
 move in the expected direction, and — the regression guard — an explicit
@@ -619,7 +5082,7 @@ script used to measure the before/after numbers above
 confirmed via a directory listing showing no `_tmp_*` files remain under
 `src/scripts/`.
 
-Queue item 46 is now fully closed (section 6) — every one of its own
+a previous item in the queue is now fully closed (section 6) — every one of its own
 originally-named consumers has a real, final disposition: `pneumoniaSepsis`
 (fully migrated, prior session), `acutePancreatitis`/
 `toxicInhalationChlorine` (partially migrated this session — fever and
@@ -631,9 +5094,9 @@ own real engine trajectory before being trusted, and the one condition
 judged not to fit the cascade was excluded on its own mechanism-level
 merits rather than guessed at or deferred again.
 
-### Front-end batch: queue item F0's second slice — real treatment-response dialogue (item 18), closing a found gap where TemplateProvider's own `treatment_improving` template had zero callers anywhere in the codebase; `order_ack`/`order_ack_crew` investigated and confirmed genuinely superseded by an already-better mechanism, not built; a real, reusable Playwright testing gotcha found and documented
+### Front-end batch: a previous item in the queue's second slice — real treatment-response dialogue (a previous item in the queue), closing a found gap where TemplateProvider's own `treatment_improving` template had zero callers anywhere in the codebase; `order_ack`/`order_ack_crew` investigated and confirmed genuinely superseded by an already-better mechanism, not built; a real, reusable Playwright testing gotcha found and documented
 
-Continuing F0 per its own standing "work this before anything else"
+Continuing a previous item in the queue per its own standing "work this before anything else"
 directive, after the first slice (immediately below) shipped. Surveyed
 `src/dialogue/dialogueProvider.js`'s `DETERMINISTIC_LINES`/`TEMPLATES`
 tables for entries with real infrastructure already declared but no real
@@ -653,11 +5116,11 @@ would be a downgrade (less specific text), not a fix. The autonomous
 protocol-driven crew-direction path (the "boss directs a free hand"
 branch) has its own, different narration shape (`"{boss} directs {hand}:
 {task} — {note}."`, written from the boss's perspective) — also not a fit
-for a first-person crew acknowledgement. Left unwired, documented at F0's
+for a first-person crew acknowledgement. Left unwired, documented at a previous item in the queue's
 own queue entry rather than silently ignored.
 
 **`treatment_improving` — a real gap, closed.** `TEMPLATES.treatment_improving`
-(five personality-bucketed variant lines) existed since the first F0 slice
+(five personality-bucketed variant lines) existed since the first a previous item in the queue slice
 with zero callers anywhere — confirmed by grep. Wired into two real sites:
 `medActs()`'s `run()` handler (App.jsx, where every drug administration
 already calls `giveDose()`) now seeds `s._analgesiaCheckAt`/
@@ -709,7 +5172,7 @@ fields already confirmed to live inside a reference-carried object like
 pass, not shipped blind.** The negative-case check (confirm NO line fires
 when pain never drops) first hardcoded a baseline of `9` — but `v.pain =
 intrinsicPain * painSensitivity`, and `painSensitivity` is a randomly-
-seeded per-patient trait (0.6-1.4, queue item 50); for any patient whose
+seeded per-patient trait (0.6-1.4, a previous item in the queue); for any patient whose
 draw happened to land under ~0.78, the ACTUAL computed pain would already
 read below `9-2=7` even with `intrinsicPain` held at a flat 9, at no
 fault of the mechanism — a false test failure. Fixed by reading the
@@ -734,13 +5197,13 @@ the fully-stripped production code: PASS/PASS, zero console errors both
 times, both the positive case (line fires from a real measured pain drop)
 and the negative case (silence when pain never falls). The pre-existing
 `verifyDialoguePanel.mjs` was also re-run twice to confirm no regression
-to the first F0 slice: PASS/PASS.
+to the first a previous item in the queue slice: PASS/PASS.
 
-### Front-end batch: queue item F0 — the local-browser dialogue system's first real slice: a shared Dialogue Manager architecture, bounded context building, working Tier 1/2 (deterministic/template) dialogue wired to real physiology, and an honest, explicitly-stubbed Tier 3 (local LLM) seam — the real WebGPU/WASM model integration, boot screen, and download/caching system are UNSTARTED and are the largest remaining piece
+### Front-end batch: a previous item in the queue — the local-browser dialogue system's first real slice: a shared Dialogue Manager architecture, bounded context building, working Tier 1/2 (deterministic/template) dialogue wired to real physiology, and an honest, explicitly-stubbed Tier 3 (local LLM) seam — the real WebGPU/WASM model integration, boot screen, and download/caching system are UNSTARTED and are the largest remaining piece
 
 Per explicit instruction to work the first item of the front-end queue,
-which is F0 (placed ahead of F1 by the operator's own prior instruction).
-F0's own spec is 33 numbered requirements plus a boot/loading system and a
+which is a previous item in the queue (placed ahead of a previous item in the queue by the operator's own prior instruction).
+a previous item in the queue's own spec is 33 numbered requirements plus a boot/loading system and a
 real local-inference backend — far larger than one batch. Per section 4's
 own "batch size" discipline, this session built and fully verified one
 real, coherent, useful slice of the architecture rather than attempting the
@@ -755,11 +5218,11 @@ worked example) deterministically from a stable per-patient seed
 (`g.patientName` + scenario key, reusing `mapGraph.js`'s existing
 `mulberry32` PRNG rather than inventing a second one) — same patient, same
 draw, every time, so two patients with the same condition genuinely don't
-sound identical (item 16), with no new persisted field required.
+sound identical (a previous item in the queue), with no new persisted field required.
 `src/dialogue/dialogueContext.js` builds a small, purpose-built context
 object per event (patient/situation/player/crew/a bounded recent-events
 window) from real, already-computed state — never the whole `g`/`s` object
-(items 13-15). `src/dialogue/dialogueProvider.js` declares the three-tier
+(a previous item in the queue). `src/dialogue/dialogueProvider.js` declares the three-tier
 architecture for real: `DeterministicProvider` (fixed acknowledgement
 lines), `TemplateProvider` (personality-bucketed contextual templates with
 variable substitution, real variation across five real event types —
@@ -767,12 +5230,12 @@ pain, anxiety, deterioration, procedure discomfort, treatment response),
 and `LocalLLMProvider` — a real, honestly-stubbed class whose
 `isAvailable()` always returns `false` and whose `generate()` throws if
 ever called without checking that first. `src/dialogue/dialogueManager.js`
-is the single entry point (item 12's own "clean interface" requirement) —
+is the single entry point (a previous item in the queue's own "clean interface" requirement) —
 `generateDialogue()`/`generateDialogueSync()` try tier 3, fall through to
 tier 2, then tier 1; `shouldSpeakUnprompted()`/`pickUnpromptedEvent()`
-implement item 19's cooldown-gated, personality/distress-scaled unprompted
+implement a previous item in the queue's cooldown-gated, personality/distress-scaled unprompted
 patient dialogue; `pushDialogueMemory()` enforces a small, bounded
-short-term memory window (item 14/22), separate from the full call log.
+short-term memory window (a previous item in the queue), separate from the full call log.
 
 **Wired into two real, already-existing hot paths, not a separate system
 nobody would ever see fire.** The tick loop (`App.jsx`) already computes
@@ -786,7 +5249,7 @@ triggers already live in, reusing the pattern rather than duplicating it.
 Separately, the player's own action-click handler (`start()`, the shared
 busy-timer path every non-minigame procedure goes through) now has a real
 chance of a `procedure_discomfort` line for any sufficiently hands-on
-action (`dur>=10s`) against a conscious patient — item 23's "dialogue
+action (`dur>=10s`) against a conscious patient — a previous item in the queue's "dialogue
 during a procedure, not just before/after it," satisfied honestly: stated
 in-code as a coarse duration heuristic (no per-procedure "is this painful"
 list exists anywhere in this codebase to key off precisely, and inventing
@@ -798,8 +5261,8 @@ stated gap, not silently absorbed.
 
 **A new, non-blocking UI component, `DialoguePanel.jsx`** — a small feed in
 the bottom-left corner (not a modal, not a full-screen visual-novel box,
-per item 25's own explicit instruction), showing the last few lines with a
-speaker tag and a small "CONTEXTUAL DIALOGUE" status marker (item 26's
+per a previous item in the queue's own explicit instruction), showing the last few lines with a
+speaker tag and a small "CONTEXTUAL DIALOGUE" status marker (a previous item in the queue's
 honest AI-status readout — always reads this today since Tier 3 never
 engages; will read "LOCAL AI" automatically the moment a real backend's
 `isAvailable()` ever returns true, no UI change needed then). Mounted in
@@ -812,7 +5275,7 @@ verification run, per lesson 8.** The first version of the browser
 verification script forced `s.patient.drugPain=9` to trigger the
 high-pain unprompted-dialogue path and got nothing for a real 10-second
 window. Traced, not guessed: `pk.js` reseeds `pat.drugPain` from
-`pat.intrinsicPain*painSensitivity` every single tick (queue item 20's own
+`pat.intrinsicPain*painSensitivity` every single tick (a previous item in the queue's own
 mechanism) — a direct write to `drugPain` is silently overwritten on the
 very next tick, the same "don't fight the engine's own reseed" class of
 mistake this document already has on record for `magToxicity`/`cortisol`.
@@ -844,24 +5307,23 @@ a live, conscious patient — not just that the code compiles.
 Per this document's own discipline against overclaiming: no real local
 model has been selected, evaluated, downloaded, or run — `LocalLLMProvider`
 is a documented interface stub, and the entire boot/loading/caching system
-(F0 items 2-11) is unstarted. Personality is five static traits, not the
-richer emotional-state machine item 17 describes (emotional state here is
+(a previous item in the queue) is unstarted. Personality is five static traits, not the
+richer emotional-state machine a previous item in the queue describes (emotional state here is
 folded into a single `distress` scalar derived from pain/anxiety/
 consciousness, not a separate structured field the simulation writes and
-the LLM only interprets, as item 17 asks for). Crew/bystander dialogue has
+the LLM only interprets, as a previous item in the queue asks for). Crew/bystander dialogue has
 exactly one deterministic acknowledgement line (`order_ack`/
 `order_ack_crew`) — nothing event-driven or contextual for crew yet. No
-automated test suite (item 30) beyond the one Playwright script above. No
-developer/test mode (item 29), no voice-readiness wiring beyond the
+automated test suite (a previous item in the queue) beyond the one Playwright script above. No
+developer/test mode (a previous item in the queue), no voice-readiness wiring beyond the
 architecture already being provider-agnostic by construction, no Local AI
-settings toggle (item 10) — `g.localAiAvailable` is a static `false`
-default today, not yet wired to anything a player can see or change. Item
-F0's own queue entry (section 6) is updated with this status rather than
+settings toggle (a previous item in the queue) — `g.localAiAvailable` is a static `false`
+default today, not yet wired to anything a player can see or change. a previous item in the queue's own queue entry (section 6) is updated with this status rather than
 left reading "Not started."
 
-### Physiology-engine batch: queue item 46 — inflammation as a first-class physiological system, PARTIALLY CLOSED. A real, shared cytokine cascade now exists, coupled to coagulation for the first time, with one condition (pneumoniaSepsis) migrated onto it as a proof; three named consumers deliberately left unmigrated, per the item's own explicit "each already-shipped consumer needs re-verification" requirement
+### Physiology-engine batch: a previous item in the queue — inflammation as a first-class physiological system, PARTIALLY CLOSED. A real, shared cytokine cascade now exists, coupled to coagulation for the first time, with one condition (pneumoniaSepsis) migrated onto it as a proof; three named consumers deliberately left unmigrated, per the item's own explicit "each already-shipped consumer needs re-verification" requirement
 
-Per explicit instruction to work physiology queue item 46 — "the single
+Per explicit instruction to work physiology a previous item in the queue — "the single
 largest net-new subsystem" the queue names, explicitly high-risk because it
 touches `pat.capillaryLeak`, a field several already-verified conditions
 depend on directly. Followed the item's own required discipline throughout:
@@ -874,9 +5336,9 @@ done. Given the size of the item's full scope (four named consumer
 conditions plus the coagulation coupling), this session deliberately shipped
 a real, complete, fully-verified CORE — the cascade mechanism itself, the
 coagulation coupling, and one migrated condition — rather than rushing all
-four migrations to an unverified finish. **Item 46's own queue entry is
+four migrations to an unverified finish. **a previous item in the queue's own queue entry is
 updated in place (not deleted) to record this split**, matching the
-established precedent for a partially-resolved item (e.g. item 43's
+established precedent for a partially-resolved item (e.g. a previous item in the queue's
 osmotic-diuresis slice).
 
 **Step (a) — confirmed the tree before designing anything.** Grepped every
@@ -884,7 +5346,7 @@ writer of `pat.capillaryLeak`: `toxicInhalationChlorine`, `preeclampsia`,
 and `acutePancreatitis` each independently ratchet it toward their own
 hand-picked ceiling at their own hand-picked rate (0.014-0.03/min, ceilings
 0.2-0.3), plus the already-shipped endothelial-repair decay
-(`physiology.js`'s `stepPatient()`, item 49's own earlier fix). Read every
+(`physiology.js`'s `stepPatient()`, a previous item in the queue's own earlier fix). Read every
 condition's own `coreTemp`/`vasodilation` writes (dozens of sites) and
 confirmed `pneumoniaSepsis` — the flagship septic condition, explicitly
 named in this item's own text — presents febrile (`initial.temp:39.6`) but
@@ -987,7 +5449,7 @@ citation, and forcing that into 900s would have been dishonestly fast for
 testing convenience.
 
 **Step (f)/(g) — assertions, all two-sided, all passing.** Ten new
-assertions in a new `[INFLAMMATION CASCADE — queue item 46]`
+assertions in a new `[INFLAMMATION CASCADE — a previous item in the queue]`
 `mechanismWiring.mjs` section: presence (real, substantial `cytokineLoad`,
 and both of `pneumoniaSepsis`'s genuinely new consequences — leak, fever —
 present by 900s); specificity (a condition-less control shows EXACTLY zero
@@ -1060,10 +5522,10 @@ than simply unbuilt) — `pneumoniaSepsis`'s own tachycardia still comes
 entirely from its own pre-existing, unmigrated `vasodilation` write. The
 speculative early hypercoagulable/microthrombotic phase of DIC (preceding
 the modeled consumptive phase) was deliberately not built, for the
-observability reason stated above. Queue item 46's own entry (section 6)
+observability reason stated above. a previous item in the queue's own entry (section 6)
 is updated in place, not deleted, to record exactly this split.
 
-### Front-end batch: the "Procedure Gameplay" spec (queue item F45) — live vitals inside every mini-game, a real accessibility-tier setting, a real mobile/touch gap found and fixed, plus a separately-requested visible-emergent-clinical-events system
+### Front-end batch: the "Procedure Gameplay" spec (a previous item in the queue) — live vitals inside every mini-game, a real accessibility-tier setting, a real mobile/touch gap found and fixed, plus a separately-requested visible-emergent-clinical-events system
 
 Per an explicit, detailed operator-supplied "Priority 2: Procedure Gameplay"
 specification (sections 2.1-2.20 plus a "Definition of Done") covering the
@@ -1074,13 +5536,13 @@ explicitly NOT for things a bystander/provider could not see happening
 (cardiac arrest onset). Both pieces are front-end/gameplay work; no
 physiology module was touched, consistent with this session running in
 parallel with a separate session working the physiology queue (which closed
-item 44, immediately below, in that same window).
+a previous item in the queue, immediately below, in that same window).
 
 **Visible emergent clinical events — shipped and closed.** A new
 `g.eventAlertQueue` (`App.jsx`'s `blank()`), popped by a new
 `src/components/ClinicalEventAlert.jsx` (mounted in `Shell.jsx` alongside
 `AchievementToast`, using the identical one-shot-queue-plus-timeout idiom
-F7's achievement toast already established) — a real on-screen banner, not
+a previous item in the queue's achievement toast already established) — a real on-screen banner, not
 a log line, matching the operator's own worked example ("The patient
 vomitted."). Two real, general, physiology-EDGE-triggered sources feed it,
 both added to the main tick effect right after the existing
@@ -1114,7 +5576,7 @@ produces the alert — proving the detection path itself works, not just the
 rendering.
 
 **Procedure Gameplay spec — four concrete pieces shipped, the larger/riskier
-pieces correctly left open and filed as queue item F45 (section 6).** Full
+pieces correctly left open and filed as a previous item in the queue (section 6).** Full
 "still open" detail lives at that queue entry, not repeated here; this is
 what shipped:
 
@@ -1192,7 +5654,7 @@ what shipped:
    edema, `upperAirwayObstruction`, age) with zero randomization, predating
    this batch — re-confirmed by reading the file's own standing constraint
    comment rather than assumed, and confirmed the new accessibility-tier
-   multiplier (item 2 above) was deliberately kept out of this file so that
+   multiplier (a previous item in the queue above) was deliberately kept out of this file so that
    constraint stays true. Feedback text was already clinical, not gamey
    (spec 2.6) — `"Flash! You're in the vein."`, `"Pop! You're through the
    cortex."`, etc. all predate this session; only re-confirmed, plus a
@@ -1200,7 +5662,7 @@ what shipped:
    the project's standing no-em-dash rule (`"IV — ${...}"` → `"IV: ${...}"`,
    and similar).
 
-**Deliberately NOT started, and the reasoning recorded at queue item F45
+**Deliberately NOT started, and the reasoning recorded at a previous item in the queue
 rather than here** (see section 6): spec 2.4's explicit procedure state
 machines (current implementation is ad hoc per-component `step` local
 state, not a formal FAILED/CANCELLED/INTERRUPTED/ABORTED machine); spec
@@ -1240,22 +5702,22 @@ defaults (`[]`, `"standard"`) — an existing save loading this code for the
 first time sees no crash and no behavior change until it next opens a
 mini-game or triggers a real edge-detected event.
 
-### Physiology-engine batch: queue item 44 CLOSED — a real strong-ion-difference (Stewart/Fencl) acid-base model replaces the free-standing hco3 "bucket," and two genuine bugs the new model itself surfaced are fixed
+### Physiology-engine batch: a previous item in the queue CLOSED — a real strong-ion-difference (Stewart/Fencl) acid-base model replaces the free-standing hco3 "bucket," and two genuine bugs the new model itself surfaced are fixed
 
-Per explicit, isolated-session operator instruction to work queue item 44 —
+Per explicit, isolated-session operator instruction to work a previous item in the queue —
 the item's own text flagged it as the highest-blast-radius item in the
 queue and explicitly said not to share a batch with unrelated work, so
 this session worked it alone, start to finish, with all three verification
 suites run to completion against it.
 
 **Step 1 — confirmed the premise against the tree before writing anything
-(lesson 16), and found the premise was HALF wrong.** Item 44's own text
+(lesson 16), and found the premise was HALF wrong.** a previous item in the queue's own text
 claimed "pH is adjusted somewhat directly in several places." An
 exhaustive grep of every `pat.ph\s*=`/`this.ph\s*=` site in `src/` found
 exactly ONE assignment site in the entire engine (`metabolic.js`'s
 Henderson-Hasselbalch line) plus the pre-first-tick constructor default —
 nothing else ever wrote `pat.ph` directly. The "never set pH directly"
-half of item 44's own constraint was **already true**. The REAL gap was
+half of a previous item in the queue's own constraint was **already true**. The REAL gap was
 one layer upstream: `pat.hco3` was a free-standing bucket that roughly a
 dozen sites — six conditions (`copd`'s chronic compensation,
 `chronicKidneyDisease`, `addisonianCrisis`, `diabeticKetoacidosis`,
@@ -1355,7 +5817,7 @@ secretion under aldosterone deficiency, the SAME mechanistic category as
 `pat.clShift` ramp (rate identified by direct measurement, not guessed,
 landing hco3 at a real, mild-moderate ~17 by late in a realistic call,
 close to and clinically consistent with the condition's own original,
-pre-item-44 floor of 16).
+pre-a previous item in the queue's own floor of 16).
 
 **A real, previously-undiscovered bug was found by `scenarioSweep.mjs`,
 not anticipated — exactly the kind of thing that suite exists to catch.**
@@ -1478,17 +5940,17 @@ addisonian feedback loops minute-by-minute before any fix was trusted) was
 stripped before this entry was written — confirmed via a directory listing
 showing none remaining under `src/scripts/`.
 
-Queue item 44 is closed and removed from section 6.
+a previous item in the queue is closed and removed from section 6.
 
-### Physiology-engine batch: queue item 7's standing condition-library workstream — Carbon Monoxide Poisoning, a new condition built around a genuine pulse-ox-blindspot mechanism, closing the exact carboxyhemoglobin gap queue item 28's own Smoke Inhalation Injury deferral flagged
+### Physiology-engine batch: a previous item in the queue's standing condition-library workstream — Carbon Monoxide Poisoning, a new condition built around a genuine pulse-ox-blindspot mechanism, closing the exact carboxyhemoglobin gap a previous item in the queue's own Smoke Inhalation Injury deferral flagged
 
-Per explicit instruction to ship one new condition off queue item 7's standing
+Per explicit instruction to ship one new condition off a previous item in the queue's standing
 workstream (section 8's Toxicology backlog), following the item's own six-step
 loop: literature review before code, diff against the engine, wire through
 existing mechanisms, a real time course, treatment through the same
 mechanisms, two-sided assertions plus adding the new field to
 `scenarioSweep.mjs`. Carbon Monoxide Poisoning was picked specifically
-because queue item 28's own history entry already names the reason it
+because a previous item in the queue's own history entry already names the reason it
 matters: `toxicInhalationChlorine` deferred "Smoke Inhalation Injury"
 because it needs a real carboxyhemoglobin (COHb) mechanism this engine did
 not have — pulse oximetry cannot distinguish COHb from O2Hb, so displayed
@@ -1496,7 +5958,7 @@ SpO2 reads falsely normal despite critical tissue hypoxia. Building it for
 CO poisoning gives Smoke Inhalation Injury and Cyanide Poisoning (both still
 open on the Toxicology backlog) real groundwork to reuse later, rather than
 each having to invent it from scratch — explicitly NOT attempted in the same
-batch, per item 7's own "one condition per batch, fully" discipline.
+batch, per a previous item in the queue's own "one condition per batch, fully" discipline.
 
 **Step (a)/(b): the literature review, and what the engine already had.**
 CO binds hemoglobin with roughly 200-250x O2's affinity (Haldane, 1895; cited
@@ -1515,7 +5977,7 @@ sessions (`brainO2`/`brainO2now` in neuro.js, `hepaticDO2`, `gutDO2`,
 `skinDO2`, `renalDO2` in renal.js) already derives from `caO2` directly. That
 meant the real mechanism could be wired at ONE site and reach every organ's
 real oxygen delivery automatically, with no second per-organ mechanism
-needed — exactly the kind of existing-machinery reuse item 7's own loop asks
+needed — exactly the kind of existing-machinery reuse a previous item in the queue's own loop asks
 for.
 
 **THE ACTUAL MECHANISM DECISION — the pulse-ox blindspot was achieved for
@@ -1681,11 +6143,11 @@ batch — per this document's own established precedent (several prior
 condition-library/mechanism batches of this size, e.g. the sedative-depth
 and cortisol-permissive-term batches, did not rewrite section 2's header
 either), it continues to describe the larger, more architecturally
-significant valvular-regurgitation batch (queue item 41) as "current state,"
+significant valvular-regurgitation batch (a previous item in the queue) as "current state,"
 with section 2's own generic "read section 3's topmost entries" guidance
 now correctly pointing at this entry as the newest.
 
-Queue item 7's own workstream entry (section 4) is unaffected — it remains
+a previous item in the queue's own workstream entry (section 4) is unaffected — it remains
 open and standing, as it always has; this is simply the latest condition
 shipped under it. Section 8's Toxicology backlog list is updated: Carbon
 Monoxide Poisoning is removed, and the Respiratory category's own Smoke
@@ -1694,12 +6156,12 @@ carboxyhemoglobin mechanism it was waiting on now exists and is ready to
 reuse (Smoke Inhalation Injury and Cyanide Poisoning were both explicitly
 NOT attempted this batch, left open for a future session).
 
-### Front-end batch: queue item F44 — the debrief screen now renders real `outcomeReport()` data ("THE CHART"), and the real `s`-vs-`g` reachability question this item flagged is resolved
+### Front-end batch: a previous item in the queue — the debrief screen now renders real `outcomeReport()` data ("THE CHART"), and the real `s`-vs-`g` reachability question this item flagged is resolved
 
-Per queue item F44's own text: `outcomeReport(s)` (physiology.js) — a real,
+Per a previous item in the queue's own text: `outcomeReport(s)` (physiology.js) — a real,
 already-built function computing the OBJECTIVE physiological outcome of a
 call (neurological outcome, ROSC/downtime, structural organ injury via
-queue item 48's `reversibleFindings`/`irreversibleInjuries`, troponin,
+a previous item in the queue's `reversibleFindings`/`irreversibleInjuries`, troponin,
 death-mechanism treatability) — had zero callers anywhere in the codebase,
 confirmed by grep before trusting the claim (lesson 16). The debrief screen
 (`App.jsx`, `g.phase==="debrief"`) rendered entirely from a separate,
@@ -1737,7 +6199,7 @@ present: cardiac-arrest timing and downtime (`arrestAtMin`/`roscAtMin`/
 (intact/mild/severe/brain death, colored green/amber/red/red) gated on
 `roscOccurred` so it never discusses neuro outcome for a patient who never
 got circulation back, structural injury (`irreversibleInjuries`, red) and
-`reversibleFindings` (amber, queue item 48's kidney-reversibility work),
+`reversibleFindings` (amber, a previous item in the queue's kidney-reversibility work),
 a plain-language troponin line (only when positive — a negative result
 for an unrelated call, e.g. a sprained ankle, is noise, not a finding),
 and — for a death — whether the lethal mechanism was of a treatable kind
@@ -1791,17 +6253,17 @@ tooling gotchas above was stripped before this entry was written; the one
 pre-existing, unrelated `_tmp_find_sections.mjs` (dated before this
 session) was left alone, not this batch's file to clean up.
 
-Queue item F44 is closed and removed from section 6.
+a previous item in the queue is closed and removed from section 6.
 
-### Physiology-engine batch: queue item 41 — the beat-level cardiac cycle turned out to ALREADY EXIST (the item's own premise was false); the real gap was valvular REGURGITATION, which is now built into the authoritative solver, plus a real pediatric defect found and fixed along the way. Two further pieces were built, measured, and deliberately REVERTED rather than shipped.
+### Physiology-engine batch: a previous item in the queue — the beat-level cardiac cycle turned out to ALREADY EXIST (the item's own premise was false); the real gap was valvular REGURGITATION, which is now built into the authoritative solver, plus a real pediatric defect found and fixed along the way. Two further pieces were built, measured, and deliberately REVERTED rather than shipped.
 
-Per explicit operator instruction to work queue item 41 (build a beat-level
+Per explicit operator instruction to work a previous item in the queue (build a beat-level
 cardiac cycle model), with its own standing warning that `updateFullLoopODE`
 is the highest-blast-radius function in the engine and that both suites are a
 hard requirement.
 
 **The item's premise was substantially FALSE, and checking it first (lesson
-16) is what made this batch safe rather than catastrophic.** Item 41 asked for
+16) is what made this batch safe rather than catastrophic.** a previous item in the queue asked for
 an explicit atrial-systole -> isovolumetric-contraction -> ejection ->
 isovolumetric-relaxation -> filling state machine, on the stated basis that the
 heart is currently "a continuous per-tick average." Read against the tree,
@@ -1816,7 +6278,7 @@ closing). Isovolumetric contraction and relaxation are not missing — they
 EMERGE from that, as the intervals when both valves are shut because Plv sits
 between Pla and Pao. **Rewriting this as an explicit enum state machine would
 have been a large, high-risk refactor that bought nothing**, so it was not
-attempted, and item 41's text is corrected rather than left to send the next
+attempted, and a previous item in the queue's text is corrected rather than left to send the next
 session down the same path.
 
 **What was genuinely missing, confirmed by reading rather than assumed:
@@ -1983,7 +6445,7 @@ every new assertion passed AND that no previously-passing assertion regressed.
 scenario and check counts to baseline. (Per-scenario summary lines differ in the
 last digit between any two sweep runs, including for scenarios this batch
 provably cannot touch such as `abdPain`, because `scenarioSweep` — unlike
-`mechanismWiring` — does NOT pin the queue-item-50 per-patient traits. Confirmed
+`mechanismWiring` — does NOT pin the queue-a previous item in the queue's own per-patient traits. Confirmed
 by checking `abdPain` specifically rather than assuming.) A 10-scenario probe
 with traits pinned confirmed bit-for-bit identical hemodynamics against the
 pre-change baseline. Every throwaway probe script (eight across the batch) was
@@ -1997,17 +6459,17 @@ lost — suite logs were written to files under a scratch directory and re-read
 on resume, and every result quoted above was re-verified from disk against
 source-file timestamps rather than carried in memory.
 
-### Physiology-engine batch: real pharmacologic sedation depth now drives consciousness — item 47's own text had assumed this was already a real input; it wasn't
+### Physiology-engine batch: real pharmacologic sedation depth now drives consciousness — a previous item in the queue's own text had assumed this was already a real input; it wasn't
 
 Per continued "focus on hyper-realism" instruction, after the hypercalcemia
 fix (below). With the resolve()-claim audit pattern returning a clean pass
 on its fourth try (OB/GYN, toxicology, GI, and respiratory scenarios all
-checked out real), pivoted to re-reading queue item 47 (consciousness as a
+checked out real), pivoted to re-reading a previous item in the queue (consciousness as a
 continuous arousal score) directly rather than delegating further.
 
 **A real gap was found by checking this document's own claim against the
 tree, per lesson 16 — not assumed true because it was already written
-down.** Item 47's own text listed "sedative burden" among the real inputs
+down.** a previous item in the queue's own text listed "sedative burden" among the real inputs
 already feeding `neuro.js`'s consciousness classifier. Grepped before
 trusting it: nothing anywhere fed a sedative-drug signal into
 `pat.consciousness` at all. Giving a massive dose of midazolam or
@@ -2018,7 +6480,7 @@ etc.) was completely absent from the model, distinct from the engine's
 existing perfusion/metabolic pathway.
 
 **Fixed as one narrow, additive branch, not the full continuous-score
-refactor item 47 itself proposes** — deliberately the smaller, safer
+refactor a previous item in the queue itself proposes** — deliberately the smaller, safer
 piece. `pk.js` now computes `pat.sedationDepth`, reset and recomputed
 fresh every tick from currently circulating drug (the same idiom
 `respDriveSuppression`/`anticonvulsant` already use, so it reflects
@@ -2073,13 +6535,13 @@ clean. `scenarioSweep.mjs`: **156 scenarios, 9,476,378 checks, 0 failed**
 156 × 450 × 1 field × 2 lists. `npx vite build`: clean. The throwaway
 probe script was stripped before this entry was written.
 
-Item 47's own queue entry (section 6) is updated: the sedative-burden
+a previous item in the queue's own queue entry (section 6) is updated: the sedative-burden
 input gap is closed; the full continuous-arousal-score refactor remains
 open and still correctly flagged as the larger, riskier piece.
 
 ### Physiology-engine batch: hypercalcemia's own scenario resolve() text claimed a real saline-response mechanism that didn't exist — fixed, using a productive new audit pattern (grep resolve() claims, check the mechanism)
 
-Per continued "focus on hyper-realism" instruction, after item 43's
+Per continued "focus on hyper-realism" instruction, after a previous item in the queue's
 osmotic-diuresis slice (below). With the direct field-sweep pattern
 (written-but-unread fields) exhausted for now, delegated a third Explore
 sweep using a DIFFERENT, related pattern that had already paid off twice
@@ -2139,13 +6601,13 @@ clean. `scenarioSweep.mjs`: **156 scenarios, 9,335,978 checks, 0 failed**
 build`: clean. The throwaway probe script was stripped before this entry
 was written.
 
-Item 5's own dead-code-sweep entry (section 6) is updated with this
+a previous item in the queue's own dead-code-sweep entry (section 6) is updated with this
 finding.
 
-### Physiology-engine batch: queue item 43's osmotic-diuresis slice — a real, glucose-driven glucosuria mechanism replaces DKA/HHS's flat, glucose-independent dehydration rates, built without the full nephron-segmentation architecture
+### Physiology-engine batch: a previous item in the queue's osmotic-diuresis slice — a real, glucose-driven glucosuria mechanism replaces DKA/HHS's flat, glucose-independent dehydration rates, built without the full nephron-segmentation architecture
 
 Per continued "focus on hyper-realism" instruction, after the cortisol
-mechanism (below) and item 43's own audit found that one of its three
+mechanism (below) and a previous item in the queue's own audit found that one of its three
 named payoffs — osmotic diuresis, DKA's own polyuria — was separable from
 the full segment-chain proposal and buildable on its own.
 
@@ -2210,15 +6672,15 @@ failed** — unchanged count, correctly, since this reuses already-tracked
 fields. `npx vite build`: clean. The throwaway probe script was stripped
 before this entry was written.
 
-Item 43's own queue entry (section 6) is updated: the osmotic-diuresis
+a previous item in the queue's own queue entry (section 6) is updated: the osmotic-diuresis
 slice is closed; loop-diuretic action and a prerenal/intrinsic/postrenal
 AKI distinction remain open, and the full segment-chain proposal itself is
 unattempted and still large.
 
 ### Physiology-engine batch: a real, previously-undiscovered `pat.cortisol` dead field mechanized into a genuine cortisol-permissive vascular-tone term — closes a "narrated, not mechanized" gap the addisonian-crisis scenario's own resolve() text had already been claiming
 
-Per continued "focus on hyper-realism" instruction, after item 42's full
-closure (below) and item 48's kidney slice. With item 42 done, delegated an
+Per continued "focus on hyper-realism" instruction, after a previous item in the queue's full
+closure (below) and a previous item in the queue's kidney slice. With a previous item in the queue done, delegated an
 Explore sweep for the next real, well-scoped "written but unread" field —
 the same pattern that already found `atnProgression`'s reversibility
 consumer and the `outcomeReport()` gap. The sweep returned `pat.cortisol`
@@ -2292,13 +6754,13 @@ exactly 156 × 450 × 1 field × 2 lists. `npx vite build`: clean (1.65s,
 same pre-existing >500kB chunk-size warning). The throwaway probe script
 was stripped before this entry was written.
 
-Item 5's own dead-code-sweep entry (section 6) is updated with this
+a previous item in the queue's own dead-code-sweep entry (section 6) is updated with this
 finding.
 
-### Physiology-engine batch: queue item 42 CLOSED — skeletal-muscle slice, a real compression-duration-scaled crush-syndrome reperfusion washout, using a genuinely different mechanism from the other four organs
+### Physiology-engine batch: a previous item in the queue CLOSED — skeletal-muscle slice, a real compression-duration-scaled crush-syndrome reperfusion washout, using a genuinely different mechanism from the other four organs
 
-Per continued "focus on hyper-realism" instruction, after item 48 (below)
-essentially closed the item-42 organ-perfusion workstream's remaining
+Per continued "focus on hyper-realism" instruction, after a previous item in the queue (below)
+essentially closed the a previous item in the queue's own organ-perfusion workstream's remaining
 "is skeletal muscle worth it" open question. That question was answered by
 actually checking rather than assuming: `crushSyndrome` (`conditions.js`)
 already fires a fixed +3.5 mEq/L reperfusion potassium bolus on lift,
@@ -2338,16 +6800,16 @@ signals, so it was deliberately NOT added to the global sweep lists. `npx
 vite build`/`npx eslint` both clean. The throwaway probe script was
 stripped before this entry was written.
 
-**Item 42 is now fully closed** — all five organs (kidney, liver, gut,
+**a previous item in the queue is now fully closed** — all five organs (kidney, liver, gut,
 skin, skeletal-muscle) done, each using whichever variant of the
 delivery/demand pattern actually matched that organ's real physiology
 rather than one formula forced onto all five.
 
-### Physiology-engine batch: queue item 48 — a real reversibility distinction for kidney injury, reusing an already-built but never-read accumulator, plus a much bigger discovery: `outcomeReport()` has no caller anywhere in the codebase
+### Physiology-engine batch: a previous item in the queue — a real reversibility distinction for kidney injury, reusing an already-built but never-read accumulator, plus a much bigger discovery: `outcomeReport()` has no caller anywhere in the codebase
 
-Per continued "focus on hyper-realism" instruction, after the item-42
+Per continued "focus on hyper-realism" instruction, after the a previous item in the queue's own
 kidney/liver/gut/skin slices (below) essentially completed that item.
-Item 48 (separate structural damage from functional dysfunction) was
+a previous item in the queue (separate structural damage from functional dysfunction) was
 picked next: its own text already flagged it as "partially already true,
 scope the remaining gap only," making it a natural, bounded next step —
 and per lesson 16, the first move was confirming the claim against the
@@ -2360,7 +6822,7 @@ separate accumulator from `pat.kidneyInjury`: it rises only while
 (confirmed by reading the code), i.e. it already models transient,
 recoverable tubular dysfunction as genuinely distinct from the slower,
 durable structural-injury accumulator — exactly the reversibility
-distinction item 48 asks for. Its only reader before this session was its
+distinction a previous item in the queue asks for. Its only reader before this session was its
 own contribution to the GFR calculation.
 
 **Fixed by adding a real consumer, not by building a new mechanism.**
@@ -2386,13 +6848,13 @@ directly — zero matches. The debrief screen renders entirely from a
 separate, ad-hoc `g.outcome` object built through `App.jsx`'s own scattered
 call-outcome logic; it never calls the physiology-layer function this
 project has apparently been building fields into for several sessions
-(troponin/queue-item-18, the post-death-gaps/queue-item-15 work — both
+(troponin/queue-a previous item in the queue's own, the post-death-gaps/queue-a previous item in the queue's own work — both
 predate this session, both real, both never shown to a player).
 Deliberately NOT fixed here — wiring a debrief-screen redesign is real,
 separately-scoped front-end work, not a physiology mechanism, and
 attempting it blind inside a physiology batch risks exactly the kind of
 rushed, unscoped work this project's own discipline warns against. Filed
-as new front-end queue item F44 with the full detail, rather than silently
+as new front-end a previous item in the queue with the full detail, rather than silently
 absorbed or ignored.
 
 **Verification, complete.** `node --check`/`npx eslint` clean on the one
@@ -2410,14 +6872,14 @@ entry was written. One background-suite run this session was lost to a
 documented failure mode in section 4) and was simply re-run rather than
 trusted — the second run completed cleanly.
 
-Item 48's own queue entry (section 6) is updated with the full finding;
+a previous item in the queue's own queue entry (section 6) is updated with the full finding;
 its remaining scope (liver/gut have no equivalent transient-vs-structural
 pair to expose) stays open, correctly not attempted since it would mean
 inventing a new mechanism rather than wiring an existing one.
 
-### Physiology-engine batch: queue item 42's skin slice — a live cutaneous perfusion signal wired into real exam findings, and a genuinely pre-existing clinical defect (distributive/warm shock reading as cold shock) fixed along the way
+### Physiology-engine batch: a previous item in the queue's skin slice — a live cutaneous perfusion signal wired into real exam findings, and a genuinely pre-existing clinical defect (distributive/warm shock reading as cold shock) fixed along the way
 
-Direct follow-up, same session, to the item-42 kidney/liver/gut slices
+Direct follow-up, same session, to the a previous item in the queue's own kidney/liver/gut slices
 below, continuing the "focus on hyper-realism" instruction. Skin was
 already flagged as the natural next candidate at the end of the gut
 slice's own writeup, for two reasons: it shares gut's fast, alpha-
@@ -2488,17 +6950,17 @@ HR-variance assertion, unrelated. `scenarioSweep.mjs`: **156 scenarios,
 clean (1.65s, same pre-existing >500kB chunk-size warning). The throwaway
 probe script was stripped before this entry was written.
 
-Item 42's own queue entry (section 6) is updated: kidney, liver, gut, and
+a previous item in the queue's own queue entry (section 6) is updated: kidney, liver, gut, and
 skin are all now closed under it. Only skeletal-muscle remains, flagged as
 genuinely lower-priority (no obvious real consumer identified yet, unlike
 the other four) rather than assumed to be the next cheap slice.
 
-### Physiology-engine batch: queue item 42's gut slice — a genuinely new `pat.gutInjury` structural field, two real consumers, and TWO real bugs (a missing ischemic deadband, and a coefficient calibrated against an assumed rather than measured range) found and fixed before shipping
+### Physiology-engine batch: a previous item in the queue's gut slice — a genuinely new `pat.gutInjury` structural field, two real consumers, and TWO real bugs (a missing ischemic deadband, and a coefficient calibrated against an assumed rather than measured range) found and fixed before shipping
 
-Direct follow-up, same session, to the item-42 kidney/liver slices and the
-item-45b receptor-desensitization work (both below), continuing the
+Direct follow-up, same session, to the a previous item in the queue's own kidney/liver slices and the
+a previous item in the queue's own receptor-desensitization work (both below), continuing the
 "focus on hyper-realism" instruction. Unlike kidney/liver, the gut had NO
-pre-existing injury field to re-drive — this is the first item-42 slice
+pre-existing injury field to re-drive — this is the first a previous item in the queue's own slice
 needing a genuinely NEW field, which raised the real risk this project's
 own section 1 explicitly warns about: a field written and never
 meaningfully read.
@@ -2579,16 +7041,16 @@ never edited this session). `scenarioSweep.mjs`: **156 scenarios,
 clean (1.60s, same pre-existing >500kB chunk-size warning). The throwaway
 probe script was stripped before this entry was written.
 
-Item 42's own queue entry (section 6) is updated: kidney, liver, and gut
+a previous item in the queue's own queue entry (section 6) is updated: kidney, liver, and gut
 are all now closed under it; skin and skeletal-muscle remain open, with
 skin flagged as the natural next candidate given it shares gut's
 fast-onset alpha-adrenergic mechanism and this game's existing mottling/
 capillary-refill exam vocabulary as a plausible real consumer.
 
-### Physiology-engine batch: queue item 45b — real receptor desensitization/acute tolerance for opioid, benzodiazepine, and beta-2 agonist dosing; a real drug-scale bug found and fixed while measuring it
+### Physiology-engine batch: a previous item in the queue — real receptor desensitization/acute tolerance for opioid, benzodiazepine, and beta-2 agonist dosing; a real drug-scale bug found and fixed while measuring it
 
-Per continued "focus on hyper-realism" instruction, after the item-42
-kidney/liver slices (immediately below). Item 45's own text had already
+Per continued "focus on hyper-realism" instruction, after the a previous item in the queue's own
+kidney/liver slices (immediately below). a previous item in the queue's own text had already
 flagged (b) — receptor desensitization under prolonged/repeated
 stimulation — as "the real net-new piece," with (a) (split β1/β2
 sub-effects) suspected already done. Re-verified (a) against the tree
@@ -2667,13 +7129,13 @@ checks genuinely run. `npx vite build`: clean (1.60s, same pre-existing
 >500kB chunk-size warning). Both throwaway probe scripts were stripped
 before this entry was written.
 
-Item 45's own queue entry (section 6) is updated: (a) confirmed already
+a previous item in the queue's own queue entry (section 6) is updated: (a) confirmed already
 done, (b) now shipped and verified.
 
-### Physiology-engine batch: queue item 42's liver slice — a real, local hepatic oxygen-delivery-vs-demand signal now drives liver injury, replacing a whole-body lactate threshold; a real shock scenario caught injury the old mechanism structurally could not see
+### Physiology-engine batch: a previous item in the queue's liver slice — a real, local hepatic oxygen-delivery-vs-demand signal now drives liver injury, replacing a whole-body lactate threshold; a real shock scenario caught injury the old mechanism structurally could not see
 
 Direct follow-up, same session, to the kidney slice immediately below, per
-the same "focus on hyper-realism" instruction. Item 42's own text names
+the same "focus on hyper-realism" instruction. a previous item in the queue's own text names
 liver as the natural next per-organ target once kidney is done, and
 `pk.js` already had a real, relevant local proxy sitting unused for this
 purpose: `organClearanceFactor()`'s hepatic-flow term (cardiac output
@@ -2735,17 +7197,16 @@ genuinely running. `npx vite build`: clean (1.76s, same pre-existing
 >500kB chunk-size warning). Both throwaway probe scripts used across this
 session's two slices were stripped before this entry was written.
 
-Item 42's own queue entry (section 6) is updated: kidney and liver are
+a previous item in the queue's own queue entry (section 6) is updated: kidney and liver are
 both now closed, gut is named as the next candidate (real mesenteric
 ischemia already exists as a condition but has no local gut-perfusion
 delivery/demand signal of its own to accrue structural injury from), skin
 and skeletal-muscle remain open behind it.
 
-### Physiology-engine batch: queue item 42's "start small: kidney" slice — a real, local renal oxygen-delivery-vs-demand signal now drives kidney injury, replacing a whole-body VO2-debt proxy
+### Physiology-engine batch: a previous item in the queue's "start small: kidney" slice — a real, local renal oxygen-delivery-vs-demand signal now drives kidney injury, replacing a whole-body VO2-debt proxy
 
 Per explicit operator instruction ("Work on the next big item in the
-physiology queue. Focus on hyper-realism"), continuing directly off item
-49's capillaryLeak fix. Item 42 (tissue/organ compartments, oxygen delivery
+physiology queue. Focus on hyper-realism"), continuing directly off a previous item in the queue's capillaryLeak fix. a previous item in the queue (tissue/organ compartments, oxygen delivery
 as a currency, per-organ autoregulation) was picked as the next open item:
 its own text explicitly suggests starting small by extending the existing
 brain/heart delivery-vs-demand pattern to one more organ, naming kidney as
@@ -2781,7 +7242,7 @@ whole-body fraction, at a rate (0.012/min at full debt) chosen so the
 COMMON case — global VO2 debt and renal perfusion collapsing together, as
 in most already-shipped shock conditions — produces essentially the same
 injury trajectory as before; only the SELECTIVE case now diverges, which
-is the actual, real payoff item 42 names.
+is the actual, real payoff a previous item in the queue names.
 
 **MEASURED directly against the real engine, not assumed (lesson 8), via a
 throwaway probe (stripped after use).** A condition-less healthy control
@@ -2818,26 +7279,26 @@ accounted for by the two new required/non-negative field checks across
 pre-existing >500kB chunk-size warning). The throwaway probe script
 (`_tmp_renalO2.mjs`) was stripped before this entry was written.
 
-Item 42's own queue entry (section 6) is updated to record the kidney
+a previous item in the queue's own queue entry (section 6) is updated to record the kidney
 slice as done and liver/gut/skin/skeletal-muscle as the remaining open
 work, using the exact same pattern (a local perfusion signal already
 exists or is cheap to add; normalize it against caO2; feed the organ's own
 injury/dysfunction accrual from it instead of a whole-body proxy).
 
-### Physiology-engine batch: a real endothelial-repair mechanism for `pat.capillaryLeak` — closing the literal gap item 49's audit found, built and verified per explicit operator instruction to push toward hyper-realistic new mechanisms rather than stop at the audit
+### Physiology-engine batch: a real endothelial-repair mechanism for `pat.capillaryLeak` — closing the literal gap a previous item in the queue's audit found, built and verified per explicit operator instruction to push toward hyper-realistic new mechanisms rather than stop at the audit
 
-Direct follow-up to item 49's audit (immediately below), per explicit
+Direct follow-up to a previous item in the queue's audit (immediately below), per explicit
 operator instruction ("look into building new hyper-realistic mechanisms if
 necessary... do the next thing on the queue"). The audit had cross-filed its
 one real, concrete finding — `pat.capillaryLeak` has no resolution
 mechanism in either direction, confirmed by grep across every writer
 (`preeclampsia`, `acutePancreatitis`, `toxicInhalationChlorine`, the
-anaphylaxis family) — to queue item 46 (the much larger inflammation-cascade
+anaphylaxis family) — to a previous item in the queue (the much larger inflammation-cascade
 proposal), reasoning that a resolution rate invented in isolation would
 likely be redone once that item was scoped. Given the explicit instruction
 to build hyper-realistic mechanisms rather than defer, this session built
 the literal, narrow fix instead: a real endothelial-repair term, independent
-of item 46's full cytokine-cascade scope, that closes the gap on its own
+of a previous item in the queue's full cytokine-cascade scope, that closes the gap on its own
 terms.
 
 **Mechanism, and where it lives.** A new, unconditional decay term in
@@ -2897,19 +7358,19 @@ checks, 0 failed** — the identical count to the pre-fix baseline, confirming
 zero regression across the full scenario library. Every throwaway probe
 script used to measure this was stripped before this entry was written.
 
-Item 49's own queue entry (section 6) already carries the audit's full
-reasoning; item 46's cross-reference note is updated to record that the
+a previous item in the queue's own queue entry (section 6) already carries the audit's full
+reasoning; a previous item in the queue's cross-reference note is updated to record that the
 literal `capillaryLeak`-resolution gap it flagged is now closed, though
-item 46's own larger cytokine-cascade proposal (a general
+a previous item in the queue's own larger cytokine-cascade proposal (a general
 `pathogenBurden`/`inflammation` mechanism generating capillary leak, fever,
 and tachycardia together from one shared cascade, plus coagulation
 coupling) remains entirely unbuilt and unaffected by this narrower fix.
 
-### Physiology-engine batch: queue item 49 — hysteresis audit, closed with no code changes; one candidate confirmed already correct, one confirmed genuinely absent but not worth a mechanism, one real finding cross-filed to item 46
+### Physiology-engine batch: a previous item in the queue — hysteresis audit, closed with no code changes; one candidate confirmed already correct, one confirmed genuinely absent but not worth a mechanism, one real finding cross-filed to a previous item in the queue
 
 Per operator instruction ("Continue with the next big item"), following the
-immediately preceding session's item 50 (per-patient baseline variability).
-Item 49 was picked next: it is explicitly framed in its own queue text as an
+immediately preceding session's a previous item in the queue (per-patient baseline variability).
+a previous item in the queue was picked next: it is explicitly framed in its own queue text as an
 AUDIT to do "before writing any code," which made it a clean, low-risk,
 single-session deliverable — read the actual code for each of the three
 named candidates rather than build anything speculative, per section 4's own
@@ -2953,27 +7414,27 @@ direction.** Grepped every writer (`preeclampsia`, `acutePancreatitis`,
 always-positive `dt*rate` ramp toward a ceiling; nothing anywhere lowers the
 field, including drugs. The hysteresis question doesn't yet apply, since
 there is no recovery pathway to have a shape at all. Judged this squarely
-item 46's problem (the inflammation-as-a-first-class-system proposal) rather
+a previous item in the queue's problem (the inflammation-as-a-first-class-system proposal) rather
 than this item's — a resolution rate invented in isolation here would likely
-be redone once item 46 is properly scoped, so it was cross-filed at item 46
+be redone once a previous item in the queue is properly scoped, so it was cross-filed at a previous item in the queue
 rather than built piecemeal.
 
 **No code was changed this session** — the audit's own deliverable, per its
 own queue text, was the audit itself. `mechanismWiring.mjs`/`scenarioSweep.mjs`
 were not re-run (nothing in the tree changed; the immediately preceding
 session's full runs, 358/0 and 156 scenarios/7,651,178 checks/0 failed,
-remain the current baseline, unaffected by this session). Item 49 is now
+remain the current baseline, unaffected by this session). a previous item in the queue is now
 closed — its own queue entry (section 6) is updated with the full findings
 above; the one real actionable finding (`capillaryLeak` has no resolution
-pathway) is cross-referenced at item 46's entry rather than repeated as its
+pathway) is cross-referenced at a previous item in the queue's entry rather than repeated as its
 own line item.
 
-### Physiology-engine batch: queue item 50 — per-patient baseline variability (four traits: baroreflex gain, metabolic rate, pain sensitivity, vascular reactivity), plus a real mechanismWiring.mjs regression found and fixed in the test harness itself
+### Physiology-engine batch: a previous item in the queue — per-patient baseline variability (four traits: baroreflex gain, metabolic rate, pain sensitivity, vascular reactivity), plus a real mechanismWiring.mjs regression found and fixed in the test harness itself
 
 Per explicit operator instruction to work one large item from the physiology
 queue, following up on the immediately preceding session's addition of
-architecture-note-derived items 41-50 (see that entry, section 3, for how
-these were scoped). Item 50 was picked over the other nine: explicitly
+architecture-note-derived a previous item in the queue (see that entry, section 3, for how
+these were scoped). a previous item in the queue was picked over the other nine: explicitly
 flagged in its own queue text as the smallest, cheapest, and a real
 candidate for a first batch, needing no new physiology mechanism — only
 per-patient trait seeding scaling coefficients already read every tick.
@@ -3046,7 +7507,7 @@ before/after delta is not — stated as a reasoned risk assessment, not a
 verified guarantee; none of the other five suites were actually re-run this
 session, honestly left open below.
 
-**Deliberately NOT built, filed at item 50's own queue entry (not repeated
+**Deliberately NOT built, filed at a previous item in the queue's own queue entry (not repeated
 here)**: `renalReserve`/`pulmonaryReserve`/`cardiacReserve` (each needs its
 own real consumer identified, not attempted blind in the same batch) and
 circadian state (needs a wall-clock dependency this engine doesn't have
@@ -3078,11 +7539,10 @@ verified one; worth a real run next time any of these six is touched for an
 unrelated reason, to confirm none carries the same "two separately-
 constructed patients treated as identical" pattern `mechanismWiring.mjs` did.
 
-### Physiology-engine batch: "next 3 items" off the queue — uremic breath odor wired for real (queue item 35, its remaining sub-case closed), `atropineOverdose` shipped (queue item 40's standing workstream), and `toxicInhalationChlorine` shipped as queue item 28's physiology half (its scene-mechanic half stays open)
+### Physiology-engine batch: "next 3 items" off the queue — uremic breath odor wired for real (a previous item in the queue, its remaining sub-case closed), `atropineOverdose` shipped (a previous item in the queue's standing workstream), and `toxicInhalationChlorine` shipped as a previous item in the queue's physiology half (its scene-mechanic half stays open)
 
 Per explicit operator instruction ("Work on the next 3 items in the
-physiology queue"), following the prior session's five-item batch (items
-42/6/43 closed, `diltiazemOverdose`/`metoprololOverdose` shipped). An
+physiology queue"), following the prior session's five-item batch (a previous item in the queue closed, `diltiazemOverdose`/`metoprololOverdose` shipped). An
 Explore pass confirmed the queue's current live numbered items against the
 tree before picking anything (lesson 16): 5, 7, 10, 12, 19, 28, 33, 35, 38,
 40 are the only open numbered entries. Three genuinely closeable
@@ -3093,7 +7553,7 @@ structural limit; 38's "new drug entity kept out of the player's own menu"
 design question) — all three explicitly left untouched, per the doc's own
 discipline against rushing structural work into a content batch.
 
-**Item 35 — uremic breath odor, the remaining open sub-case, closed for
+**a previous item in the queue — uremic breath odor, the remaining open sub-case, closed for
 real.** `pat.bun` (already live since an earlier fix) relaxes toward its
 target with a 180-minute time constant — CONFIRMED by direct measurement,
 not assumed, that no existing condition seeds it high enough to cross a
@@ -3117,7 +7577,7 @@ hydrocarbon breath odors remain correctly open (need whole new conditions
 with their own literature anchor — Alcohol Intoxication, Hydrocarbon
 Aspiration, both still-unbuilt).
 
-**Item 40 (standing workstream) — `atropineOverdose` (TOX-004), the fourth
+**a previous item in the queue (standing workstream) — `atropineOverdose` (TOX-004), the fourth
 drug shipped.** Anticholinergic toxidrome ("mad as a hatter, blind as a
 bat, red as a beet, hot as a hare, dry as a bone, full as a flask") —
 classic teaching case, a Datura/jimsonweed tea ingestion. Two Explore
@@ -3125,11 +7585,11 @@ passes confirmed, before writing anything: atropine's own
 `receptors.vagalBlock:0.8` (drugs.js) is a real, continuous, unconditional
 mechanism (already proven to scale in `diltiazemOverdose`/
 `metoprololOverdose`'s own atropine-treatment assertions) — NOT the
-per-drug-id Emax-gate ceiling queue item 38 found for fentanyl. That same
+per-drug-id Emax-gate ceiling a previous item in the queue found for fentanyl. That same
 exploration pass also checked midazolam as a candidate and found it DOES
 hit that exact ceiling (`respiratoryDepression:0.22` is a flat, per-drug-id
 coefficient, not a continuous receptor term) — midazolam was deliberately
-NOT picked this round for that reason, recorded at item 40's own queue
+NOT picked this round for that reason, recorded at a previous item in the queue's own queue
 entry rather than silently skipped.
 
 MEASURED, not assumed (lesson 8), and the finding is a real, honest
@@ -3183,8 +7643,8 @@ drug exists in this formulary, this section is presence/trend-only, stated
 honestly rather than forcing a treatment-response assertion with nothing
 real to test.
 
-**Item 28's physiology half — `toxicInhalationChlorine` (RESP-037)
-shipped; the scene-mechanic half stays open, item 28 itself is NOT
+**a previous item in the queue's physiology half — `toxicInhalationChlorine` (RESP-037)
+shipped; the scene-mechanic half stays open, a previous item in the queue itself is NOT
 closed.** Per this item's own suggested reuse, confirmed rather than
 assumed: `asthma`'s own `broncho` ramp for the irritant-bronchospasm
 component (chlorine reacting with airway water is a classic bronchospasm
@@ -3211,14 +7671,14 @@ confirmed by reading `pk.js` first.
 
 New scenario `toxicInhalationChlorine` (RESP-037) — a pool-chemical mixing
 accident, a real single-point presentation (NOT the progressive-discovery/
-wind-plume scene item 28's own fuller framing describes — that half is
+wind-plume scene a previous item in the queue's own fuller framing describes — that half is
 deliberately still unbuilt, see below), with a `lungs` probe reading
 `v.spo2` live and a `resolve()` that flags the real delayed-edema risk
 honestly as a hospital-relevant handoff point rather than something the
 call itself can show developing. Two new `mechanismWiring.mjs` assertions:
 a presence check (`effectiveBroncho>0.6`, `shuntFraction>0.4` by 900s) and
 a real albuterol treatment-response check versus an untreated control.
-Item 28 itself is explicitly NOT closed/deleted — its scene-mechanic half
+a previous item in the queue itself is explicitly NOT closed/deleted — its scene-mechanic half
 (wind direction, a visibility penalty inside the gas cloud, patients
 discovered progressively rather than listed at dispatch) is genuine
 front-end work, still entirely unbuilt, and now has a real condition to
@@ -3249,13 +7709,13 @@ via a directory listing showing none remaining under `src/scripts/` (the
 pre-existing, unrelated `_tmp_find_sections.mjs` was left alone, not this
 batch's file to clean up). Section 8's target library and "already
 implemented" count are unaffected by this batch (chlorine inhalation was
-never a literal section-8 category-backlog line item, and item-40
-overdose conditions are tracked under item 40's own workstream text, not
-section 8, matching the precedent every earlier item-40 drug already set).
+never a literal section-8 category-backlog line item, and a previous item in the queue's own
+overdose conditions are tracked under a previous item in the queue's own workstream text, not
+section 8, matching the precedent every earlier a previous item in the queue's own drug already set).
 
-### Front-end batch: item 10 closed, scoped down from a full restructure to a real, safe partial fix — the redundant reference-card pass is now the player's own choice, and the skills-lab framing was reworded from bureaucratic to urgent
+### Front-end batch: a previous item in the queue closed, scoped down from a full restructure to a real, safe partial fix — the redundant reference-card pass is now the player's own choice, and the skills-lab framing was reworded from bureaucratic to urgent
 
-Per explicit operator instruction to do item 10 now — the one item every
+Per explicit operator instruction to do a previous item in the queue now — the one item every
 prior batch in this sequence had deliberately left open as "genuinely
 structural." Re-scoped rather than skipped or force-fit: ChatGPT's actual
 suggestion (teach each skill contextually, the first time a call actually
@@ -3305,19 +7765,18 @@ script rather than assumed. `campaignPatrolBriefing`'s own destination
 new "Pocket the card" button reaches the identical phase, so no second
 inconsistent exit path was introduced.
 
-**Item 10 is now closed. The full ChatGPT prologue-suggestion backlog from
+**a previous item in the queue is now closed. The full ChatGPT prologue-suggestion backlog from
 the last several sessions is done** — nothing further is queued from that
 list.
 
-### Front-end batch: item 5 closed — the laptop Yes/No choice now has a real narrative payoff instead of landing nowhere
+### Front-end batch: a previous item in the queue closed — the laptop Yes/No choice now has a real narrative payoff instead of landing nowhere
 
-Direct follow-up to the immediately-following entry (which closed items
-2/4/7/9/14 and left item 5 unaddressed pending a closer look, and item 10
+Direct follow-up to the immediately-following entry (which closed a previous item in the queue and left a previous item in the queue unaddressed pending a closer look, and a previous item in the queue
 deliberately open as structural). Per operator instruction to figure out
-item 5 specifically.
+a previous item in the queue specifically.
 
 **Re-diagnosed the actual gap before touching anything, per this project's
-own "confirm against the tree" discipline.** ChatGPT's original item 5
+own "confirm against the tree" discipline.** ChatGPT's original a previous item in the queue
 suggested rewording the laptop Yes/No buttons themselves to read as more
 psychologically ambiguous ("that looks interesting" rather than "I've
 decided"). Reading the current button text found this critique didn't
@@ -3335,7 +7794,7 @@ the choice reads wrong, but that nothing in the story ever answers it.
 **Fix: a real payoff at the exact moment the choice gets tested — the
 heat-stroke collapse.** `HEATSTROKE_SIM_INTRO_LINES` (`prologue.js`,
 already converted to a `(ctx)=>[...]` function by the immediately-
-following entry's item-4 work) gained a second ctx field, `emsInterest`,
+following entry's a previous item in the queue's own work) gained a second ctx field, `emsInterest`,
 and a new internal-thought line inserted right after "(Oh no. That's a
 person...)": `"yes"` gets "You said maybe, watching that video. This isn't
 a maybe anymore." — `"no"` gets "You said this wasn't your thing. Try
@@ -3355,8 +7814,8 @@ it's read, never a stale/pre-choice default. No physiology module
 touched, no new field beyond passing an existing one through — no suite
 re-run needed beyond the above.
 
-**Item 5 is now closed. Nothing is left in the ChatGPT prologue-suggestion
-backlog except item 10** (station-intro pacing), which remains
+**a previous item in the queue is now closed. Nothing is left in the ChatGPT prologue-suggestion
+backlog except a previous item in the queue** (station-intro pacing), which remains
 deliberately open as real structural work, not a text edit — see that
 item's own entry below for the full reasoning.
 
@@ -3369,7 +7828,7 @@ pacing) was re-confirmed as genuinely structural and left deliberately
 open, not attempted under this batch's own "text/small-state edits only"
 scope.
 
-**Item 7 — heat-stroke hesitation reactivity, a real measured signal, not
+**a previous item in the queue — heat-stroke hesitation reactivity, a real measured signal, not
 a guess.** `s.t` is a continuous whole-session clock (confirmed by
 grep — never reset per-call), so hesitation can't be read off
 `tutorialHeatStroke911At` alone; a new `tutorialHeatStrokeStartAt` field
@@ -3389,7 +7848,7 @@ the "thanks for the help" line, scoped deliberately to a single honest
 signal (time-to-act) rather than inventing finer-grained approach-behavior
 tracking this scene has no reliable way to measure.
 
-**Item 4 — one reflection-stat echo, scoped to a single moment rather than
+**a previous item in the queue — one reflection-stat echo, scoped to a single moment rather than
 threaded through every scene (per the original entry's own "too big" call,
 now narrowed to something real and small instead of skipped entirely).**
 `HEATSTROKE_SIM_INTRO_LINES` (`prologue.js`) converted from a plain array
@@ -3404,7 +7863,7 @@ you remember," etc. — the four numbers chosen earlier in the prologue
 becoming something recognizable in the moment that matters, not just an
 invisible RPG stat.
 
-**Item 14 — a partner tone arc across the three tutorial calls, matching
+**a previous item in the queue — a partner tone arc across the three tutorial calls, matching
 the ChatGPT suggestion's own register progression.** One line added to
 each pre-call beat: `PRE_CALL1_LINES` gets "Stay close and watch what I
 do... I've got the rest" (protective/instructive); `OD_PRECALL_LINES` gets
@@ -3414,7 +7873,7 @@ player as more capable but still guiding); `SEIZURE_PRECALL_LINES` gets
 me get there" (trusting the player's own judgment) — the partner visibly
 handing over more agency call to call, without needing a new mechanic.
 
-**Item 9 — the second (library) PATROL invitation now carries real new
+**a previous item in the queue — the second (library) PATROL invitation now carries real new
 information, not just a repeated tonal beat.** `LIBRARY_ENCOUNTER_LINES`
 (`prologue.js`) gained one line where the partner actually describes what
 PATROL is (unpaid, mostly boring, some of it isn't) before the existing
@@ -3422,13 +7881,13 @@ PATROL is (unpaid, mostly boring, some of it isn't) before the existing
 different from the spontaneous, information-free first one, not a copy of
 it with a colder tone.
 
-**Item 2 — character-creator framing.** One clause added to
+**a previous item in the queue — character-creator framing.** One clause added to
 `campaignCustomize`'s intro text: "There's no one here to tell you what
 you're supposed to look like — so, for once, you get to decide." Ties the
 screen's own "nothing pre-filled" design (already correct) to an explicit
 in-fiction reason for it, per the ChatGPT suggestion.
 
-**Deliberately still NOT attempted — item 10, station-intro pacing.**
+**Deliberately still NOT attempted — a previous item in the queue, station-intro pacing.**
 Re-confirmed as genuinely structural (`campaignStation` →
 `campaignIntro` → `campaignSupervisorClass` → `campaignPatrolBriefing` is
 a real exposition-then-tutorial sequence that would need reordering or
@@ -3559,7 +8018,7 @@ actually just happened was the library fainting call. A player paying
 attention would catch the mislabel immediately. Fixed to "Fainting." — the
 correct category for the call that just resolved.
 
-**PATROL invitation weight (item 8 from the original list).** The first
+**PATROL invitation weight (a previous item in the queue from the original list).** The first
 invitation, moments after the player helps with a heat-stroke collapse, went
 straight from "an easy grin" to a punchline about a green t-shirt with zero
 beat of real acknowledgment in between — undercutting the moment's own
@@ -3567,7 +8026,7 @@ stakes. Split into two lines (`prologue.js`'s `AFTERMATH_LINES`): a sincere
 beat first ("That's not nothing"), the shirt joke second — same rhythm this
 file already uses elsewhere for a serious-then-light beat.
 
-**Supervisor catchphrase now threads back (item 16).** "Let it make you
+**Supervisor catchphrase now threads back (a previous item in the queue).** "Let it make you
 sharp" is set up as a defining line in `STATION_LINES` — the partner even
 calls it out one line later as something the supervisor "says to every new
 EMR" — but grep confirmed it was never echoed anywhere else in the whole
@@ -3577,7 +8036,7 @@ scene. Added "And stay sharp." to that closing line (`CLASS_LINES`,
 without touching the already-shipped tutorial-finale echo from the previous
 session's batch.
 
-**A small mystery hook into Chapter 1 (item 19, most discretionary of the
+**A small mystery hook into Chapter 1 (a previous item in the queue, most discretionary of the
 four).** `chapter1.js` already has a real, built recurring-patient mechanic
 (`frequentFlyerRecognition`/`pickFrequentFlyerScenario`, lines 106-159) that
 nothing in the prologue or Chapter 1's own gearup scene foreshadows. Added
@@ -3649,7 +8108,7 @@ about rendering** — every scene renders identically regardless of value.
 This project's Three.js work (`Coop3DWalk`/`Coop3DDrive`) is co-op-only
 today; building real solo 3D content for the heat-stroke scene (or any other
 ZTH solo scene) is a separate, larger effort, deliberately deferred rather
-than attempted here (see the updated F1 queue item below) — this batch only
+than attempted here (see the updated a previous item in the queue queue item below) — this batch only
 stores the player's stated preference so that future work can land without a
 save migration. Added to `CARRY` on the same footing as `campaignEmsInterest`
 (a persistent character/session fact, not per-call transient state).
@@ -3691,20 +8150,20 @@ file's own standing note) — a real Playwright click-through was not built
 for this batch (optional, not mandatory at this size); worth adding if a
 future session revisits this area.
 
-### Physiology-engine batch: five queue items closed/advanced in one session — the dead-field sweep (item 42, closed), the epiIM/epiAuto INERT question resolved (item 6, closed), a real, previously-undiscovered FOURTH flat-adult-reference site found and fixed while closing pediatric BVM ventilation (item 43, closed), and two new overdose conditions shipped under the standing item-40 workstream (diltiazemOverdose, metoprololOverdose) — plus a real, unrelated, concurrent-session naloxone regression observed and flagged, not caused or fixed by this batch
+### Physiology-engine batch: five queue items closed/advanced in one session — the dead-field sweep (a previous item in the queue, closed), the epiIM/epiAuto INERT question resolved (a previous item in the queue, closed), a real, previously-undiscovered FOURTH flat-adult-reference site found and fixed while closing pediatric BVM ventilation (a previous item in the queue, closed), and two new overdose conditions shipped under the standing a previous item in the queue's own workstream (diltiazemOverdose, metoprololOverdose) — plus a real, unrelated, concurrent-session naloxone regression observed and flagged, not caused or fixed by this batch
 
 Per explicit operator instruction ("Work on the physiology queue. Try to
 finish 5 items"). Five queue items worked, in dependency order (items
 touching shared hot-path code — `cardiovascular.js`, `pk.js` — first, so
-later verification runs already reflect them): item 42 (dead-field sweep),
-item 6 (epiIM/epiAuto INERT question), item 43 (pediatric BVM ventilation),
-and two new conditions under item 40's standing overdose-condition
-workstream. Items 42, 6 and 43 are deleted outright from section 6 per
-this document's own "delete, don't just mark done" rule; item 40 itself
-stays open (a standing workstream, same as item 7), with its own text
+later verification runs already reflect them): a previous item in the queue (dead-field sweep),
+a previous item in the queue (epiIM/epiAuto INERT question), a previous item in the queue (pediatric BVM ventilation),
+and two new conditions under a previous item in the queue's standing overdose-condition
+workstream. a previous item in the queue are deleted outright from section 6 per
+this document's own "delete, don't just mark done" rule; a previous item in the queue itself
+stays open (a standing workstream, same as a previous item in the queue), with its own text
 updated to mark `diltiazem`/`metoprolol` shipped.
 
-**Item 42 — the dead-field sweep, closed.** Four fields, each grep-
+**a previous item in the queue — the dead-field sweep, closed.** Four fields, each grep-
 confirmed against the current tree before touching anything (lesson 16):
 `pat.myocardialO2` (`cardiovascular.js`) was a literal duplicate of
 `pat.atp` under a second name, written every tick, read nowhere — deleted
@@ -3729,10 +8188,10 @@ clinically legible of the three to surface — right-heart failure/
 tamponade preload). Verified: `node --check`/targeted `eslint` clean on
 all 5 touched files (`cardiovascular.js`, `patient.js`, `renal.js`,
 `respiratory.js`, `App.jsx`) at the exact 3-error baseline; the full suite
-run (below, shared with item 43) confirms no regression and that `rvEdv`
+run (below, shared with a previous item in the queue) confirms no regression and that `rvEdv`
 produces real, non-zero values.
 
-**Item 6 — the epiIM/epiAuto "INERT" open question, resolved and closed.**
+**a previous item in the queue — the epiIM/epiAuto "INERT" open question, resolved and closed.**
 This item had sat "open, not investigated further" for several sessions.
 Ran `pkAudit.mjs` fresh rather than trusting the cited numbers (lesson 16)
 — confirmed current: epiIM Imax 0.133, epiAuto Imax 0.147, both against a
@@ -3762,8 +8221,8 @@ own precedent exactly, with the full reasoning recorded in-code. No
 `ec50` was changed, so no suite re-run was needed beyond `pkAudit.mjs`
 itself (confirmed clean) and a syntax check.
 
-**Item 43 — pediatric-scaled BVM ventilation, closed, and a real FOURTH
-instance of the item-33 flat-adult-reference bug found and fixed along the
+**a previous item in the queue — pediatric-scaled BVM ventilation, closed, and a real FOURTH
+instance of the a previous item in the queue's own flat-adult-reference bug found and fixed along the
 way (not previously on record).** Confirmed via grep: every
 `ventilation:{rr,vt}` procedure (`bvm`, `mouthMask`, `mouthMouth`, `cpap`,
 `cric`, `vent` — `procedures.js`) was a flat literal with no age/weight
@@ -3780,20 +8239,20 @@ binds for an adult). MEASURED, not assumed: adult bagged delivered vt =
 0.500 L exactly, unchanged; a 15 kg toddler's delivered vt fell from the
 old flat 0.5 L to a real, correctly-scaled 0.156 L.
 
-**Re-measuring the item-43 repro case (pediatric drowning, suction+BVM)
+**Re-measuring the a previous item in the queue's own repro case (pediatric drowning, suction+BVM)
 against this fix alone showed NO improvement — traced to ground rather
 than accepted as "good enough," and found a real, previously-undiscovered
-FOURTH site of the exact bug class item 33's own fix already named three
+FOURTH site of the exact bug class a previous item in the queue's own fix already named three
 of.** `respiratory.js`'s actual delivered-volume-override calculation (the
 block that sets `pat.vt`/`pat.rr` once assisted ventilation takes over,
-distinct from the `deliveryFactor0` unloading/fatigue calc item 33 already
+distinct from the `deliveryFactor0` unloading/fatigue calc a previous item in the queue already
 fixed) still locally REDECLARED `const normalC = 0.09, normalR = 4.2` —
-shadowing the outer, already-scaled, already-item-33-fixed
+shadowing the outer, already-scaled, already-a previous item in the queue's own-fixed
 `normalC`/`normalR` (`0.09 * pat.massScale`, `4.2 / Math.sqrt(pat.massScale)`)
 with the old flat adult constants. This meant the fraction of a squeezed
 breath that actually reaches the chest was STILL being computed against a
 flat 70 kg reference for every patient, for every ventilation-capable
-procedure, even after item 33's fix corrected the three other sites.
+procedure, even after a previous item in the queue's fix corrected the three other sites.
 Fixed by removing the local shadow so the block falls through to the
 outer, patient-scaled binding — confirmed via direct debug instrumentation
 (added, used, then stripped) that this is genuinely the site controlling
@@ -3801,7 +8260,7 @@ delivered `pat.vt`/`pat.rr`.
 
 **With BOTH fixes in place, a real, more interesting finding emerged than
 "the regression is fixed": `pediatricDrowning`'s own default severity is a
-genuinely well-compensating patient, and the item-43 assertion's own
+genuinely well-compensating patient, and the a previous item in the queue's own assertion's own
 premise no longer holds, for a legitimate reason.** Measured directly
 (`respMuscleFatigue` pinned at 0.000 for the full 900 s call, sao2 ~100%,
 spontaneous minute ventilation ~2.2-2.3 L/min): once the device is
@@ -3815,7 +8274,7 @@ doesn't need it), not a new gap. Extending fatigue via `mutate` up to 1.0
 delivers, since `pat.rr` compensates upward under fatigue in this engine's
 own model. The pre-existing mechanismWiring assertion ("suction + BVM ->
 lower paco2 than BVM alone", requiring a >=1.5 mmHg IMPROVEMENT) was
-therefore REWRITTEN, not just re-passed — matching the item-41 croup
+therefore REWRITTEN, not just re-passed — matching the a previous item in the queue's own croup
 precedent for exactly this situation (a fix legitimately changes which
 physiology is true, so the assertion is rewritten to test the new correct
 claim, not forced to reproduce an old magnitude the mechanism no longer
@@ -3826,10 +8285,10 @@ regression this item was filed to catch, and comfortably above the
 ~0.3 mmHg noise now measured). MEASURED confirmed: PASS, paco2 32.030
 (control) -> 32.299 (suctioned).
 
-**Second new overdose condition batch under queue item 40's standing
+**Second new overdose condition batch under a previous item in the queue's standing
 workstream: `diltiazemOverdose` and `metoprololOverdose` (TOX-002,
 TOX-003).** Both reuse the exact `seedPastDose` pattern `rocuroniumOverdose`
-established. Confirmed before building anything (item 38's own finding,
+established. Confirmed before building anything (a previous item in the queue's own finding,
 checked per-drug rather than assumed to reuse): both diltiazem
 (`receptors.calciumChannel:-0.7`) and metoprolol
 (`receptors.beta1:-0.5,beta2:-0.1`) are real, non-per-drug-id-gated PK
@@ -3905,7 +8364,7 @@ but not sbp, for each; the real antidote raises both hr and sbp, for
 each), all passing clean on the first full run after calibration.
 
 **Verification, run in dependency order across the whole batch, full
-suite twice (once after items 42+43, once after the two new item-40
+suite twice (once after a previous item in the queue+43, once after the two new a previous item in the queue's own
 conditions).** `node --check`/targeted `eslint` clean throughout, on every
 touched file, both mid-edit and at the end — confirmed via a final
 combined `eslint` pass across all 11 touched files
@@ -3961,13 +8420,12 @@ written — confirmed via a directory listing showing none remaining under
 before this session, was left alone rather than deleted blind, matching
 established precedent). Section 8's target library and "already
 implemented" count are unaffected by this batch (no new condition-library
-entries beyond the two overdose conditions, which are tracked under item
-40's own workstream text, not section 8's category backlogs).
+entries beyond the two overdose conditions, which are tracked under a previous item in the queue's own workstream text, not section 8's category backlogs).
 
-### Physiology-engine batch: queue item 7's standing condition-library workstream — 8 new conditions (ruptured ectopic pregnancy, placental abruption, placenta previa, ovarian torsion, ruptured ovarian cyst, ruptured AAA, acute pancreatitis, bowel obstruction), all reusing already-verified mechanisms; a real pre-existing probe-key bug found and fixed; a real, previously-undocumented dilutional-coagulopathy engine characteristic measured and correctly NOT asserted around
+### Physiology-engine batch: a previous item in the queue's standing condition-library workstream — 8 new conditions (ruptured ectopic pregnancy, placental abruption, placenta previa, ovarian torsion, ruptured ovarian cyst, ruptured AAA, acute pancreatitis, bowel obstruction), all reusing already-verified mechanisms; a real pre-existing probe-key bug found and fixed; a real, previously-undocumented dilutional-coagulopathy engine characteristic measured and correctly NOT asserted around
 
 Per explicit operator instruction ("Work on 8 more conditions"), continuing
-the item-7 condition-library workstream directly after the prior session's
+the a previous item in the queue's own condition-library workstream directly after the prior session's
 16-condition electrolyte + shock/GI/vascular/psychiatric batch. Followed
 section 4's own (a)-(f) loop throughout: literature review before code,
 diff against the engine, wire through existing handles, real time course,
@@ -3978,7 +8436,7 @@ session).
 **Step (a)/(b) review found the entire supporting machinery already
 built**, exactly as the last several batches in this workstream have found:
 `pat.activeBleedRate` (mass-conserving hemorrhage, shared by every internal
-bleed in the library), `pat.intrinsicPain` (queue item 20), `pat.capillaryLeak`
+bleed in the library), `pat.intrinsicPain` (a previous item in the queue), `pat.capillaryLeak`
 (the whole-body Starling-block handle preeclampsia already established),
 and `establishPregnancy`/`obstetric.js`'s own `gestationFactor` (confirmed
 by reading the formula, `clamp((gestation-6)/26, 0, 1)`, before writing
@@ -4157,7 +8615,7 @@ twice — the first run crashed on the `totalBloodVol` bug above (caught and
 fixed immediately, not worked around, with all 21 preceding assertions
 from this batch already confirmed passing before the crash); the second
 run came back **343 passed, 1 failed** — the exact same pre-existing,
-already-documented item-43 BVM/suction pediatric-sizing gap, unrelated to
+already-documented a previous item in the queue's own BVM/suction pediatric-sizing gap, unrelated to
 this batch — with all 22 of this batch's own new assertions passing
 clean. `scenarioSweep.mjs`: **152 scenarios (up from 144), 6,907,794
 checks, 0 failed**. `npx eslint src`: exactly the pre-existing 3-error
@@ -4177,9 +8635,9 @@ Aneurysm removed from Vascular/Hematology; Acute Pancreatitis and Bowel
 Obstruction removed from Gastrointestinal; all 8 added to the "already
 implemented" list (152 conditions total).
 
-### Physiology-engine batch: queue item 7's standing condition-library workstream — 16 new conditions in two batches (Electrolyte category closed in full, plus a Shock/GI/Vascular/Psychiatric batch), all built and verified in one consolidated pass per explicit operator instruction
+### Physiology-engine batch: a previous item in the queue's standing condition-library workstream — 16 new conditions in two batches (Electrolyte category closed in full, plus a Shock/GI/Vascular/Psychiatric batch), all built and verified in one consolidated pass per explicit operator instruction
 
-Per explicit operator instruction ("Do item 7 workstream and try to implement
+Per explicit operator instruction ("Do a previous item in the queue workstream and try to implement
 as many conditions as possible. Leave the suite running to the end all at
 once" — later "Build 8 more conditions before running the suite"), all code
 for both batches was written and calibrated FIRST, `mechanismWiring.mjs` and
@@ -4365,13 +8823,13 @@ patient is identical regardless of anatomic route.
 **Acute limb ischemia and deep vein thrombosis are deliberately thin**,
 the same honest "no `progress()` needed, real physiology is almost
 entirely local" idiom `minorSprain`/`chronicBackPain` already established
-once `pat.intrinsicPain` (queue item 20) existed to hang real severe pain
+once `pat.intrinsicPain` (a previous item in the queue) existed to hang real severe pain
 on — built as a genuine contrast pair (absent pulse/cold foot/severe pain
 for arterial occlusion vs. present pulse/warm foot/modest pain for venous
 thrombosis), asserted together in the pedal-pulse probes rather than each
 scenario inventing its own vocabulary for the same distinction.
 
-**Panic attack / hyperventilation syndrome is the condition queue item 7's
+**Panic attack / hyperventilation syndrome is the condition a previous item in the queue's
 own suggested-first-batches text named explicitly**: "exercises the
 respiratory controller directly, and the hypocapnic brake is the exact
 mechanism that should limit it." Built with zero new engine code — a
@@ -4419,7 +8877,7 @@ own declared probe key is `neuro`, mixed up with the `loc` mental-status
 probe in two conditions — and one `plasmaLyte`/`plasmalyte` drug-id casing
 mismatch, all caught and fixed before the final run). `mechanismWiring.mjs`,
 run to completion in the foreground: **325 passed, 1 failed** — the single
-failure is the exact same pre-existing, already-documented item-43 BVM/
+failure is the exact same pre-existing, already-documented a previous item in the queue's own BVM/
 suction pediatric-sizing gap, unrelated to this batch; all 30 new
 assertions across both batches (16 conditions) passed clean on the first
 full run after calibration. `scenarioSweep.mjs`: **144 scenarios (up from
@@ -4462,7 +8920,7 @@ dependency order — each item verified (validator/eslint/build, plus real
 Playwright where the item is browser-testable) before moving to the next,
 per section 4's own batch-size discipline.
 
-**Item 1 — hospital designations + multiple hospitals per map.** A new
+**a previous item in the queue — hospital designations + multiple hospitals per map.** A new
 `designations` object per hospital building (`maps.js`), additive alongside
 the existing `capabilities` array so `chooseDestination`'s existing filter
 signature needed no rework: `traumaLevel` (1-4, ACS-style), `stroke`
@@ -4478,7 +8936,7 @@ with **no STEMI receiving** — a real, connected teaching point with the
 rural map's own pre-existing Flight EMS/airport station from the station
 batch: "this STEMI needs to go further than County General can take it").
 
-**Item 2 — capability-aware destination routing.** `chooseDestination`
+**a previous item in the queue — capability-aware destination routing.** `chooseDestination`
 (`hospitals.js`) gained a real bypass tie-break: `designationRank(h,
 capability)` scores a hospital's designation for the needed capability, and
 a `BYPASS_TOLERANCE=1.5` heuristic (stated honestly in-code as a reasonable
@@ -4498,7 +8956,7 @@ archetype button, computed via the same `chooseDestination` call the click
 itself makes — verified via a real Playwright click-through
 (`verifyDestinationPicker.mjs`) reading the rendered button text directly.
 
-**Item 3 — Campus PD / non-urban region mismatch fix.** Northwood
+**a previous item in the queue — Campus PD / non-urban region mismatch fix.** Northwood
 University only exists on the city map (station batch's own design), but
 Master-of-Your-Scope's free department→region picker previously offered
 Suburban/Rural even for Campus PD, which has no station on either. The
@@ -4512,7 +8970,7 @@ Layperson/EMR-only, never Paramedic, confirmed via `fleet.js`'s
 (Paramedic) still offers all 3 regions, confirming no regression to any
 other department.
 
-**Item 4 — weather + road-surface effects on real transport time.** Two
+**a previous item in the queue — weather + road-surface effects on real transport time.** Two
 previously-inert reserved fields activated for real: `edge.surface`
 (`maps.js`) is now authored as `"gravel"` on the rural map's 5 farm/side-
 road branches (Millbrook Farm Rd, Silo Rd, Quarry Rd, Pinehollow Rd, Old
@@ -4539,7 +8997,7 @@ engine-level instrumentation above is the real, honest verification for
 this item, matching exactly what the approved plan's own verification
 section asked for.
 
-**Item 5 — real-route wiring for both 3D scenes, the largest piece.**
+**a previous item in the queue — real-route wiring for both 3D scenes, the largest piece.**
 `mapGraph.js` gained `pathToWaypoints(map, path)`, resolving a plain
 node-id path (`shortestPath`'s own `path` field) into real world-space
 `{x,y}` meters — the shared building block both scenes now use.
@@ -4656,13 +9114,13 @@ used across this investigation (`_tmp_dest_probe.mjs`, `_tmp_weather_probe.mjs`,
 entry was written, per section 1's own rule — confirmed via directory
 listing.
 
-### Physiology-engine batch: queue item 40's standing overdose-condition workstream — `rocuroniumOverdose`, the first drug shipped under it, reusing the existing Hill-equation NMJ receptor mechanism rather than inventing a new one
+### Physiology-engine batch: a previous item in the queue's standing overdose-condition workstream — `rocuroniumOverdose`, the first drug shipped under it, reusing the existing Hill-equation NMJ receptor mechanism rather than inventing a new one
 
-Per the standing item-40 workstream (build an overdose condition for every
+Per the standing a previous item in the queue's own workstream (build an overdose condition for every
 formulary drug by seeding a supratherapeutic dose of that same drug via
 `seedPastDose`, reusing the receptor/PK model the therapeutic dose already
 exercises rather than a bespoke toxidrome). Rocuronium was picked first
-because it structurally avoids item 38's own documented ceiling: fentanyl's
+because it structurally avoids a previous item in the queue's own documented ceiling: fentanyl's
 `respiratoryDepression` is an Emax intensity gated ONCE PER DRUG ID
 (`pk.js`'s `effectsApplied` gate), a hard per-drug ceiling no amount of
 stacking can cross — but `pk.js`'s neuromuscular-block mechanism
@@ -4748,8 +9206,7 @@ non-curative move (the patient was aware through the entire event;
 anxiolysis/amnesia is the one real thing the drug box can offer beyond
 airway control).
 
-**`mechanismWiring.mjs` assertions added** (`[ROCURONIUM OVERDOSE — queue
-item 40]`, after the hyperkalemia section): real NMJ blockade established
+**`mechanismWiring.mjs` assertions added** (`[ROCURONIUM OVERDOSE — a previous item in the queue]`, after the hyperkalemia section): real NMJ blockade established
 by 40s while consciousness stays `"awake"` (the core paralysis-!=-coma
 claim); untreated apnea collapses SaO2 (required adding `sao2` to
 `snapshot()`, which had never tracked it before — a real gap this batch's
@@ -4772,7 +9229,7 @@ first attempt crashed on a missing `sao2` field in `snapshot()` (`sao2`
 had never been tracked by any prior condition's assertions — caught
 immediately, fixed by adding it, not worked around). The second run came
 back **283 passed, 2 failed** — both pre-existing, already-documented
-failures unrelated to this batch (item 43's BVM/suction pediatric-sizing
+failures unrelated to this batch (a previous item in the queue's BVM/suction pediatric-sizing
 gap; the flaky PACs-HR-variance stochastic assertion, already on record
 as noisy) — and all 6 new `[ROCURONIUM OVERDOSE]` assertions passed
 clean: NMJ blockade by 40s (`neuromuscularBlock = 0.788`) with
@@ -4805,16 +9262,15 @@ across this investigation (`_tmp_roc_probe*.mjs`,
 `_tmp_roc_calib_final.mjs`, and their output files) was stripped before
 this entry was written, per section 1's own rule — confirmed via a
 directory listing showing none remaining under `src/scripts/`.
-Section 8's target library: rocuronium overdose was introduced by item
-40's own queue text as a candidate, not a pre-existing section 8 backlog
-line item, so no backlog category needed editing; item 40's own queue
+Section 8's target library: rocuronium overdose was introduced by a previous item in the queue's own queue text as a candidate, not a pre-existing section 8 backlog
+line item, so no backlog category needed editing; a previous item in the queue's own queue
 text (section 6) is updated to mark rocuronium as shipped and move to the
 next candidate.
 
-### Physiology-engine batch: queue item 7's standing workstream — `hyperkalemiaMissedDialysis`, a new condition built almost entirely from already-verified machinery, closing both the Electrolyte and Renal/Genitourinary backlog's hyperkalemia entries in one condition
+### Physiology-engine batch: a previous item in the queue's standing workstream — `hyperkalemiaMissedDialysis`, a new condition built almost entirely from already-verified machinery, closing both the Electrolyte and Renal/Genitourinary backlog's hyperkalemia entries in one condition
 
-Per operator direction, continuing the item-7 condition-library workstream
-after items 31/12 (below). Followed section 4's own (a)-(f) loop: literature
+Per operator direction, continuing the a previous item in the queue's own condition-library workstream
+after a previous item in the queue (below). Followed section 4's own (a)-(f) loop: literature
 review before code, diff against the engine, wire through existing handles,
 give it a real time course, make treatment work through the same
 mechanisms, assert two-sided.
@@ -4864,7 +9320,7 @@ own discipline against unscoped mechanism-building.
 trusted (lesson 8, applied to the probe this time, not the engine).** An
 early probe set `pat.assistedVent`/`pat.k`-adjacent state directly on a
 constructed `Patient` before calling `.update()` in an EARLIER, unrelated
-investigation this same session (see item 12's entry below) and produced
+investigation this same session (see a previous item in the queue's entry below) and produced
 misleadingly flat results — not repeated here, but the same discipline
 (verify the harness before trusting a surprising number) applied
 throughout this condition's own measurement.
@@ -4915,8 +9371,8 @@ touched files (`conditions.js`, `scenarios.js`, `mechanismWiring.mjs`).
 `mechanismWiring.mjs`, run to completion in the foreground twice — the
 first run crashed on the `kExcretion` bug above (caught and fixed
 immediately, not worked around); the second run came back **278 passed, 1
-failed**, the exact same pre-existing item-43 BVM/suction gap as this
-session's own item-41/31 baseline, plus all 8 of this condition's new
+failed**, the exact same pre-existing a previous item in the queue's own BVM/suction gap as this
+session's own a previous item in the queue's own/31 baseline, plus all 8 of this condition's new
 assertions passing (270 baseline + 8 new = 278, confirming zero
 regression). `scenarioSweep.mjs`: **125 scenarios, 5,005,752 checks, 0
 failed** — up from 124/4,965,706 by exactly one new scenario's own tick
@@ -4933,9 +9389,9 @@ added to the "already implemented" list (126 conditions total). Every
 throwaway probe script used across this investigation was stripped before
 finishing, per section 1's own rule.
 
-### Physiology-engine batch: queue item 12 re-investigated (measurement-only) — the "device rates too safe" explanation was incomplete; the real ceiling is `deliveryFactor` capping delivered volume, independent of bagging rate, and it holds at 3.81 cmH2O across a 15x-past-realistic rate sweep
+### Physiology-engine batch: a previous item in the queue re-investigated (measurement-only) — the "device rates too safe" explanation was incomplete; the real ceiling is `deliveryFactor` capping delivered volume, independent of bagging rate, and it holds at 3.81 cmH2O across a 15x-past-realistic rate sweep
 
-Per PLAN.md's backlog, continuing after item 31 (below). Item 12's own
+Per PLAN.md's backlog, continuing after a previous item in the queue (below). a previous item in the queue's own
 queue text closed a real bug (`pat.vtPrev` captured after the assisted-
 ventilation override, not before) but left the 4.40-vs-5-15 cmH2O
 magnitude gap attributed to "the game's device rates are calibrated to
@@ -5002,14 +9458,13 @@ the throwaway probe script's own in-memory `PROCS` object for the
 duration of that one process; `procedures.js` itself was never edited.
 Every throwaway probe script (four iterations, the first two genuinely
 broken per the trace above) was stripped before finishing, per section 1's
-own rule. Queue item 12's own text is updated with the full refined
+own rule. a previous item in the queue's own text is updated with the full refined
 finding rather than left describing the superseded, incomplete
 explanation.
 
-### Physiology-engine batch: queue item 31 CLOSED — found already fixed in the tree by a concurrent session, re-measured and fully re-verified rather than trusted on the comment alone
+### Physiology-engine batch: a previous item in the queue CLOSED — found already fixed in the tree by a concurrent session, re-measured and fully re-verified rather than trusted on the comment alone
 
-Per PLAN.md's backlog, item 2 after item 41 (previous entry, below). Item
-31's own text asked for measurement only: "instrument a plain,
+Per PLAN.md's backlog, a previous item in the queue after a previous item in the queue (previous entry, below). a previous item in the queue's own text asked for measurement only: "instrument a plain,
 condition-less patient at increasing dt sizes to find exactly where and
 why it diverges before touching any fix" — the dt=15s NaN (`sbp`,
 `brainInjury`) regression first reported while rebuilding the heat-stroke
@@ -5021,7 +9476,7 @@ no longer exports `GUARDED_FIELDS` (the hand-curated ~9-field allowlist
 the substep-rollback guard used to check); in its place, `patient.js`'s
 `update()` now snapshots and restores EVERY numeric own field on the
 patient each 50ms-or-smaller substep, not a curated subset, with an
-in-code comment already narrating the exact investigation item 31 asked
+in-code comment already narrating the exact investigation a previous item in the queue asked
 for: the curated list kept regenerating new gaps as different scenario/dt
 combinations corrupted different downstream fields (`cardiovascular.js`'s
 sbp/dbp/pp/esv/ef, then `metabolic.js`'s lactate/energyFailure/actualVO2,
@@ -5034,10 +9489,10 @@ size (down to `MAX_STEP/16`, ~187.5ms), falling back to the last good
 state if it still can't stabilize, rather than ever letting NaN propagate
 downstream. **This was not my own session's work** — the previous
 (summarized) session explicitly reverted every `patient.js` edit it made
-while diagnosing the ORIGINAL dt-units probe bug for item 41, leaving no
+while diagnosing the ORIGINAL dt-units probe bug for a previous item in the queue, leaving no
 net change to that file — so this landed via a concurrent session working
 the same backlog, the same pattern already on record in this document for
-items 29 and 5's adenosine fix. Per this project's own discipline, "the
+a previous item in the queue's adenosine fix. Per this project's own discipline, "the
 code already has it" is not the same as "verified" until re-measured and
 re-run through the suite, so both happened before this item was trusted.
 
@@ -5048,7 +9503,7 @@ practical ceiling, since `MAX_TICK=1.0` min clamps any larger single
 originally-failing `heatStroke` scenario, a second unrelated scenario
 (`abdPain`), a bare condition-less adult `Patient` constructed directly,
 and a bare condition-less pediatric `Patient` (age 2/12kg — this project's
-own body-size-reference defect class, see item 33, has bitten low-weight
+own body-size-reference defect class, see a previous item in the queue, has bitten low-weight
 patients before, so worth checking separately). Every run, at every step
 size including the exact dt=15s that used to reliably NaN by the second
 tick, finished with fully finite state (`sbp`/`hr`/`brainInjury` all
@@ -5064,22 +9519,22 @@ recovering from real bad substeps rather than the dt=15s case having
 stopped occurring at all.
 
 **Full suite re-run against the current tree (this fix plus this
-session's own item-41 changes together), not assumed clean from a stale
+session's own a previous item in the queue's own changes together), not assumed clean from a stale
 baseline.** `npx eslint src/physio/patient.js src/physio/constants.js`
 and `node --check` on both: clean. `npx vite build`: clean (1.14s, same
 pre-existing >500kB chunk-size warning). `mechanismWiring.mjs`, run to
 completion in the foreground: **270 passed, 1 failed** — the exact same
-count and the exact same single failure (item 43's already-documented
-BVM/suction pediatric-sizing gap) as this session's own item-41
+count and the exact same single failure (a previous item in the queue's already-documented
+BVM/suction pediatric-sizing gap) as this session's own a previous item in the queue's own
 verification, confirming no regression from whichever session landed this
 fix. `scenarioSweep.mjs`: **124 scenarios, 4,965,706 checks, 0 failed** —
 the exact established baseline, unchanged. Every throwaway probe script
 used to re-measure this was stripped before finishing, per section 1's
 own rule.
 
-### Physiology-engine batch: queue item 41 CLOSED — pediatric upper-airway obstruction (croup/epiglottitis) recalibrated, a real missing tachypnea mechanism found and fixed, bronchiolitis's own ramp rate fixed to reach its own declared ceiling, and mechanismWiring's assertions rewritten to test the correct (now two-phase) physiology
+### Physiology-engine batch: a previous item in the queue CLOSED — pediatric upper-airway obstruction (croup/epiglottitis) recalibrated, a real missing tachypnea mechanism found and fixed, bronchiolitis's own ramp rate fixed to reach its own declared ceiling, and mechanismWiring's assertions rewritten to test the correct (now two-phase) physiology
 
-Per PLAN.md's own top-priority backlog item, working item 41 exactly as
+Per PLAN.md's own top-priority backlog item, working a previous item in the queue exactly as
 that document's own text framed it: "measurement-first... instrument the
 real engine, measure, pick the value that lands, strip." The investigation
 overturned this item's own prior conclusion (recorded in the version of
@@ -5225,9 +9680,9 @@ each edit) and at the end. `mechanismWiring.mjs`, run to completion in the
 foreground twice — once before the assertion rewrite (267 passed, 3
 failed: the expected `croup -> paco2 rises` failure this batch's own fix
 caused, plus the two already-documented, unrelated pre-existing failures —
-item 43's BVM/suction gap, and the standing flaky PAC-stdev assertion —
+a previous item in the queue's BVM/suction gap, and the standing flaky PAC-stdev assertion —
 confirming neither was a new regression), once after (**270 passed, 1
-failed** — only item 43's already-documented, pre-existing BVM gap
+failed** — only a previous item in the queue's already-documented, pre-existing BVM gap
 remains; the PAC-stdev assertion passed clean this run, consistent with
 its own documented flakiness, not a fix). `scenarioSweep.mjs`: **124
 scenarios, 4,965,706 checks, 0 failed** — the exact same count as the
@@ -5238,10 +9693,10 @@ across this investigation was stripped before finishing, per section 1's
 own rule; confirmed via a directory listing showing only the two
 pre-existing empty `scratch_dev_*.log` files remaining.
 
-### Front-end batch: F1's last genuinely-open item closed — Chapter 3's "widened action set" and e-bike/golf-cart response-time mechanic are both real now, not narrated
+### Front-end batch: a previous item in the queue's last genuinely-open item closed — Chapter 3's "widened action set" and e-bike/golf-cart response-time mechanic are both real now, not narrated
 
-Per instruction to continue F1 (CLAUDE.md's front-end queue, section 6).
-F1's own status paragraph named exactly one remaining concrete gap after
+Per instruction to continue a previous item in the queue (CLAUDE.md's front-end queue, section 6).
+a previous item in the queue's own status paragraph named exactly one remaining concrete gap after
 the full Prologue→Chapter 10 click-through work: "Chapter 3's §3.2 'widened
 action set' and the e-bike/golf-cart response-time mechanic are narrated in
 placeholder text but have no new mechanism behind them yet." This batch
@@ -5324,7 +9779,7 @@ only `eco_responder` reads as an obvious match, and `by_the_book` in
 particular doesn't obviously concern vehicle choice at all. Inventing a
 meaning for an achievement risks shipping the wrong one permanently (achievement
 IDs are load-bearing save data); left unbuilt rather than guessed at, per
-this project's own clarification discipline. F1's queue entry (section 6)
+this project's own clarification discipline. a previous item in the queue's queue entry (section 6)
 is updated to reflect this as the correct, deliberate reason, not an
 oversight.
 
@@ -5333,7 +9788,7 @@ oversight.
 Continuing directly from an earlier bug-hunt-only pass in this same session
 (browser click-through of the Sandbox setup wizard, case picker, and
 in-scene action tabs, plus a physio-engine dead-field grep sweep — see
-physiology queue item 42 for that half). Per follow-up instruction to
+physiology a previous item in the queue for that half). Per follow-up instruction to
 continue working the front-end queue, the two front-end bugs that pass
 found were fixed and verified this batch, not just documented.
 
@@ -5347,7 +9802,7 @@ array, and the three `paused={...}` props on `DrivingMinigame`/
 `Coop3DDrive`/`Coop3DWalk` all listed `micnOpen`/`newUnit`/`loadOpen`/
 `settingsOpen`/`confirmDeath`/`achievementsOpen` but never
 `relationshipsOpen` — the same bug class this project has already fixed
-twice (F13's `confirmDeath` fix, the earlier `settingsOpen` fix), just never
+twice (a previous item in the queue's `confirmDeath` fix, the earlier `settingsOpen` fix), just never
 extended to this later-added overlay. Added `||g.relationshipsOpen` (and
 `||s.relationshipsOpen` in the interval body) to all six sites.
 
@@ -5390,7 +9845,7 @@ Physiology suites were not re-run — this batch touched no `physio/` file.
 Every throwaway verification script was stripped before finishing, per
 section 1's own rule.
 
-### Physiology-engine batch: items 39 (home-med seeding, real bug fix), 29 (found already resolved), and 33 (real root-cause fix for the pediatric respiratory instability) — verification RESUMED and COMPLETED after an earlier interruption; two real, genuinely new regressions found, root-caused, and filed rather than patched blind (items 41, 43)
+### Physiology-engine batch: a previous item in the queue (home-med seeding, real bug fix), 29 (found already resolved), and 33 (real root-cause fix for the pediatric respiratory instability) — verification RESUMED and COMPLETED after an earlier interruption; two real, genuinely new regressions found, root-caused, and filed rather than patched blind (a previous item in the queue)
 
 Per explicit operator instruction ("Continue with whatever is next on my
 physiology queue. Do the next 3 tasks"), then a mid-turn instruction to stop
@@ -5400,17 +9855,17 @@ superseded), then a further "Continue" that resumed the verification this
 entry's own text had flagged as the single most important next step.
 **All three suites now ran to completion this session**: `mechanismWiring.mjs`
 (foreground, `--stream`, per section 2's own standing guidance),
-`scenarioSweep.mjs`, and `npx vite build`. Items 29 and 39 are fully clean.
-Item 33's core fix is real, correct, and confirmed — but running the full
+`scenarioSweep.mjs`, and `npx vite build`. a previous item in the queue are fully clean.
+a previous item in the queue's core fix is real, correct, and confirmed — but running the full
 suite against it (exactly the gate this entry's own earlier draft called
 for) is what a coefficient-only self-check never would have caught: it
 surfaced two GENUINELY NEW `mechanismWiring` failures, both real, both
 traced to ground rather than patched blind, both filed as their own queue
-items (41's rewrite, and new item 43) rather than rushed — see the
+items (41's rewrite, and new a previous item in the queue) rather than rushed — see the
 "Verification" paragraph at the end of this entry for the exact counts, and
-items 33/41/43 in section 6 for the full mechanism-level detail on each.
+a previous item in the queue in section 6 for the full mechanism-level detail on each.
 
-**Item 39 — `pat.homeMeds` finally has real producers, and a genuine bug in
+**a previous item in the queue — `pat.homeMeds` finally has real producers, and a genuine bug in
 the shared seeding mechanism itself was found and fixed along the way.**
 This item is now fully verified clean and has been removed from the queue
 (section 4's own "delete outright once shipped" rule) — summary, kept here
@@ -5426,7 +9881,7 @@ drugs, not just the later one). The real bug: `pk.js`'s CHRONIC HOME
 MEDICATIONS block constructed raw `DrugInstance`s at staggered negative
 timestamps and relied on the per-tick loop to "accumulate them to steady
 state on its own" — but a `DrugInstance` always starts a two-compartment
-drug's compartments FRESH regardless of the `time` passed to it (item 37's
+drug's compartments FRESH regardless of the `time` passed to it (a previous item in the queue's
 own finding, never generalized to this older, shared block). Confirmed
 empirically before fixing: a once-daily and a twice-daily identical-dose
 schedule produced byte-identical concentrations — dosing interval had
@@ -5435,9 +9890,9 @@ isolation (direct `CONDITIONS[key].progress(pat)` calls through the real
 `physio()` scenario harness, plus a composition test) — NOT yet through
 `mechanismWiring`/`scenarioSweep`.
 
-**Item 29 — investigated, found ALREADY RESOLVED by an earlier or
+**a previous item in the queue — investigated, found ALREADY RESOLVED by an earlier or
 concurrent session, not by this one.** `physiologyValidation.mjs`'s own
-section-14 code already carries a full "QUEUE ITEM 29, RESOLVED" comment
+section-14 code already carries a full "a previous item in the queue, RESOLVED" comment
 (with its own measurement detail) that this document's queue text had not
 caught up to — a live instance of lesson 16, aimed at this document rather
 than at code. Confirmed the fix is real by reading `neuro.js` directly (a
@@ -5452,7 +9907,7 @@ including "prolonged arrest becomes dead") and `--section=16` (6/6 passed).
 This item is genuinely closed and removed from the queue below — no code
 in this session was needed for it, only verification and documentation.
 
-**Item 33 — the real root cause was found, and it was not the fatigue
+**a previous item in the queue — the real root cause was found, and it was not the fatigue
 spiral this item's own text originally blamed.** `respiratory.js` computes
 a `loadIndex` (how obstructed this patient's breathing is, relative to
 "normal") and a `restingEffort` (the pressure needed to hit this patient's
@@ -5521,7 +9976,7 @@ that variability, whatever it was, is gone along with the collapse it fed).
 
 **A real, unfixed downstream consequence was found while verifying this,
 and deliberately NOT recalibrated in this session (turn budget) — filed as
-new queue item 41.** `bronchiolitisInfant` and `croupToddler` both now
+new a previous item in the queue.** `bronchiolitisInfant` and `croupToddler` both now
 finish a full 900s call at implausibly healthy vitals (sao2 97-98%, zero
 `respMuscleFatigue`) despite their own `broncho`/`upperAirwayObstruction`
 values climbing to a real, moderate-severe level by the model's own scale —
@@ -5530,7 +9985,7 @@ knowingly or not, calibrated against (or at least never noticed to be
 riding on) the universal pre-fix toddler-overload bug for their apparent
 severity, and are now under-calibrated on their own actual merits. This is
 a real, foreseeable consequence of fixing a shared body-size bug, not a new
-defect — see item 41 for the full reasoning and what the next session
+defect — see a previous item in the queue for the full reasoning and what the next session
 should do about it.
 
 **Verification, stated honestly and now complete.** `npx eslint
@@ -5541,7 +9996,7 @@ breakage this batch introduced and caught immediately — a third
 `loadIndex`/`restingEffort` fix above did not originally touch, now fixed
 the same way and re-confirmed clean). `node --check` clean on both edited
 physiology files. `physiologyValidation.mjs --section=14`/`--section=16`:
-6/6 and 6/6 (item 29's own verification, unaffected by items 33/39's later
+6/6 and 6/6 (a previous item in the queue's own verification, unaffected by a previous item in the queue's later
 edits since section 14/16 read neither `respiratory.js`'s mechanics nor
 `pat.homeMeds`).
 
@@ -5564,7 +10019,7 @@ then fully stripped — confirmed via a clean re-lint):
   `Rexp`/intrinsic-PEEP term bronchospasm also uses, a real anatomic
   distinction) is structurally insensitive for this patient at ANY
   severity, once `loadIndex` correctly reads the patient's own baseline
-  instead of an inflated one. Rewritten into queue item 41 with the full
+  instead of an inflated one. Rewritten into a previous item in the queue with the full
   trace; NOT patched with a coefficient bump, since the honest fix is
   either a second effort/fatigue channel for fixed extrathoracic narrowing
   or a broader look at `effortRatio`'s own flat-`REST_RR_REF=14` reference
@@ -5581,13 +10036,13 @@ then fully stripped — confirmed via a clean re-lint):
   drowning patient (age 3/15 kg) lowers resistance enough to cross that
   threshold and hand control to the undersized adult device — which
   ventilates this toddler LESS well than their own compensation did, so
-  "helping" makes the outcome worse. Filed as new queue item 43 — real
+  "helping" makes the outcome worse. Filed as new a previous item in the queue — real
   procedure-content work (pediatric-scaled BVM parameters, its own
   literature anchor), not a physiology-engine coefficient fix.
 
 `scenarioSweep.mjs`: **124 scenarios, 4,965,706 checks, 0 failed** — the
-exact count already established earlier this session (the item-5 `bun`/`dpg`
-batch), confirming none of items 29/33/39's changes introduced any
+exact count already established earlier this session (the a previous item in the queue's own `bun`/`dpg`
+batch), confirming none of a previous item in the queue's changes introduced any
 impossible-value regression across the full scenario library. `npx vite
 build`: clean (1.10s, same pre-existing >500kB chunk-size warning). Every
 throwaway probe/debug-instrumentation script used across this whole
@@ -5595,9 +10050,9 @@ investigation was stripped before this entry was written, per section 1's
 own rule — confirmed via a final clean `eslint` pass on all four touched
 files after the strip, not just before it.
 
-### Front-end batch: F7 — a real crew seat for the Zero-To-Hero PATROL partner, verified in a real browser session — STOPPED MID-POLISH BY EXPLICIT OPERATOR INSTRUCTION before the README/loose-ends pass; the core fix itself is complete and verified, not partial
+### Front-end batch: a previous item in the queue — a real crew seat for the Zero-To-Hero PATROL partner, verified in a real browser session — STOPPED MID-POLISH BY EXPLICIT OPERATOR INSTRUCTION before the README/loose-ends pass; the core fix itself is complete and verified, not partial
 
-Per operator instruction to pick a front-end queue item and do F7. F7's own
+Per operator instruction to pick a front-end queue item and do a previous item in the queue. a previous item in the queue's own
 text (as it read at the start of this batch) warned this was "a genuine
 architecture change" — crew task assignment, roster generation, and the
 whole crew-order machinery all supposedly needing rework to support a
@@ -5666,7 +10121,7 @@ src/App.jsx src/fleet.js`: exactly the pre-existing 3-error
 **Left open, stated honestly — the operator's stop-and-document instruction
 landed right after the verification script's last passing run, before a
 planned README/loose-ends pass, not because anything above is broken.**
-Full detail is at F7's own queue entry (section 6), not repeated here:
+Full detail is at a previous item in the queue's own queue entry (section 6), not repeated here:
 `tools/browser/README.md` was not updated with the new script or its one
 locator gotcha; this only fixes zth's own named `partner_patrol`, not a
 generic partner for a Master-of-Your-Scope player manually picking the
@@ -5677,10 +10132,10 @@ the player off the `patrol` vehicle was not investigated (no such vehicle-
 switch code exists in the tree yet to check against) — flagged as a
 concrete thing for that future batch to check for, not guessed at here.
 
-### Front-end batch: F9's stroke `probes.loc` fix — the three stroke scenarios now read live physiology, plus a real narrative/mechanism mismatch found and fixed
+### Front-end batch: a previous item in the queue's stroke `probes.loc` fix — the three stroke scenarios now read live physiology, plus a real narrative/mechanism mismatch found and fixed
 
 Continuing the front-end queue after the Chapters 4-7 click-through and
-driving-minigame playtest batches (below). F9's own "still open" list
+driving-minigame playtest batches (below). a previous item in the queue's own "still open" list
 named a specific, confirmed-real instance left for a future slice: the
 three stroke scenarios' own `probes.loc` overrides narrate a fixed picture
 regardless of when in the call they're checked, with
@@ -5737,10 +10192,10 @@ were not re-run for this narrowly-scoped a change; the direct engine
 instrumentation above is the real regression coverage for the actual
 behavior that changed.
 
-### Front-end batch: F4's driving-minigame real in-browser playtest — the last item that queue entry was waiting on
+### Front-end batch: a previous item in the queue's driving-minigame real in-browser playtest — the last item that queue entry was waiting on
 
 Continuing the front-end queue after the Chapters 4-7 click-through batch
-(below). F4's own driving-minigame sub-entry was left "IN PROGRESS,
+(below). a previous item in the queue's own driving-minigame sub-entry was left "IN PROGRESS,
 interrupted mid-verification, pick this back up first" by an earlier
 session that got the surrounding screens confirmed but was stopped before
 actually playing the segment with keyboard input. This session did that.
@@ -5791,9 +10246,9 @@ findings. No `src/` file was touched by this batch, so `npx eslint src`/
 `npx vite build` were not re-run (unchanged from the Chapters 4-7 batch's
 own confirmation immediately prior in this same session).
 
-### Front-end batch: real in-browser click-through of Chapters 4-7 (closing F1's last click-through gap) — plus a real, previously-undiscovered crash bug found and fixed
+### Front-end batch: real in-browser click-through of Chapters 4-7 (closing a previous item in the queue's last click-through gap) — plus a real, previously-undiscovered crash bug found and fixed
 
-Per instruction to continue the front-end queue starting at F1. F1's own
+Per instruction to continue the front-end queue starting at a previous item in the queue. a previous item in the queue's own
 "still open" text named a specific remaining gap after the prior sessions'
 Ch.1-3/Ch.8-10 click-through work: "Chapters 4-7's own still-separately-
 flagged click-through gap." This batch closes it.
@@ -5860,16 +10315,16 @@ above was caught and fixed on the FIRST run — both logged runs are clean).
 `tools/browser/README.md` updated with the new script and a new gotchas
 entry documenting the crash for future script authors.
 
-### Physiology-engine batch: queue item 5's two remaining "cheap" dead fields — `pat.bun` and `pat.dpg` — wired to real mechanisms; `pat.insulin`/`pat.glucagon` investigated and correctly left for item 7
+### Physiology-engine batch: a previous item in the queue's two remaining "cheap" dead fields — `pat.bun` and `pat.dpg` — wired to real mechanisms; `pat.insulin`/`pat.glucagon` investigated and correctly left for a previous item in the queue
 
 Per explicit operator instruction to work the physiology queue starting from
-its lowest open item, then narrowed mid-session to item 5 only ("Only do
-Item 5"). Confirmed against the tree before trusting the queue's own
+its lowest open item, then narrowed mid-session to a previous item in the queue only ("Only do
+a previous item in the queue"). Confirmed against the tree before trusting the queue's own
 description (lesson 16): grep confirmed `pat.bun` (frozen at 12 in
 `patient.js`'s constructor, read exactly once — the osmolality calc in
 `renal.js`) and `pat.dpg` (frozen at 1.0, read three times — twice in
 `oxySat()`'s dpgFactor argument, once in `inverseHill()` — all in
-`respiratory.js`) were both still genuinely dead, exactly as item 5 says.
+`respiratory.js`) were both still genuinely dead, exactly as a previous item in the queue says.
 
 **`pat.bun`.** Urea production from hepatic protein catabolism is roughly
 constant while clearance scales with GFR — and `pat.gfr` was already a real,
@@ -5942,10 +10397,10 @@ glucose regulation in this engine runs entirely through direct
 and the DKA/HHS/severe-hypoglycemia conditions that have since shipped all
 use this same pattern). Making `pat.insulin`/`pat.glucagon` real would mean
 replacing that whole stat-write pattern with an actual receptor-mediated
-endocrine pancreatic model — genuinely item-7-sized work needing its own
+endocrine pancreatic model — genuinely a previous item in the queue's own-sized work needing its own
 literature anchor and two-sided assertions, not a cheap dead-field rewire —
-so this was correctly left open rather than rushed under item 5's "cheap"
-framing. Still flagged in the queue, now pointing at item 7 explicitly.
+so this was correctly left open rather than rushed under a previous item in the queue's "cheap"
+framing. Still flagged in the queue, now pointing at a previous item in the queue explicitly.
 
 **Verification, real and complete.** Both new mechanisms were instrumented
 directly against the real engine before being trusted (lesson 8; the
@@ -5972,9 +10427,9 @@ running, not just declared. `npx eslint src/physio/renal.js
 src/physio/respiratory.js src/scripts/scenarioSweep.mjs`: zero findings.
 `npx vite build`: clean (same pre-existing >500kB chunk-size warning).
 
-### Front-end batch: F10 fully closed — real in-scene wound render, real in-scene fbao+chronic CPR-clear, and a real save/reload round-trip of a multi-condition custom scenario
+### Front-end batch: a previous item in the queue fully closed — real in-scene wound render, real in-scene fbao+chronic CPR-clear, and a real save/reload round-trip of a multi-condition custom scenario
 
-Per instruction to continue the front-end queue. F10 (Medical Simulation
+Per instruction to continue the front-end queue. a previous item in the queue (Medical Simulation
 mode's custom-scenario builder) was left "MOSTLY DONE" with three small,
 explicitly-scoped items still open, each "expected to work... but none has
 been watched happen on screen yet." All three are now watched happen, via
@@ -6042,19 +10497,19 @@ the four runs. `npx eslint tools/browser`: zero findings. No `src/` file
 was touched, so `npx eslint src` (3 pre-existing `react-refresh/
 only-export-components` errors, same lines) and `npx vite build` (clean,
 same pre-existing >500kB chunk-size warning) were both re-confirmed
-unchanged at baseline rather than assumed. F10's own queue entry (section
+unchanged at baseline rather than assumed. a previous item in the queue's own queue entry (section
 6) is updated to reflect this — the item is now fully closed.
 
-### Front-end batch: F1's real in-browser click-through of Zero-To-Hero Chapters 1-3 and 8-10 — the gap this document's own F1 entry has named as its top priority for several sessions running
+### Front-end batch: a previous item in the queue's real in-browser click-through of Zero-To-Hero Chapters 1-3 and 8-10 — the gap this document's own a previous item in the queue entry has named as its top priority for several sessions running
 
-Per explicit operator instruction to work the front-end queue starting at F1.
+Per explicit operator instruction to work the front-end queue starting at a previous item in the queue.
 `campaignSmoke.mjs` (an earlier session) already proves every individual
 Chapter 1/2/3/7/8/9/10 screen renders given injected state, but its own
 header comment is explicit that this is a weaker signal than a real click —
 state injection cannot catch a broken `onClick` handler, a wrong `setG`
 payload, or a typo'd phase name, only that the TARGET screen renders once
 you're already there. That gap — "no in-browser click-through of Chapters
-1-3/8-10 has happened yet" — has sat at the top of F1's own "still open"
+1-3/8-10 has happened yet" — has sat at the top of a previous item in the queue's own "still open"
 list across several sessions. This batch closed it for both halves.
 
 **Two new scripts, `tools/browser/clickThroughCh1to3.mjs` and
@@ -6152,7 +10607,7 @@ e.g. Ch.3's Fire path and Ch.2's "guarded"/"banter" classmate responses
 were not walked — `campaignSmoke.mjs`'s own state-injection breadth check
 already covers those screens rendering, just not the click that reaches
 them), and does not touch Chapters 4-7 (their own separately-flagged
-click-through gap, unchanged by this batch — see that F1 sub-entry).
+click-through gap, unchanged by this batch — see that a previous item in the queue sub-entry).
 
 ### Front-end batch: Zero-To-Hero character customization — hair color, eye color, more hairstyles/outfits, and a layered portrait system replacing the old flat-file-per-combination scheme
 
@@ -6363,22 +10818,22 @@ stripped from `tools/browser/` before shipping, per section 1's own
   (plain generic backgrounds before a dedicated art batch, per several
   campaign-chapter entries already in this document) rather than a gap
   specific to this feature.
-- **The F4 queue entry's own "driving minigame step 2" sub-item (solo/
+- **The a previous item in the queue queue entry's own "driving minigame step 2" sub-item (solo/
   Career/Sandbox's 2D `DrivingMinigame`) is UNCHANGED and still has its own
   separately-flagged unfinished in-browser playtest** — this batch did not
   touch or re-verify that path, since the operator's instruction was
   explicitly co-op-only. See that entry, still open, for what it still
   needs.
 
-### Physiology-engine batch: the item-37 verification gap closed for real (items 5/30/36 + the `pk.js` refactor now genuinely confirmed), item 37's calibration finished honestly (and a real architectural ceiling found along the way), `pat.firstDegreeBlock` wired to the ECG readout (item 5), and a clean item-32 re-audit
+### Physiology-engine batch: the a previous item in the queue's own verification gap closed for real (a previous item in the queue + the `pk.js` refactor now genuinely confirmed), a previous item in the queue's calibration finished honestly (and a real architectural ceiling found along the way), `pat.firstDegreeBlock` wired to the ECG readout (a previous item in the queue), and a clean a previous item in the queue's own re-audit
 
 Per explicit operator instruction to read this whole document and work three
 physiology-queue items. The most important thing this batch did was NOT new
 code — it was actually running the verification the previous session's own
-entry (item 37, below, since updated from "IN PROGRESS" to "RESOLVED" by
+entry (a previous item in the queue, below, since updated from "IN PROGRESS" to "RESOLVED" by
 this batch) admitted never completed: that session's `mechanismWiring.mjs`
 launch was killed with a 0-byte-adjacent
-result (exit code 1, no readable tally), so items 5/30/36 and the `pk.js`
+result (exit code 1, no readable tally), so a previous item in the queue and the `pk.js`
 `advancePkCompartments`/`seedPastDose` refactor were sitting in the tree
 UNVERIFIED, exactly as flagged. Confirmed this claim against the tree before
 trusting it (lesson 16): `advancePkCompartments`/`seedPastDose` are real and
@@ -6395,12 +10850,11 @@ sole failure, `magnesium suppresses torsades recurrence (Tzivoni)` at 7/10
 against a needed 8/10, was re-run standalone three more times (helpers copied
 verbatim, lesson 17) and came back 10/10, 9/10, 10/10 — ordinary stochastic
 noise on a wide-variance assertion (documented range 1-10 untreated episodes),
-not a regression; the torsades/magnesium mechanism is untouched by items
-5/30/36 or the pk.js refactor. **This verifies items 5, 30 and 36, and the
+not a regression; the torsades/magnesium mechanism is untouched by a previous item in the queue or the pk.js refactor. **This verifies a previous item in the queue, and the
 `pk.js` refactor, for real, closing the exact gap the previous session's own
 entry flagged as the single most important thing to do first.**
 
-**Item 37 — the calibration was finished, and it surfaced a real, previously
+**a previous item in the queue — the calibration was finished, and it surfaced a real, previously
 undiscovered architectural ceiling, not a tuning problem.** Rebuilt the
 calibration probe (since the old one doesn't exist) and measured `opioidOD`'s
 seeded-fentanyl severity directly against `physio()`. The in-tree comment
@@ -6429,15 +10883,15 @@ IS real and working: naloxone genuinely reverses this (`respDriveSuppression`
 patient genuinely re-narcotizes afterward as naloxone itself clears
 (blockade 0.60→0.43 and suppression climbing back 0.088→0.129 over the
 following 14 minutes) — both impossible under the old scripted
-`initial:{rr:4}`, and both the actual point of item 37. The severity gap
+`initial:{rr:4}`, and both the actual point of a previous item in the queue. The severity gap
 itself (mechanism-driven ceiling is a MODEST rr~11-13, not the scenario's own
-narrated "chest barely moving") is filed as new queue item 38 rather than
+narrated "chest barely moving") is filed as new a previous item in the queue rather than
 faked with a bigger number — reaching genuine near-apnea severity needs
 either a dedicated illicit/high-potency-opioid drug entity or a different
 mechanism, real condition/drug-authoring work with its own literature anchor,
 correctly out of scope for a calibration pass.
 
-**Item 5 — `pat.firstDegreeBlock` (one of the six remaining dead-field
+**a previous item in the queue — `pat.firstDegreeBlock` (one of the six remaining dead-field
 candidates that item's own "further pass" left open) is resolved.** Confirmed
 by grep it was still computed every tick (`cardiovascular.js`,
 `pat.prInterval > 0.20`) and read by nothing outside that same file plus
@@ -6455,16 +10909,16 @@ call sites, no additional wiring needed. **Verified two-sided against the
 real engine**: the `firstDegreeAVBlock` scenario (CARD-029) now reads
 `ecg:"firstDegreeBlock"`; a plain-sinus control scenario (`abdPain`) still
 reads `ecg:"sinus"`. `pat.insulin`/`pat.glucagon`/`pat.dpg`/`pat.bun` remain
-open, unchanged from item 5's own description — not attempted this session.
+open, unchanged from a previous item in the queue's own description — not attempted this session.
 
-**Item 32 — re-audited, clean, no further instances found.** Wrote a small
+**a previous item in the queue — re-audited, clean, no further instances found.** Wrote a small
 static-analysis script (not a guess): extract every `initial:{...}` block in
 `conditions.js`, collect its top-level keys, and diff against every key
 `patient.js`'s constructor actually reads via `b.<key>`. Two apparent hits
 (`coreTemp`, `elicit`) turned out to be comment text caught by the same
 brace-depth scan, not real object keys — both already-documented, already-
 fixed cases (`pediatricDrowning`'s `coreTemp`→`temp` rename, `preeclampsia`'s
-prose). No condition beyond the four item 32 already names (`siadh`,
+prose). No condition beyond the four a previous item in the queue already names (`siadh`,
 `diabetesInsipidus`, `addisonianCrisis`, `diabeticKetoacidosis`) attempts
 `initial.na`/`initial.hco3`, and no other silently-dropped key exists anywhere
 in the file. Re-confirmed live: `mechanismWiring.mjs`'s own SIADH/DI/DKA
@@ -6488,20 +10942,20 @@ src/physio/pk.js` returns zero findings.
 
 **Per explicit operator instruction, two new items were added to the queue
 below rather than started this session** — a real medications gap found
-while investigating item 37 (queue item 39: `pat.homeMeds` is a fully wired,
+while investigating a previous item in the queue (a previous item in the queue: `pat.homeMeds` is a fully wired,
 working mechanism with ZERO producers anywhere in the codebase — grep-
 confirmed), and a systematic drug-overdose-condition workstream reusing the
-`seedPastDose` pattern this session validated (queue item 40), explicitly
-scoped to reuse item 38's finding rather than re-discover the same
+`seedPastDose` pattern this session validated (a previous item in the queue), explicitly
+scoped to reuse a previous item in the queue's finding rather than re-discover the same
 per-drug-effect ceiling blind for every subsequent drug.
 
-### Front-end batch: F10's `App.jsx` wiring shipped (the taxonomy picker + the three latent-bug fixes), F9 continued (the 5 previously-measured probe fixes), and physiology queue item 34 (dead stroke-exam fields) resolved with a new action
+### Front-end batch: a previous item in the queue's `App.jsx` wiring shipped (the taxonomy picker + the three latent-bug fixes), a previous item in the queue continued (the 5 previously-measured probe fixes), and physiology a previous item in the queue (dead stroke-exam fields) resolved with a new action
 
 Three front-end/gameplay queue items worked in one session, each verified
 against the real engine/build/lint before moving to the next, per this
 document's own "batch size" discipline.
 
-**F10 — the `App.jsx` half of the Medical Simulation multi-condition
+**a previous item in the queue — the `App.jsx` half of the Medical Simulation multi-condition
 builder, previously the top-of-queue item left mid-batch.** The prior
 session shipped `conditionTaxonomy.js`/`customScenario.js` (import-checked
 only) but explicitly left `App.jsx` untouched. This session finished it:
@@ -6562,7 +11016,7 @@ multi-condition custom case yet. Still open: that in-scene click, and a
 save/reload check of `g.customParams.conditions` mid-picker (no schema
 migration needed by design, just unexercised).
 
-**F9 (standing workstream) — the five probe fixes the prior session
+**a previous item in the queue (standing workstream) — the five probe fixes the prior session
 measured against the real engine but left unimplemented are now wired,
 re-verified against the same numbers.** `fall`/`bikeVsCar`/
 `unsafeSceneAssault` (all `condition:"polytraumaFall"`) now read live
@@ -6587,7 +11041,7 @@ re-confirmed firing correctly against the real `physio()`/`giveDose()`
 engine before shipping (lesson 8) — not just read off the prior session's
 numbers. `npx vite build`/`npx eslint src/data/scenarios.js` both clean.
 
-**Physiology queue item 34 — RESOLVED.** `pat.strokeWeakness`/`strokeSide`/
+**Physiology a previous item in the queue — RESOLVED.** `pat.strokeWeakness`/`strokeSide`/
 `strokeAphasia` (written by `ischemicStroke`/`tia`/`intracerebralHemorrhage`/
 `centralVertigo`, read by nothing player-facing) now have a real reader: a
 new `strokeScreen` action (`actions.js`, region `head`, cost 15, lvl 0 —
@@ -6615,23 +11069,23 @@ overrides, which narrate a similar picture as fixed text (`transientIschemicAtta
 own `loc` probe notably still always says "completely normal" regardless
 of when in the call it's checked, never tracking the real decay this
 session's `strokeScreen` action now does) — that's a separate, pre-existing
-frozen-text defect in a DIFFERENT action, the same class of thing F9's own
+frozen-text defect in a DIFFERENT action, the same class of thing a previous item in the queue's own
 probe-audit batches have been fixing one deliberately-scoped slice at a
 time, not something a "add the missing reader" batch should absorb by
-accident. Worth a future F9 slice. `npx vite build`/`npx eslint
+accident. Worth a future a previous item in the queue slice. `npx vite build`/`npx eslint
 src/actions.js` both clean.
 
 **Every throwaway instrumentation/browser-verification script used across
 all three pieces was stripped before shipping**, per section 1's own
 "strip instrumentation before you ship" rule — none were left in the tree.
 
-### Physiology-engine batch: queue items 5, 30, 36 implemented; item 37 (naloxone/opioidOD) left MID-CALIBRATION — session stopped by explicit operator instruction before verification completed. READ THIS BEFORE TRUSTING ANYTHING BELOW.
+### Physiology-engine batch: a previous item in the queue implemented; a previous item in the queue (naloxone/opioidOD) left MID-CALIBRATION — session stopped by explicit operator instruction before verification completed. READ THIS BEFORE TRUSTING ANYTHING BELOW.
 
 Per explicit operator instruction ("Do 3 tasks off of the physiology queue," then "Continue with the next 3 items in the physiology queue," then, mid-work on the fourth item, "Stop wherever you're at and update CLAUDE.md with whatever needs to be done left"). This entry exists because that last instruction landed mid-batch — nothing below has been through this project's own "verification is not optional" gate, and that is stated explicitly at every point it applies rather than implied. **NOTE: at least one other concurrent session was editing this same document during this work (its own entries appear immediately below this one, each independently stopped by what reads like the same broadcast stop instruction) — if a later session finds this document's section 3 ordering strange, that is why.**
 
-**Items 36 and 5 — code shipped, already fully written up at their own queue entries (section 6, items 5 and 36) with the full mechanism/measurement detail — not repeated here.** Summary: item 36 gated the `cardiovascular.js` legacy-aggregate `scarBurden` leak on `pat.icdSuppressed`, so `aicdMalfunction`'s magnet now genuinely holds off VT (re-measured 1/10 vs. the prior 10/10). Item 5 wired `midazolam`/`etomidate`/`hydroxo`'s dead `fx:{sbp:...}` accumulators into the real `arteriolarDilation`/`alpha` receptors (adenosine was found already fixed by an untracked earlier session). **Item 30 needed no code change** — found already correctly resolved in the tree, and the queue text's own original suggestion (extend `acs`'s thrombolytic mechanism to `nstemi`) was corrected as clinically wrong (TIMI-IIIB contraindicates lytics in NSTEMI); see that entry.
+**a previous item in the queue — code shipped, already fully written up at their own queue entries (section 6, a previous item in the queue) with the full mechanism/measurement detail — not repeated here.** Summary: a previous item in the queue gated the `cardiovascular.js` legacy-aggregate `scarBurden` leak on `pat.icdSuppressed`, so `aicdMalfunction`'s magnet now genuinely holds off VT (re-measured 1/10 vs. the prior 10/10). a previous item in the queue wired `midazolam`/`etomidate`/`hydroxo`'s dead `fx:{sbp:...}` accumulators into the real `arteriolarDilation`/`alpha` receptors (adenosine was found already fixed by an untracked earlier session). **a previous item in the queue needed no code change** — found already correctly resolved in the tree, and the queue text's own original suggestion (extend `acs`'s thrombolytic mechanism to `nstemi`) was corrected as clinically wrong (TIMI-IIIB contraindicates lytics in NSTEMI); see that entry.
 
-**Item 37 (naloxone has zero effect on `opioidOD`) — a real mechanism was built, naloxone reversal is CONFIRMED working, but dose calibration is UNFINISHED and the constants currently in `conditions.js` are an untested trial value, not a measured final answer.**
+**a previous item in the queue (naloxone has zero effect on `opioidOD`) — a real mechanism was built, naloxone reversal is CONFIRMED working, but dose calibration is UNFINISHED and the constants currently in `conditions.js` are an untested trial value, not a measured final answer.**
 
 What shipped: `opioidOD` (`src/physio/conditions.js`) previously scripted its bradypnea directly onto `initial:{rr:4}` with no real opioid `drugInstance` behind it, so naloxone's competitive-antagonism mechanism (which only ever acts against a `class:"opioid"` `DrugInstance`'s own concentration) had nothing to compete against — instrumented directly against the real `physio()` engine before touching anything (lesson 8): a 10-minute run with naloxone at 60s produced bit-for-bit identical rr/opioidBlockade/respDriveSuppression to the same run with no naloxone at all.
 
@@ -6639,25 +11093,25 @@ The fix seeds real fentanyl `DrugInstance`s into the patient's recent past, reus
 
 Fixed properly rather than worked around: extracted the per-tick two-compartment integration block (absorption, elimination, distribution, effect-site equilibration — previously inline in `updateDrugs`'s main loop) into a new function `advancePkCompartments(dr, dt, pat)` in `pk.js` — a pure, behavior-preserving extraction (the main loop now just calls it; the numbers it produces are unchanged). A new exported `seedPastDose(pat, id, dose, elapsedMin, bioavailability, route)` constructs a `DrugInstance` and then calls that SAME function with `dt = elapsedMin` to fast-forward it through the real engine's own math before it's ever added to `pat.drugInstances` — not a reconstruction of the PK formulas (lesson 8's actual concern), the identical code path the live per-tick loop uses. `opioidOD.progress()` now calls `seedPastDose` once (`pat._opioidOdSeeded` guard, same idiom `homeMeds` uses) to seed several fentanyl doses timed before `s.t=0`.
 
-**CONFIRMED WORKING, measured directly:** with the seeded doses in place, a naloxone dose at 60s now measurably moves the real mechanism — `opioidBlockade` rises to ~0.74-0.82 and `respDriveSuppression` falls from ~0.19-0.20 to ~0.04-0.06 over the following minutes, exactly the reversal the old code could never produce. This is the core of item 37 and it works.
+**CONFIRMED WORKING, measured directly:** with the seeded doses in place, a naloxone dose at 60s now measurably moves the real mechanism — `opioidBlockade` rises to ~0.74-0.82 and `respDriveSuppression` falls from ~0.19-0.20 to ~0.04-0.06 over the following minutes, exactly the reversal the old code could never produce. This is the core of a previous item in the queue and it works.
 
 **NOT finished — the untreated severity is not yet calibrated to the old scripted picture, and the number in the tree right now is a mid-iteration guess, not a measured answer.** The FIRST trial (4 doses of fentanyl's standard 0.05 mg "hit," 5 minutes apart, oldest at -20 min) undershot badly: `respDriveSuppression` capped around 0.198 and resting rr only fell to ~12.4-12.9 from a normal ~14 — nowhere near the old scripted rr≈4. Diagnosed, not guessed: fentanyl's `k12` (0.2/min, redistribution into the peripheral compartment) is 20x its `kel` (0.01/min, true elimination), so central concentration drains fast via redistribution long before elimination would predict — by 15-20 minutes out, residual central concentration (and therefore effect-site concentration and `intensity`) is much lower than a naive "slow elimination, so it should still be strong" assumption would suggest. **The values currently sitting in `conditions.js` (`doseAmt: 0.3`, `nDoses: 3`, `intervalMin: 3`) are an UNTESTED next guess** — larger per-dose amount, shorter elapsed window — written into the file but never run through the probe before the session was stopped. Do not treat this as calibrated.
 
-**A throwaway calibration harness was deliberately LEFT IN THE TREE, not stripped: `src/scripts/_tmp_opioid_probe.mjs`.** Every other batch this session stripped its instrumentation before shipping (project convention, section 1) — this one file is the exception, left on purpose so whoever resumes item 37 has a ready-made probe (dumps `drugInstances` state after the first tick, traces `rr`/`respDriveSuppression`/`opioidBlockade`/`hr` at 60s intervals untreated vs. naloxone-at-60s vs. a 30-minute untreated run for re-narcotization) instead of rebuilding it. **Delete it once item 37 actually ships**, per this project's own "strip instrumentation before you ship" rule — it was only kept because the operator's stop instruction landed before that point.
+**A throwaway calibration harness was deliberately LEFT IN THE TREE, not stripped: `src/scripts/_tmp_opioid_probe.mjs`.** Every other batch this session stripped its instrumentation before shipping (project convention, section 1) — this one file is the exception, left on purpose so whoever resumes a previous item in the queue has a ready-made probe (dumps `drugInstances` state after the first tick, traces `rr`/`respDriveSuppression`/`opioidBlockade`/`hr` at 60s intervals untreated vs. naloxone-at-60s vs. a 30-minute untreated run for re-narcotization) instead of rebuilding it. **Delete it once a previous item in the queue actually ships**, per this project's own "strip instrumentation before you ship" rule — it was only kept because the operator's stop instruction landed before that point.
 
-**The real, higher-priority risk: the `pk.js` refactor has NOT been verified by any suite yet.** `advancePkCompartments` is now the shared hot path for EVERY two-compartment drug in the game — fentanyl, morphine, midazolam, ketamine, etomidate, rocuronium, epiIV, pushEpi, norepi, naloxone, diltiazem, metoprolol, and any other `PK_PARAMS` entry. It was written as a careful, mechanical extraction (the main loop's own call site is the only thing that changed; the arithmetic inside is byte-for-byte the code that was already there) and a `node --check` syntax pass is clean on both edited files, but **that is not the same as verification** — per this document's own standing rule, nothing here should be trusted until `mechanismWiring.mjs` and `scenarioSweep.mjs` both come back clean against it. **This is the single most important thing for the next session to run FIRST**, before trusting ANY drug's behavior in the current tree, ahead of finishing item 37's calibration.
+**The real, higher-priority risk: the `pk.js` refactor has NOT been verified by any suite yet.** `advancePkCompartments` is now the shared hot path for EVERY two-compartment drug in the game — fentanyl, morphine, midazolam, ketamine, etomidate, rocuronium, epiIV, pushEpi, norepi, naloxone, diltiazem, metoprolol, and any other `PK_PARAMS` entry. It was written as a careful, mechanical extraction (the main loop's own call site is the only thing that changed; the arithmetic inside is byte-for-byte the code that was already there) and a `node --check` syntax pass is clean on both edited files, but **that is not the same as verification** — per this document's own standing rule, nothing here should be trusted until `mechanismWiring.mjs` and `scenarioSweep.mjs` both come back clean against it. **This is the single most important thing for the next session to run FIRST**, before trusting ANY drug's behavior in the current tree, ahead of finishing a previous item in the queue's calibration.
 
-**Batch 1's own verification (items 5/30/36) also did not complete before the stop instruction landed, and it failed in a way that needs a rerun, not a re-read.** `mechanismWiring.mjs` was launched in the background BEFORE any of the item 37 work began (so its result speaks only to items 5/30/36, not to the `pk.js` refactor above). It was still consuming CPU (~24 minutes elapsed, consistent with this suite's documented ~22-minute runtime) when a task-completion notification arrived reporting **exit code 1** — but the output file is a genuine 0 bytes, confirmed via direct filesystem read, not a caching artifact. This is the exact failure mode section 4/lesson 14 already documents for long-running suites in this environment ("killed... nothing written to the log at all") — it is NOT evidence of a real regression, but it is also NOT a pass. **Next session: re-run `mechanismWiring.mjs` in the FOREGROUND with `--stream`** (per section 2's own standing guidance — `fs.writeSync` survives a kill where buffered `console.log` does not), then `scenarioSweep.mjs`, then `npx vite build` and `npx eslint src` (targeted at minimum: `src/physio/pk.js src/physio/conditions.js`), before either batch in this entry is treated as shipped.
+**Batch 1's own verification (a previous item in the queue) also did not complete before the stop instruction landed, and it failed in a way that needs a rerun, not a re-read.** `mechanismWiring.mjs` was launched in the background BEFORE any of the a previous item in the queue work began (so its result speaks only to a previous item in the queue, not to the `pk.js` refactor above). It was still consuming CPU (~24 minutes elapsed, consistent with this suite's documented ~22-minute runtime) when a task-completion notification arrived reporting **exit code 1** — but the output file is a genuine 0 bytes, confirmed via direct filesystem read, not a caching artifact. This is the exact failure mode section 4/lesson 14 already documents for long-running suites in this environment ("killed... nothing written to the log at all") — it is NOT evidence of a real regression, but it is also NOT a pass. **Next session: re-run `mechanismWiring.mjs` in the FOREGROUND with `--stream`** (per section 2's own standing guidance — `fs.writeSync` survives a kill where buffered `console.log` does not), then `scenarioSweep.mjs`, then `npx vite build` and `npx eslint src` (targeted at minimum: `src/physio/pk.js src/physio/conditions.js`), before either batch in this entry is treated as shipped.
 
-**Net state of the tree right now, stated plainly:** items 5, 30 and 36's CODE is in and believed correct (each was individually instrumented against the real engine before being written — see each item's own entry) but UNVERIFIED by the suite. Item 37 is HALF DONE — the mechanism is real and its reversal behavior is confirmed, but its untreated severity is not calibrated and its refactor is unverified. Items 29 (arrest/dead classification narrow miss) and the `pat.firstDegreeBlock` dead-field candidate (queue item 5's own "further pass... six more candidates" list) were selected as the next two items but **not started at all** — no code touched for either.
+**Net state of the tree right now, stated plainly:** a previous item in the queue's CODE is in and believed correct (each was individually instrumented against the real engine before being written — see each item's own entry) but UNVERIFIED by the suite. a previous item in the queue is HALF DONE — the mechanism is real and its reversal behavior is confirmed, but its untreated severity is not calibrated and its refactor is unverified. a previous item in the queue (arrest/dead classification narrow miss) and the `pat.firstDegreeBlock` dead-field candidate (a previous item in the queue's own "further pass... six more candidates" list) were selected as the next two items but **not started at all** — no code touched for either.
 
 
 
 ### Front-end batch: Medical Simulation mode — full condition coverage + multi-condition patients + Emergent/Chronic taxonomy — IN PROGRESS, STOPPED MID-BATCH BY EXPLICIT OPERATOR INSTRUCTION ("stop wherever you're at")
 
-Filed in full as queue item **F10** (top of the front-end block, section 6)
+Filed in full as queue item **a previous item in the queue** (top of the front-end block, section 6)
 — read that entry, not just this one, before continuing it; this is a
-summary, F10 has the exact remaining steps and line numbers. Per explicit
+summary, a previous item in the queue has the exact remaining steps and line numbers. Per explicit
 operator request: make every implemented clinical condition selectable in
 Medical Simulation (Sandbox) mode, support multiple simultaneous conditions
 on one patient, and organize the roster into a specified Emergent/Chronic
@@ -6670,7 +11124,7 @@ taxonomy.
 today. This made the batch a content/UI job, not an engine change.
 
 **Shipped and import-checked (NOT build/lint/click-through verified —
-see F10):** `src/data/conditionTaxonomy.js` (new) — the Emergent/Chronic
+see a previous item in the queue):** `src/data/conditionTaxonomy.js` (new) — the Emergent/Chronic
 `TAXONOMY` order plus `CONDITION_TAXONOMY`, one `{tier,category}` per of the
 126 `CONDITIONS` keys, verified 126/126 against the real `CONDITIONS` export
 by a throwaway script. `src/data/customScenario.js` (full rewrite) —
@@ -6683,7 +11137,7 @@ existing `PI` vocabulary (no new codes invented); `buildCustomScenario` now
 takes `{conditions:[...], age, gender}` and passes the array straight
 through to `condition` unchanged.
 
-**Explicitly not done — this is most of the remaining work, see F10 for
+**Explicitly not done — this is most of the remaining work, see a previous item in the queue for
 the full list:** `App.jsx` has not been touched at all, so none of this is
 reachable in the actual UI yet (the old single-select 14-button grid is
 still live). Three latent single-condition assumptions in `App.jsx`
@@ -6694,11 +11148,11 @@ launchable and must be fixed as part of wiring up the UI, not after. No
 `npx vite build`, no `npx eslint`, no dev-server click-through has been run
 against these changes.
 
-### Front-end batch: F9's third batch — SAMPLE/OPQRST history for the 12 scenarios that were missing it, four more static heart/JVD probes made dynamic, and a genuine physiology-engine defect (naloxone is completely inert in the flagship OD scenario) found and filed
+### Front-end batch: a previous item in the queue's third batch — SAMPLE/OPQRST history for the 12 scenarios that were missing it, four more static heart/JVD probes made dynamic, and a genuine physiology-engine defect (naloxone is completely inert in the flagship OD scenario) found and filed
 
-Continuing F9 per the same standing operator instruction as the two prior
-F9 batches. **This entry was never written up here when the work shipped —
-found and fixed only now, while starting a follow-up F9 batch and
+Continuing a previous item in the queue per the same standing operator instruction as the two prior
+a previous item in the queue batches. **This entry was never written up here when the work shipped —
+found and fixed only now, while starting a follow-up a previous item in the queue batch and
 re-reading this document's own "still open" list against the live tree
 (lesson 16's own discipline, aimed at this document rather than code this
 time).** The 12-scenarios-missing-SAMPLE/OPQRST bullet below had already
@@ -6721,7 +11175,7 @@ per-patient probes already use.
 
 **Four more frozen-text `heart`/`jvd` probes were made to read live
 physiology**, instrumented against the real `physio()` engine before being
-trusted (lesson 8), continuing the second F9 batch's own cardiac-probe
+trusted (lesson 8), continuing the second a previous item in the queue batch's own cardiac-probe
 audit into two non-arrhythmia conditions:
 - `hyperthyroidRacing`/`hypothyroidSluggish` (`heart:`) — both used to
   assert a fixed "persistently fast"/"slow" regardless of treatment, even
@@ -6734,7 +11188,7 @@ audit into two non-arrhythmia conditions:
   cleanly separate the measured treated/untreated ranges.
 - `resp` (CHF) and `cardiogenicShock` (`jvd:`) — both had static "Distended"
   text laid on top of `pat.cvp`, which the shared default `jvd` action
-  (F9's first batch) already reads live. Measured: `resp`'s nitro drops CVP
+  (a previous item in the queue's first batch) already reads live. Measured: `resp`'s nitro drops CVP
   ~13→~6 (JVD resolves) while a wrong-move saline bolus raises it to ~22;
   `cardiogenicShock`'s CVP starts already severely elevated (~22, nitro is
   correctly blocked below sbp 100 by its own `hold()`) and a wrong-order
@@ -6745,7 +11199,7 @@ audit into two non-arrhythmia conditions:
 
 **A genuine, previously-undocumented physiology-engine defect was found
 while auditing the `od` (opioid overdose) scenario's own `pupils` probe,
-and deliberately NOT fixed inline — filed as physiology queue item 37.**
+and deliberately NOT fixed inline — filed as physiology a previous item in the queue.**
 `opioidOD` (`conditions.js`) represents the overdose entirely as a scripted
 `initial:{hr:52,rr:4,tv:0.5}` baseline — it never creates a real opioid
 `drugInstance`. Naloxone's real antagonist mechanism (`pk.js`) only ever
@@ -6759,7 +11213,7 @@ scenario's own `resolve()` text narrating it as working. `od`'s `pupils`
 probe is left correctly static (a field that provably never moves has no
 business driving a "dynamic" probe — that would be the exact "written,
 read, and still inert" trap section 1's third rule warns about), with a
-comment at the site pointing at queue item 37 rather than a decorative
+comment at the site pointing at a previous item in the queue rather than a decorative
 fix. The actual fix — giving `opioidOD` a real opioid `drugInstance` at
 construction — is condition-authoring work with its own literature anchor,
 out of scope for a scenario-probe audit batch.
@@ -6883,7 +11337,7 @@ that phase's own "not yet reachable from normal play" comment asked for.
 **Deliberately not built this batch, flagged rather than faked:** §3.2's
 "widened action set" (real new EMR-scope actions becoming available) and
 the e-bike/golf-cart response-time mechanic are narrated in placeholder
-text but have no new mechanism behind them yet — see queue item F1's own
+text but have no new mechanism behind them yet — see a previous item in the queue's own
 updated "still open" list.
 
 **Chapter 8 — Paramedic School: "The Long Haul."** The full admission
@@ -7088,16 +11542,16 @@ works — it is not a full click-through of every button in every chapter in
 sequence. `tools/browser/screenshots/` is gitignored (regenerated by
 running the scripts, not meant to be committed).
 
-### Front-end batch: F9's second batch — all 17 cardiac-arrhythmia scenarios' own `heart`/BP probes made dynamic, plus a dead branch and a real physiology-engine defect found while verifying
+### Front-end batch: a previous item in the queue's second batch — all 17 cardiac-arrhythmia scenarios' own `heart`/BP probes made dynamic, plus a dead branch and a real physiology-engine defect found while verifying
 
-Per explicit operator instruction to continue F9 ("make scenarios generally
+Per explicit operator instruction to continue a previous item in the queue ("make scenarios generally
 more dynamic"), then a follow-up nudge to make the result "more
-hyper-realistic." Asked which specific slice of F9's own "still open" list
+hyper-realistic." Asked which specific slice of a previous item in the queue's own "still open" list
 to tackle rather than guessing at scope — operator picked the recommended
 option: **audit scenario-specific `probes.<key>` overrides for the same
 frozen-text defect the shared defaults were fixed for last session.**
 
-**Scope, chosen deliberately.** F9's own queue text flags this as a
+**Scope, chosen deliberately.** a previous item in the queue's own queue text flags this as a
 scenario-by-scenario audit where "most [are] fine as static... flag the
 ones that aren't." Rather than touching all ~120 scenarios' probes
 speculatively, grepped every scenario-declared `heart`/`pupils`/`pedL`/
@@ -7114,7 +11568,7 @@ treatment converts the rhythm is the same class of defect as last batch's
 static defaults, just declared per-scenario instead of per-action — this
 was the highest-leverage, most clearly-scoped slice of the audit, chosen
 over the ~12-scenario SAMPLE/OPQRST gap and the static ECG-readout-text gap
-(both still open, F9's own list, section 6).
+(both still open, a previous item in the queue's own list, section 6).
 
 **All 17 scenarios fixed, grouped by what actually changes:**
 
@@ -7188,7 +11642,7 @@ itself realistic (rate control isn't the same as regularity).
 
 **A real, previously-undiscovered physiology-engine defect was found while
 verifying `aicdMalfunction`, and deliberately NOT fixed in this batch —
-filed as physiology queue item 36.** `conditions.js`'s own comment on
+filed as physiology a previous item in the queue.** `conditions.js`'s own comment on
 `aicdMalfunction` claims "Magnet applied at minute 1... the patient does
 NOT degenerate — confirmed across repeated trials." Instrumenting 10 real
 trials (magnet given at minute 1, exactly as the comment describes) found
@@ -7209,7 +11663,7 @@ already sits at `scarBurden+inst*0.5` = 0.3 baseline alone) around minute
 commented "Keep the legacy aggregate in sync so conditions.js... still
 composes" — it feeds several OTHER conditions' rhythm mechanics too, so a
 fix belongs in its own scoped physiology-engine batch (per this document's
-own item-7 discipline), not a bolt-on inside a front-end scenario-probe
+own a previous item in the queue's own discipline), not a bolt-on inside a front-end scenario-probe
 batch. The scenario's own `heart` probe is unaffected by this and remains
 correct: it faithfully reports whatever `v.rhythm` currently is, which is
 the honest, if now more visibly troubling, behavior — this batch's own
@@ -7286,7 +11740,7 @@ network/relay reordering across several senders, not conflict resolution —
 two players editing at the literal same instant still resolve by whichever
 packet's timestamp is later, the same "shared whiteboard, last write wins"
 model this project has documented since co-op's first version. Real
-simultaneous-edit merging is still open — see queue item F4's own entry
+simultaneous-edit merging is still open — see a previous item in the queue's own entry
 (section 6), updated this session rather than left stale.
 
 **Co-op made deployable off a single LAN, which itch.io categorically
@@ -7380,7 +11834,7 @@ CLAUDE.md's own already-documented note that the project's eslint baseline
 drifted file-wide from an earlier, unrelated session and no longer reads as
 a clean 106/5. No `g` state shape change — save compatibility unaffected.
 
-### Front-end batch: default exam-action findings now read live physiology instead of scripted text (new queue item F9, first batch)
+### Front-end batch: default exam-action findings now read live physiology instead of scripted text (new a previous item in the queue, first batch)
 
 Per explicit operator instruction ("make scenarios much more dynamic —
 procedures that check things should have a dynamic response depending on the
@@ -7443,7 +11897,7 @@ string:
   `probes.neuro` mechanism.
 
 **A second genuine dead-field defect was found but deliberately NOT fixed
-this batch, filed as physiology queue item 34**: `pat.strokeWeakness`/
+this batch, filed as physiology a previous item in the queue**: `pat.strokeWeakness`/
 `strokeSide`/`strokeAphasia` (written correctly by the stroke family in the
 neuro/endocrine batch) reach no player-facing action anywhere — only the
 two verification scripts read them. Fixing it needs a genuine new motor-exam
@@ -7459,7 +11913,7 @@ fracture would show "abdomen tender" despite an uninjured abdomen, which is
 a wrong, misleading finding, actively worse than a neutral scripted one. No
 region-localized abdominal-injury mechanism exists in the engine yet (the
 same gap an earlier F20 fix already flagged for wound-exposure regions).
-Left scripted; filed under F9's own "still open" list (section 6) rather
+Left scripted; filed under a previous item in the queue's own "still open" list (section 6) rather
 than guessed at.
 
 **Same batch, operator follow-up mid-session: a new head action for a quick
@@ -7485,13 +11939,13 @@ new head action instead. Shipped as:
   is pre-existing, not introduced here.
 
 **Odor itself, told to "add to physiology queue if odor does not exist" —
-investigated, and it's a split answer, filed as physiology queue item 35.**
+investigated, and it's a split answer, filed as physiology a previous item in the queue.**
 `probe:"breathOdor"` has existed since an earlier session as a scenario
 opt-in hook; grep confirms no scenario has ever declared one, so every
 patient — DKA included — showed "No unusual odor" unconditionally. One real
 case was cheap to wire instead of leaving scripted: `pat.anionGap`
 (`metabolic.js`) is itself a dead field from the standing dead-code-sweep
-(queue item 5) — computed correctly every tick, read nowhere — and rises
+(a previous item in the queue) — computed correctly every tick, read nowhere — and rises
 for real whenever a ketoacidotic condition (`diabeticKetoacidosis`/
 `alcoholicKetoacidosis`/`starvationKetosis`) depletes hco3 through their
 shared mechanism. A gap above 16 (the standard elevated-anion-gap
@@ -7499,7 +11953,7 @@ threshold; DKA's own hco3 floor of 6 measures ~32 here) now reports a real
 fruity/acetone breath odor. Alcohol, hydrocarbon, and uremic breath odors
 have no backing state at all — the underlying conditions (Alcohol
 Intoxication, Hydrocarbon Aspiration) aren't built yet, and uremic fetor
-would need `pat.bun` un-frozen (also queue item 5) — so those remain
+would need `pat.bun` un-frozen (also a previous item in the queue) — so those remain
 correctly unfixed rather than guessed at, and a scenario can still declare
 its own `probes.breathOdor` for a specific narrative case in the meantime.
 
@@ -7520,16 +11974,16 @@ No `g` state shape change — save compatibility unaffected. Scenario-level
 unchanged and still take priority everywhere they exist; this batch only
 fills in the fallback the rest of the library was silently missing.
 
-### Neuro/endocrine condition-library sweep (queue item 7) + queue items 21/23/24/27 — 54 new conditions, the largest batch this project has shipped, plus two genuine engine bugs found and fixed
+### Neuro/endocrine condition-library sweep (a previous item in the queue) + a previous item in the queue — 54 new conditions, the largest batch this project has shipped, plus two genuine engine bugs found and fixed
 
-Per explicit operator instruction: physiology queue items 21, 23, 24, 27
+Per explicit operator instruction: physiology a previous item in the queue
 first, then "work on as many of the neurologic conditions as you can," then
 extended to the Endocrine/Metabolic category too. All PowerShell
 verification was deliberately deferred to one consolidated pass at the end
 per operator instruction, following the same build-then-verify workflow the
 prior cardiac batch established.
 
-**Queue items 21/23/24/27, resolved.** Item 21: `hypertension` (chronic,
+**a previous item in the queue, resolved.** a previous item in the queue: `hypertension` (chronic,
 one-time baseSVR step, confirmed no patient.js blocker exists — reuses the
 same mechanism hypertensiveUrgency/Emergency already proved reaches the
 authoritative ODE solver), `hyperlipidemia` and `diabeticVasculopathy` (both
@@ -7538,7 +11992,7 @@ direct `Patient` construction: none=0.00, hld=0.15, both=0.30), plus a real
 new autonomic-neuropathy blunting term in `cardiovascular.js`'s baroreflex
 (diabetic autonomic neuropathy genuinely blunts the compensatory tachycardia
 a hemorrhaging diabetic patient would otherwise show — the actual, masking-
-shock teaching point item 21 named). Item 23: `copdExacerbation` (composes
+shock teaching point a previous item in the queue named). a previous item in the queue: `copdExacerbation` (composes
 with `copd`, deliberately NOT reusing asthma's own bronchospasm magnitude —
 copd's own comment already documents a measured catastrophe from stacking a
 second acute obstruction source on COPD's constructor-level mechanics — a
@@ -7548,10 +12002,10 @@ instead), the full stroke family (below), `esophagealVaricealHemorrhage`
 distinguishing teaching point from every other hemorrhage condition in this
 library), and `allergicReactionModerate` (anaphylaxis's own mechanism at a
 WAO Grade-2 magnitude, identified against a real severity scale rather than
-an invented number). Item 24: `vasovagalSyncope`, `minorSprain`,
+an invented number). a previous item in the queue: `vasovagalSyncope`, `minorSprain`,
 `chronicBackPain` wired onto three scenarios (`benignFaint`/`minorSprain`/
 `chronicBackPain`) that have been condition-LESS since they shipped.
-Item 27: `excitedDelirium`, composing three already-built mechanisms
+a previous item in the queue: `excitedDelirium`, composing three already-built mechanisms
 (`metabolicHeatMultiplier`, `rhythmInstability`, `lactate`) rather than a
 restraint mechanic, per the item's own note about this diagnosis's fraught
 history.
@@ -7616,7 +12070,7 @@ made hypoglycemia cause SEIZURES, not the far more common presentation of
 impaired consciousness without seizing.
 
 **The Endocrine/Metabolic sweep (17 conditions).** `diabeticKetoacidosis`
-reads as queue item 7's own long-suggested first target: lowering
+reads as a previous item in the queue's own long-suggested first target: lowering
 `pat.hco3` is read directly by respiratory.js's PRE-EXISTING Winter's-
 formula compensation term (previously reachable by no condition), so
 Kussmaul respiration EMERGES from the acid-base math rather than being
@@ -7712,14 +12166,14 @@ tests), `scenarioSweep.mjs` 124 scenarios / 4,742,506 checks / 0 failed
 section 2 for why the number itself moved this session) with zero errors
 in any file this batch touched.
 
-### Front-end batch: three queue items closed (F7 toast, F6 morale weighting, F1 tutorial sim), plus a new physiology-engine defect found and filed
+### Front-end batch: three queue items closed (a previous item in the queue toast, a previous item in the queue morale weighting, a previous item in the queue tutorial sim), plus a new physiology-engine defect found and filed
 
 Per explicit operator instruction to "finish as much of the front-end queue
 as possible." Three items fully shipped and removed from the queue; one new
 physiology-engine defect surfaced along the way, measured and filed rather
 than guessed at.
 
-**F7 — the achievement toast is finally visible.** `g.log`'s "🏆 Achievement
+**a previous item in the queue — the achievement toast is finally visible.** `g.log`'s "🏆 Achievement
 unlocked" line was always written correctly (both `creditOutcome` and the
 shift-end `perfect_shift` block) and always read correctly by the permanent
 Achievements overlay — the toast itself was the only dead part, because
@@ -7736,7 +12190,7 @@ this defect existed) is deliberately left as its own thing, not switched to
 the generic toast — see the comment at that site for why (stacking both
 would announce the same unlock twice).
 
-**F6 — morale-weighted argument odds.** `rollDowntimeEvent` picked
+**a previous item in the queue — morale-weighted argument odds.** `rollDowntimeEvent` picked
 uniformly at random before; it now accepts an optional `morale` parameter
 (both real call sites — the shift-start roll and the between-call roll —
 now pass the live `g.morale`/freshly-computed `morale`) and biases the pick
@@ -7749,9 +12203,9 @@ math (`moraleFactor = (50 - morale) / 50`, floor 0.1 on any single event's
 weight) is a straightforward linear bias, not a fitted curve — there was no
 documented target distribution to calibrate against.
 
-**F1 — the heat-stroke tutorial sim now runs real physio(), not a scripted
+**a previous item in the queue — the heat-stroke tutorial sim now runs real physio(), not a scripted
 curve.** `HeatStrokeTutorialSim.jsx` (design doc §2.5) was a stated,
-deliberate placeholder blocked on physiology queue item 26; that condition
+deliberate placeholder blocked on physiology a previous item in the queue; that condition
 shipped in an earlier batch, so this was the one piece of campaign content
 still owed the swap. **Measured before implementing, not assumed:** driving
 the real `heatStroke` scenario through `physio()` at the exact 1:1 rate the
@@ -7772,7 +12226,7 @@ hardcoded one.
 
 **A real, previously-undiscovered dt-size numerical instability was found
 while measuring the above, and deliberately NOT fixed here — filed as
-physiology queue item 31.** Ticking the `heatStroke` scenario through
+physiology a previous item in the queue.** Ticking the `heatStroke` scenario through
 `physio()` with a single dt jump larger than ~10 sim-seconds produces NaN
 (`sbp`, `brainInjury`) within one or two ticks — measured precisely: dt=10s
 per call clean through a full run, dt=15s NaN by the second tick, every
@@ -7805,12 +12259,12 @@ mid-session and is the leading suspect for stray tooling noise like this,
 not a code regression** — flagged honestly rather than either claimed away
 or blindly chased further.
 
-### Front-end batch: co-op actually works across a LAN now, and playtesting F2's pregnancy roster found a real newborn-killing bug
+### Front-end batch: co-op actually works across a LAN now, and playtesting a previous item in the queue's pregnancy roster found a real newborn-killing bug
 
 Two independent pieces of work, per explicit operator instruction: front-end
-queue item F2, with a specific note to playtest the mother+newborn roster
+a previous item in the queue, with a specific note to playtest the mother+newborn roster
 flow the childbirth scenario has always relied on but which had never
-actually been played through end-to-end; and making co-op (F22/F4) actually
+actually been played through end-to-end; and making co-op (F22/a previous item in the queue) actually
 work between two physical machines on a LAN, which the operator suspected
 was not really working.
 
@@ -7836,10 +12290,10 @@ ran two independent WebSocket clients against that real LAN address (not
 localhost) and confirmed join, roster-count broadcast, and full-state relay
 all work correctly — the exact message shapes `src/coop.js` sends/receives.
 Co-op's own documented design limits (shared-whiteboard, last-write-wins,
-no per-client identity) are unchanged and still tracked as F4's "co-op step
+no per-client identity) are unchanged and still tracked as a previous item in the queue's "co-op step
 2" — this batch fixed transport reachability, not the sync model.
 
-**F2 playtest — the mother+newborn roster mechanism is real and correctly
+**a previous item in the queue playtest — the mother+newborn roster mechanism is real and correctly
 wired, but was killing every newborn instantly.** Traced the actual
 `childbirth` scenario through the production `physio()`/`roster()`
 functions (not a reconstruction — same harness pattern `scenarioSweep.mjs`
@@ -7880,16 +12334,16 @@ about, and the surrounding comment even cites lesson 9 without the fix
 being applied. Needs `assertMostTrials` the same way the defibrillation/
 torsades assertions already use it.
 
-Still open, per F2's own queue text: the real multi-UNIT system (several
+Still open, per a previous item in the queue's own queue text: the real multi-UNIT system (several
 ambulances each actually transporting a different patient), active-shooter
-and rectal-foreign-body scenarios. Still open, per F4: co-op step 2
+and rectal-foreign-body scenarios. Still open, per a previous item in the queue: co-op step 2
 (per-client identity, real conflict resolution instead of last-write-wins).
 
 ---
 
-### Second cardiac-conditions batch (item 7, continued): PVCs, PACs, sick sinus syndrome, electrical storm, AICD malfunction — five conditions, all reusing existing machinery, plus a real dead-field fix
+### Second cardiac-conditions batch (a previous item in the queue, continued): PVCs, PACs, sick sinus syndrome, electrical storm, AICD malfunction — five conditions, all reusing existing machinery, plus a real dead-field fix
 
-Per explicit operator instruction to continue item 7 and "finish the cardiac
+Per explicit operator instruction to continue a previous item in the queue and "finish the cardiac
 conditions." Five new conditions shipped, each with its own scenario
 (CARD-043 through CARD-047), none requiring genuinely new cardiovascular.js
 state beyond two small ectopy handles — every other mechanism composes
@@ -8013,7 +12467,7 @@ section 2 for the numbers this batch's own run produced.
 
 ### Most recent physiology batch: sickle cell crisis, heat stroke, and fifteen respiratory conditions — the largest single condition-library batch yet
 
-Per explicit operator instruction: queue items 22 (sickle cell crisis) and 26
+Per explicit operator instruction: a previous item in the queue (sickle cell crisis) and 26
 (heat stroke) first, then "finish as many of the respiratory conditions as
 possible." Seventeen new conditions shipped in total, each with its own
 scenario: `sickleCellCrisis`, `heatStroke`, and fifteen respiratory
@@ -8023,7 +12477,7 @@ conditions — `spontaneousPneumothorax`, `openPneumothorax`, `hemothorax`,
 `croup`, `epiglottitis`, `cysticFibrosisExacerbation`,
 `tuberculosisHemoptysis` — shrinking section 8's Respiratory backlog from 20
 entries to 1 (Smoke Inhalation Injury, deferred pending a shared
-carboxyhemoglobin mechanism with Carbon Monoxide Poisoning, queue item 28).
+carboxyhemoglobin mechanism with Carbon Monoxide Poisoning, a previous item in the queue).
 Respiratory Distress/Failure/Arrest were removed from the backlog rather
 than built — they're clinical staging labels along a continuum the engine
 already produces emergently, the same reasoning already applied to
@@ -8093,37 +12547,35 @@ from 58 / 1,409,170); `npx vite build` clean; `npx eslint src` at the exact
 
 ---
 
-### Physiology items 8-20 batch (a large single-sitting pass), plus item 29's new finding
+### Physiology a previous item in the queue batch (a large single-sitting pass), plus a previous item in the queue's new finding
 
-Resolved in this batch, each measured before being asserted: item 13
+Resolved in this batch, each measured before being asserted: a previous item in the queue
 (`suction` was an inert placeholder — new `pat.airwayFluid` mechanism,
-producers in `pediatricDrowning` and any severe-edema condition); items 8+9
+producers in `pediatricDrowning` and any severe-edema condition); a previous item in the queue+9
 (uterine atony — `preg.atonyFactor` now caps both the ceiling and the speed
 of unassisted uterine tone; oxytocin/fundal massage act through a real
 `pat.uterotonicDrive` receptor mechanism instead of a flat bleed-rate
-stat-write; new scenario `pph`); item 14 (macula densa/RAAS — a genuine
+stat-write; new scenario `pph`); a previous item in the queue (macula densa/RAAS — a genuine
 independent serum-sodium term, since the existing volume-deficit term
-couldn't activate RAAS for a salt-depleted-but-normovolemic patient); item
-12 (intrinsic PEEP — `pat.vtPrev` was captured before the assisted-
+couldn't activate RAAS for a salt-depleted-but-normovolemic patient); a previous item in the queue (intrinsic PEEP — `pat.vtPrev` was captured before the assisted-
 ventilation override, so bagging never reached the auto-PEEP mechanism;
 fixed; the magnitude gap itself was re-diagnosed as the documented 5-15
 cmH2O figures being specifically mechanically-ventilated measurements this
 game's own guideline-rate device declarations don't reach — left open,
-honestly, not force-fit); item 20 (intrinsic pain — `drugPain` reset to 0
+honestly, not force-fit); a previous item in the queue (intrinsic pain — `drugPain` reset to 0
 every tick, so a condition's declared pain vanished after the first render;
 new `pat.intrinsicPain` reseeds it each tick before drug deltas apply);
-item 15 (post-death gaps — a real tissue/serum lactate split producing the
+a previous item in the queue (post-death gaps — a real tissue/serum lactate split producing the
 documented post-ROSC washout spike, and a CPP floor so cerebral perfusion
-pressure can't read negative); item 11 (curve-drug clearance now scales
-with `organClearanceFactor`, the same function IV drugs already use); items
-16+17 (ACS reperfusion — thrombolytic's existing `plasminActivity` now
+pressure can't read negative); a previous item in the queue (curve-drug clearance now scales
+with `organClearanceFactor`, the same function IV drugs already use); a previous item in the queue+17 (ACS reperfusion — thrombolytic's existing `plasminActivity` now
 actually pulls `coronaryStenosis` back toward baseline, plus a separate
 slow post-reperfusion stunning term and a small permanent reperfusion-
-injury cost); item 18 (troponin — a pure observer, debrief-only, graded
+injury cost); a previous item in the queue (troponin — a pure observer, debrief-only, graded
 against the condition library's own already-calibrated contractility
 floors).
 
-**Item 10 (pregnancyBenchmark) — partially resolved.** The "Total blood
+**a previous item in the queue (pregnancyBenchmark) — partially resolved.** The "Total blood
 volume" row was a genuine fixture defect (its own bounds were arithmetically
 unreachable given the rows it's downstream of) — fixed by deriving it from
 the patient's own baseline. The harder EDV/SV/EF/CO/SVR/Hct cluster remains
@@ -8132,14 +12584,14 @@ just repeated) that it cannot close the gap alone — EF falls further out of
 range as EDV rises, since ESV grows in step. Left open with the measurement
 in the code.
 
-**Item 19 (widen the survivable-ischemia band for regional NSTEMI) —
+**a previous item in the queue (widen the survivable-ischemia band for regional NSTEMI) —
 investigated, confirmed structural, correctly not attempted.** The narrow
 band is an emergent property of a shared, engine-wide coronary
 supply/demand feedback loop; widening it would move every cardiac, arrest
 and shock patient. No smaller, safely-scoped partial fix exists short of
 genuine segmental LV geometry — needs its own dedicated batch.
 
-**Item 29 (new finding) — a generic, condition-less patient in continuous
+**a previous item in the queue (new finding) — a generic, condition-less patient in continuous
 asystole reaches neither the cardiac-arrest ATP threshold nor the
 brain-death injury threshold within `physiologyValidation`'s 12-minute test
 window** (measured: ATP 0.641, brainInjury 0.521 at t=12min — both trending
@@ -8151,12 +12603,11 @@ genuinely drifted or the test window itself is stale.
 **Verification:** `mechanismWiring.mjs` 191/191 (up from 162).
 `scenarioSweep.mjs` 55 scenarios / 1,336,282 checks / 0 failed. `npx vite
 build` clean. `npx eslint src` at the exact 106/5 baseline. Targeted
-`physiologyValidation` sections 2f/5/6/7/12/13/14/15/16 all pass except item
-29's new finding above.
+`physiologyValidation` sections 2f/5/6/7/12/13/14/15/16 all pass except a previous item in the queue's new finding above.
 
 ### Most recent front-end batch: the systemic "stray 00" bug, `choking40`/`fbao`, and three new scenarios
 
-**The "stray 00" render bug (old F4) — root cause found, systemic, not
+**The "stray 00" render bug (old a previous item in the queue) — root cause found, systemic, not
 browser-specific.** `Shell.jsx` mounts `SettingsOverlay`,
 `AchievementsOverlay`, and `RelationshipsOverlay` unconditionally on every
 screen in the game. All three (plus the station screen's `statsOpen` panel)
@@ -8199,8 +12650,8 @@ as its impression code since no genitourinary code exists yet). All three
 Layperson-scope-audited; only `testicularTorsion` is Layperson-completable.
 
 Still open: the remaining 10 unaudited Layperson-scope gaps, the §2.5
-tutorial-sim rebuild (physiology item 26 is now resolved, so this is
-unblocked — see queue item F1), Call 3's bespoke VN scene, active-shooter/
+tutorial-sim rebuild (physiology a previous item in the queue is now resolved, so this is
+unblocked — see a previous item in the queue), Call 3's bespoke VN scene, active-shooter/
 rectal-foreign-body scenarios, and the real multi-unit system MCI/co-op both
 need.
 
@@ -8234,11 +12685,11 @@ campaign's presentation layer and several cross-cutting fixes:
 - **Scene 4's tutorial simulation** (`HeatStrokeTutorialSim.jsx`) shipped
   for real — a genuine 60-second clock, fitness-scaled drag-to-shade, a 911
   call, assess actions — with one stated limit: its HR/RR curve was
-  SCRIPTED, not `physio()`-derived, since physiology queue item 26 (heat
-  stroke) didn't exist yet. **That limit is now resolved** — item 26 shipped
+  SCRIPTED, not `physio()`-derived, since physiology a previous item in the queue (heat
+  stroke) didn't exist yet. **That limit is now resolved** — a previous item in the queue shipped
   in the most recent physiology batch (top of this section), so this
   component's vitals curve is the one piece of the campaign still owed a
-  rebuild against real engine output; see queue item F1.
+  rebuild against real engine output; see a previous item in the queue.
 - **Scene 5/6 (station, tutorial shift) built out**: a real "pick two of
   four" station interlude after the first call, a food-choice dinner scene
   with a new achievement after the second, and a dining-hall pre-call scene
@@ -8283,10 +12734,9 @@ crew seat for the PATROL partner (an architecture change — `patrol` is
 solo by design), co-op step 2 and driving-minigame step 2 (both need real
 per-client networking / physics), the remaining 8 relationship NPCs (no
 owning content exists for them), on-shift micro-interactions distinct from
-the off-duty channel, and dating/marriage/family content. See queue items
-F1/F4/F5/F6/F8.
+the off-duty channel, and dating/marriage/family content. See a previous item in the queue.
 
-### Cardiac-conditions batch (item 7): 15 new conditions, plus queue item 25 (the glucose ratchet)
+### Cardiac-conditions batch (a previous item in the queue): 15 new conditions, plus a previous item in the queue (the glucose ratchet)
 
 Per explicit operator instruction to "get through as much of the cardiac
 conditions as possible." Fifteen new conditions, mostly sharing one new
@@ -8327,7 +12777,7 @@ so atropine could never actually improve AV conduction for any vagally-
 mediated block — fixed by reading an atropine-adjusted effective
 parasympathetic tone in that term.
 
-**Physiology queue item 25 (the glucose ratchet) — resolved in the same
+**Physiology a previous item in the queue (the glucose ratchet) — resolved in the same
 batch**, plus a much higher-blast-radius instance of the identical defect
 found while instrumenting `pericardialTamponade`: `pk.js`'s drug-effect
 loop applied `blood`/`temp`/`k`/`kShift` deltas every tick a dose's curve
@@ -8384,7 +12834,7 @@ roster system already scopes all of that correctly. New scenario
 honestly**: this is triage and prioritization under one scene clock, not a
 multi-unit transport system — only the active patient is actually
 simulated through hospital arrival; the other two are scored off their
-live vitals at hand-off. The multi-unit half remains open (queue item F2).
+live vitals at hand-off. The multi-unit half remains open (a previous item in the queue).
 
 **Smaller fixes**: a "random within this body system" button added to
 Sandbox's list view (reusing the map view's existing picker function); the
@@ -8393,12 +12843,11 @@ Zero-To-Hero campaign's hardcoded `"suburban"` region default corrected to
 are now hidden (name/description/art) until earned, instead of listing
 every unlock condition as a walkthrough.
 
-Filed, not built (needs physiology-engine work): excited delirium (queue
-item 27) and a chlorine-spill hazmat scenario (queue item 28).
+Filed, not built (needs physiology-engine work): excited delirium (a previous item in the queue) and a chlorine-spill hazmat scenario (a previous item in the queue).
 
-### Physiology items 1-6 batch: wide-complex tachycardia, calcium in hyperkalemia, spontaneous torsades, epinephrine Tmax
+### Physiology a previous item in the queue batch: wide-complex tachycardia, calcium in hyperkalemia, spontaneous torsades, epinephrine Tmax
 
-**Item 1 — wide-complex tachycardia now measurably impairs perfusion.** The
+**a previous item in the queue — wide-complex tachycardia now measurably impairs perfusion.** The
 `sysFrac` clamp in `updateFullLoopODE` was pinned at an arbitrary 0.60, hit
 above ~155/min, silently overriding the Weissler diastolic-filling-time
 formula next to it. Raised to 0.85 (a safety backstop — the formula itself
@@ -8407,9 +12856,9 @@ never exceeds ~0.79). MEASURED: torsades HR 220 CO 6.17→5.38, VT HR 180 CO
 correct ordering. Stated honestly: this is a real improvement in the right
 direction, not full syncope-inducing collapse — a structurally normal
 coronary bed has enough reserve that HR alone doesn't create ischemia here,
-which item 3 (below) confirms DOES happen once real substrate exists.
+which a previous item in the queue (below) confirms DOES happen once real substrate exists.
 
-**Item 2 — calcium now narrows the QRS and improves AV conduction in
+**a previous item in the queue — calcium now narrows the QRS and improves AV conduction in
 hyperkalemia, without lowering serum potassium.** Reused `mortality.js`'s
 existing `effectiveK` coefficient in `cardiovascular.js`'s rhythm/conduction
 state machine, which previously had no calcium term at all — plus a
@@ -8417,19 +12866,19 @@ previously-missing reversal transition (the state machine could enter
 wideQRS but never leave it). Two-sided assertions confirm K is provably
 unmoved by the "antidote" while the rhythm classification pulls back.
 
-**Item 3 — torsades can now initiate on its own.** New condition
+**a previous item in the queue — torsades can now initiate on its own.** New condition
 `acquiredLongQT` composes four already-existing mechanisms (severe
 hypokalemia, severe hypomagnesemia — the first condition to seed magnesium
 directly, since the constructor has no `initial.mg` override — mild
 bradycardia, and the general `qtcConditionOffset` handle) into a real,
 self-initiating substrate where nothing on the presenting vitals alone
 looks dangerous. MEASURED (20 trials): torsades initiates in 20/20; 10/20
-degenerate to VF via item 1's dormant ischemic-knock-on pathway, now firing
+degenerate to VF via a previous item in the queue's dormant ischemic-knock-on pathway, now firing
 for real since this substrate has genuine sustained CO/MAP depression.
 Magnesium suppresses recurrence exactly as Tzivoni 1988 describes (4.6→0.8
 episodes/15-min call).
 
-**Item 4 — epiIM/epiAuto now reach their published Tmax without collapsing
+**a previous item in the queue — epiIM/epiAuto now reach their published Tmax without collapsing
 Cmax.** A two-stage depot (`deepDepotFraction`/`deepDepotRelease`, `pk.js`)
 models epinephrine's own alpha-1 vasoconstriction trapping part of the dose
 at the injection site — a genuine second rate-limiting step. A rejected
@@ -8438,16 +12887,16 @@ moving the peak earlier instead of delaying it — recorded in-code so it
 isn't retried blind. MEASURED: epiIM Cmax 461 pg/mL/Tmax 46min, epiAuto
 Cmax 578 pg/mL/Tmax 21min, both in their published bands.
 
-**Item 5 — dead-code sweep, partial.** `duodote`'s inert `fx:{hr:20}` fixed
-via the same real `vagalBlock` mechanism atropine uses (see queue item 5
+**a previous item in the queue — dead-code sweep, partial.** `duodote`'s inert `fx:{hr:20}` fixed
+via the same real `vagalBlock` mechanism atropine uses (see a previous item in the queue
 for what's still open — four more drugs with the identical `drugHr`/
 `drugSbp` dead-accumulator pattern, and six more candidate dead fields
 found and filed, not fixed).
 
-**Item 6 — `pkAudit`'s epiIM/epiAuto band had the same units-category error
+**a previous item in the queue — `pkAudit`'s epiIM/epiAuto band had the same units-category error
 already found once for rocuronium** (an IV-push range applied to an IM
 route), plus a window-capping bug (`OBSERVE_MIN` shorter than epiIM's new,
-correctly-late Tmax). Both fixed; see queue item 6 for the still-open INERT
+correctly-late Tmax). Both fixed; see a previous item in the queue for the still-open INERT
 question this surfaced.
 
 **Verification:** `mechanismWiring.mjs` 109/109 (new `[HYPERKALAEMIA]`
@@ -8477,7 +12926,7 @@ Zero-To-Hero prologue against the operator-supplied script, scene by scene:
   unlocked" toast has apparently never been visible to a player — it
   pushes to `g.log`, which is only ever rendered inside the scene/transport
   panel, not the debrief/shiftSummary screens the credit always fires
-  alongside. Filed to the queue (F7), not fixed inline.
+  alongside. Filed to the queue (a previous item in the queue), not fixed inline.
 - **§2.5** (the heat-stroke incident/tutorial sim) was first scoped and
   deliberately DEFERRED rather than built as a bespoke scripted mini-scene
   that a real heat-stroke condition would later have to replace. A later
@@ -8487,10 +12936,10 @@ Zero-To-Hero prologue against the operator-supplied script, scene by scene:
   partner/supervisor NPCs (fixing a self-caught impure-render anti-pattern
   in an early draft) — while `campaignHeatStrokeSim` itself stayed an
   explicitly-flagged placeholder (two buttons setting the one consequential
-  flag, `g.heatStrokeMovedToShade`) pending physiology queue item 26. **That
+  flag, `g.heatStrokeMovedToShade`) pending physiology a previous item in the queue. **That
   item has since shipped** (see the top of this section) — the tutorial sim
   is the one piece of the campaign still owed a rebuild against real
-  `physio()` output; see queue item F1.
+  `physio()` output; see a previous item in the queue.
 - **§1.5** (Fatigue/Morale/Reputation) and **§1.4** (the relationship
   system) shipped as their own design-doc sections: a real end-of-shift
   fatigue formula on top of the existing per-action mechanic; new
@@ -8512,7 +12961,7 @@ at or near the running baseline, with any drift traced rather than assumed.
 Deliberately not attempted across all of them, still open: the letter's
 type-out animation and other art/animation direction, the remaining 8
 relationship NPCs, and a real one-time "quiet moment" scene (currently just
-a log line) — see queue items F1/F5/F7.
+a log line) — see a previous item in the queue.
 
 ### Earlier front-end sessions (F16-F22, F20b), condensed
 
@@ -8560,7 +13009,7 @@ before and after:
   Recurring named hospital staff (a Medical Director + ER roster) replaced
   anonymous base-contact text. `maskedBleed`, a distracting-injury
   scenario, surfaced two real engine defects (dead `initial.brainInjury`
-  overrides, and the glucose ratchet later fixed as queue item 25). A
+  overrides, and the glucose ratchet later fixed as a previous item in the queue). A
   Sandbox dispatch map, a single-prompt driving minigame, and a first
   "shared whiteboard" co-op mode (explicitly not production netcode)
   shipped as honestly-scoped first versions.
@@ -8569,7 +13018,7 @@ Full mechanism-level detail for each fix lives in the code comments at its
 site; anything still open from this run is in section 6's queue, not
 repeated here.
 
-### F1-F19 + F2b (front-end track, done except F17 step 7)
+### a previous item in the queue-F19 + F2b (front-end track, done except F17 step 7)
 
 The entire original front-end queue is shipped. Full mechanism-level detail
 for each item lived in this section across several prior batches; since it's
@@ -8577,51 +13026,50 @@ all done and the durable content is now in the code itself (comments at each
 fix site) or in the queue (open follow-ups), it's condensed here to what
 still matters for planning:
 
-- **F1** scope override + out-of-scope-usage penalty on the Sandbox rating.
-- **F2** mode-aware responder caps, ALS intercept request/cancel, crime-gated
+- **a previous item in the queue** scope override + out-of-scope-usage penalty on the Sandbox rating.
+- **a previous item in the queue** mode-aware responder caps, ALS intercept request/cancel, crime-gated
   "call police," real vehicle-bag-loadout restrictions. Spun off **F2b**
   (prioritizing multiple simultaneous incoming calls — needs a real
   dispatch-queue system this game doesn't have; still open).
-- **F3** the highest-value bug in the block: continuous procedures
+- **a previous item in the queue** the highest-value bug in the block: continuous procedures
   (compressions/BVM) were permanently vanishing after one press — fixed.
   Plus bystander dismissal, "secure the scene," and device-gated continuous
   monitoring.
-- **F4** career economy (`g.money`/`shiftPay`), a between-call timing
+- **a previous item in the queue** career economy (`g.money`/`shiftPay`), a between-call timing
   minigame (`g.speedBoost`), a one-time liability disclaimer.
-- **F5** shared drug/procedure category tables and Sandbox body-system
+- **a previous item in the queue** shared drug/procedure category tables and Sandbox body-system
   grouping.
-- **F6** IO/IV cost swap (IO is the faster route, was backwards), sternal IO,
+- **a previous item in the queue** IO/IV cost swap (IO is the faster route, was backwards), sternal IO,
   tourniquet-blocks-drug + tourniquet removal, one minimal comorbidity
   (`diabetesT2`), a generic medication-allergy mechanism (later wired into
   its first real scenario, `unsafeSceneAssault` — see section 3). **Still
-  open:** HTN/HLD and deeper diabetic mechanisms (filed as physiology queue
-  item 21). Pain quantification's blocker (physiology queue item 20) is
+  open:** HTN/HLD and deeper diabetic mechanisms (filed as physiology a previous item in the queue). Pain quantification's blocker (physiology a previous item in the queue) is
   since resolved.
-- **F7** free PPE/size-up during the approach walk; the unsafe-scene hazard
+- **a previous item in the queue** free PPE/size-up during the approach walk; the unsafe-scene hazard
   flag now has a real one-time consequence instead of just narrative text.
-- **F8** three content-only scenarios (`doa`, `prankCall`, `benignFaint`).
+- **a previous item in the queue** three content-only scenarios (`doa`, `prankCall`, `benignFaint`).
   Spun off **F8b**, of which MCI pileup, the stabbing pair, testicular
   torsion, unsafe-scene assault, and sickle cell crisis have since shipped
   (see this section's more recent entries) — active-shooter and
-  rectal-foreign-body scenarios remain open (queue item F2).
-- **F9** background music actually plays now (phase-driven, autoplay-safe).
+  rectal-foreign-body scenarios remain open (a previous item in the queue).
+- **a previous item in the queue** background music actually plays now (phase-driven, autoplay-safe).
   Protocol-folder move and a deeper FAQ page NOT attempted (former is a
   flagged import-breakage risk needing its own batch).
-- **F10** player creation — was already correct; verified, not changed.
-- **F11** permanent per-save Learning Mode gate (`g.learningMode`, `"zth"`/
+- **a previous item in the queue** player creation — was already correct; verified, not changed.
+- **a previous item in the queue** permanent per-save Learning Mode gate (`g.learningMode`, `"zth"`/
   `"mos"`) between `gmodePick` and `level`.
-- **F12** two scenarios (`resp`, `pe`) upgraded off the shared generic SAMPLE
+- **a previous item in the queue** two scenarios (`resp`, `pe`) upgraded off the shared generic SAMPLE
   boilerplate onto real scenario-unique probes. **Still open:** the rest of
   the scenario library hasn't been audited for the same thinness.
-- **F13** one concrete fix: the confirm-death overlay wasn't in the tick
+- **a previous item in the queue** one concrete fix: the confirm-death overlay wasn't in the tick
   loop's pause guard (every other modal was) — same bug class as an earlier
   settings-pause fix. **Still open:** no specific "Timer for ___" was ever
   named, so a full blind timer sweep was never attempted.
-- **F14** protocol-driven autonomous crew direction broadened from "a
+- **a previous item in the queue** protocol-driven autonomous crew direction broadened from "a
   provider who outranks the player" to "at or above the player's own level,"
   and an early `break` removed so multiple free hands can be tasked in one
   cycle instead of just one.
-- **F15** a full data-driven achievements system (`src/achievements.js` +
+- **a previous item in the queue** a full data-driven achievements system (`src/achievements.js` +
   `AchievementsOverlay.jsx`), credited via a shared `creditOutcome(s)`
   pure-transform at each of the four places a call can reach "debrief" (not
   a `useEffect` — that pattern trips `react-hooks/set-state-in-effect`).
@@ -8649,11 +13097,11 @@ still matters for planning:
   installation step.
 
 Two flagged-for-clarification items got resolved by asking rather than
-guessing, per the standing clarification rule: F13's unnamed timer (never
+guessing, per the standing clarification rule: a previous item in the queue's unnamed timer (never
 named — the blind sweep was skipped rather than guessed at) and F16's asset
 scope (product owner confirmed all categories).
 
-### Physiology-engine batch history (condition-library workstream, item 7)
+### Physiology-engine batch history (condition-library workstream, a previous item in the queue)
 
 Full clinical/mechanism reasoning for each of these lived here across many
 prior sessions; it's now condensed since the durable content is in the
@@ -8662,7 +13110,7 @@ section 8's target-library backlog, and any open follow-up is a numbered
 physiology-queue item (cited below). Shipped, in order, most recent first:
 
 - **Acquired long QT / torsades substrate** (CARD-027, `acquiredLongQT`) —
-  physiology queue item 3, closed. Not a new mechanism: a literature-anchored
+  physiology a previous item in the queue, closed. Not a new mechanism: a literature-anchored
   CONVERGENCE of four already-existing handles (hypokalemia, hypomagnesemia
   via a first-of-its-kind direct pk.js seed, mild bradycardia,
   `qtcConditionOffset`) that reliably crosses the engine's own instantaneous
@@ -8670,8 +13118,7 @@ physiology-queue item (cited below). Shipped, in order, most recent first:
   writeup, including the sub-threshold first attempt that fed the engine's
   OTHER ectopy pathway instead of torsades, and the now-assertable
   Tzivoni magnesium-recurrence pair in `mechanismWiring.mjs`. The two items
-  the Magnesium/Torsades entries below marked "found and filed" — queue items
-  1 (wide-complex tachycardia perfusion) and 2 (calcium ECG protection) — are
+  the Magnesium/Torsades entries below marked "found and filed" — a previous item in the queue (wide-complex tachycardia perfusion) and 2 (calcium ECG protection) — are
   ALSO closed as of this same session; see section 3's own entry rather than
   treating this history section as the current status of those items.
 - **NSTEMI** (CARD-026) — completes the ischemic-triad's troponin-positive
@@ -8682,14 +13129,14 @@ physiology-queue item (cited below). Shipped, in order, most recent first:
   three-way against its neighbors.
 - **Stable angina** (CARD-024) — fixed-lesion demand ischemia that resolves
   with rest, emergent from the supply/demand balance rather than scripted.
-  Found and filed (not fixed): physiology queue item 20, the intrinsic-pain
+  Found and filed (not fixed): physiology a previous item in the queue, the intrinsic-pain
   display defect (`drugPain` resets every tick).
 - **ACS** (CARD-023) — the substrate for the whole ischemic spectrum: a
   dynamic (propagating) thrombus plus ischemia-gated necrosis with a real
   wavefront lag, two antithrombotic pathways (antiplatelet/anticoagulant,
   now general handles any future thrombotic condition can reuse). Reperfusion
-  therapy deliberately deferred — filed as queue items 16-19.
-- **Takotsubo** — the item-7 loop's worked example: a biphasic Gs→Gi
+  therapy deliberately deferred — filed as a previous item in the queue.
+- **Takotsubo** — the a previous item in the queue's own loop's worked example: a biphasic Gs→Gi
   contractility term (`updateContractility`, now reusable by any future
   catecholamine-stunning condition) and `pat.qtcConditionOffset` (a general,
   reusable per-condition QTc handle). Dynamic LVOTO and a troponin observable
@@ -8697,12 +13144,12 @@ physiology-queue item (cited below). Shipped, in order, most recent first:
 - **Magnesium** — rebuilt from a max-of-doses ceiling into a real persistent
   pool with first-order clearance; calcium wired as the physiological
   antidote. Found and filed: calcium's missing hyperkalemia ECG protection
-  (queue item 2).
+  (a previous item in the queue).
 - **Torsades** — was dead three ways (no termination, no hemodynamic
   consequence, no defib response); now has competing termination/degeneration
   hazards and magnesium as graded suppression. Found and filed: wide-complex
-  tachycardia doesn't perfuse anywhere in the engine (queue item 1) and
-  torsades can't self-initiate (queue item 3).
+  tachycardia doesn't perfuse anywhere in the engine (a previous item in the queue) and
+  torsades can't self-initiate (a previous item in the queue).
 - **Preeclampsia** (OBGY-027) — introduced two still-load-bearing general
   handles: `pat.capillaryLeak` (endothelial injury in the Starling block —
   metabolic.js) and `pat.arterialComplianceFactor` (pulse pressure

@@ -17,7 +17,7 @@ const root = path.resolve(here, "../../public/assets/audio/auscultation");
 const HLS_HEART = { N: "Normal", LDM: "Late Diastolic Murmur", MSM: "Mid Systolic Murmur", LSM: "Late Systolic Murmur",
   ESM: "Early Systolic Murmur", AF: "Atrial Fibrillation", S3: "S3", S4: "S4", AVB: "AV Block", T: "Tachycardia" };
 const HLS_LUNG = { N: "Normal", PR: "Pleural Rub", R: "Rhonchi", W: "Wheezing", FC: "Fine Crackles", CC: "Coarse Crackles" };
-const SOURCES = { HF: "HF_Lung_V1", KA: "KAUH", CC: "CirCor", P16: "PhysioNet2016" };
+const SOURCES = { HF: "HF_Lung_V1", KA: "KAUH", CC: "CirCor", P16: "PhysioNet2016", ICBHI: "ICBHI2017", USR: "Unattributed" };
 // Type names written without spaces in file names, mapped back.
 const unspace = (s) => s.replace(/([a-z])([A-Z])/g, "$1 $2");
 
@@ -61,6 +61,14 @@ const js = `// Auscultation recordings (public/assets/audio/auscultation). GENER
 //   KAUH          Fraiwan et al., Mendeley 10.17632/jwyy9np4gv.3 (CC BY 4.0)
 //   CirCor        Oliveira et al., PhysioNet 10.13026/tshs-mw03 (ODC-By 1.0)
 //   PhysioNet2016 Liu et al., PhysioNet challenge-2016 (ODC-By 1.0)
+//   ICBHI2017     Rocha et al., bhichallenge.med.auth.gr (published "freely
+//                 available for research," no CC/ODC identifier stated;
+//                 see credits.js's own entry for the full attribution)
+//   Unattributed  Provided directly by the developer; original recording source
+//                 could not be traced (asked, no answer). No credits.js entry —
+//                 see UNVERIFIED_ASSETS there. Kept out of the credited pools
+//                 above on purpose: do not add a name/license to these later
+//                 without actually verifying one.
 // All clips are mono 16-bit WAV at 4 kHz. Heart locations: RUSB aortic, LUSB pulmonic,
 // LLSB tricuspid, A apex (mitral), RC / LC beside the sternum. Lung locations:
 // R/L + U/M/L + A. "any" means the recording is not tied to one spot.

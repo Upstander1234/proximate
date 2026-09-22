@@ -6,9 +6,30 @@
 // (audio/retime.js), never the recording's own rate.
 //
 // Not covered by the recordings, so left silent or approximated and listed on the
-// CLAUDE.md queue: pericardial rub and tension pneumothorax (played as near-silence,
-// an attenuation, not a recording). Mitral and aortic regurgitation use pediatric
+// CLAUDE.md queue: pericardial rub. Tension pneumothorax's own breath sounds are
+// played as near-silence, an attenuation, not a recording — but its real effect on
+// the HEART exam (mediastinal shift moving the heart away from the affected side,
+// not muffling it — muffling is cardiac tamponade's own Beck's-triad sign, already
+// modeled via pericardialEffusion) is a real positional mechanism, not silence; see
+// heartAt()'s mediastinalShift(). Mitral and aortic regurgitation use pediatric
 // CirCor clips, a real murmur of the right timing retimed to the adult's rate.
+//
+// RC/LC ("beside the sternum") are two more real HLS-CMDS listening points besides
+// the four classic valve areas, but heartAt() below only ever resolves a click to
+// one of those four (RUSB/LUSB/LLSB/A) — there's no reason to carve out new click
+// territory just to give RC/LC their own target. Instead pickHeartClip() treats an
+// RUSB query as also matching an RC-tagged clip, and any left-sided query
+// (LUSB/LLSB/A) as also matching an LC-tagged one, so those recordings are reachable
+// as a genuine "near" match rather than only ever turning up via the base fallback.
+//
+// LUNG_SOUNDS["Cough"] (one clip, "USR" source) is deliberately NOT selected by
+// anything below — it's a single cough sound, not a periodic breath-cycle loop,
+// and the retiming pipeline (audio/retime.js) is built around a repeating cycle
+// rate, not a one-shot event. Wiring it in for real would need a genuine
+// cough-interjection mechanism (when to fire it, how it layers over the ongoing
+// breath loop) that doesn't exist yet — left cataloged, not guessed into a wrong
+// use, matching this project's own precedent for dead-but-real HEART_SOUNDS
+// categories (see CLAUDE.md's queue).
 import { HEART_SOUNDS, LUNG_SOUNDS, AUSC_BASE } from "../data/auscultationSounds.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -16,10 +37,14 @@ const heartUrl = (c) => `${AUSC_BASE}/${c.dir || "heart"}/${c.id}.wav`;
 const lungUrl = (c) => `${AUSC_BASE}/${c.dir || "lung"}/${c.id}.wav`;
 
 // ── Heart ────────────────────────────────────────────────────────────────
-// finding: normal | systolic | diastolic | gallop | irregular | muffled | silent
+// finding: normal | systolic | diastolic | gallop | block | irregular | muffled | silent
 // pattern: how the beats are spaced. The engine models AFib, premature ventricular
 // beats (pvcFrequency per minute) and premature atrial beats (atrialEctopicFocus);
-// dropped-beat AV block is not simulated, so it is not sounded.
+// dropped-beat AV block is not simulated, so it is not sounded — but 1st-degree and
+// complete (3rd-degree) block are both real, live, already-published rhythm states
+// (v.ecg), so those two pick from the "AV Block" recordings for a more authentic
+// texture (real S1 heard through an actual conduction-diseased heart) even though
+// the dropped-beat/AV-dissociation TIMING itself isn't modeled.
 export function heartSound(pat, v) {
   const hr = v?.hr ?? 0;
   if (!(hr > 0)) return { finding: "silent", template: null, rate: 0, pattern: { kind: "regular" }, gain: 0, lowpass: null, rateClass: "none" };
@@ -31,6 +56,15 @@ export function heartSound(pat, v) {
   else if ((pat?.mitralStenosisSeverity ?? 0) > 0.2) { template = "Late Diastolic Murmur"; finding = "diastolic"; }
   else if ((v?.edema ?? 0) >= 0.3) { template = "S3"; finding = "gallop"; }        // volume-overload gallop, as the exam action reads it
   else if ((pat?.hocmObstruction ?? 0) > 0.2) { template = "S4"; finding = "gallop"; }
+  else if (v?.ecg === "chb" || v?.ecg === "firstDegreeBlock") { template = "AV Block"; finding = "block"; }
+
+  // Acoustically these recordings are indistinguishable from "Normal" once retimed
+  // to the engine's own rate (that's the whole point of audio/retime.js) — but a
+  // clip genuinely recorded at a fast rate needs less stretching/compression to
+  // reach it than one recorded at rest, so a real tachycardic patient draws from
+  // the "Tachycardia" pool when nothing more specific (a murmur/gallop/block) is
+  // already selected, rather than always starting from a resting recording.
+  if (template === "Normal" && rateClass === "fast") template = "Tachycardia";
 
   let pattern = { kind: "regular" };
   const pvc = pat?.pvcFrequency ?? 0, pac = pat?.atrialEctopicFocus ?? 0;
@@ -49,16 +83,22 @@ export function heartSound(pat, v) {
 }
 
 // A recording for a template near a location: regular recordings only (noisy ones
-// are skipped), preferring the exact location, then any clip not tied to one place,
-// with `seed` choosing between equals so different spots give different recordings.
-function pickVariant(list, loc, seed) {
+// are skipped), preferring the exact location (plus any aliased locations — see
+// `alias` below), then any clip not tied to one place, with `seed` choosing
+// between equals so different spots give different recordings.
+function pickVariant(list, loc, seed, alias) {
   const regular = list.filter((c) => c.q == null || c.q >= 0.3);
   const base = regular.length ? regular : list;
-  const near = base.filter((c) => c.loc === loc || c.loc === "any");
+  const near = base.filter((c) => c.loc === loc || c.loc === "any" || (alias && alias.includes(c.loc)));
   const pool = near.length ? near : base;
   return pool[Math.abs(seed | 0) % pool.length];
 }
-export const pickHeartClip = (template, area, seed = 0) => pickVariant(HEART_SOUNDS[template] || HEART_SOUNDS.Normal, area, seed);
+// RC/LC are real recorded points "beside the sternum" (see the file header) that
+// heartAt() never resolves a click to directly — folded in here as near-matches
+// for whichever real valve area is anatomically closest, so they're reachable as
+// a genuine location match instead of only via the unfiltered base fallback.
+const HEART_LOC_ALIAS = { RUSB: ["RC"], LUSB: ["LC"], LLSB: ["LC"], A: ["LC"] };
+export const pickHeartClip = (template, area, seed = 0) => pickVariant(HEART_SOUNDS[template] || HEART_SOUNDS.Normal, area, seed, HEART_LOC_ALIAS[area]);
 export const pickLungClip = (sound, field, seed = 0) => pickVariant(LUNG_SOUNDS[sound] || LUNG_SOUNDS.Normal, field, seed);
 
 // ── Lungs ────────────────────────────────────────────────────────────────
@@ -70,7 +110,7 @@ const SHAPES = {
 };
 
 // field: side R|L + level U|M|L + A, e.g. "RLA". finding: clear | wheeze | crackles |
-// rhonchi | diminished | absent | dull | none (apnea)
+// rhonchi | rub | diminished | absent | dull | none (apnea)
 export function lungSound(pat, v, field, s) {
   const side = field[0], lvl = field[1];
   const rr = v?.rr ?? 0;
@@ -86,13 +126,32 @@ export function lungSound(pat, v, field, s) {
   const effSide = pat?.pleuralEffusionSide || "both";
   const effHere = eff > 0.2 && (effSide === "both" || effSide[0].toUpperCase() === side)
     && (lvl === "L" || (lvl === "M" && eff > 0.5));
-  if (effHere) return { ...base, finding: "dull", sound: "Normal", shape: SHAPES.Normal, gain: clamp(0.6 - eff * 0.6, 0.12, 0.5), lowpass: 350 };
+  // Fluid layering over the lung (hemothorax or a plain effusion, acoustically
+  // the same finding either way) prefers a genuine dull/diminished recording
+  // over an attenuated-plus-lowpassed "Normal" clip when one exists; the
+  // synthetic lowpass approximated muffling for the fallback case, so it's
+  // dropped when the real recording is doing that work itself.
+  if (effHere) {
+    const hasReal = !!LUNG_SOUNDS["Diminished"];
+    const sound = hasReal ? "Diminished" : "Normal";
+    return { ...base, finding: "dull", sound, shape: SHAPES.Normal, gain: clamp(0.6 - eff * 0.6, 0.12, 0.5), lowpass: hasReal ? null : 350 };
+  }
   const edema = v?.edema ?? 0;
   const crackleHere = edema >= 0.3 && (lvl !== "U" || edema >= 0.6);
   if (s?.aspirated && side === "R" && lvl === "L") return { ...base, finding: "crackles", sound: "Coarse Crackles", shape: SHAPES["Coarse Crackles"] };
   if (crackleHere) {
     const sound = edema < 0.55 ? "Fine Crackles" : "Coarse Crackles";
     return { ...base, finding: "crackles", sound, shape: SHAPES[sound] };
+  }
+  // Pulmonary embolism raises pulmonary vascular resistance directly (pe's own
+  // progress()), and a real pulmonary infarct from a peripheral clot is the
+  // textbook cause of a pleuritic friction rub — peripheral/basal, not apical,
+  // matching where a distal embolus actually lodges. Checked ahead of
+  // wheeze/rhonchi since neither of those mechanisms is otherwise engaged by PE
+  // in this engine, so without this a real embolism auscultates as silently
+  // "clear," which is a real, distinguishing finding this patient should have.
+  if ((pat?.pulmResistFactor ?? 1) > 1.3 && lvl !== "U" && LUNG_SOUNDS["Pleural Rub"]) {
+    return { ...base, finding: "rub", sound: "Pleural Rub", shape: SHAPES["Pleural Rub"] };
   }
   if (pat?.upperAirwayObstruction > 0.5 && LUNG_SOUNDS.Stridor) return { ...base, finding: "stridor", sound: "Stridor", shape: SHAPES.Stridor };
   if ((v?.bronch ?? 0) >= 0.3) return { ...base, finding: "wheeze", sound: "Wheezing", shape: SHAPES.Wheezing };
@@ -102,7 +161,7 @@ export function lungSound(pat, v, field, s) {
 
 // The most significant finding across one side's three fields (what a full exam of
 // that side finds). Used by the exam log.
-const RANK = { absent: 6, diminished: 5, dull: 4, stridor: 4, crackles: 3, wheeze: 2, rhonchi: 1, clear: 0, none: -1 };
+const RANK = { absent: 6, diminished: 5, dull: 4, stridor: 4, crackles: 3, rub: 2, wheeze: 2, rhonchi: 1, clear: 0, none: -1 };
 export function sideFinding(pat, v, side, s) {
   let best = "clear";
   for (const lvl of ["U", "M", "L"]) {
@@ -136,13 +195,30 @@ function lungAt(view, x, y) {
   return { field: `${side}${level}A`, gain: inside };
 }
 
-function heartAt(view, x, y) {
+// Tension pneumothorax raises intrapleural pressure enough on the affected side
+// to push the mediastinum, and the heart with it, toward the opposite side — a
+// real, well-described sign (alongside tracheal deviation) distinct from cardiac
+// tamponade's Beck's-triad MUFFLING, which is what pericardialEffusion above
+// already models. Not attempted for the "back" view below: that branch has no
+// per-valve landmark set to shift, only a flat radial falloff, and inventing one
+// just for this would be guessing at anatomy this file doesn't otherwise track.
+function mediastinalShift(pat) {
+  if (pat?.ptx !== "tptx") return 0;
+  // View coordinates: from the front, the patient's right is on the player's
+  // left (this file's own header comment) — a right tension ptx pushes the
+  // heart toward the patient's LEFT, i.e. toward higher x in this view.
+  const side = (pat?.ptxSide || "R")[0].toUpperCase();
+  return side === "R" ? 14 : -14;
+}
+
+function heartAt(view, x, y, pat) {
   if (view === "back") return { area: "A", gain: clamp(0.14 * Math.exp(-(((x - 120) ** 2 + (y - 165) ** 2) / 3500)), 0, 0.14) };
+  const shift = mediastinalShift(pat);
   let best = "A", bd = Infinity;
-  for (const [k, p] of Object.entries(VALVES)) { const d = dist({ x, y }, p); if (d < bd) { bd = d; best = k; } }
+  for (const [k, p] of Object.entries(VALVES)) { const d = dist({ x, y }, { x: p.x + shift, y: p.y }); if (d < bd) { bd = d; best = k; } }
   const atValve = Math.exp(-((bd / 24) ** 2));                                   // loudest right at a valve area
-  const precordium = 0.28 * Math.exp(-((dist({ x, y }, HEART_CENTER) / 46) ** 2));
-  const transmitted = 0.1 * Math.exp(-((dist({ x, y }, { x: 150, y: 150 }) / 110) ** 2));
+  const precordium = 0.28 * Math.exp(-((dist({ x, y }, { x: HEART_CENTER.x + shift, y: HEART_CENTER.y }) / 46) ** 2));
+  const transmitted = 0.1 * Math.exp(-((dist({ x, y }, { x: 150 + shift, y: 150 }) / 110) ** 2));
   return { area: best, gain: clamp(Math.max(atValve, precordium, transmitted), 0, 1) };
 }
 
@@ -157,7 +233,7 @@ export function chestSpec(pat, v, view, x, y, s) {
     const clip = pickLungClip(ls.sound, lung.field, seed);
     layers.push({ key: `L:${clip.id}`, url: lungUrl(clip), kind: "lung", rate: ls.rr, shape: ls.shape, gain: lung.gain * ls.gain, lowpass: ls.lowpass });
   }
-  const heart = heartAt(view, x, y);
+  const heart = heartAt(view, x, y, pat);
   const hs = heartSound(pat, v);
   if (hs.template && heart.gain * hs.gain > 0.005) {
     const clip = pickHeartClip(hs.template, heart.area, seed);

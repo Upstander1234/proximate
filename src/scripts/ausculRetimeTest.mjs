@@ -48,7 +48,11 @@ console.log("\n[HEART] atrial fibrillation keeps the mean rate exactly");
 }
 
 console.log("\n[LUNG] breaths per minute, measured vs requested");
-for (const type of Object.keys(LUNG_SOUNDS)) {
+// "Cough" is a single one-shot recording, not a periodic breath-cycle loop, and
+// nothing in physio/auscultation.js ever selects it (see that file's own header
+// comment) — sweeping it through a periodic-rate retiming check would assert
+// something that isn't true of the clip, not test a real code path.
+for (const type of Object.keys(LUNG_SOUNDS).filter((t) => t !== "Cough")) {
   const f = LUNG_SOUNDS[type][LUNG_SOUNDS[type].length > 1 ? 1 : 0];
   const { fs: rate, x } = load("lung", f.id);
   // Breath envelope over the real texture, at exactly the requested rate.

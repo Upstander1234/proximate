@@ -153,6 +153,13 @@ export function buildDialogueContext(s, v) {
     // already carrying (dialogueManager owns that array); this function just
     // shapes it, it doesn't own or grow it.
     recentEvents: Array.isArray(s.dialogueMemory) ? s.dialogueMemory.slice(-4) : [],
+    // The real, per-NPC memory store (characterBrain.js) — a separate,
+    // wiped-per-call bucket of what EACH character has personally already
+    // said, distinct from the scene-wide recentEvents above. Passed through
+    // as-is; characterBrain.js's buildCharacterBrain() is the only place
+    // that reads out of it (per npcId()), so the scoping/knowledge-boundary
+    // logic stays in one file.
+    npcBrains: s.npcBrains || {},
   };
 }
 

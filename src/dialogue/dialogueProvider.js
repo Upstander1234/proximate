@@ -50,6 +50,8 @@
 // asynchronously, without blocking its own immediate (tier 1/2) line.
 
 import { bucketForEmotionalState } from "./emotionalState.js";
+import { autoDownloadModel } from "./modelImport.js";
+import { buildCharacterBrain } from "./characterBrain.js";
 
 export class DeterministicProvider {
   isAvailable() { return true; }
@@ -82,8 +84,18 @@ export const MODEL_DOWNLOAD_MB = 370;
 // the player waiting indefinitely (item 11). Model load (first use only,
 // then cached by web-llm's own IndexedDB cache — item 8's caching
 // requirement, already provided by the library, not reimplemented here) gets
-// a much longer budget than a single generation call.
-const LOAD_TIMEOUT_MS = 45000;
+// a much longer budget than a single generation call. Widened from an
+// earlier 45s once _ensureEngine() started attempting a full ~290MB
+// auto-download from our own GitHub mirror (modelImport.js's
+// autoDownloadModel) before ever falling back to Hugging Face — 45s was
+// already tight for that size on an ordinary connection even before this,
+// and is nowhere near enough once a full cold download has to complete
+// (or fail) inside the SAME budget as the compile/load step after it. This
+// is a one-time cost per device (cached afterward); progress is shown live
+// via subscribeProgress() the whole time, and the existing 6-attempt
+// auto-retry (AUTO_RETRY_DELAYS_MS) still applies on top of this if it
+// still isn't enough on a genuinely slow connection.
+const LOAD_TIMEOUT_MS = 300000;
 const GENERATE_TIMEOUT_MS = 12000;
 
 function withTimeout(promise, ms, label) {
@@ -156,41 +168,67 @@ function classifyLoadError(e) {
 // LLM only ever returns display text, see dialogueManager.js's own
 // generate() caller for confirmation it's used as `.text` in a UI log entry
 // and nowhere else).
+//
+// Per-NPC "brain": characterBrain.js's buildCharacterBrain() is the single
+// place that decides which SLICE of the full context a given speaker's
+// prompt is even allowed to see — a crew member's own name/personality/what
+// they can clinically observe, a bystander's role/what they witnessed, a
+// patient's own felt symptoms. This function's only job is turning that
+// already-scoped brain into prompt text; it must never reach back into
+// `ctx` directly for a field the brain didn't hand it, or the whole point of
+// scoping knowledge per character is defeated by a side door.
 function buildPrompt(event, ctx) {
-  const p = ctx?.patient || {};
-  const personality = p.personality || {};
-  const traits = Object.entries(personality)
-    .map(([k, v]) => `${k} ${Math.round((v ?? 0) * 100)}%`).join(", ") || "unknown";
+  const brain = buildCharacterBrain(event.speaker, ctx, event);
   const recent = (ctx?.recentEvents || []).slice(-3).join(" | ") || "(none yet)";
-  const crew = (ctx?.crew || []).map((c) => c.name).filter(Boolean).join(", ") || "none on scene";
-  // F0 item 17: a structured emotional state the SIMULATION already decided
-  // (emotionalState.js, derived from real pain/consciousness/trend — never
-  // from this prompt or its response). Stated explicitly and separately from
-  // the personality traits, with an instruction that it is fixed, so the
-  // model's own job is confined to EXPRESSING it, not inventing or
-  // overriding it — the same one-way boundary item 21 already draws around
-  // physiology, applied here to emotional state specifically.
-  const emotionalState = p.emotionalState || "calm";
-  // F0 item 15's knowledge-boundary rule, enforced in the PROMPT itself for
-  // the bystander speaker, not just in the hand-authored Tier-2 templates: a
-  // bystander only ever gets the role label (never patient vitals, never a
-  // diagnosis) and is explicitly told what they may and may not know, so a
-  // Tier-3 upgrade of a bystander line can't drift into clinical territory
-  // the way an unconstrained "roleplay this character" prompt could.
-  const bystanderRole = ctx?.bystander?.role || "bystander";
-  const speakerLine = event.speaker === "crew"
-    ? "You are an EMS crew member on scene reacting to what just happened. Speak as the crew member, one short sentence, plain American English, no stage directions, no emoji, no em dashes."
-    : event.speaker === "bystander"
-    ? `You are the patient's ${bystanderRole}, a frightened family member/bystander on scene, NOT a medical provider. You only know what you personally witnessed and how you feel — you have no medical training and no access to vitals, diagnoses, or lab results, so never state or guess any of those. Speak as this frightened, non-medical person, one short sentence (under 20 words), plain American English, panicked or pleading register, no stage directions, no emoji, no em dashes.`
-    : `You are a patient in an EMS call. Age ${p.age ?? "unknown"}. Personality: ${traits}. Consciousness: ${p.consciousness}. Pain level ${p.painLevel}/10. Current emotional state (already determined by the situation, not by you — express it, do not contradict or change it): ${emotionalState}. Speak as the patient, one short sentence (under 20 words), plain American English, no stage directions, no medical jargon a layperson wouldn't use, no emoji, no em dashes.`;
+  const mustNot = brain.mustNotKnow.length
+    ? `You do NOT know, and must never mention or guess: ${brain.mustNotKnow.join("; ")}.`
+    : "";
+  let speakerLine;
+  if (brain.type === "crew") {
+    const traits = Object.entries(brain.personality || {})
+      .map(([k, v]) => `${k} ${Math.round((v ?? 0) * 100)}%`).join(", ");
+    const others = brain.knows.othersOnScene.length ? brain.knows.othersOnScene.join(", ") : "nobody else";
+    speakerLine = [
+      `You are ${brain.name}, an EMS crew member on scene reacting to what just happened.`,
+      `Your own manner (terse/steady/blunt, 0-100%): ${traits}.`,
+      `What you can see: the patient is ${brain.knows.patientConsciousness}${brain.knows.patientVisiblyInDistress ? " and visibly in distress" : ""}. Other crew present: ${others}.`,
+      mustNot,
+      "Speak as yourself, one short sentence, plain American English, no stage directions, no emoji, no em dashes.",
+    ].filter(Boolean).join(" ");
+  } else if (brain.type === "bystander") {
+    speakerLine = [
+      `You are the patient's ${brain.name}, a frightened family member/bystander on scene, NOT a medical provider.`,
+      "You only know what you personally witnessed and how you feel.",
+      mustNot,
+      "Speak as this frightened, non-medical person, one short sentence (under 20 words), plain American English, panicked or pleading register, no stage directions, no emoji, no em dashes.",
+    ].filter(Boolean).join(" ");
+  } else {
+    const traits = Object.entries(brain.personality || {})
+      .map(([k, v]) => `${k} ${Math.round((v ?? 0) * 100)}%`).join(", ") || "unknown";
+    speakerLine = [
+      `You are a patient in an EMS call. Age ${brain.knows.age ?? "unknown"}. Personality: ${traits}. Consciousness: ${brain.knows.consciousness}. Pain level ${brain.knows.painLevel}/10.`,
+      `Current emotional state (already determined by the situation, not by you — express it, do not contradict or change it): ${brain.knows.emotionalState}.`,
+      mustNot,
+      "Speak as the patient, one short sentence (under 20 words), plain American English, no medical jargon a layperson wouldn't use, no stage directions, no emoji, no em dashes.",
+    ].filter(Boolean).join(" ");
+  }
+  // Per-NPC memory (characterBrain.js's own store, separate from the
+  // scene-wide `recent` line above): what THIS character has personally
+  // already said this call, so a crew member (or patient, or bystander)
+  // doesn't repeat themselves verbatim across several generations, and so
+  // a real generated line can build on what they themselves said a moment
+  // ago rather than starting cold every time.
+  const ownSaid = (brain.ownRecentLines || []).length
+    ? `Things you personally already said earlier this call, don't just repeat these: ${brain.ownRecentLines.join(" | ")}.`
+    : "";
   return [
     speakerLine,
-    `Situation: ${ctx?.situation?.scenarioTitle || "an emergency call"}, about ${ctx?.situation?.elapsedMin ?? 0} minutes in.`,
-    `Crew present: ${crew}.`,
+    `Situation: ${ctx?.situation?.scenarioTitle || "an emergency call"}, about ${brain.knows.elapsedMin ?? 0} minutes in.`,
     `Recent moments: ${recent}.`,
+    ownSaid,
     `What just happened: ${event.type.replace(/_/g, " ")}.`,
     "Reply with ONLY the line of dialogue itself, nothing else.",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 // Strips anything that would break this project's own player-facing-content
@@ -425,6 +463,26 @@ export class LocalLLMProvider {
       // check does not change what gets fetched, it only lets the UI say
       // the true thing about what's about to happen.
       if (this._cacheState === "unknown") await this.checkCache();
+      // Auto-download from our own GitHub-hosted mirror (see
+      // MODEL_ASSETS_BASE_URL in modelImport.js) BEFORE letting web-llm
+      // fetch from Hugging Face at all — Hugging Face's download endpoint
+      // randomly resets connections for some players (see modelImport.js's
+      // own header comment), so trying our own mirror first, silently, is
+      // strictly additive: on success it just means CreateWebWorkerMLCEngine
+      // below finds everything already cached and never touches the network
+      // for the model; on ANY failure (network error, mirror down, wrong
+      // file size) it's swallowed here and this falls straight through to
+      // today's unchanged behavior of letting web-llm fetch from Hugging
+      // Face itself. Skipped entirely once the model is already cached from
+      // a prior session — nothing to gain by re-downloading it.
+      if (this._cacheState !== "cached") {
+        try {
+          await autoDownloadModel(MODEL_ID, (p) => this._emitProgress(p));
+          this._cacheState = "cached";
+        } catch (e) {
+          console.error("LocalLLMProvider: mirror auto-download failed, falling back to Hugging Face:", e);
+        }
+      }
       this._emitProgress({
         progress: 0,
         text: this._cacheState === "cached" ? "loading model from cache" : "downloading model",
@@ -726,27 +784,33 @@ const WASM_GENERATION_PARAMS = {
 // follow "at most six words" far more reliably than an abstract "one short
 // sentence" instruction). Measured before/after (see verifyWasmLlm.mjs).
 function buildWasmPrompt(event, ctx) {
-  const p = ctx?.patient || {};
-  const emotionalState = p.emotionalState || "calm";
-  const bystanderRole = ctx?.bystander?.role || "bystander";
+  const brain = buildCharacterBrain(event.speaker, ctx, event);
   const situation = ctx?.situation?.scenarioTitle || "an emergency call";
   let roleLine, example;
-  if (event.speaker === "crew") {
-    roleLine = "You are an EMS crew member. React to what just happened in ONE short sentence, at most six words. Plain English. No stage directions.";
+  if (brain.type === "crew") {
+    roleLine = `You are ${brain.name}, an EMS crew member. React to what just happened in ONE short sentence, at most six words. Plain English. No stage directions.`;
     example = 'Example good reply: "He is stable, keep going."';
-  } else if (event.speaker === "bystander") {
-    roleLine = `You are the patient's ${bystanderRole}, scared, not a medical provider. Say ONE short, panicked sentence, at most six words. No medical terms.`;
+  } else if (brain.type === "bystander") {
+    roleLine = `You are the patient's ${brain.name}, scared, not a medical provider. Say ONE short, panicked sentence, at most six words. No medical terms.`;
     example = 'Example good reply: "Please, is she going to be okay?"';
   } else {
-    roleLine = `You are a patient in pain during ${situation}. Feeling: ${emotionalState}. Say ONE short sentence, at most six words. Plain English. No medical terms.`;
+    roleLine = `You are a patient in pain during ${situation}. Feeling: ${brain.knows.emotionalState}. Say ONE short sentence, at most six words. Plain English. No medical terms.`;
     example = 'Example good reply: "It hurts right here, bad."';
   }
+  // Kept to one short line, not the fuller multi-sentence memory recap the
+  // full LLM prompt above gets — this tier's own model already struggles to
+  // follow a six-word budget with a short prompt (see this file's own
+  // WasmLLMProvider history), so only the single MOST RECENT thing this
+  // character said is included, and only when there is one.
+  const lastOwn = (brain.ownRecentLines || []).slice(-1)[0];
+  const noRepeat = lastOwn ? `Don't just repeat what you already said: "${lastOwn}"` : null;
   return [
     roleLine,
     example,
+    noRepeat,
     `What just happened: ${event.type.replace(/_/g, " ")}.`,
     "Now write ONE new short line of dialogue for this exact moment. Output ONLY the line, nothing else, at most six words.",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 // OUTPUT GUARDRAIL specific to the WASM tier's documented failure mode
@@ -988,8 +1052,22 @@ export class TemplateProvider {
     const variants = pool[bucket] || pool.calm || [];
     if (!variants.length) return null;
     const recent = ctx?.recentEvents || [];
-    // Avoid repeating a line that's still in the short-term memory window.
-    const fresh = variants.filter((t) => !recent.includes(fill(t, ctx)));
+    // Per-NPC memory (characterBrain.js) — a genuinely more precise repeat
+    // check than the scene-wide `recent` window above: `recentEvents` is a
+    // shared, cross-speaker log capped at 4 entries total, so one crew
+    // member's line can push a PATIENT's own earlier line out of that window
+    // within a couple of ticks even though the patient never actually said
+    // anything else in between. `ownRecentLines` is scoped to exactly this
+    // one character (npcId()), so it still remembers what THEY personally
+    // said even when other speakers have been busy. Combined, not
+    // substituted, since the scene-wide window also catches a different
+    // character's OWN pool happening to phrase something identically.
+    const brain = buildCharacterBrain(event.speaker, ctx, event);
+    const ownLines = brain?.ownRecentLines || [];
+    const fresh = variants.filter((t) => {
+      const filled = fill(t, ctx);
+      return !recent.includes(filled) && !ownLines.includes(filled);
+    });
     const chosen = (fresh.length ? fresh : variants)[Math.floor(Math.random() * (fresh.length ? fresh.length : variants.length))];
     return { speaker: event.speaker || "patient", text: fill(chosen, ctx), tier: "template" };
   }

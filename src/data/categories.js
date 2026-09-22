@@ -28,8 +28,9 @@ export const drugCategoryOf=(id)=>Object.entries(DRUG_CATEGORIES).find(([,ids])=
 // treatment-side subcategorization.
 export const PROC_CATEGORIES={
   "Airway / ventilation":["headTilt","jawThrust","mouthMask","mouthMouth","opa","npa","sga","ett","cric","laryngoscopy","bvm","cpap","vent","o2nc","o2nrb","suction"],
-  "Circulation / rhythm":["cpr","lucas","pads","aedAnalyze","aedShock","defib","cardiovert","pacing","icdMagnet","valsalva","ecgAcquire","ecgRead","etco2","pulseox","manualBP","autoBP","glucometer"],
-  "Access / volume":["iv","io","saline","plasmalyte","blood","plasma","artLine","paCath"],
+  "Circulation / rhythm":["cpr","lucas","attach_pads","aedAnalyze","aedShock","defib","cardiovert","pacing","icdMagnet","valsalva",
+    "ecgAcquire","ecgRead","etco2","pulseox","attach_pulseox","manualBP","autoBP","gluc","attach_leads","attach_bpcuff","attach_capno"],
+  "Access / volume":["iv","io","saline","plasmalyte","blood","plasma","artLine","attach_artline","paCath"],
   "Trauma":["tq","pack","directPressure","chestSeal","needleD","chestTube","pelvicBinder","splint","traction","cCollar","reboa","warm","moveToShade","activeCooling","ultrasound","fundalMassage"],
 };
 export const procCategoryOf=(id)=>Object.entries(PROC_CATEGORIES).find(([,ids])=>ids.includes(id))?.[0]||"Other";

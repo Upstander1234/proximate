@@ -19,6 +19,84 @@ const btn = (bg, bd, col) => ({ background: bg, border: `1px solid ${bd}`, color
 const GO = btn("#122A18", C.hr, C.hr);
 const NEUTRAL = btn("#10151A", C.line, C.text);
 
+// A drawn scene keyed to the current route, reflecting the state the player
+// is actually manipulating (scrub, patency, pinch depth, needle angle,
+// nostril side, flow rate) rather than a static diagram — so the same
+// picture that was drawn up in DrawUpMinigame reappears here going in.
+function Scene({ mode, access, scrubbed, patent, pinch, angle, nostril, flow, step }) {
+  if (mode === "line") {
+    const armY = 60;
+    return (
+      <svg viewBox="0 0 240 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+        <rect x={10} y={armY - 16} width={220} height={32} rx={14} fill="#D9A98A" opacity={0.85} />
+        {scrubbed && <ellipse cx={access === "IO" ? 60 : 120} cy={armY} rx={16} ry={10} fill="#8FD0E8" opacity={0.35} />}
+        {access === "IO" ? (
+          <g>
+            <rect x={48} y={armY - 6} width={24} height={12} rx={2} fill="#B9C4C9" />
+            <rect x={58} y={armY - 4} width={16} height={8} fill="#7A8890" />
+          </g>
+        ) : (
+          <g>
+            <rect x={108} y={armY - 5} width={24} height={10} rx={2} fill="#C8D3D9" />
+            <line x1={132} y1={armY} x2={150} y2={armY} stroke="#8FA0A8" strokeWidth={3} />
+          </g>
+        )}
+        {patent && <circle cx={access === "IO" ? 60 : 120} cy={armY} r={3} fill="#8A1F2A" opacity={0.7} />}
+        {step >= 2 && (
+          <g>
+            <rect x={150} y={armY - 9} width={64} height={18} rx={4} fill="#0E1518" stroke={C.line} strokeWidth={1.2} />
+            <rect x={152} y={armY - 7} width={30} height={14} rx={1} fill={C.hr} opacity={0.5} />
+            <rect x={182} y={armY - 12} width={6} height={24} rx={1.5} fill="#C8D3D9" />
+          </g>
+        )}
+      </svg>
+    );
+  }
+  if (mode === "im") {
+    const rad = (angle * Math.PI) / 180;
+    const nx = 100 - Math.cos(rad) * 46, ny = 76 - Math.sin(rad) * 46;
+    return (
+      <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+        <ellipse cx={100} cy={84} rx={pinch ? 46 : 58} ry={pinch ? 20 : 14} fill="#D9A98A" opacity={0.85} />
+        {pinch && <ellipse cx={100} cy={84} rx={30} ry={16} fill="#C89578" opacity={0.5} />}
+        <line x1={nx} y1={ny} x2={100} y2={76} stroke="#B9C4C9" strokeWidth={2.5} />
+        <circle cx={nx} cy={ny} r={2.4} fill="#8A9AA2" />
+        <text x={100} y={16} textAnchor="middle" fontSize={9} fill={Math.abs(angle - 90) <= 15 ? C.hr : C.amber}>{angle}°</text>
+      </svg>
+    );
+  }
+  if (mode === "in") {
+    return (
+      <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+        <path d="M60,70 Q100,10 140,70 Q140,95 100,95 Q60,95 60,70 Z" fill="#D9A98A" opacity={0.85} />
+        <ellipse cx={nostril === 0 ? 84 : 116} cy={68} rx={6} ry={8} fill="#7A5240" />
+        <rect x={nostril === 0 ? 62 : 118} y={58} width={22} height={9} rx={4} fill="#C8D3D9" transform={`rotate(${nostril === 0 ? -20 : 20} ${nostril === 0 ? 73 : 129} 62)`} />
+      </svg>
+    );
+  }
+  if (mode === "oral") {
+    return (
+      <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+        <ellipse cx={100} cy={55} rx={55} ry={40} fill="#D9A98A" opacity={0.85} />
+        <path d="M65,60 Q100,80 135,60 Q100,95 65,60 Z" fill="#7A3A3A" />
+        <ellipse cx={100} cy={40} rx={5} ry={3.5} fill="#E8E8E0" />
+      </svg>
+    );
+  }
+  // neb: mask over the face with mist scaled to flow
+  const mist = Math.max(0, Math.min(1, (flow - 2) / 12));
+  return (
+    <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+      <ellipse cx={100} cy={55} rx={55} ry={42} fill="#D9A98A" opacity={0.85} />
+      <path d="M65,45 Q100,32 135,45 Q140,78 100,86 Q60,78 65,45 Z" fill="#BFD8E0" opacity={0.75} stroke={C.line} strokeWidth={1} />
+      <circle cx={100} cy={40} r={7} fill="#0E1518" stroke={C.line} strokeWidth={1} />
+      {mist > 0.1 && [0, 1, 2].map((i) => (
+        <circle key={i} cx={90 + i * 10} cy={22 - i * 3} r={2 + mist * 2} fill="#BFE3F2" opacity={0.5 * mist} />
+      ))}
+    </svg>
+  );
+}
+
 // Hold-to-push bar. Holding advances the plunger at `speed`; a push faster
 // than `maxSpeed` counts as too fast (`onDone(tooFast)` when it completes).
 function PushBar({ label, speed, maxSpeed, onDone }) {
@@ -161,7 +239,12 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
             ))}
           </div>
         )}
-        {(ack || !warnings || warnings.length === 0) && (!both || picked) && !flash && stepView()}
+        {(ack || !warnings || warnings.length === 0) && (!both || picked) && !flash && (
+          <>
+            <Scene mode={mode} access={access} scrubbed={scrubbed} patent={patent} pinch={pinch} angle={angle} nostril={nostril} flow={flow} step={step} />
+            {stepView()}
+          </>
+        )}
         {flash && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, color: flash.ok ? "#7CD68A" : C.red, marginBottom: 10 }}>{flash.why}</div>

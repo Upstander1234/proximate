@@ -155,7 +155,12 @@ export const TASKS=[
   // protocol above) — see procedures.js's own `passiveCooling` entry for
   // the mechanism/magnitude reasoning.
   {id:"passiveCoolingTask",name:"Passive cooling (remove excess clothing/blankets)",lvl:1,dur:15,readback:'"Getting these blankets off him."',report:'"Blankets off, watching for shivering."',dose:"passiveCooling"},
-  {id:"applyPads",name:"Apply defib pads",lvl:0,dur:15,readback:'"Pads on."',report:'"Pads placed."',dose:"pads",doneKey:"pads"},
+  // Migrated onto the same attachDevice mechanism as leads/pulse-ox/BP cuff/
+  // capno above (was dose:"pads" against the now-retired legacy PROCS.pads
+  // entry — a real, previously-undiscovered duplicate of DEVICES.pads/the
+  // player's own attach_pads action, which had already moved to the real
+  // DeviceMinigame prep/peel/position sequence; the crew path never followed).
+  {id:"applyPads",name:"Apply defib pads",lvl:0,dur:15,readback:'"Pads on."',report:'"Pads placed."',attachDevice:"pads"},
   {id:"defibrillate",name:"Defibrillate — 200J",lvl:4,dur:10,readback:'"Clear! Shocking."',report:'"Shock delivered."',dose:"defib"},
   {id:"epiArrest",name:"Epinephrine 1mg IV/IO",lvl:3,dur:20,readback:'"Epi, one milligram, copy."',report:'"Epi is in."',dose:"epiIV"},
   {id:"amiodarone",name:"Amiodarone 300mg IV/IO",lvl:4,dur:20,readback:'"Amiodarone, three hundred, copy."',report:'"Amiodarone is in."',dose:"amiodarone"},

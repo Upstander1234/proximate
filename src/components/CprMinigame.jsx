@@ -20,6 +20,41 @@ const depthScore = (d) => (d >= DEPTH_LO && d <= DEPTH_HI ? 1 : clamp01(1 - (d <
 const rateScore = (r) => (r == null ? 1 : r < 100 ? clamp01(1 - (100 - r) / 40) : r > 120 ? clamp01(1 - (r - 120) / 40) : 1);
 const REGEN_PER_SEC = 100 / 60;   // a full bar back in a minute of rest
 
+// Hands laced over the sternum, chest visibly compressing on every push —
+// how far it sinks tracks the depth actually delivered, not just set.
+function ChestScene({ pressed, delivered }) {
+  const sink = pressed ? Math.min(14, delivered * 2) : 0;
+  return (
+    <svg viewBox="0 0 200 90" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 8 }}>
+      <defs>
+        <linearGradient id="cprTorsoGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E3AE87" />
+          <stop offset="100%" stopColor="#B87A54" />
+        </linearGradient>
+        <linearGradient id="cprHandGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E8C9A8" />
+          <stop offset="100%" stopColor="#C89578" />
+        </linearGradient>
+      </defs>
+      {/* torso */}
+      <ellipse cx={100} cy={62} rx={80} ry={24} fill="url(#cprTorsoGrad)" />
+      {/* sternum notch/midline for landmark reference */}
+      <line x1={100} y1={40} x2={100} y2={84} stroke="#8A5E45" strokeWidth={1} opacity={0.3} strokeDasharray="2,3" />
+      {/* the compression point itself */}
+      <ellipse cx={100} cy={54 + sink * 0.6} rx={46} ry={16 - sink * 0.3} fill="#C89578" opacity={0.9} />
+      <line x1={70} y1={54 + sink * 0.6} x2={130} y2={54 + sink * 0.6} stroke="#8A5E45" strokeWidth={1} opacity={0.4} />
+      <g transform={`translate(0,${sink * 0.6})`}>
+        {/* interlaced hands, heel of the palm down, fingers laced up and off the chest */}
+        <ellipse cx={82} cy={44} rx={22} ry={10} fill="url(#cprHandGrad)" stroke="#8A5E45" strokeWidth={1} transform="rotate(-8 82 44)" />
+        <ellipse cx={118} cy={46} rx={22} ry={10} fill="url(#cprHandGrad)" stroke="#8A5E45" strokeWidth={1} transform="rotate(8 118 46)" />
+        {[-14, -6, 2, 10].map((dx) => (
+          <line key={dx} x1={100 + dx} y1={38} x2={100 + dx} y2={30} stroke="#8A5E45" strokeWidth={2} strokeLinecap="round" opacity={0.6} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 export default function CprMinigame({ open, kind, pat, fitness, crew, interrupted, onProgress, onFinish, onAbort, onHandoff }) {
   const [depth, setDepth] = useState(4);
   const [count, setCount] = useState(0);
@@ -98,6 +133,7 @@ export default function CprMinigame({ open, kind, pat, fitness, crew, interrupte
       <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(480px,92vw)" }}>
         <div style={{ fontSize: 14, color: C.amber, marginBottom: 10 }}>Chest compressions</div>
         <MinigameVitalsStrip pat={pat} />
+        <ChestScene pressed={pressed} delivered={delivered} />
         {interrupted && (
           <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
             The patient's condition just changed. Keep going or stop and attend to them.

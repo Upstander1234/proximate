@@ -13,6 +13,53 @@ import HandoffRow from "./HandoffRow.jsx";
 const VOL_LO = 0.4, VOL_HI = 0.7;
 const TARGET_RATE = 10;
 
+// The bag itself: mask sealed over the face, self-inflating bag that
+// compresses live with the squeeze (`vol`), and a chest that visibly rises
+// once a breath lands in-band — the same visual cue "chest rise" trains a
+// provider to watch for at the real bedside.
+function BagScene({ sealed, vol, msg }) {
+  const squeeze = 1 - vol * 0.45; // bag narrows as it's squeezed
+  const rose = msg && msg.startsWith("Good");
+  return (
+    <svg viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+      <defs>
+        <linearGradient id="bvmSkinGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E3AE87" />
+          <stop offset="100%" stopColor="#B87A54" />
+        </linearGradient>
+        <radialGradient id="bvmBagGrad" cx="35%" cy="35%" r="70%">
+          <stop offset="0%" stopColor="#3F8A5F" />
+          <stop offset="100%" stopColor="#1E4A32" />
+        </radialGradient>
+        <linearGradient id="bvmMaskGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#D7EBF0" />
+          <stop offset="100%" stopColor="#9FC2CC" />
+        </linearGradient>
+      </defs>
+      {/* chest, rising visibly on a good breath */}
+      <path d={`M${100 - (rose ? 48 : 42)},96 Q100,${rose ? 76 : 88} ${100 + (rose ? 48 : 42)},96 L${100 + (rose ? 48 : 42)},110 L${100 - (rose ? 48 : 42)},110 Z`}
+        fill="url(#bvmSkinGrad)" />
+      {rose && <path d={`M${100 - 48},96 Q100,76 ${100 + 48},96`} fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />}
+      {/* head, shaded rather than a flat oval */}
+      <ellipse cx={38} cy={62} rx={22} ry={18} fill="url(#bvmSkinGrad)" />
+      <path d="M22,52 Q34,42 50,50" fill="none" stroke="#F3CBA8" strokeWidth={1.2} opacity={0.4} />
+      {sealed && (
+        <>
+          <ellipse cx={48} cy={62} rx={16} ry={14} fill="url(#bvmMaskGrad)" opacity={0.85} stroke={C.line} strokeWidth={1} />
+          <ellipse cx={44} cy={57} rx={5} ry={3} fill="#FFFFFF" opacity={0.35} />
+          <circle cx={48} cy={62} r={4} fill="#5C7A85" opacity={0.5} />
+        </>
+      )}
+      <line x1={64} y1={62} x2={82} y2={62} stroke="#8A9AA2" strokeWidth={4} />
+      {/* self-inflating bag, compressing with the squeeze */}
+      <ellipse cx={82 + 32 * squeeze} cy={62} rx={32 * squeeze} ry={26} fill="url(#bvmBagGrad)" stroke={C.hr} strokeWidth={1.4} />
+      <ellipse cx={72 + 20 * squeeze} cy={52} rx={10 * squeeze} ry={7} fill="#FFFFFF" opacity={0.12} />
+      <rect x={82} y={44} width={8} height={36} fill="#16202A" />
+      <rect x={78} y={40} width={16} height={6} rx={2} fill="#22303A" />
+    </svg>
+  );
+}
+
 export default function BvmMinigame({ open, kind, pat, crew, interrupted, onProgress, onStop, onHandoff }) {
   const [sealed, setSealed] = useState(false);
   const [vol, setVol] = useState(0);
@@ -87,6 +134,7 @@ export default function BvmMinigame({ open, kind, pat, crew, interrupted, onProg
       <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(480px,92vw)" }}>
         <div style={{ fontSize: 14, color: C.amber, marginBottom: 10 }}>Bag-valve-mask ventilation</div>
         <MinigameVitalsStrip pat={pat} />
+        <BagScene sealed={sealed} vol={squeezing ? vol : 0} msg={msg} />
         {interrupted && (
           <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
             The patient's condition just changed. Keep bagging or stop and attend to them.

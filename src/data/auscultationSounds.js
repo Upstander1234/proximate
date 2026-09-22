@@ -6,6 +6,14 @@
 //   KAUH          Fraiwan et al., Mendeley 10.17632/jwyy9np4gv.3 (CC BY 4.0)
 //   CirCor        Oliveira et al., PhysioNet 10.13026/tshs-mw03 (ODC-By 1.0)
 //   PhysioNet2016 Liu et al., PhysioNet challenge-2016 (ODC-By 1.0)
+//   ICBHI2017     Rocha et al., bhichallenge.med.auth.gr (published "freely
+//                 available for research," no CC/ODC identifier stated;
+//                 see credits.js's own entry for the full attribution)
+//   Unattributed  Provided directly by the developer; original recording source
+//                 could not be traced (asked, no answer). No credits.js entry —
+//                 see UNVERIFIED_ASSETS there. Kept out of the credited pools
+//                 above on purpose: do not add a name/license to these later
+//                 without actually verifying one.
 // All clips are mono 16-bit WAV at 4 kHz. Heart locations: RUSB aortic, LUSB pulmonic,
 // LLSB tricuspid, A apex (mitral), RC / LC beside the sternum. Lung locations:
 // R/L + U/M/L + A. "any" means the recording is not tied to one spot.
@@ -798,6 +806,181 @@ export const LUNG_SOUNDS = {
    "sex": "F"
   },
   {
+   "id": "ICBHI_CoarseCrackles_any_0",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_1",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_10",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_11",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_12",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_13",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_14",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_15",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_16",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_17",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_18",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_19",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_2",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_20",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_21",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_22",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_23",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_24",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_25",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_26",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_27",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_28",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_29",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_3",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_30",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_31",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_32",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_33",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_34",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_4",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_5",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_6",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_7",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_8",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_CoarseCrackles_any_9",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
    "id": "KA_CoarseCrackles_LLA_0",
    "loc": "LLA",
    "src": "KAUH"
@@ -808,27 +991,372 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_CoarseCrackles_LLA_101",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_13",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_14",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_CoarseCrackles_LLA_2",
    "loc": "LLA",
    "src": "KAUH"
   },
   {
-   "id": "KA_CoarseCrackles_LRA_3",
-   "loc": "LRA",
+   "id": "KA_CoarseCrackles_LLA_26",
+   "loc": "LLA",
    "src": "KAUH"
   },
   {
-   "id": "KA_CoarseCrackles_LRA_4",
-   "loc": "LRA",
+   "id": "KA_CoarseCrackles_LLA_33",
+   "loc": "LLA",
    "src": "KAUH"
   },
   {
-   "id": "KA_CoarseCrackles_LRA_5",
-   "loc": "LRA",
+   "id": "KA_CoarseCrackles_LLA_36",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_39",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_44",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_45",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_57",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_64",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_67",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_70",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_75",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_76",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_88",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_95",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LLA_98",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LMA_104",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LMA_42",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LMA_73",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LUA_25",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LUA_56",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_LUA_87",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_100",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_102",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_103",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_20",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_22",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_23",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_29",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_3",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_30",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_34",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_35",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_37",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_38",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_4",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_40",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_41",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_5",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_51",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_53",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_54",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_60",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_61",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_65",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_66",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_68",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_69",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_71",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_72",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_82",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_84",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_85",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_91",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_92",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_96",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_97",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RLA_99",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_15",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_19",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_27",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_28",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_31",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_32",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_46",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_50",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_58",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_59",
+   "loc": "RMA",
    "src": "KAUH"
   },
   {
    "id": "KA_CoarseCrackles_RMA_6",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_62",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_63",
    "loc": "RMA",
    "src": "KAUH"
   },
@@ -838,7 +1366,37 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_CoarseCrackles_RMA_77",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_CoarseCrackles_RMA_8",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_81",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_89",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_90",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_93",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RMA_94",
    "loc": "RMA",
    "src": "KAUH"
   },
@@ -853,8 +1411,98 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_CoarseCrackles_RUA_12",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_16",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_17",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_18",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_21",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_43",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_47",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_48",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_49",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_52",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_74",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_78",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_79",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_80",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_RUA_83",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_CoarseCrackles_RUA_9",
    "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_any_24",
+   "loc": "any",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_any_55",
+   "loc": "any",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_CoarseCrackles_any_86",
+   "loc": "any",
    "src": "KAUH"
   },
   {
@@ -1092,6 +1740,96 @@ export const LUNG_SOUNDS = {
    "src": "HF_Lung_V1"
   },
   {
+   "id": "ICBHI_Normal_any_0",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_1",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_10",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_11",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_12",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_13",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_14",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_15",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_16",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_17",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_2",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_3",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_4",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_5",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_6",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_7",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_8",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Normal_any_9",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
    "id": "KA_Normal_LLA_0",
    "loc": "LLA",
    "src": "KAUH"
@@ -1102,12 +1840,122 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_LLA_110",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_112",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_115",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_13",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_LLA_2",
    "loc": "LLA",
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_LLA_27",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_40",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_42",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_45",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_48",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_62",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_75",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_77",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_80",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_83",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LLA_97",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_109",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_113",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_15",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_16",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_18",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_23",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_LMA_3",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_39",
    "loc": "LMA",
    "src": "KAUH"
   },
@@ -1117,12 +1965,142 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_LMA_43",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_LMA_5",
    "loc": "LMA",
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_LMA_50",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_51",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_53",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_58",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_74",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_78",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_85",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_86",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_88",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LMA_93",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_100",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_101",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_102",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_20",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_24",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_29",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_30",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_31",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_32",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_55",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_59",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_LUA_6",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_64",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_65",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_66",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_67",
    "loc": "LUA",
    "src": "KAUH"
   },
@@ -1137,6 +2115,21 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_LUA_90",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_94",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_LUA_99",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_RLA_10",
    "loc": "RLA",
    "src": "KAUH"
@@ -1147,8 +2140,278 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Normal_RLA_114",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_19",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_22",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_44",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_54",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_57",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_79",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_89",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Normal_RLA_9",
    "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RLA_92",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_107",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_111",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_116",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_12",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_17",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_21",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_28",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_37",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_41",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_46",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_47",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_52",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_56",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_63",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_72",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_76",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_81",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_82",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_87",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_91",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RMA_98",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_103",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_104",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_105",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_106",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_108",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_14",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_25",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_26",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_33",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_34",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_35",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_36",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_38",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_49",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_60",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_61",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_68",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_69",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_70",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_71",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_73",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_84",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_95",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Normal_RUA_96",
+   "loc": "RUA",
    "src": "KAUH"
   },
   {
@@ -1186,6 +2449,11 @@ export const LUNG_SOUNDS = {
    "loc": "RUA",
    "src": "HLS-CMDS",
    "sex": "M"
+  },
+  {
+   "id": "USR_Normal_any_0",
+   "loc": "any",
+   "src": "Unattributed"
   }
  ],
  "Pleural Rub": [
@@ -1442,6 +2710,81 @@ export const LUNG_SOUNDS = {
    "src": "HF_Lung_V1"
   },
   {
+   "id": "ICBHI_Wheezing_any_0",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_1",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_10",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_11",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_12",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_13",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_14",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_2",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_3",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_4",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_5",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_6",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_7",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_8",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
+   "id": "ICBHI_Wheezing_any_9",
+   "loc": "any",
+   "src": "ICBHI2017"
+  },
+  {
    "id": "KA_Wheezing_LLA_0",
    "loc": "LLA",
    "src": "KAUH"
@@ -1452,12 +2795,112 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Wheezing_LLA_100",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_102",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_105",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_106",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_18",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Wheezing_LLA_2",
    "loc": "LLA",
    "src": "KAUH"
   },
   {
+   "id": "KA_Wheezing_LLA_20",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_23",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_24",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_59",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_61",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_64",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LLA_65",
+   "loc": "LLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_113",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_116",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_12",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_121",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_123",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Wheezing_LMA_3",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_31",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_34",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_39",
    "loc": "LMA",
    "src": "KAUH"
   },
@@ -1467,8 +2910,103 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Wheezing_LMA_41",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Wheezing_LMA_5",
    "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_53",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_72",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_75",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_80",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_82",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LMA_94",
+   "loc": "LMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_115",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_125",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_13",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_131",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_14",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_15",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_33",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_43",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_49",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_54",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_55",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_56",
+   "loc": "LUA",
    "src": "KAUH"
   },
   {
@@ -1482,7 +3020,37 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Wheezing_LUA_74",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Wheezing_LUA_8",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_84",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_90",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_95",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_96",
+   "loc": "LUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_LUA_97",
    "loc": "LUA",
    "src": "KAUH"
   },
@@ -1492,13 +3060,403 @@ export const LUNG_SOUNDS = {
    "src": "KAUH"
   },
   {
+   "id": "KA_Wheezing_RLA_101",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_108",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
    "id": "KA_Wheezing_RLA_11",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_110",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_112",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_120",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_122",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_124",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_126",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_127",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_128",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_134",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_16",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_19",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_26",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_28",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_30",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_38",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_40",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_42",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_44",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_45",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_46",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_52",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_57",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_60",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_67",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_69",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_71",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_79",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_81",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_83",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_85",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_86",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_87",
    "loc": "RLA",
    "src": "KAUH"
   },
   {
    "id": "KA_Wheezing_RLA_9",
    "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_93",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RLA_98",
+   "loc": "RLA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_104",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_107",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_109",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_111",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_117",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_119",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_129",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_22",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_25",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_27",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_29",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_35",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_37",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_47",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_63",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_66",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_68",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_70",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_76",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_78",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RMA_88",
+   "loc": "RMA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_103",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_114",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_118",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_130",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_132",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_133",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_17",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_21",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_32",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_36",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_48",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_50",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_51",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_58",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_62",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_73",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_77",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_89",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_91",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_92",
+   "loc": "RUA",
+   "src": "KAUH"
+  },
+  {
+   "id": "KA_Wheezing_RUA_99",
+   "loc": "RUA",
    "src": "KAUH"
   },
   {
@@ -1553,6 +3511,20 @@ export const LUNG_SOUNDS = {
    "id": "HF_Stridor_any_2",
    "loc": "any",
    "src": "HF_Lung_V1"
+  }
+ ],
+ "Cough": [
+  {
+   "id": "USR_Cough_any_0",
+   "loc": "any",
+   "src": "Unattributed"
+  }
+ ],
+ "Diminished": [
+  {
+   "id": "USR_Diminished_any_0",
+   "loc": "any",
+   "src": "Unattributed"
   }
  ]
 };

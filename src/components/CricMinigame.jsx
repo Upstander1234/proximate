@@ -86,13 +86,33 @@ export default function CricMinigame({ open, kind, pat, assist, interrupted, onR
         )}
 
         <svg viewBox="0 0 200 160" style={{ width: "100%", background: "#150A0A", borderRadius: 6, marginBottom: 12 }}>
-          <rect x={40} y={10} width={120} height={140} fill="#C9987A" opacity={0.3} rx={30} />
+          <defs>
+            <linearGradient id="neckSkinGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#B87A54" />
+              <stop offset="50%" stopColor="#E3AE87" />
+              <stop offset="100%" stopColor="#B87A54" />
+            </linearGradient>
+          </defs>
+          {/* neck, tapered like a real throat rather than a flat rounded
+              rectangle, with the cartilage landmarks drawn in relief so the
+              player can see why the membrane sits where it does */}
+          <path d="M 55 10 Q 100 2 145 10 L 155 150 Q 100 160 45 150 Z" fill="url(#neckSkinGrad)" />
+          {/* thyroid cartilage ("Adam's apple") prominence above the membrane */}
+          <path d="M 78 38 L 100 20 L 122 38 L 116 60 L 100 66 L 84 60 Z" fill="#00000022" />
+          <path d="M 78 38 L 100 20 L 122 38" fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />
+          {/* cricoid ring, below the membrane */}
+          <ellipse cx={100} cy={targetY * 160 + 22} rx={22} ry={7} fill="#00000018" />
+          {/* tracheal rings continuing down toward the sternal notch */}
+          {[0, 1, 2, 3].map((i) => (
+            <line key={i} x1={78} y1={targetY * 160 + 34 + i * 14} x2={122} y2={targetY * 160 + 34 + i * 14}
+              stroke="#00000014" strokeWidth={3} />
+          ))}
           <circle cx={100} cy={targetY * 160} r={landmarkTol * 160} fill={C.amber} opacity={0.25} />
-          {step === "landmark" && <circle cx={x * 200} cy={y * 160} r={5} fill={C.text} />}
+          {step === "landmark" && <circle cx={x * 200} cy={y * 160} r={5} fill={C.text} stroke="#000" strokeWidth={1} />}
           {step === "incise" && <line x1={100} y1={targetY * 160 - 12} x2={100 + (cutDir - 0.5) * 60} y2={targetY * 160 + 12}
             stroke={C.red} strokeWidth={2.5} strokeLinecap="round" />}
           {step === "tube" && <line x1={100} y1={targetY * 160 - 10} x2={100} y2={targetY * 160 + depth * 60}
-            stroke={C.text} strokeWidth={3} strokeLinecap="round" />}
+            stroke="#E8E4D8" strokeWidth={4} strokeLinecap="round" />}
         </svg>
 
         {step === "landmark" && !flash && (

@@ -172,7 +172,7 @@ export const LIB=[
   {id:"carotid",region:"neck",tab:"assess",label:"Carotid pulse (10 seconds)",gerund:"Palpating carotid",cost:12,lvl:0,
     run:(s,v)=>(v.hr>0&&v.sbp>=LIM.sbpCarotid)?{say:`Present. ${v.hr}, thready.`,meas:{HR:`${v.hr}`}}
       :{say:"Nothing. Ten seconds. Nothing at all. Compressions.",kind:"crit",evid:"No central pulse."}},
-  {id:"heart",region:"torso",tab:"assess",label:"Auscultate heart sounds",gerund:"Auscultating heart",cost:25,once:1,lvl:1,pocket:"scope",probe:"heart",
+  {id:"heart",region:"torso",tab:"assess",label:"Auscultate heart sounds",gerund:"Auscultating heart",cost:25,lvl:1,pocket:"scope",probe:"heart",
     // Was "unremarkable" on every patient. Now reads three real, independent
     // state variables a stethoscope actually distinguishes from what the
     // monitor already shows: pat.pericardialEffusion (tamponade muffles heart
@@ -484,7 +484,12 @@ export const PROC_ACTS=[
   P("cpap","head","airway",{once:1}),P("vent","head","airway",{once:1}),
   P("o2nc","head","airway",{once:1}),P("o2nrb","head","airway",{once:1}),
   P("suction","head","procedures"),P("recovery","head","procedures",{once:1}),P("abdThrust","head","procedures"),
-  P("cpr","torso","procedures"),P("lucas","torso","procedures",{once:1}),P("pads","torso","procedures",{once:1}),
+  P("cpr","torso","procedures"),P("lucas","torso","procedures",{once:1}),
+  // "pads" itself (the flat quick-apply) is retired — DEVICES.pads' own
+  // attach_pads (deviceActs(), below) is the one real path now, routed
+  // through DeviceMinigame's prep/peel/position sequence. The two used to
+  // coexist as an exact duplicate (same label, same lvl, same cost) with
+  // the flat one silently letting a player skip the minigame entirely.
   P("aedAnalyze","torso","procedures"),P("aedShock","torso","procedures"),
   // hideInList: the Monitor tab's own "MANUAL DEFIBRILLATION" section
   // (energy select -> charge -> shock, App.jsx) already runs this exact
@@ -532,7 +537,8 @@ export const PROC_ACTS=[
   // nasal cannula on a spontaneously breathing patient (no advanced airway
   // required) or inline on an SGA/ETT for continuous waveform capnography.
   P("etco2","head","assess",{label:"EtCO₂ — capnography (mouth)"}),
-  P("tq","armR","procedures",{once:1}),P("tq","armL","procedures",{once:1}),
+  P("tq","armR","procedures",{once:1}),P("splint","armR","procedures",{once:1}),
+  P("tq","armL","procedures",{once:1}),P("splint","armL","procedures",{once:1}),
   P("tq","legR","procedures",{once:1}),P("splint","legR","procedures",{once:1}),
   P("traction","legR","procedures",{once:1}),P("reboa","legR","procedures",{once:1}),
   P("tq","legL","procedures",{once:1}),P("splint","legL","procedures",{once:1}),

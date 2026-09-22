@@ -13,6 +13,51 @@ const btn = (bg, bd, col) => ({ background: bg, border: `1px solid ${bd}`, color
 const GO = btn("#122A18", C.hr, C.hr);
 const NEUTRAL = btn("#10151A", C.line, C.text);
 
+// A drawn fingertip that tracks every step: an alcohol sheen while it's wet,
+// a lancet mark once lanced, and a blood drop that grows live with `drop`
+// (the same hold-to-squeeze fraction the meter reads) and a strip alongside
+// it once one's inserted.
+function Finger({ step, cleaned, dry, lanced, drop }) {
+  const wet = cleaned && !dry;
+  const dropR = 2 + drop * 7;
+  return (
+    <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+      <defs>
+        <linearGradient id="glucFingerGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#B87A54" />
+          <stop offset="50%" stopColor="#E3AE87" />
+          <stop offset="100%" stopColor="#C9987A" />
+        </linearGradient>
+        <linearGradient id="glucMeterGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#222E38" />
+          <stop offset="100%" stopColor="#131A20" />
+        </linearGradient>
+      </defs>
+      {/* meter body + strip slot */}
+      <rect x={116} y={14} width={72} height={44} rx={5} fill="url(#glucMeterGrad)" stroke={C.line} strokeWidth={1.5} />
+      <rect x={119} y={17} width={66} height={4} rx={2} fill="#FFFFFF" opacity={0.06} />
+      <rect x={122} y={20} width={60} height={14} rx={2} fill="#0B0F12" />
+      <text x={152} y={30} textAnchor="middle" fontSize={7} fill={step >= 5 ? C.hr : C.faint} style={{ fontFamily: "ui-monospace,monospace" }}>
+        {step >= 5 ? "reading" : step >= 4 ? "sample" : "-- --"}</text>
+      <rect x={130} y={38} width={16} height={16} rx={1.5} fill={step >= 1 ? "#E9EDE6" : "#1B242B"} stroke={C.line} strokeWidth={1} />
+      {step >= 1 && <rect x={134} y={40} width={8} height={12} fill={step >= 4 ? "#8A1F2A" : "#D8DAD1"} opacity={step >= 4 ? 0.85 : 1} />}
+      {/* fingertip */}
+      <g transform="translate(20,20)">
+        <path d="M40,90 L40,30 Q40,4 58,4 Q76,4 76,30 L76,90 Z" fill="url(#glucFingerGrad)" stroke="#8A5E45" strokeWidth={1.2} />
+        {/* fingernail */}
+        <path d="M48,14 Q58,6 68,14 L66,28 Q58,32 50,28 Z" fill="#F0DCC8" opacity={0.55} />
+        <ellipse cx={58} cy={90} rx={18} ry={6} fill="#C89578" opacity={0.6} />
+        {wet && <ellipse cx={58} cy={40} rx={14} ry={22} fill="#BFE3F2" opacity={0.35} />}
+        {lanced && <line x1={58} y1={26} x2={58} y2={31} stroke="#7A1E1E" strokeWidth={1.6} />}
+        {lanced && drop > 0 && (
+          <circle cx={58} cy={31 + dropR * 0.4} r={dropR} fill="#8A1F2A" stroke="#5C1219" strokeWidth={0.6} />
+        )}
+      </g>
+      {step === 2 && <line x1={98} y1={30} x2={112} y2={46} stroke="#B9C4C9" strokeWidth={2} />}
+    </svg>
+  );
+}
+
 export default function GlucometerMinigame({ open, kind, pat, assist, interrupted, onResolve }) {
   const [step, setStep] = useState(0);
   const [cleaned, setCleaned] = useState(false);
@@ -75,6 +120,7 @@ export default function GlucometerMinigame({ open, kind, pat, assist, interrupte
       <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(480px,92vw)" }}>
         <div style={{ fontSize: 14, color: C.amber, marginBottom: 10 }}>Check blood glucose</div>
         <MinigameVitalsStrip pat={pat} />
+        {!flash && <Finger step={step} cleaned={cleaned} dry={dry} lanced={step >= 2} drop={step === 3 ? drop : step > 3 ? 0.55 : 0} />}
         {interrupted && !flash && (
           <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
             The patient's condition just changed. Check the alert once you're done, or abandon now.
