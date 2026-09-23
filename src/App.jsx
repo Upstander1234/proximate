@@ -1133,7 +1133,7 @@ const SCEN_BODY_SYSTEM={
   // one for a single scenario apiece would be scope nobody asked for, so
   // both land in "Other" rather than being force-fit into an unrelated
   // system (same reasoning already on file for testicularTorsion).
-  doa:"Other",prankCall:"Other",testicularTorsion:"Other",sickleCellCrisis:"Other",
+  doa:"Other",prankCall:"Other",testicularTorsion:"Other",sickleCellCrisis:"Other",rectalForeignBody:"Other",
   excitedDeliriumAgitated:"Other",chronicBackPain:"Other",
   // No "Vascular" or "Psychiatric" Sandbox section exists — same reasoning
   // as above, both land in "Other" rather than inventing a section for one
