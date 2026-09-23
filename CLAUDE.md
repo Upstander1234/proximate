@@ -5295,7 +5295,7 @@ plausible but not fitted to trial data.
     and sepsis rules. Still owed: EtCO2-driven rules (CPR quality <10 mmHg,
     p.6230; post-ROSC target 35-45, p.6551) now that the reading is live.
 
-53. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
+52. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
     ipratropium, dexamethasone, diltiazem, metoprolol, morphine, ketorolac,
     IV acetaminophen, nitrous oxide, ketamine (agitation step after
     midazolam), norepinephrine (replaces `pushEpi` as the shock pressor;
@@ -5314,13 +5314,13 @@ plausible but not fitted to trial data.
     vasopressin/phenylephrine exist but this guideline names no step for
     them; (d) unverified in a live call, mock-`ctx` evaluation only.
 
-54. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
+53. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
     fixed-dose `national.js` rule is gated `ADULT`, so pediatric patients
     get no auto-suggested drugs. Needs weight-scaled task variants (or a
     dose multiplier on the task) for adenosine, atropine, naloxone, epi,
     saline, midazolam, dextrose etc., then removal of the gate per rule.
 
-55. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
+54. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
     (pulse ox, BP cuff, 12-lead, pads, serial vitals, drug-reassessment
     vitals, IV access, glucose recheck, tourniquet) were added to
     `national.js` only.** Not yet ported to `laCounty.js` or
@@ -5328,7 +5328,7 @@ plausible but not fitted to trial data.
     arrest/shock and `vitals` only once. Port using their own protocol
     citations, not National page numbers.
 
-56. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
+55. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
     in a live call and use coarse triggers.** Only a mock-`ctx` evaluation
     and eslint were run. Still to do: (a) play a call and confirm the
     "directs <hand>: <task>" log lines appear; (b) `tourniquet` fires on
@@ -5343,7 +5343,7 @@ plausible but not fitted to trial data.
     every guideline's own monitoring/access/reassessment steps against
     the rules is still owed.
 
-57. **PARTIALLY DONE (this session) — two of the named-missing drivers are
+56. **PARTIALLY DONE (this session) — two of the named-missing drivers are
     now real, with real `mechanismWiring.mjs` assertions; the deeper
     stored-diameter/latency refactor remains open.** Read `pupils.js`
     directly before touching anything (lesson 16): the file's own header
@@ -5416,7 +5416,7 @@ plausible but not fitted to trial data.
     overrides still beat the live state (see a previous item in the queue's
     own frozen-text audit for the general pattern).
 
-58. **PARTIALLY DONE (this session) — point (a) is now real for the three
+57. **PARTIALLY DONE (this session) — point (a) is now real for the three
     scenarios that reach the `stemi` ecg kind; the rest is unchanged.**
     `src/twelveLead.js` draws all 12 leads from the live snapshot (rhythm
     kind, hr, `qrsWidth`, `prInterval`, `infarctTerritory`); the Monitor
@@ -5472,7 +5472,7 @@ plausible but not fitted to trial data.
     scope check, and printing is not yet tied to the `ecgAcquire` action or
     base transmission.
 
-59. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
+58. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
     physiology.** `GiveMedMinigame`, `DrawUpMinigame`, `PupilMinigame`,
     `GlucometerMinigame`, `DeviceMinigame`, `CprMinigame` and
     `ProcMinigame` (tourniquet, needle decompression, chest seal, BVM,
@@ -5497,7 +5497,7 @@ plausible but not fitted to trial data.
     minigames has a browser test yet (see `tools/browser/verifyMinigame*.mjs`);
     (h) pediatric CPR depth/rate and pad sizes are not scaled.
 
-60. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
+59. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
     Shipped: `AuscultationMinigame` is a free-placement exam on a drawn bare
     torso (`ChestBody.jsx`, front and back, no labels) — hover, click to place,
     hold and drag to slide; `physio/auscultation.js`'s `chestSpec()` mixes the
@@ -5569,7 +5569,7 @@ plausible but not fitted to trial data.
     the 258 clip IDs in the regenerated manifest still resolves to a real file
     on disk.
 
-61. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
+60. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
     clips are now wired and measured; Early/Late Systolic Murmur remain
     genuinely open.** See section 3's newest entry for the full writeup: a
     direct envelope/peak-timing inspection of the 3 real source WAVs
@@ -5593,7 +5593,7 @@ plausible but not fitted to trial data.
     or would misuse an existing, mechanistically-different finding — real,
     still-open physiology-engine work, not attempted here.
 
-62. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
+61. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
     Education Mode, quizzing every one of the 647 heart/lung clips with a
     real per-clip report mechanism; a second, focused pneumothorax-recording
     search came back empty for a real, structural reason.**
