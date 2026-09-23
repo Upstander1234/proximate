@@ -343,6 +343,70 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 — Queue items 39/40/42/44 re-verified against the tree (lesson 16): item 40's own flagged "biggest finding" (outcomeReport() has no caller) and items 42/44's own "still open" gaps are ALL already resolved, evidently by concurrent/earlier work never reflected back into this document. No new physiology code was written; this was a verification-and-documentation pass, stated honestly.
+
+**Item 40 (structural vs. functional damage) is now CLOSED in full, not
+just its kidney slice.** Re-grepping `outcomeReport` across `src/App.jsx`
+found it wired at every debrief-producing transition (`physioOutcome:
+outcomeReport(s)`, tagged "F44" in-code) and a real, distinct "THE CHART"
+panel in the debrief screen (`App.jsx` ~line 7513) rendering arrest/ROSC/
+downtime, neurological outcome, `irreversibleInjuries`/`reversibleFindings`,
+troponin, and death-mechanism treatability straight from
+`g.physioOutcome` — the exact "written, read by nothing" defect this
+item's own text flagged as its single largest open finding is gone.
+`git log -S physioOutcome -- src/App.jsx` shows it landed in a checkpoint
+commit that predates this session's own work, so this was found already
+shipped, not built here. In the same read, `physiology.js`'s
+`outcomeReport()` was also found to already compose liver (`hepaticStunning`)
+and gut (`gutMucosalStunning`) into `reversibleFindings` alongside kidney's
+`atnProgression` — closing the item's own explicitly-named "still open —
+the general per-organ pattern beyond kidney" gap — plus a resolved-TIA
+brain finding (`pat._maxStrokeWeakness` vs. current `strokeWeakness`) and a
+genuinely new addition beyond the item's own scope, a global
+oxygen-extraction-reserve report (`svO2Composite`/`organsAtExtractionLimit`,
+cited to Rivers et al., NEJM 2001). `npx eslint src/App.jsx` (3 pre-existing
+`react-refresh/only-export-components` errors, unchanged) and `npx vite
+build` (clean, same pre-existing >500kB chunk-size warning) both re-confirm
+clean against the current tree. See section 6 item 40 for the full,
+corrected text — the original filing is kept below it for its own
+now-superseded detail, not as current status.
+
+**Item 42 (isolated pruritus/urticaria signal) was itself stale — the gap
+it described no longer exists.** A real `pat.urticaria` field, a dedicated
+`allergicReactionMild` condition, a graded skin-exam finding
+(`actions.js`), a real diphenhydramine treatment effect
+(`drugs.js`'s `diphen`, `fx:{urticaria:-0.5}`), and both `laCounty.js`'s and
+`national.js`'s own `anaphDiphen` rules reading `ctx.v.urticaria` directly
+are all live in the tree, with existing two-sided `mechanismWiring.mjs`
+coverage. Marked CLOSED.
+
+**Item 44's crew-directed-nitro-hold gap is also closed.** `App.jsx`'s
+`crewFn` now runs the same `DRUGS[t.dose].hold(v)` check the player's own
+`medActs()` path already enforced, confirmed by reading the code directly.
+The item's OTHER half (the SBP-tiered `nitro2`/`nitro3` dose escalation
+itself) remains correctly deferred — unchanged, still blocked on a separate,
+real `nitro` recalibration this document's own prior measurement already
+found necessary (the current coefficients are oversized enough that any
+tested dose-scale-up compounds the problem rather than fixing it).
+
+**Item 39 (consciousness/sedationDepth) was re-verified and found accurate
+as written**, with `pat.sedationDepth` now also feeding a real
+agitation-calming pathway used by several psychiatric conditions (delirium,
+etc.) beyond what the item's own text described — an organic extension, not
+a contradiction. The full continuous-arousal-score refactor remains
+correctly unattempted (still flagged as large and risky); nothing was
+changed here.
+
+**Net effect**: no engine code changed this session; four queue-item text
+blocks were corrected to match the tree, and one (40) that had accumulated
+a large amount of stale "still open" language is now fully closed. This is
+exactly the failure mode lesson 16 warns about, recurring at the scale of
+a whole document section rather than one field — worth a broader pass
+re-checking other items' own "still open"/"RESOLVED" framings against the
+tree when time allows, since the pattern (a fix ships, the queue text is
+never updated) has now recurred often enough across this document's own
+history to be a standing risk, not a one-off.
+
 ### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from a previous item in the queue) was found in the course of tracing them.
 
 **Blocked on the run properly, not assumed.** Launched in the background
@@ -3856,10 +3920,59 @@ future event can opt in the same way). Still open:
     larger piece** — this session only closed the one concrete input gap
     its own text had assumed was already real.
 
-40. **Separate structural damage from functional dysfunction, generally —
+40. **CLOSED (re-verified this session) — every part of this item, including
+    the "much larger finding" below, is now resolved in the tree; this was
+    confirmed by reading the code directly (lesson 16), not assumed from the
+    text below, which had gone stale.** Three things were checked and all
+    three are real:
+    - **`outcomeReport()` now HAS a caller.** `grep outcomeReport src/App.jsx`
+      shows it wired at every debrief-producing transition (`physioOutcome:
+      outcomeReport(s)`, tagged "F44" in-code), and the debrief screen
+      renders a real, distinct "THE CHART" panel (`App.jsx`, ~line 7513) off
+      `g.physioOutcome` — arrest timing/ROSC/downtime, neurological outcome,
+      irreversible/reversible injuries, troponin, and death-mechanism
+      treatability all render from the real physiology-layer object, not the
+      old ad-hoc `g.outcome` literal (which still exists alongside it for the
+      player's own self-graded call summary — the two are complementary, not
+      duplicates). This closes what this item's own text flagged as the
+      single largest open finding.
+    - **The liver/gut "still open" extension is also done.** `physiology.js`'s
+      `outcomeReport()` (~line 326-338) now composes `pat.hepaticStunning`/
+      `pat.gutMucosalStunning` into `reversibleFindings` the same way
+      `pat.atnProgression` already did for kidney — the exact "still open —
+      the general per-organ pattern beyond kidney" gap this item's own text
+      named is closed.
+    - **Brain has its own version too**, found in the same read: a resolved
+      TIA (`pat.strokeWeakness` back near 0 after having peaked >0.3 via
+      `pat._maxStrokeWeakness`) reports as a real reversible finding
+      distinct from a structural stroke, reusing the already-shipped `tia`
+      condition rather than inventing a second brain-injury accumulator.
+    - **A further, previously-undocumented addition found in the same
+      function**: a real global oxygen-extraction-reserve report
+      (`svO2Composite`, `organsAtExtractionLimit`), citing Rivers et al.,
+      NEJM 2001 for the 60% mixed-venous-saturation threshold (adjusted down
+      from the cited 70% central-venous target, since mixed venous runs a
+      few points lower under the same physiology) — a genuinely new
+      prognostic signal beyond what this item itself asked for.
+
+    None of this was built by this session — it was found, already shipped
+    and committed (`git log -S physioOutcome` shows it landed in a checkpoint
+    commit ahead of this session's own work, evidently from concurrent
+    work), while re-verifying this item's own claims against the tree per
+    the standing lesson-16 discipline. `npx eslint src/App.jsx` (3
+    pre-existing `react-refresh/only-export-components` errors, unchanged
+    baseline) and `npx vite build` (clean, same pre-existing >500kB
+    chunk-size warning) both re-confirmed clean against the current tree.
+    Nothing is left open under this item's own name.
+
+    Original filing, kept for its own now-superseded detail below — do not
+    treat any "still open" language in it as current; the paragraphs above
+    are what's current.
+
+    ~~Separate structural damage from functional dysfunction, generally —
     the kidney slice is DONE (this session), and it surfaced a much larger,
     previously-undocumented finding: the debrief function this data feeds
-    has NO CALLER anywhere in the codebase.** `pat.kidneyInjury` and
+    has NO CALLER anywhere in the codebase.~~ `pat.kidneyInjury` and
     `pat.brainInjury` already are real, distinct structural-damage fields
     separate from momentary function (confirmed: `chronicKidneyDisease`
     pins `kidneyInjury` while GFR/excretion still compute dynamically off
@@ -4025,9 +4138,24 @@ Also open, lower priority: ketamine's `myocardialDepression` coefficient is
 asserted rather than identified; the antiarrhythmic blockade coefficients are
 plausible but not fitted to trial data.
 
-42. **RESOLVED (this session) — see section 3's newest entry.** No isolated
-    pruritus/hives signal exists — found while implementing
-    TP 1219/1219-P (Allergy), step 10's diphenhydramine indication.
+42. **CLOSED (re-verified this session, lesson 16) — this item's own
+    "RESOLVED" opening line was itself stale.** It used to read "no isolated
+    pruritus/hives signal exists," but a real `pat.urticaria` mechanism (0-1
+    histamine-driven cutaneous finding, distinct from `edema`/`bronch`) is
+    now live: `patient.js` declares it, `allergicReactionMild`
+    (conditions.js, its own dedicated scenario) drives it, `actions.js`'s
+    skin exam reads it for a real graded finding (hives alone vs. hives +
+    angioedema), `diphen`'s real `fx:{urticaria:-0.5}` treats it, and both
+    `laCounty.js` and `national.js` gate their own `anaphDiphen` rule on
+    `ctx.v.urticaria` — confirmed by direct grep across all of `src/`, not
+    assumed from the comment. `mechanismWiring.mjs` already carries two-sided
+    assertions for it (fires in `allergicReactionMild`, absent in a matched
+    healthy control, measurably reduced by diphenhydramine). Nothing left
+    open under this item's own name; no code changed this session.
+
+    Original filing, kept for its own now-superseded detail — found while
+    implementing TP 1219/1219-P (Allergy), step 10's diphenhydramine
+    indication:
     `pat.edema`/`bronch` are real fields for angioedema/bronchospasm, but
     nothing represents cutaneous urticaria/itching in isolation (a patient
     with hives and no other finding). `laCounty.js`'s `anaphDiphen` rule
@@ -4066,22 +4194,31 @@ plausible but not fitted to trial data.
     correctly lower priority than a previous item in the queue above unless a dive-specific
     scenario is specifically wanted.
 
-44. **STILL BLOCKED (re-investigated this session, no code changed) — see
-    section 3's newest entry.** Confirmed the SBP-hold and repeat-dose-cap
-    mechanisms this item originally assumed were missing already exist and
-    work correctly (measured: `nitro.hold` blocks below sbp 100, clears at
-    100+; `laCounty.js`'s `nitroChestPain` caps repeats at 3 gated on live
-    sbp). The SBP-tiered escalation itself remains correctly deferred
-    pending a separate `nitro` recalibration item, per a prior session's
-    own measured finding that any tested dose-scale-up compounds an already
-    oversized baseline effect (forcing 3 unconditional doses crashes sbp to
-    8.6). **A real, still-open, DIFFERENT gap was found in passing**: crew-
-    directed nitro doses (`crewFn`'s `t.dose` branch, App.jsx) have no
-    `hold` check at all, so a crew member ordered to give nitro bypasses the
-    SBP<100 contraindication the player's own UI enforces — distinct from
-    a previous item in the queue's now-resolved max-dose-cap gap at the same call site. Not
-    fixed this session; flagged for a future batch. Original filing, kept
-    for context:
+44. **STILL BLOCKED on the SBP-tiered-escalation half; the crew-hold gap this
+    item flagged is CLOSED (re-verified this session, lesson 16 — the fix
+    predates this session, found already committed).** `App.jsx`'s `crewFn`
+    now runs a real `dHold=DRUGS[t.dose]; if(dHold&&dHold.hold){...return}`
+    check before dispatching any crew-directed dose (in-code comment: "a
+    real gap: crew-directed doses skipped this entirely... that the player's
+    own UI would have blocked"), mirroring `medActs()`'s own player-path
+    `d.hold(v)` check exactly — confirmed by reading the code directly, not
+    assumed. This closes the "real, still-open, DIFFERENT gap" this item's
+    own text used to flag; nothing further to do under that half. The
+    SBP-tiered-escalation half (`nitro2`/`nitro3`) remains correctly
+    deferred, unchanged — see the measured finding below (any tested
+    dose-scale-up on `nitro`'s current, already-oversized coefficients
+    compounds rather than fixes the problem) — that recalibration is still
+    real, separately-scoped, unattempted work.
+
+    Original filing, kept for context. Confirmed the SBP-hold and
+    repeat-dose-cap mechanisms this item originally assumed were missing
+    already exist and work correctly (measured: `nitro.hold` blocks below
+    sbp 100, clears at 100+; `laCounty.js`'s `nitroChestPain` caps repeats
+    at 3 gated on live sbp). The SBP-tiered escalation itself remains
+    correctly deferred pending a separate `nitro` recalibration item, per a
+    prior session's own measured finding that any tested dose-scale-up
+    compounds an already oversized baseline effect (forcing 3 unconditional
+    doses crashes sbp to 8.6).
 
     Nitroglycerin has only one flat 0.4mg dose entry — TP 1214
     (Pulmonary Edema/CHF) wants an SBP-tiered ESCALATING dose (0.4mg at
