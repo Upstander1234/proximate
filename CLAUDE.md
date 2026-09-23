@@ -2995,17 +2995,99 @@ attempt to build the whole block in one batch. The first several items below
 are the recommended starting point per the source document's own priority
 matrix (its own "Tier 1").
 
-15. **Oxygen transport as a dedicated authoritative subsystem.** A real
-   Hb-O2 dissociation curve with dynamic P50 (pH/PaCO2/temp/2,3-DPG-adjusted,
-   not the fixed P50 this engine currently has no explicit curve for at all —
-   confirm against `respiratory.js`/`metabolic.js` before assuming a gap).
-   `CaO2`/`CvO2`/`DO2`/`VO2`/`SvO2` as a coherent, single-writer set (today
-   several of these are computed ad hoc per-module — `metabolic.js`'s
-   `actualVO2`, a previous item in the queue's per-organ `caO2` reads — not owned by one
-   subsystem). A `pat.cytochromeBlock`-style utilization-vs-delivery split
-   already exists (built for `cyanidePoisoning`, a previous item in the queue) — this item is
-   about generalizing and centralizing the REST of the oxygen-transport math
-   around it, not rebuilding what's already real.
+15. **PARTIALLY AUDITED (2026-09-22) — the dynamic-P50 half of this item's own
+   text was already false (confirmed real, not a gap); one genuine
+   single-writer defect was found and fixed in the same pass.** Read
+   `respiratory.js`'s `oxySat()` directly before assuming anything: it
+   already implements a real, cited pH/PaCO2/temp/2,3-DPG-adjusted P50 shift
+   (`logShift = -0.48*dPH + 0.024*dT + 0.06*log10(paco2/40)`, a standard
+   Bohr/Haldane/temperature form), and `pat.dpg` (queue item 5) already
+   right-shifts the curve for chronic anemia/COPD — this item's own opening
+   sentence describing "the fixed P50 this engine currently has no explicit
+   curve for at all" was stale even before this session touched anything.
+
+   **The real, genuine gap: `pat.caO2` had two independent writers with
+   different physiology, not one authoritative subsystem.** `metabolic.js`'s
+   `updateMetabolism` already correctly nets out COHb/metHb functional-anemia
+   fractions (`1.34*hb*(1-cohbFrac-metHbFrac)*sao2/100 + 0.003*pao2`) and its
+   own in-code comment already states it is "the authoritative caO2 site
+   (last write wins over respiratory.js's own intermediate computation)" —
+   but `respiratory.js`'s `updateGasExchange` runs EARLIER in the same
+   per-tick substep order (`patient.js`'s pipeline) and writes an
+   UNCORRECTED intermediate `pat.caO2` (no cohb/metHb term) that its own
+   `do2`/`er`/`svO2`/`pvO2` local pipeline consumes immediately — and
+   `pat.pvO2` is a real, live consumer, feeding straight back into
+   `pat.pao2` via the venous-admixture/shunt equation a few lines later in
+   the SAME function. So while the final PUBLISHED `pat.caO2` (and every
+   organ DO2 signal derived from it after metabolic.js runs) was already
+   correct, respiratory.js's own intra-tick venous-saturation/shunt math was
+   silently running on an artificially high oxygen-carrying-capacity number
+   for any COHb- or metHb-affected patient.
+
+   **MEASURED before and after, on the real, already-shipped
+   `carbonMonoxidePoisoning` scenario at 600s (cohb settled ~0.313, hb
+   15.15):** naive (uncorrected) caO2 20.31 mL/dL vs metabolic.js's corrected
+   14.06 mL/dL — a real 31% overstatement of O2 content feeding
+   respiratory.js's own `svO2` calc. Before the fix, respiratory.js's
+   intra-tick `pat.svO2` read 73.6% (using the naive value); after, it reads
+   64.9% — a genuine 8.7-point correction, matching a hand-computed expected
+   value (64.8%) from the same formula with the fractions applied. A
+   condition-less healthy control (`abdPain`, cohb=metHb=0) is confirmed
+   bit-for-bit unaffected (both fractions are exactly 0, so the added terms
+   contribute nothing) — `caO2` 20.333, `svO2` 75.79%, identical before and
+   after.
+
+   **Fixed** (`respiratory.js`) by reusing the exact same `cohbFrac`/
+   `metHbFrac` clamp-and-subtract terms metabolic.js already computes and
+   cites, rather than inventing a second, independently-derived formula that
+   could drift from the authoritative one — both writers now express
+   identical physiology, differing only in WHEN in the tick they run
+   (respiratory's own value is still overwritten by metabolic's later in the
+   same substep, unchanged; the fix is about respiratory's own LOCAL,
+   same-tick consumers of the value it computes, not about which write wins).
+
+   **Verification, complete.** `node --check`/`npx eslint
+   src/physio/respiratory.js`: clean. `npx vite build`: clean (2.49s, same
+   pre-existing >500kB chunk-size warning). Since this touches
+   `respiratory.js`'s shared per-tick gas-exchange hot path, the full suite
+   was run — twice, to distinguish a real regression from this engine's own
+   already-documented stochastic noise: `mechanismWiring.mjs` run 1 came
+   back **707 passed, 7 failed**; run 2 (identical code, no changes between
+   runs) came back **705 passed, 9 failed**, with a DIFFERENT failure set
+   (a `croup` paco2 assertion appeared only in run 2; `hydrocarbonAspiration`
+   appeared only in run 1) — the failure count and membership both changing
+   between two back-to-back runs of unchanged code proves these are the
+   suite's own pre-existing stochastic/borderline-threshold assertions
+   (the standing BVM trio, plus several already-borderline ones this
+   session's re-run happened to tip either way), not a regression this fix
+   introduced. Confirmed by content, not just by re-running: none of the
+   four non-BVM failures in either run (`vo2Demand` cross-probe noise,
+   `severeMetabolicAcidosis`'s k-threshold, `neurogenicShock`'s sbp-drift
+   threshold, `hydrocarbonAspiration`, `croup`'s paco2 margin) read
+   `caO2`/`svO2`/`pao2`/`do2` at all, and none of their own scenarios set
+   `pat.cohb`/`pat.metHb`, so this fix is mathematically inert for every one
+   of them (the added correction terms are exactly 0 whenever both fields
+   are 0). `scenarioSweep.mjs`: **184 scenarios, 20,947,666 checks, 920
+   failed** — every single failure is the exact same pre-existing,
+   already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-
+   t=2s defect on unmodified master (confirmed by grepping every distinct
+   failure message pattern in the log: only these five field names appear),
+   unrelated to this fix. Two throwaway probe scripts were stripped after
+   use, confirmed via a directory listing.
+
+   **Still fully open, unchanged**: `CvO2`/`VO2`/`SvO2Composite` remain
+   real but still computed in three different modules
+   (`respiratory.js`'s crude whole-body `svO2`, `neuro.js`'s per-organ
+   `svO2Composite`, `metabolic.js`'s `actualVO2`) rather than one
+   consolidated subsystem — each was independently confirmed a REAL, wired,
+   non-decorative mechanism in earlier sessions (queue item 16's own audit
+   already established `svO2Composite` is deliberately a SEPARATE,
+   flow-weighted composite from `svO2`'s whole-body Fick number, not a
+   duplicate to be merged), so the remaining work here is the same
+   refactor-for-clarity question items 18/19/22 already pose for their own
+   scattered-field candidates, not new mechanism work. `pat.cytochromeBlock`
+   (cyanidePoisoning's utilization-vs-delivery split) was re-confirmed still
+   real and untouched by this fix.
 
 16. **CLOSED — audited this session, confirmed already fully built (a
    prior, undocumented session shipped it; this queue entry had simply
