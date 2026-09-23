@@ -122,7 +122,6 @@ export default {
     iv: 4,                 // Paramedic — Ref. 803 §II.D
     io: 4,                 // Paramedic
     etco2: 4,              // Paramedic — capnometry (Ref. 803 §II.A.1)
-    ecgRead: 4,            // Paramedic — 12-lead interpretation
     defib: 4,              // Paramedic — Ref. 803 §II.C.2
     cardiovert: 4,         // Paramedic — Ref. 803 §II.C.3
     pacing: 4,             // Paramedic — Ref. 803 §II.C.4

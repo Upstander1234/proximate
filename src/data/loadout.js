@@ -26,6 +26,8 @@
 import { DRUGS } from "./drugs.js";
 import { PROCS } from "./procedures.js";
 
+
+
 // Every drug is a stock item — one unit is one dose/vial/auto-injector.
 // Default carried quantity mirrors the drug's own per-call `max` (already
 // the documented "how many times would you realistically push this in one
@@ -42,6 +44,7 @@ const DRUG_STOCK = Object.fromEntries(Object.entries(DRUGS).map(([id, d]) => {
 
 function catOf(def) { return def.bag || (def.pocket ? "pockets" : "truck"); }
 
+
 // Curated subset of PROCS that are genuinely single-use disposable supplies
 // rather than reusable equipment. Quantities are the realistic count a rig
 // stocks (multiple sizes/backups for airway adjuncts and IV catheters,
@@ -50,12 +53,21 @@ function catOf(def) { return def.bag || (def.pocket ? "pockets" : "truck"); }
 // per-patient items).
 const PROC_STOCK_QTY = {
   tq: 3, pack: 4, chestSeal: 2, cCollar: 2, splint: 2, traction: 1, pelvicBinder: 1,
-  needleD: 2, opa: 3, npa: 3, sga: 2, ett: 2, cric: 1, iv: 4, io: 3, pads: 2,
+  needleD: 2, opa: 3, npa: 3, sga: 2, ett: 2, cric: 1, iv: 4, io: 3,
   chestTube: 1, reboa: 1, artLine: 1, warm: 2,
 };
+
+for (const id of Object.keys(PROC_STOCK_QTY)) {
+  if (!PROCS[id]) {
+    console.error("Missing PROCS entry:", id);
+  }
+}
+
 const PROC_STOCK = Object.fromEntries(Object.entries(PROC_STOCK_QTY).map(([id, qty]) => [id, {
   cat: catOf(PROCS[id]), label: PROCS[id].name, lvl: PROCS[id].lvl, carried: qty, truck: Math.max(1, Math.ceil(qty * 0.5)),
 }]));
+
+
 
 // Non-drug, non-PROCS consumables (a glucometer is reusable equipment; the
 // test strips it uses are not). lvl:2 matches gear.js's own POCKETS.glucometer.min.

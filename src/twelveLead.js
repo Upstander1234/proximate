@@ -126,14 +126,25 @@ function leadTrace(lead, snap, t0, dur, fs, rand, o, beats) {
       // patch wherever that happened, which tracked the RNG and so looked
       // "random." Picking only the nearest beat means every sample reflects
       // exactly one complex, however tightly packed the rhythm gets.
-      let nearest = null, nearestAbs = Infinity;
-      for (const b of beats) {
-        const a = Math.abs(t - b.t);
-        if (a < nearestAbs) { nearestAbs = a; nearest = b; }
+      let nearest = null, nearestAbs = Infinity, nearestIdx = -1;
+      for (let bi = 0; bi < beats.length; bi++) {
+        const a = Math.abs(t - beats[bi].t);
+        if (a < nearestAbs) { nearestAbs = a; nearest = beats[bi]; nearestIdx = bi; }
       }
       if (nearest) {
+        // The contribution window is clamped to the actual gap to the
+        // neighboring beats (never wider than the complex itself needs, at
+        // least +-0.5/0.6s). Without this, a slow rhythm's long flat TP
+        // segment is correct, but afib's randomized RR jitter or a
+        // bradycardic rr could make one beat's window reach past the
+        // midpoint to its neighbor, which (before the nearest-beat fix
+        // above) used to visibly distort the trace; this keeps the window
+        // itself proportionate to the real beat-to-beat spacing too.
+        const prevGap = nearestIdx > 0 ? nearest.t - beats[nearestIdx - 1].t : Infinity;
+        const nextGap = nearestIdx < beats.length - 1 ? beats[nearestIdx + 1].t - nearest.t : Infinity;
+        const lo = -Math.min(0.5, prevGap / 2), hi = Math.min(0.6, nextGap / 2);
         const dt = t - nearest.t;
-        if (dt >= -0.5 && dt <= 0.6) {
+        if (dt >= lo && dt <= hi) {
           v += nearest.ect ? gauss(dt, 0, sgn * -1.3, 0.055) + gauss(dt, 0.14, sgn * 0.6, 0.07) : beat(dt, lead, o);
         }
       }

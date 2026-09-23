@@ -10,15 +10,12 @@ import { C, MONO } from "../theme.js";
 // may result in Hypoxemia" — which the player needs to be able to SEE
 // developing, not just be told about after the fact).
 //
-// The sim clock is deliberately still paused while a mini-game is open (see
-// App.jsx's tick-loop pause guard) — a real, separate design decision to
-// avoid punishing a player for being slow with a mouse, not something this
-// component changes. So these numbers are a real, accurate SNAPSHOT of
-// exactly where the patient stands the instant the attempt began (or right
-// after a prior failed attempt's own real, escalating retry-cost time
-// elapsed) — not a live tick — which is still the actual information a real
-// provider would be working from mid-procedure, glancing at a monitor they
-// can't stare at while their hands are busy.
+// Sim time keeps running underneath an open mini-game (Procedure Gameplay
+// spec 2.5, "real interruptibility" — App.jsx's tick loop no longer pauses
+// for accessMinigame), so these numbers are genuinely LIVE, not a frozen
+// snapshot: a patient who deteriorates mid-procedure shows it here, the same
+// glance-at-the-monitor information a real provider is working from while
+// their hands are busy.
 //
 // Chip is hoisted to module scope (not declared inside the component body) —
 // a component defined during render is a real react-hooks/static-components

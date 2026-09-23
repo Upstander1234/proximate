@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { C } from "../theme.js";
 import { accessDifficulty } from "../access.js";
 import { assistToleranceMult } from "../procedureAssist.js";
@@ -17,12 +17,13 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 // standing over the patient actually sees), not an inside/glottic view —
 // it tracks the same angle/depth the player is dialing in, without
 // revealing anything about whether the blind seat is correct.
-function HeadProfile({ angle, depth }) {
+function HeadProfile({ angle, depth, svgRef, onGrabDown, onGrabMove, onGrabUp, dragging }) {
   const rad = (angle * Math.PI) / 180;
   const tipX = 128 - Math.cos(rad) * (18 + depth * 58);
   const tipY = 62 - Math.sin(rad) * (10 + depth * 30);
   return (
-    <svg viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+    <svg ref={svgRef} viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10, touchAction: "none" }}
+      onPointerMove={onGrabMove} onPointerUp={onGrabUp} onPointerLeave={onGrabUp}>
       <defs>
         <linearGradient id="sgaFaceGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#E3AE87" />
@@ -44,10 +45,14 @@ function HeadProfile({ angle, depth }) {
       <ellipse cx={44} cy={60} rx={7} ry={11} fill="#00000018" />
       {/* chin/jaw shading */}
       <path d="M60,88 Q90,98 132,86" fill="none" stroke="#00000018" strokeWidth={2} />
-      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#DCE6EA" strokeWidth={5} strokeLinecap="round" />
-      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#8FA8B5" strokeWidth={1.5} strokeLinecap="round" opacity={0.6} />
-      <circle cx={tipX} cy={tipY} r={3} fill="#7CD68A" opacity={0.8} />
-      <rect x={130} y={54} width={24} height={16} rx={3} fill="#0E1518" stroke={C.line} strokeWidth={1} />
+      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#DCE6EA" strokeWidth={5} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+      <line x1={128} y1={62} x2={tipX} y2={tipY} stroke="#8FA8B5" strokeWidth={1.5} strokeLinecap="round" opacity={0.6} style={{ pointerEvents: "none" }} />
+      {/* the device tip itself — press and drag it to set angle/depth
+          together, the real motion of guiding it along the palate, rather
+          than two separate sliders */}
+      <circle cx={tipX} cy={tipY} r={3} fill="#7CD68A" opacity={0.8} style={{ pointerEvents: "none" }} />
+      <circle cx={tipX} cy={tipY} r={12} fill="transparent" onPointerDown={onGrabDown} style={{ cursor: dragging ? "grabbing" : "grab" }} />
+      <rect x={130} y={54} width={24} height={16} rx={3} fill="#0E1518" stroke={C.line} strokeWidth={1} style={{ pointerEvents: "none" }} />
     </svg>
   );
 }
@@ -55,8 +60,25 @@ export default function SGAMinigame({ open, kind, pat, assist, interrupted, onRe
   const [angle, setAngle] = useState(45);
   const [depth, setDepth] = useState(0);
   const [flash, setFlash] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const svgRef = useRef(null);
 
   if (!open || kind !== "sga") return null;
+
+  // Dragging the device tip sets angle/depth together from its position
+  // relative to the mouth origin (128,62) — one gesture, not two sliders.
+  const dragTo = (e) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const lx = ((e.clientX - rect.left) / rect.width) * 200, ly = ((e.clientY - rect.top) / rect.height) * 110;
+    const dx = 128 - lx, dy = 62 - ly;
+    const rad = Math.atan2(dy, dx);
+    setAngle(Math.max(20, Math.min(90, (rad * 180) / Math.PI)));
+    const reach = Math.hypot(dx, dy);
+    setDepth(Math.max(0, Math.min(1, (reach - 18) / 58)));
+  };
+  const onGrabDown = (e) => { setDragging(true); dragTo(e); };
+  const onGrabMove = (e) => { if (dragging) dragTo(e); };
+  const onGrabUp = () => setDragging(false);
 
   const diff = accessDifficulty("airway", pat);
   // Spec 2.9's accessibility multiplier — see AccessMinigame.jsx's own
@@ -111,11 +133,10 @@ export default function SGAMinigame({ open, kind, pat, assist, interrupted, onRe
 
         {!flash && (
           <>
-            <HeadProfile angle={angle} depth={depth} />
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Follow the curve of the palate; insertion angle.</div>
-            <input type="range" min={20} max={90} value={angle} onChange={(e) => setAngle(Number(e.target.value))} style={{ width: "100%", marginBottom: 8 }} />
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Advance until you feel it seat.</div>
-            <input type="range" min={0} max={1} step={0.01} value={depth} onChange={(e) => setDepth(Number(e.target.value))} style={{ width: "100%", marginBottom: 12 }} />
+            <HeadProfile angle={angle} depth={depth} svgRef={svgRef} dragging={dragging}
+              onGrabDown={onGrabDown} onGrabMove={onGrabMove} onGrabUp={onGrabUp} />
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>
+              Drag the device tip along the curve of the palate until you feel it seat.</div>
             <button onClick={attemptSeat} className="px-3 py-2 rounded w-full" style={{ background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Advance</button>
           </>
         )}

@@ -17,7 +17,6 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 const btn = (bg, bd, col) => ({ background: bg, border: `1px solid ${bd}`, color: col, borderRadius: 6, padding: "8px 10px", fontSize: 12, cursor: "pointer", width: "100%" });
 const GO = btn("#122A18", C.hr, C.hr);
 const NEUTRAL = btn("#10151A", C.line, C.text);
-const Gap = () => <div style={{ height: 8 }} />;
 const Line = ({ children }) => <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>{children}</div>;
 
 const SPOTS = [
@@ -26,14 +25,17 @@ const SPOTS = [
   { id: "wrist", x: 100, y: 92, label: "Down at the wrist", ok: false },
 ];
 
-function Gauge({ pressure }) {
+// The dial, plus (when relevant) a real squeeze bulb or release valve
+// rendered right below it — the player pumps/releases by pressing directly
+// on that piece of equipment, not a button with no equipment behind it.
+function Gauge({ pressure, pumpable, releasable, pumping, releasing, onPumpDown, onPumpUp, onReleaseDown, onReleaseUp }) {
   const pct = Math.max(0, Math.min(1, pressure / 300));
   const ang = -120 + pct * 240;
   const rad = (ang * Math.PI) / 180;
   const cx = 60, cy = 60, r = 40;
   const nx = cx + r * Math.sin(rad), ny = cy - r * Math.cos(rad);
   return (
-    <svg viewBox="0 0 120 90" style={{ width: 110, height: 82 }}>
+    <svg viewBox="0 0 120 150" style={{ width: 110, height: 137, touchAction: "none" }}>
       <path d="M20,66 A40,40 0 1 1 100,66" fill="none" stroke={C.line} strokeWidth={3} />
       {[0, 60, 120, 180, 240, 300].map((v) => {
         const a = ((-120 + (v / 300) * 240) * Math.PI) / 180;
@@ -44,6 +46,21 @@ function Gauge({ pressure }) {
       <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={C.red} strokeWidth={2.5} strokeLinecap="round" />
       <circle cx={cx} cy={cy} r={3.5} fill={C.text} />
       <text x={cx} y={82} textAnchor="middle" fontSize="11" fill={C.text} fontWeight="700">{Math.round(pressure)}</text>
+      {pumpable && (
+        <g onPointerDown={onPumpDown} onPointerUp={onPumpUp} onPointerLeave={onPumpUp} style={{ cursor: pumping ? "grabbing" : "grab" }}>
+          <line x1={cx} y1={100} x2={cx} y2={110} stroke="#8A9AA2" strokeWidth={2.5} />
+          <ellipse cx={cx} cy={pumping ? 128 : 124} rx={pumping ? 20 : 17} ry={pumping ? 16 : 19} fill={pumping ? "#3A4A54" : "#4D5F6A"} stroke={C.line} strokeWidth={1.4} />
+          <text x={cx} y={128} textAnchor="middle" fontSize="8" fill={C.faint}>squeeze</text>
+        </g>
+      )}
+      {releasable && (
+        <g onPointerDown={onReleaseDown} onPointerUp={onReleaseUp} onPointerLeave={onReleaseUp} style={{ cursor: releasing ? "grabbing" : "grab" }}>
+          <line x1={cx} y1={100} x2={cx} y2={112} stroke="#8A9AA2" strokeWidth={2.5} />
+          <circle cx={cx} cy={122} r={13} fill={releasing ? C.amber : "#4D5F6A"} opacity={releasing ? 0.7 : 1} stroke={C.line} strokeWidth={1.4} />
+          <line x1={cx - 8} y1={122} x2={cx + 8} y2={122} stroke="#16202A" strokeWidth={2.5} strokeLinecap="round" />
+          <text x={cx} y={142} textAnchor="middle" fontSize="8" fill={C.faint}>valve</text>
+        </g>
+      )}
     </svg>
   );
 }
@@ -52,10 +69,27 @@ function Arm({ onPick, chosen, cuffPressure, inflated }) {
   const w = 20 + Math.min(14, cuffPressure / 20);
   return (
     <svg viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
-      <rect x={26} y={40} width={90} height={44} rx={20} fill="#D9A98A" opacity={0.85} />
-      <rect x={106} y={44} width={80} height={36} rx={16} fill="#D9A98A" opacity={0.85} transform="rotate(-6 106 62)" />
-      {inflated && <rect x={40} y={30} width={70} height={64} rx={16} fill="#4D7CFF" opacity={0.5} stroke={C.line} strokeWidth={1} />}
+      <defs>
+        <linearGradient id="bpArmGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E3AE87" />
+          <stop offset="55%" stopColor="#CD9068" />
+          <stop offset="100%" stopColor="#B87A54" />
+        </linearGradient>
+        <linearGradient id="bpCuffGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6690F2" />
+          <stop offset="100%" stopColor="#3E5FBF" />
+        </linearGradient>
+      </defs>
+      <rect x={26} y={40} width={90} height={44} rx={20} fill="url(#bpArmGrad)" />
+      <rect x={106} y={44} width={80} height={36} rx={16} fill="url(#bpArmGrad)" transform="rotate(-6 106 62)" />
+      {/* elbow crease and forearm highlight, so this reads as a real limb */}
+      <path d="M100,42 Q110,62 100,82" fill="none" stroke="#8A5E45" strokeWidth={1.4} opacity={0.35} />
+      <path d="M30,44 Q60,38 110,46" fill="none" stroke="#F3CBA8" strokeWidth={1.2} opacity={0.4} />
+      {inflated && <rect x={40} y={30} width={70} height={64} rx={16} fill="url(#bpCuffGrad)" opacity={0.55} stroke={C.line} strokeWidth={1} />}
       {inflated && <rect x={44} y={34} width={62} height={w} rx={10} fill="#3E68D6" opacity={0.35} />}
+      {inflated && [0.3, 0.5, 0.7].map((f) => (
+        <line key={f} x1={44} y1={30 + 64 * f} x2={110} y2={30 + 64 * f} stroke="#1B2A5C" strokeWidth={0.6} opacity={0.3} />
+      ))}
       {SPOTS.map((s) => (
         <circle key={s.id} cx={s.x} cy={s.y} r={7}
           fill={chosen === s.id ? (s.ok ? "#7CD68A" : C.red) : "#16202A"}
@@ -173,23 +207,18 @@ export default function BpMinigame({ open, kind, pat, assist, interrupted, onRes
     if (step === 1) {
       const canRelease = pressure >= 40;
       return (<>
-        <Line>2. Squeeze the bulb to inflate the cuff. Go well past where you'd expect the pulse to disappear.</Line>
-        <button style={GO} onPointerDown={() => { ensureCtx(); setPumping(true); }} onPointerUp={() => setPumping(false)} onPointerLeave={() => setPumping(false)}>
-          Squeeze the bulb</button><Gap />
+        <Line>2. Press and hold the bulb to inflate the cuff. Go well past where you'd expect the pulse to disappear.</Line>
         <button style={canRelease ? GO : NEUTRAL} disabled={!canRelease} onClick={() => setStep(2)}>Start releasing the valve</button>
       </>);
     }
     // step 2: deflate and auscultate
     return (<>
-      <Line>3. Crack the valve open and let the pressure fall slowly. Mark the first sound, then mark where it disappears.</Line>
+      <Line>3. Press and hold the valve to crack it open and let the pressure fall slowly. Mark the first sound, then mark where it disappears.</Line>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <div style={{ width: 14, height: 14, borderRadius: 7, background: audible ? C.hr : "#16202A", border: `1px solid ${audible ? C.hr : C.line}`,
           boxShadow: audible ? `0 0 8px ${C.hr}` : "none" }} />
         <span style={{ fontSize: 12, color: audible ? C.hr : C.faint }}>{audible ? "Tapping sound, clear." : "Silence."}</span>
       </div>
-      <button style={pressure > 0 ? GO : NEUTRAL} disabled={pressure <= 0}
-        onPointerDown={() => { ensureCtx(); setReleasing(true); }} onPointerUp={() => setReleasing(false)} onPointerLeave={() => setReleasing(false)}>
-        Hold to release the valve</button><Gap />
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button style={sysMark != null ? NEUTRAL : GO} onClick={() => mark("sys")}>
           {sysMark != null ? `Systolic marked: ${sysMark}` : "Mark: first sound"}</button>
@@ -215,7 +244,9 @@ export default function BpMinigame({ open, kind, pat, assist, interrupted, onRes
             <div style={{ flex: 1 }}>
               <Arm onPick={setChosen} chosen={chosen} cuffPressure={pressure} inflated={step >= 1} />
             </div>
-            <Gauge pressure={pressure} />
+            <Gauge pressure={pressure}
+              pumpable={step === 1} pumping={pumping} onPumpDown={() => { ensureCtx(); setPumping(true); }} onPumpUp={() => setPumping(false)}
+              releasable={step === 2} releasing={releasing} onReleaseDown={() => { ensureCtx(); setReleasing(true); }} onReleaseUp={() => setReleasing(false)} />
           </div>
         )}
         {!flash && body()}

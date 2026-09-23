@@ -3,6 +3,7 @@ import { C } from "../theme.js";
 import { accessDifficulty } from "../access.js";
 import { assistToleranceMult } from "../procedureAssist.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
+import { capnoPoints } from "../ecg.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 
 // Real, interactive airway mini-games — laryngoscopy and ETT (which reuses
@@ -20,6 +21,13 @@ export default function AirwayMinigame({ open, kind, pat, assist, interrupted, o
   const [tubeOffset, setTubeOffset] = useState(0); // ETT tube alignment, -1..1
   const [tubeDepth, setTubeDepth] = useState(0);
   const [flash, setFlash] = useState(null);
+  // Placement confirmation, ETT only — the actual highest-stakes teaching
+  // point of this whole procedure (an unrecognized esophageal intubation is
+  // one of the leading preventable causes of death from this skill in real
+  // EMS), and something a depth/angle slider alone can never model: you do
+  // not trust tube position from how it felt going in, you PROVE it with
+  // real confirmation signs every time, on every tube, no exceptions.
+  const [confirm, setConfirm] = useState({ epigastric: false, leftLung: false, rightLung: false, etco2: false });
 
   if (!open || (kind !== "laryngoscopy" && kind !== "ett")) return null;
 
@@ -61,8 +69,9 @@ export default function AirwayMinigame({ open, kind, pat, assist, interrupted, o
     if (Math.abs(tubeOffset) > cordTol) { setFlash("esophageal"); return; }
     if (tubeDepth < depthTarget - depthHalf) { setFlash("shallow"); return; }
     if (tubeDepth > depthTarget + depthHalf) { setFlash("mainstem"); return; }
-    setFlash("success");
+    setStep("confirm");
   };
+  const allConfirmed = confirm.epigastric && confirm.leftLung && confirm.rightLung && confirm.etco2;
 
   const finish = () => {
     if (flash === "success") { onResolve(PROCEDURE_OUTCOME.SUCCESS); return; }
@@ -141,11 +150,11 @@ export default function AirwayMinigame({ open, kind, pat, assist, interrupted, o
               </>
             );
           })()}
-          {step === "pass" && (
+          {(step === "pass" || step === "confirm") && (
             <line x1={100 + tubeOffset * 60} y1={6} x2={100 + tubeOffset * 60} y2={16 + tubeDepth * 74}
               stroke="#E8E4D8" strokeWidth={4} strokeLinecap="round" />
           )}
-          {step === "pass" && (
+          {(step === "pass" || step === "confirm") && (
             <circle cx={100 + tubeOffset * 60} cy={16 + tubeDepth * 74} r={5} fill="none" stroke="#7CB3D6" strokeWidth={1.5} opacity={0.8} />
           )}
         </svg>
@@ -180,10 +189,41 @@ export default function AirwayMinigame({ open, kind, pat, assist, interrupted, o
           </>
         )}
 
+        {step === "confirm" && !flash && (
+          <>
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
+              Never trust placement by feel. Click each site directly to auscultate it, then attach capnography — every tube, every time.
+            </div>
+            <svg viewBox="0 0 200 110" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+              <ellipse cx={100} cy={50} rx={62} ry={44} fill="#D9A98A" opacity={0.85} />
+              {[["leftLung", 72, 34, "L chest"], ["rightLung", 128, 34, "R chest"], ["epigastric", 100, 74, "epigastrium"]].map(([k, x, y, label]) => (
+                <g key={k} onClick={() => setConfirm((c) => ({ ...c, [k]: true }))} style={{ cursor: confirm[k] ? "default" : "pointer" }}>
+                  <circle cx={x} cy={y} r={13} fill={confirm[k] ? C.hr : C.amber} opacity={confirm[k] ? 0.28 : 0.14} stroke={confirm[k] ? C.hr : C.amber} strokeWidth={1} strokeDasharray={confirm[k] ? undefined : "2,2"} />
+                  <text x={x} y={y + 24} textAnchor="middle" fontSize={6} fill={confirm[k] ? C.hr : C.amber} opacity={0.85} style={{ pointerEvents: "none" }}>{confirm[k] ? `✓ ${label}` : label}</text>
+                </g>
+              ))}
+            </svg>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: ".1em", color: confirm.etco2 ? "#3FA65A" : C.faint, marginBottom: 2 }}>WAVEFORM CAPNOGRAPHY</div>
+              <svg viewBox="0 0 200 40" onClick={() => setConfirm((c) => ({ ...c, etco2: true }))}
+                style={{ width: "100%", height: 36, background: "#04140A", border: `1px solid ${confirm.etco2 ? "#1B3A24" : C.line}`, borderRadius: 4, cursor: confirm.etco2 ? "default" : "pointer" }}>
+                {confirm.etco2
+                  ? <polyline points={capnoPoints(38, 14, 200, 40).map((p) => p.join(",")).join(" ")} fill="none" stroke="#3FA65A" strokeWidth="1.4" />
+                  : <text x={100} y={23} textAnchor="middle" fontSize={7} fill={C.faint}>click to attach</text>}
+              </svg>
+            </div>
+            <button disabled={!allConfirmed} onClick={() => setFlash("success")} className="px-3 py-2 rounded w-full"
+              style={{ background: allConfirmed ? "#122A18" : "#10151A", border: `1px solid ${allConfirmed ? C.hr : C.line}`,
+                color: allConfirmed ? C.hr : C.faint, cursor: allConfirmed ? "pointer" : "not-allowed", opacity: allConfirmed ? 1 : 0.6 }}>
+              Placement confirmed, secure the tube
+            </button>
+          </>
+        )}
+
         {flash && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, color: flash === "success" ? "#7CD68A" : C.red, marginBottom: 10 }}>
-              {flash === "success" ? (kind === "laryngoscopy" ? "Cords visualized." : "Tube through the cords, depth confirmed.") :
+              {flash === "success" ? (kind === "laryngoscopy" ? "Cords visualized." : "Tube through the cords, depth right, and placement confirmed: silent over the stomach, equal bilateral breath sounds, real waveform capnography.") :
                 flash === "noview" ? `Grade ${viewGrade} view; cords not adequately visualized.` :
                 flash === "esophageal" ? "Esophageal intubation; no tracheal placement." :
                 flash === "shallow" ? "Not advanced far enough." : "Advanced too far: right mainstem."}

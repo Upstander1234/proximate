@@ -137,7 +137,7 @@ export const PROCS={
   // reference to it were all dead on arrival. The real, reachable action is
   // "gluc" (actions.js), which already routes through GlucometerMinigame.
   ecgAcquire:{pkModel:"curve",name:"12-lead — acquire and transmit",lvl:2,bag:"monitor",cost:25,
-    note:"National Scope: EMT may ACQUIRE and TRANSMIT a 12-lead. Interpretation is Paramedic-level. You will see the strip. You will not be told what it says."},
+    note:"Acquires and displays the 12-lead. You are looking at the strip yourself, so read it."},
   // Cost audit: was 25s — LESS than plain extremity splinting (splint,
   // above, at 40s), which is backwards. A traction splint (Sager/Hare-type)
   // is objectively the more involved skill: measure the uninjured limb,
@@ -232,8 +232,6 @@ export const PROCS={
   etco2:{pkModel:"curve",name:"Waveform capnography",lvl:3,bag:"monitor",cost:20,
     note:"National Scope: EtCO₂ monitoring and waveform interpretation is AEMT."},
   /* Paramedic (4) */
-  ecgRead:{pkModel:"curve",name:"12-lead — INTERPRET",lvl:4,bag:"monitor",cost:25,
-    note:"National Scope: interpretive 12-lead is Paramedic-only."},
   defib:{pkModel:"curve",name:"Defibrillate 200 J (manual)",lvl:4,bag:"monitor",cost:10,onset:0,dur:0,fx:{},rhythmFix:1},
   // fx:{hr:-60} removed: cardioversion does not "slow" a heart by 60 beats, it
   // TERMINATES a reentrant circuit or chaotic atrial activity. rhythmFix:

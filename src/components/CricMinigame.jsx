@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { C } from "../theme.js";
 import { accessDifficulty } from "../access.js";
 import { assistToleranceMult } from "../procedureAssist.js";
@@ -19,8 +19,40 @@ export default function CricMinigame({ open, kind, pat, assist, interrupted, onR
   const [cutDir, setCutDir] = useState(0.5); // 0-1, vertical incision alignment
   const [depth, setDepth] = useState(0);
   const [flash, setFlash] = useState(null);
+  const svgRef = useRef(null);
+  const advancing = useRef(false);
+
+  // Advancing the tube is a real, continuous press on the neck, not a
+  // slider — matches AccessMinigame's needle-advance pattern.
+  useEffect(() => {
+    if (step !== "tube") return undefined;
+    const id = setInterval(() => { if (advancing.current) setDepth((d) => Math.min(1, d + 0.03)); }, 60);
+    return () => clearInterval(id);
+  }, [step]);
 
   if (!open || kind !== "cric") return null;
+
+  // Client (screen) pixel -> the SVG's own 0..200 x 0..160 viewBox space.
+  const toLocal = (e) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    return { lx: ((e.clientX - rect.left) / rect.width) * 200, ly: ((e.clientY - rect.top) / rect.height) * 160 };
+  };
+  const onNeckDown = (e) => {
+    const { lx, ly } = toLocal(e);
+    if (step === "landmark") { setX(Math.max(0, Math.min(1, lx / 200))); setY(Math.max(0, Math.min(1, ly / 160))); }
+    else if (step === "incise") { setCutDir(Math.max(0, Math.min(1, 0.5 + (lx - 100) / 60))); }
+    else if (step === "tube") { advancing.current = true; }
+  };
+  const onNeckMove = (e) => {
+    if (step === "landmark" && e.buttons === 1) {
+      const { lx, ly } = toLocal(e);
+      setX(Math.max(0, Math.min(1, lx / 200))); setY(Math.max(0, Math.min(1, ly / 160)));
+    } else if (step === "incise" && e.buttons === 1) {
+      const { lx } = toLocal(e);
+      setCutDir(Math.max(0, Math.min(1, 0.5 + (lx - 100) / 60)));
+    }
+  };
+  const onNeckUp = () => { advancing.current = false; };
 
   const diff = accessDifficulty("airway", pat);
   // Spec 2.9's accessibility multiplier — see AccessMinigame.jsx's own
@@ -85,7 +117,10 @@ export default function CricMinigame({ open, kind, pat, assist, interrupted, onR
           </div>
         )}
 
-        <svg viewBox="0 0 200 160" style={{ width: "100%", background: "#150A0A", borderRadius: 6, marginBottom: 12 }}>
+        <svg ref={svgRef} viewBox="0 0 200 160" style={{ width: "100%", background: "#150A0A", borderRadius: 6, marginBottom: 12, touchAction: "none",
+            cursor: flash ? "default" : step === "tube" ? "grab" : "crosshair" }}
+          onPointerDown={flash ? undefined : onNeckDown} onPointerMove={flash ? undefined : onNeckMove}
+          onPointerUp={flash ? undefined : onNeckUp} onPointerLeave={flash ? undefined : onNeckUp}>
           <defs>
             <linearGradient id="neckSkinGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#B87A54" />
@@ -117,23 +152,19 @@ export default function CricMinigame({ open, kind, pat, assist, interrupted, onR
 
         {step === "landmark" && !flash && (
           <>
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Find the cricothyroid membrane.</div>
-            <input type="range" min={0} max={1} step={0.02} value={x} onChange={(e) => setX(Number(e.target.value))} style={{ width: "100%", marginBottom: 6 }} />
-            <input type="range" min={0} max={1} step={0.02} value={y} onChange={(e) => setY(Number(e.target.value))} style={{ width: "100%", marginBottom: 12 }} />
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Click and drag directly on the neck to find the cricothyroid membrane.</div>
             <button onClick={confirmLandmark} className="px-3 py-2 rounded w-full" style={{ background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Mark it</button>
           </>
         )}
         {step === "incise" && !flash && (
           <>
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Make a vertical incision through the membrane.</div>
-            <input type="range" min={0} max={1} step={0.02} value={cutDir} onChange={(e) => setCutDir(Number(e.target.value))} style={{ width: "100%", marginBottom: 12 }} />
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Drag across the membrane above to make a vertical incision.</div>
             <button onClick={confirmIncision} className="px-3 py-2 rounded w-full" style={{ background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Incise</button>
           </>
         )}
         {step === "tube" && !flash && (
           <>
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Hook the trachea open and seat the tube.</div>
-            <input type="range" min={0} max={1} step={0.01} value={depth} onChange={(e) => setDepth(Number(e.target.value))} style={{ width: "100%", marginBottom: 12 }} />
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Press and hold on the neck above to hook the trachea open and advance the tube: {Math.round(depth * 100)}%.</div>
             <button onClick={confirmTube} className="px-3 py-2 rounded w-full" style={{ background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Seat the tube</button>
           </>
         )}

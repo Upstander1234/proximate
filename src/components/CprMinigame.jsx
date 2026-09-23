@@ -22,10 +22,11 @@ const REGEN_PER_SEC = 100 / 60;   // a full bar back in a minute of rest
 
 // Hands laced over the sternum, chest visibly compressing on every push —
 // how far it sinks tracks the depth actually delivered, not just set.
-function ChestScene({ pressed, delivered }) {
+function ChestScene({ pressed, delivered, onPress }) {
   const sink = pressed ? Math.min(14, delivered * 2) : 0;
   return (
-    <svg viewBox="0 0 200 90" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 8 }}>
+    <svg viewBox="0 0 200 90" onPointerDown={onPress}
+      style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 8, touchAction: "none", cursor: "pointer" }}>
       <defs>
         <linearGradient id="cprTorsoGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#E3AE87" />
@@ -133,14 +134,14 @@ export default function CprMinigame({ open, kind, pat, fitness, crew, interrupte
       <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(480px,92vw)" }}>
         <div style={{ fontSize: 14, color: C.amber, marginBottom: 10 }}>Chest compressions</div>
         <MinigameVitalsStrip pat={pat} />
-        <ChestScene pressed={pressed} delivered={delivered} />
+        <ChestScene pressed={pressed} delivered={delivered} onPress={press} />
         {interrupted && (
           <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
             The patient's condition just changed. Keep going or stop and attend to them.
           </div>
         )}
         <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>
-          Set the depth, then click the chest once per compression. Aim for {DEPTH_LO} to {DEPTH_HI} cm at 100 to 120 a minute. Stop whenever you like.
+          Set the depth, then press directly on the chest above, once per compression. Aim for {DEPTH_LO} to {DEPTH_HI} cm at 100 to 120 a minute. Stop whenever you like.
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
@@ -167,13 +168,6 @@ export default function CprMinigame({ open, kind, pat, fitness, crew, interrupte
             {stamina < 15 ? "You are exhausted and your compressions are weak. Hand off now." : "You are tiring, and quality is dropping. Consider swapping compressors."}
           </div>
         )}
-
-        <button onClick={press} aria-label="Compress the chest"
-          style={{ width: "100%", height: 100, borderRadius: 10, cursor: "pointer", fontSize: 15, letterSpacing: ".1em", marginTop: 4,
-            background: pressed ? "#3A1418" : "#2A1418", border: `2px solid ${C.red}`, color: C.red,
-            transform: pressed ? `scale(${1 - delivered * 0.012})` : "none", transition: "transform 60ms" }}>
-          PUSH
-        </button>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontFamily: MONO, fontSize: 12 }}>
           <span style={{ color: C.text }}>Compressions {count}</span>

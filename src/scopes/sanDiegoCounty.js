@@ -120,7 +120,6 @@ export default {
     iv: 3,                 // AEMT — S-104 "Vascular Access — Extremity," red/green/green
     io: 4,                 // Paramedic (general/adult) — B-451 grants AEMT IO in pediatric patients ONLY
     etco2: 4,              // Paramedic — S-104 EtCO2 capnography, red/red/green
-    ecgRead: 4,            // Paramedic — 12-lead interpretation
     defib: 4,              // Paramedic — S-104 "Manual Defibrillation," red/red/green
     cardiovert: 4,         // Paramedic — S-104 "Synchronized Cardioversion," red/red/green
     pacing: 4,             // Paramedic — S-104 "External Cardiac Pacing," red/red/green

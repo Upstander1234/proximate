@@ -66,6 +66,9 @@ export const CREDITS = [
         license: "Published by the ICBHI 2017 Challenge organizers as \"freely available for research\"; no CC/ODC license identifier is stated on the source page. Used here in good faith with full attribution; will be removed promptly on request from the database's owners.",
         changes: "Changes: selected recordings resampled to 4 kHz mono, trimmed, level-matched, and re-timed to the patient's breathing rate",
       },
+      {
+        name: "Not yet included: a pericardial friction rub. No open, freely redistributable recording of one could be found; this finding stays narrative only for now.",
+      },
     ],
   },
   // Sound and art credits go here once verified, e.g.

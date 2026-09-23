@@ -30,6 +30,22 @@
 // breath loop) that doesn't exist yet — left cataloged, not guessed into a wrong
 // use, matching this project's own precedent for dead-but-real HEART_SOUNDS
 // categories (see CLAUDE.md's queue).
+//
+// The other two "USR" lung clips (Normal, Diminished) were both trimmed before
+// being added, not used as originally supplied: each source recording had TWO
+// breaths with real dead air between them. buildBreathLoop() (audio/retime.js)
+// assumes continuous breath texture throughout the source and just flattens +
+// tiles it, rather than cutting one cycle the way heart clips do (its own header
+// comment explains why) — a genuine silent gap survives that flattening step
+// almost untouched (confirmed by measurement: samples in the gap are already
+// near-zero, so normalizing by the local envelope can't manufacture signal that
+// isn't there) and gets tiled at the SOURCE's own length, drifting in and out of
+// phase with the imposed breath rate and occasionally landing right on an
+// inhale — an audible, wrong-sounding dropout unrelated to the patient's actual
+// rate. Both clips were trimmed to one continuous, silence-free stretch (~2.5s)
+// before being added; verified by rebuilding a 60s loop from each and confirming
+// the only remaining quiet points are the envelope's own intentional
+// between-breath floor, not leftover source silence.
 import { HEART_SOUNDS, LUNG_SOUNDS, AUSC_BASE } from "../data/auscultationSounds.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));

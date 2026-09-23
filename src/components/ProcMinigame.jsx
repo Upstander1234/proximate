@@ -4,22 +4,19 @@ import { assistToleranceMult } from "../procedureAssist.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 
-// Hands-on procedures, one short sequence each:
-//   tq          tourniquet: high on the limb, twist until the bleeding stops
+// Hands-on procedures, one short sequence each. (tq/pack/directPressure moved
+// out to their own combined BleedingControlMinigame — direct pressure first,
+// then a real branch to packing or a tourniquet — so they are no longer
+// handled here; see that file instead.)
 //   needleD     needle decompression: landmark, over the top of the rib, depth
 //   chestSeal   vented chest seal: dry, apply on the exhale
-//   defib/aedShock  shock: clear the patient, oxygen away, then deliver
 //   headTilt / jawThrust / cCollar / cspine   airway opening and spinal control
 //   opa / npa / suction / o2nc / o2nrb        airway adjuncts and oxygen
-//   directPressure  bleeding control: right dressing, then sustained firm pressure
-//   pack            wound packing: gauze to the base of the cavity, then hold on top
 //   fundalMassage   postpartum hemorrhage: locate the fundus, firm circular massage
 //   recovery        recovery position: roll, brace with arm/knee, tilt the head to drain
 //   abdThrust       Heimlich: position, hand placement, five thrusts
 //   traction        traction splint: align, ankle hitch, ratchet to a real force
 //   ultrasound      eFAST: four real windows, each read against live physiology (App.jsx)
-//   cardiovert      synchronized cardioversion: SYNC mode, confirm markers, clear, energy, shock
-//   pacing          transcutaneous pacing: pad placement, rate, mA to electrical AND mechanical capture
 //   icdMagnet       locate the device, seat the magnet to suspend shock therapy
 //   chestTube       triangle of safety, blunt dissection over the rib, finger sweep, insert and confirm
 //   lucas           mechanical CPR device: back plate, center the piston, secure the straps, start
@@ -29,13 +26,16 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 //   paCath          float the balloon through the right heart to a wedge tracing, then deflate
 //   cpap / vent     mask seal or airway confirmed, then a real pressure/volume target
 //   mouthMask / mouthMouth   seal, then a real breath volume/rate — no bag valve to check instead
-// (BVM and CPR are continuous, live sessions: BvmMinigame / CprMinigame.)
+// (BVM and CPR are continuous, live sessions: BvmMinigame / CprMinigame.
+// defib/aedShock/cardiovert/pacing moved to their own device-screen
+// component, MonitorScreenMinigame.jsx — a real rhythm trace, sync-marker
+// overlay and pacer-capture waveform instead of this file's old shared
+// generic torso+pads scene.)
 // SUCCESS re-enters start() with _skipMinigame so each procedure's real effect
 // (in procActs()) is unchanged; failure costs a retry delay like the others.
 const btn = (bg, bd, col) => ({ background: bg, border: `1px solid ${bd}`, color: col, borderRadius: 6, padding: "8px 10px", fontSize: 12, cursor: "pointer", width: "100%" });
 const GO = btn("#122A18", C.hr, C.hr);
 const NEUTRAL = btn("#10151A", C.line, C.text);
-const DANGER = btn("#2A1418", C.red, C.red);
 const sel = { background: "#10151A", border: `1px solid ${C.line}`, color: C.text, borderRadius: 6, padding: "6px 8px", fontSize: 12, width: "100%" };
 const Gap = () => <div style={{ height: 8 }} />;
 const Line = ({ children }) => <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>{children}</div>;
@@ -58,29 +58,36 @@ const Choice = ({ value, onChange, placeholder, options }) => (
 // A compact scene per procedure, reflecting the state the player is actually
 // setting (windlass tightness, needle depth, breathing phase, head tilt
 // angle, flow rate...) rather than a static diagram for every one of them.
-function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPos, snug, drift, held, flow, tankOpen, bagFilled, suctionOn, suctionT,
-  pressing, dpHeld, opened, packDepth, packPressing, massaging, firm,
-  rollSide, armSet, kneeSet, stance, handPos, thrusts, aligned, hitch, tractionForce, usIdx, usFine }) {
+function ProcScene({ procId, rib, depth, phase, wiped, ext, headPos, snug, drift, held, flow, tankOpen, bagFilled, suctionOn, suctionT,
+  pressing, dpHeld, massaging, firm,
+  rollSide, armSet, kneeSet, stance, handPos, thrusts, aligned, hitch, tractionForce, usIdx, usFine,
+  onGripClick, onTankClick, onBagClick, onFundusClick, onRollClick, onStanceClick, onHandPosClick,
+  onPelvicSiteClick, onIcdSiteClick, onSiteClick, onPressDown, onPressUp, ventTrace }) {
   const box = { viewBox: "0 0 200 100", style: { width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 } };
-  if (procId === "tq") {
-    const w = 14 + tight * 10;
-    return (
-      <svg {...box}>
-        <rect x={10} y={40} width={180} height={22} rx={11} fill="#D9A98A" opacity={0.85} />
-        <rect x={90 - w / 2} y={34} width={w} height={34} rx={5} fill={tight > 0.5 ? "#7A1E1E" : C.amber} opacity={0.85} />
-        <circle cx={90} cy={51} r={4} fill="#16202A" transform={twist ? "rotate(45 90 51)" : "rotate(0 90 51)"} />
-        <line x1={78} y1={51} x2={102} y2={51} stroke="#C8D3D9" strokeWidth={2} transform={twist ? "rotate(45 90 51)" : "rotate(0 90 51)"} />
-      </svg>
-    );
-  }
-  if (procId === "needleD") {
-    const x = 60 + (rib / 100) * 90, y = 25 + depth * 45;
+  if (procId === "needleD" || procId === "chestTube") {
+    // Real landmark zones, clickable directly on the ribcage instead of a
+    // dropdown — the 2nd ICS midclavicular and 4th-5th ICS anterior
+    // axillary are the two real decompression sites; chest tube's triangle
+    // of safety sits lower and more lateral. Wrong-zone clicks fail with
+    // the same real anatomic reasoning the dropdown used to give.
+    const x = 60 + (rib / 100) * 90, y = 25 + depth * (procId === "chestTube" ? 12 : 45);
+    const zones = procId === "needleD"
+      ? [["mcl2", 78, 34, "2nd ICS·MCL"], ["aal5", 132, 50, "4th-5th ICS·AAL"], ["low", 100, 78, "8th ICS post."], ["abd", 100, 92, "abdomen"]]
+      : [["safety", 132, 54, "triangle of safety"], ["mcl2", 78, 34, "2nd ICS·MCL"], ["nipple", 150, 68, "nipple line·post."]];
     return (
       <svg {...box}>
         <ellipse cx={100} cy={55} rx={80} ry={38} fill="#D9A98A" opacity={0.8} />
         {[0, 1, 2, 3].map((i) => <line key={i} x1={40} y1={30 + i * 14} x2={160} y2={30 + i * 14} stroke="#B98A6A" strokeWidth={3} opacity={0.5} />)}
-        <line x1={x - 22} y1={y - 22} x2={x} y2={y} stroke="#C8D3D9" strokeWidth={2.5} />
-        <circle cx={x} cy={y} r={2.6} fill={depth > 0.4 ? "#7CD68A" : "#8A9AA2"} />
+        {onSiteClick && zones.map(([key, zx, zy, label]) => (
+          <g key={key} onClick={() => onSiteClick(key)} style={{ cursor: "pointer" }}>
+            <circle cx={zx} cy={zy} r={10} fill={C.amber} opacity={0.14} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={zx} y={zy + 3} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85} style={{ pointerEvents: "none" }}>{label}</text>
+          </g>
+        ))}
+        {!onSiteClick && <>
+          <line x1={x - 22} y1={y - 22} x2={x} y2={y} stroke="#C8D3D9" strokeWidth={2.5} />
+          <circle cx={x} cy={y} r={2.6} fill={depth > 0.4 ? "#7CD68A" : "#8A9AA2"} />
+        </>}
       </svg>
     );
   }
@@ -89,30 +96,44 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
     return (
       <svg {...box}>
         <ellipse cx={100} cy={55} rx={78} ry={40} fill="#D9A98A" opacity={0.8} />
-        <ellipse cx={100} cy={55} rx={12 + (exhaling ? 3 : 0)} ry={9 + (exhaling ? 2 : 0)} fill={wiped ? "#8A1F2A" : "#5C1219"} opacity={0.85} />
-        {wiped && <rect x={82} y={40} width={36} height={30} rx={4} fill={C.amber} opacity={exhaling ? 0.55 : 0.2} stroke={C.line} strokeWidth={1} />}
+        <ellipse cx={100} cy={55} rx={12 + (exhaling ? 3 : 0)} ry={9 + (exhaling ? 2 : 0)} fill={wiped ? "#8A1F2A" : "#5C1219"} opacity={0.85}
+          onPointerDown={onPressDown} onPointerUp={onPressUp} onPointerLeave={onPressUp}
+          style={onPressDown ? { cursor: "pointer" } : undefined} />
+        {wiped && <rect x={82} y={40} width={36} height={30} rx={4} fill={C.amber} opacity={exhaling ? 0.55 : 0.2} stroke={C.line} strokeWidth={1} style={{ pointerEvents: "none" }} />}
+        {/* a generous invisible hit-circle, touch-friendly, matching the
+            press-on-wound pattern BleedingControlMinigame already uses */}
+        <circle cx={100} cy={55} r={22} fill="transparent" onPointerDown={onPressDown} onPointerUp={onPressUp} onPointerLeave={onPressUp}
+          style={onPressDown ? { cursor: "pointer" } : undefined} />
       </svg>
     );
   }
-  if (procId === "defib" || procId === "aedShock" || procId === "cardiovert" || procId === "pacing") {
-    return (
-      <svg {...box}>
-        <ellipse cx={100} cy={55} rx={78} ry={40} fill="#D9A98A" opacity={0.8} />
-        <rect x={62} y={30} width={24} height={16} rx={3} fill={C.amber} opacity={0.6} />
-        <rect x={114} y={62} width={24} height={16} rx={3} fill={C.amber} opacity={0.6} />
-      </svg>
-    );
-  }
+  // defib/aedShock/cardiovert/pacing moved to MonitorScreenMinigame.jsx —
+  // a real device screen (rhythm trace, sync marker, pacer capture) instead
+  // of this shared generic torso+pads scene.
   if (procId === "headTilt" || procId === "jawThrust") {
     const rot = procId === "headTilt" ? (ext - 65) * 0.35 : 0;
     const jaw = procId === "jawThrust" ? Math.max(0, (ext - 30) * 0.3) : 0;
+    // Real hand-placement zones, clickable directly on the head/jaw instead
+    // of a dropdown: forehead+bony chin (correct for headTilt), the angle
+    // of the jaw (correct for jawThrust), soft tissue under the chin, and
+    // the back of the neck — the same three wrong-grip reasons the dropdown
+    // used to give, now tied to where a hand would actually go.
+    const gripZones = procId === "headTilt"
+      ? [["bony", -8, 22, "chin"], ["soft", 6, 30, "soft tissue"], ["neck", 0, -30, "neck"]]
+      : [["angle", 30, 8, "jaw angle"], ["chin", 6, 30, "chin"], ["neck", 0, -30, "neck"]];
     return (
       <svg {...box}>
         <g transform={`translate(100,55) rotate(${rot})`}>
           <ellipse cx={0} cy={0} rx={44} ry={36} fill="#D9A98A" opacity={0.85} />
           <path d={`M-20,26 Q0,${40 + jaw} 24,20`} fill="none" stroke="#8A5E45" strokeWidth={2.4} />
+          {onGripClick && gripZones.map(([key, zx, zy, label]) => (
+            <g key={key} onClick={() => onGripClick(key)} style={{ cursor: "pointer" }}>
+              <circle cx={zx} cy={zy} r={9} fill={C.amber} opacity={0.16} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+              <text x={zx} y={zy - 12} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85} style={{ pointerEvents: "none" }}>{label}</text>
+            </g>
+          ))}
         </g>
-        {procId === "jawThrust" && <circle cx={100 + (headPos - 50) * 0.6} cy={16} r={3} fill={Math.abs(headPos - 50) > 15 ? C.red : C.hr} />}
+        {procId === "jawThrust" && <circle cx={100 + (headPos - 50) * 0.6} cy={16} r={3} fill={Math.abs(headPos - 50) > 15 ? C.red : C.hr} style={{ pointerEvents: "none" }} />}
       </svg>
     );
   }
@@ -152,53 +173,53 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
     const mist = Math.max(0, Math.min(1, flow / 12));
     return (
       <svg {...box}>
+        {/* real valve knob, pressable directly instead of a button below */}
         <rect x={10} y={20} width={24} height={60} rx={5} fill={tankOpen ? "#2A6B4A" : "#3A4A54"} stroke={C.line} strokeWidth={1} />
-        <circle cx={22} cy={26} r={5} fill="#16202A" />
+        <g onClick={onTankClick} style={{ cursor: onTankClick ? "pointer" : "default" }}>
+          <circle cx={22} cy={26} r={5} fill="#16202A" />
+          <circle cx={22} cy={26} r={11} fill="transparent" />
+        </g>
         <ellipse cx={110} cy={55} rx={60} ry={40} fill="#D9A98A" opacity={0.85} />
         {nrb ? (
-          <ellipse cx={110} cy={62} rx={16} ry={12} fill={bagFilled ? "#BFD8E0" : "#16202A"} opacity={0.8} stroke={C.line} strokeWidth={1} />
+          <g onClick={onBagClick} style={{ cursor: onBagClick ? "pointer" : "default" }}>
+            <ellipse cx={110} cy={62} rx={16} ry={12} fill={bagFilled ? "#BFD8E0" : "#16202A"} opacity={0.8} stroke={C.line} strokeWidth={1} />
+            <ellipse cx={110} cy={62} rx={22} ry={18} fill="transparent" />
+          </g>
         ) : (
-          <path d="M90,62 Q110,52 130,62" fill="none" stroke="#C8D3D9" strokeWidth={2.5} />
+          <path d="M90,62 Q110,52 130,62" fill="none" stroke="#C8D3D9" strokeWidth={2.5} style={{ pointerEvents: "none" }} />
         )}
-        {mist > 0.15 && [0, 1].map((i) => <circle key={i} cx={104 + i * 12} cy={38 - i * 4} r={2 + mist * 2} fill="#BFE3F2" opacity={0.5 * mist} />)}
-      </svg>
-    );
-  }
-  if (procId === "directPressure") {
-    const held = Math.min(1, (dpHeld || 0) / 8);
-    return (
-      <svg {...box}>
-        <ellipse cx={100} cy={55} rx={78} ry={40} fill="#D9A98A" opacity={0.8} />
-        <ellipse cx={100} cy={55} rx={11} ry={8} fill="#7A1E1E" opacity={Math.max(0.12, 1 - held * 0.85)} />
-        {pressing && <ellipse cx={100} cy={55} rx={22} ry={17} fill="#E9EDE6" opacity={0.55} stroke={C.line} strokeWidth={1} />}
-      </svg>
-    );
-  }
-  if (procId === "pack") {
-    return (
-      <svg {...box}>
-        <ellipse cx={100} cy={55} rx={78} ry={40} fill="#D9A98A" opacity={0.8} />
-        <ellipse cx={100} cy={55} rx={17} ry={13} fill="#5C1219" />
-        {opened && <rect x={91} y={55 - (packDepth / 100) * 12} width={18} height={(packDepth / 100) * 12} fill="#E9EDE6" opacity={0.85} />}
-        {packPressing && <ellipse cx={100} cy={55} rx={24} ry={18} fill="#E9EDE6" opacity={0.4} stroke={C.line} strokeWidth={1} />}
+        {mist > 0.15 && [0, 1].map((i) => <circle key={i} cx={104 + i * 12} cy={38 - i * 4} r={2 + mist * 2} fill="#BFE3F2" opacity={0.5 * mist} style={{ pointerEvents: "none" }} />)}
       </svg>
     );
   }
   if (procId === "fundalMassage") {
     const r = 22 - (firm || 0) * 8;
+    const zones = [["umbilicus", 100, 56, "umbilicus"], ["pubis", 100, 84, "pubis"], ["ribs", 100, 28, "ribs"]];
     return (
       <svg {...box}>
         <ellipse cx={100} cy={62} rx={80} ry={34} fill="#D9A98A" opacity={0.8} />
-        <circle cx={100} cy={56} r={r} fill={(firm || 0) >= 0.8 ? "#7A3B3B" : "#B85C5C"} opacity={0.85} stroke="#5C2A38" strokeWidth={1.4} />
-        {massaging && [0, 1, 2].map((i) => (
-          <circle key={i} cx={100} cy={56} r={r + 6 + i * 5} fill="none" stroke={C.amber} strokeWidth={1} opacity={Math.max(0, 0.4 - i * 0.12)} />
+        {onFundusClick && zones.map(([key, zx, zy, label]) => (
+          <g key={key} onClick={() => onFundusClick(key)} style={{ cursor: "pointer" }}>
+            <circle cx={zx} cy={zy} r={11} fill={C.amber} opacity={0.14} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={zx} y={zy - 14} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85} style={{ pointerEvents: "none" }}>{label}</text>
+          </g>
         ))}
+        {!onFundusClick && <>
+          <circle cx={100} cy={56} r={r} fill={(firm || 0) >= 0.8 ? "#7A3B3B" : "#B85C5C"} opacity={0.85} stroke="#5C2A38" strokeWidth={1.4}
+            onPointerDown={onPressDown} onPointerUp={onPressUp} onPointerLeave={onPressUp} style={onPressDown ? { cursor: "pointer" } : undefined} />
+          {massaging && [0, 1, 2].map((i) => (
+            <circle key={i} cx={100} cy={56} r={r + 6 + i * 5} fill="none" stroke={C.amber} strokeWidth={1} opacity={Math.max(0, 0.4 - i * 0.12)} style={{ pointerEvents: "none" }} />
+          ))}
+        </>}
       </svg>
     );
   }
   if (procId === "recovery") {
     const onSide = rollSide === "side";
     const rot = onSide ? -70 : 0;
+    // Push zones: clicking the shoulder rolls them toward you (side, the
+    // real technique), the hip rolls face-down, doing nothing leaves them
+    // supine — matching the three real outcomes the old dropdown described.
     return (
       <svg {...box}>
         <g transform={`translate(100,55) rotate(${rot})`}>
@@ -207,6 +228,16 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
           {onSide && kneeSet && <ellipse cx={30} cy={20} rx={22} ry={9} fill="#D9A98A" opacity={0.7} transform="rotate(35 30 20)" />}
           {onSide && armSet && <rect x={-70} y={-6} width={30} height={10} rx={5} fill="#D9A98A" opacity={0.7} />}
         </g>
+        {onRollClick && !onSide && <>
+          <g onClick={() => onRollClick("side")} style={{ cursor: "pointer" }}>
+            <circle cx={100} cy={30} r={9} fill={C.amber} opacity={0.14} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={100} y={16} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85}>push shoulder — roll to side</text>
+          </g>
+          <g onClick={() => onRollClick("stomach")} style={{ cursor: "pointer" }}>
+            <circle cx={130} cy={70} r={9} fill={C.amber} opacity={0.14} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={130} y={86} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85}>push hip — roll prone</text>
+          </g>
+        </>}
       </svg>
     );
   }
@@ -217,9 +248,24 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
       <svg {...box}>
         <ellipse cx={100} cy={60} rx={30} ry={40} fill="#D9A98A" opacity={0.85} />
         {inPos && <ellipse cx={100} cy={30} rx={26} ry={20} fill="#C89578" opacity={0.65} />}
-        {inPos && grip && <circle cx={100} cy={52 - Math.min(10, thrusts * 2)} r={8} fill="#E8C9A8" stroke="#8A5E45" strokeWidth={1} />}
+        {inPos && grip && <circle cx={100} cy={52 - Math.min(10, thrusts * 2)} r={8} fill="#E8C9A8" stroke="#8A5E45" strokeWidth={1} style={{ pointerEvents: "none" }} />}
+        {!inPos && onStanceClick && <>
+          <g onClick={() => onStanceClick("behind")} style={{ cursor: "pointer" }}>
+            <circle cx={100} cy={60} r={44} fill="none" stroke={C.amber} strokeWidth={1} strokeDasharray="2,3" opacity={0.35} />
+            <text x={100} y={4} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85}>stand behind</text>
+          </g>
+          <g onClick={() => onStanceClick("front")} style={{ cursor: "pointer" }}>
+            <circle cx={100} cy={30} r={13} fill={C.amber} opacity={0.1} />
+          </g>
+        </>}
+        {inPos && !grip && onHandPosClick && (
+          <g onClick={() => onHandPosClick("navel")} style={{ cursor: "pointer" }}>
+            <circle cx={100} cy={52} r={9} fill={C.amber} opacity={0.16} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={100} y={38} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85}>above navel</text>
+          </g>
+        )}
         {Array.from({ length: 5 }, (_, i) => (
-          <circle key={i} cx={70 + i * 15} cy={95} r={4} fill={i < thrusts ? C.hr : "#1B242B"} />
+          <circle key={i} cx={70 + i * 15} cy={95} r={4} fill={i < thrusts ? C.hr : "#1B242B"} style={{ pointerEvents: "none" }} />
         ))}
       </svg>
     );
@@ -240,22 +286,27 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
     return (
       <svg {...box}>
         <ellipse cx={100} cy={55} rx={78} ry={40} fill="#D9A98A" opacity={0.8} />
-        <circle cx={82} cy={36} r={7} fill="#8A9AA2" opacity={0.6} />
-        {held && <circle cx={82} cy={36} r={10} fill="none" stroke={C.hr} strokeWidth={2} opacity={0.85} />}
+        {onIcdSiteClick ? <>
+          <g onClick={() => onIcdSiteClick("found")} style={{ cursor: "pointer" }}>
+            <circle cx={82} cy={36} r={9} fill="#8A9AA2" opacity={0.6} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={82} y={22} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.85}>upper chest</text>
+          </g>
+          <g onClick={() => onIcdSiteClick("notFound")} style={{ cursor: "pointer" }}>
+            <circle cx={100} cy={86} r={10} fill="transparent" stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" opacity={0.35} />
+            <text x={100} y={98} textAnchor="middle" fontSize={5.5} fill={C.amber} opacity={0.7}>abdomen</text>
+          </g>
+        </> : <>
+          <g onPointerDown={onPressDown} onPointerUp={onPressUp} onPointerLeave={onPressUp} style={onPressDown ? { cursor: "pointer" } : undefined}>
+            <circle cx={82} cy={36} r={7} fill="#8A9AA2" opacity={0.6} />
+            <circle cx={82} cy={36} r={16} fill="transparent" />
+          </g>
+          {held && <circle cx={82} cy={36} r={10} fill="none" stroke={C.hr} strokeWidth={2} opacity={0.85} style={{ pointerEvents: "none" }} />}
+        </>}
       </svg>
     );
   }
-  if (procId === "chestTube") {
-    const x = 130, y = 30 + (rib / 100) * 40;
-    return (
-      <svg {...box}>
-        <ellipse cx={100} cy={55} rx={80} ry={38} fill="#D9A98A" opacity={0.8} />
-        {[0, 1, 2, 3].map((i) => <line key={i} x1={40} y1={30 + i * 14} x2={160} y2={30 + i * 14} stroke="#B98A6A" strokeWidth={3} opacity={0.5} />)}
-        <line x1={x - 20} y1={y - 18} x2={x} y2={y} stroke="#C8D3D9" strokeWidth={2.5} />
-        <circle cx={x} cy={y + depth * 12} r={2.6} fill={depth > 0.5 ? "#7CD68A" : "#8A9AA2"} />
-      </svg>
-    );
-  }
+  // chestTube's own scene is merged into the needleD case above (shared
+  // landmark-click thorax) since both are rib-cage site selections.
   if (procId === "lucas") {
     const x = 60 + (rib / 100) * 80;
     return (
@@ -268,10 +319,16 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
   }
   if (procId === "pelvicBinder") {
     const s = Math.max(0.15, snug / 100);
+    const zones = [["crest", 100, 24, "iliac crests"], ["troch", 100, 50, "trochanters"], ["thigh", 100, 78, "mid-thighs"]];
     return (
       <svg {...box}>
         <rect x={45} y={35} width={110} height={40} rx={20} fill="#D9A98A" opacity={0.85} />
-        <rect x={45} y={45 - s * 4} width={110} height={10 + s * 12} rx={6} fill={C.amber} opacity={0.55} />
+        {onPelvicSiteClick ? zones.map(([key, zx, zy, label]) => (
+          <g key={key} onClick={() => onPelvicSiteClick(key)} style={{ cursor: "pointer" }}>
+            <rect x={zx - 55} y={zy - 8} width={110} height={16} rx={8} fill={C.amber} opacity={0.12} stroke={C.amber} strokeWidth={1} strokeDasharray="2,2" />
+            <text x={zx + 60} y={zy + 3} fontSize={5.5} fill={C.amber} opacity={0.85} style={{ pointerEvents: "none" }}>{label}</text>
+          </g>
+        )) : <rect x={45} y={45 - s * 4} width={110} height={10 + s * 12} rx={6} fill={C.amber} opacity={0.55} style={{ pointerEvents: "none" }} />}
       </svg>
     );
   }
@@ -288,10 +345,23 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
   }
   if (procId === "cpap" || procId === "vent") {
     const fillPct = procId === "cpap" ? Math.min(1, flow / 12) : depth;
+    // A real pressure/volume waveform strip on the vent/CPAP screen itself,
+    // not just a slider below text — cycles with the set target so a
+    // dangerously small or large breath is visible, not just numeric.
+    const amp = 6 + fillPct * 18;
+    const cyc = 40;
+    const pts = [];
+    for (let x = 12; x <= 188; x += 2) {
+      const t = ((x + (ventTrace || 0) * cyc) % cyc) / cyc;
+      pts.push([x, 90 - amp * Math.max(0, Math.sin(t * Math.PI * 2))]);
+    }
     return (
       <svg {...box}>
-        <ellipse cx={110} cy={55} rx={60} ry={40} fill="#D9A98A" opacity={0.85} />
-        <ellipse cx={100} cy={58} rx={24} ry={18} fill={wiped ? "#BFD8E0" : "#16202A"} opacity={0.4 + fillPct * 0.5} stroke={C.line} strokeWidth={1} />
+        <ellipse cx={110} cy={40} rx={60} ry={26} fill="#D9A98A" opacity={0.85} />
+        <ellipse cx={100} cy={42} rx={24} ry={14} fill={wiped ? "#BFD8E0" : "#16202A"} opacity={0.4 + fillPct * 0.5} stroke={C.line} strokeWidth={1} />
+        <rect x={10} y={68} width={180} height={26} rx={4} fill="#04140A" stroke="#1B3A24" strokeWidth={1} />
+        <text x={14} y={76} fontSize={5.5} fill="#3FA65A" style={{ fontFamily: "monospace" }}>{procId === "cpap" ? "PRESSURE" : "VOLUME"}</text>
+        <polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke="#3FA65A" strokeWidth="1.2" />
       </svg>
     );
   }
@@ -308,14 +378,28 @@ function ProcScene({ procId, tight, twist, rib, depth, phase, wiped, ext, headPo
   if (procId === "ultrasound") {
     const SPOT = [[100, 32], [130, 54], [70, 54], [100, 82]];
     const [px, py] = SPOT[usIdx] || SPOT[0];
+    // A real grayscale B-mode fan below the probe, not just faint fanning
+    // lines on the torso: it only resolves (speckle settles, a genuine
+    // fluid stripe becomes visible) near the real aim of usFine=50, the
+    // actual sonographic look of a clarified window versus rib-shadow noise.
+    const clarity = Math.max(0, 1 - Math.abs(usFine - 50) / 50);
     return (
       <svg {...box}>
-        <ellipse cx={100} cy={58} rx={78} ry={38} fill="#D9A98A" opacity={0.8} />
-        <rect x={px - 10} y={py - 6} width={20} height={12} rx={2} fill="#16202A" stroke={C.hr} strokeWidth={1.4} />
-        {[0, 1, 2].map((i) => (
-          <path key={i} d={`M${px - 8 + i * 8},${py + 6} L${px - 14 + i * 8},${py + 6 + usFine * 0.25} L${px - 2 + i * 8},${py + 6 + usFine * 0.25} Z`}
-            fill={C.hr} opacity={0.18} />
-        ))}
+        <ellipse cx={100} cy={40} rx={78} ry={24} fill="#D9A98A" opacity={0.8} />
+        <rect x={px - 10} y={py - 26} width={20} height={12} rx={2} fill="#16202A" stroke={C.hr} strokeWidth={1.4} />
+        <rect x={10} y={54} width={180} height={40} rx={4} fill="#0A0A0A" stroke="#333" strokeWidth={1} />
+        <path d={`M100,58 L${100 - 60 * (0.3 + clarity * 0.7)},92 L${100 + 60 * (0.3 + clarity * 0.7)},92 Z`}
+          fill="#2A2A2A" opacity={0.5 + clarity * 0.3} />
+        {clarity > 0.6 && <path d={`M${100 - 26},80 Q100,86 ${100 + 26},80 L${100 + 22},84 Q100,90 ${100 - 22},84 Z`} fill="#000" opacity={0.9} />}
+        {/* Deterministic speckle jitter (a fixed per-index offset, not
+            Math.random() — an impure call during render would make the
+            speckle field resample every re-render instead of looking like
+            a real, stable B-mode texture) — still reads as organic noise. */}
+        {Array.from({ length: 24 }, (_, i) => {
+          const jx = ((i * 37) % 11) - 5, jy = ((i * 53) % 9) - 4, jo = ((i * 29) % 10) / 10;
+          return (<circle key={i} cx={20 + (i % 8) * 20 + jx} cy={62 + Math.floor(i / 8) * 10 + jy}
+            r={1} fill="#555" opacity={0.3 + jo * 0.3 * (1 - clarity * 0.5)} />);
+        })}
       </svg>
     );
   }
@@ -331,11 +415,6 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   // shared single-choice / slider state
   const [grip, setGrip] = useState("");
   const [ext, setExt] = useState(15);
-  // tourniquet
-  const [tqPos, setTqPos] = useState("");
-  const [tight, setTight] = useState(0);
-  const [twist, setTwist] = useState(false);
-  const [timed, setTimed] = useState(false);
   // needle decompression
   const [site, setSite] = useState("");
   const [rib, setRib] = useState(20);
@@ -343,8 +422,6 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   // chest seal
   const [wiped, setWiped] = useState(false);
   const [phase, setPhase] = useState(0);
-  // defib
-  const [clear, setClear] = useState({ hands: false, o2: false, call: false });
   // airway / spine / oxygen
   const [headPos, setHeadPos] = useState(() => (Math.random() < 0.5 ? 15 : 85));
   const [neckIdx] = useState(() => Math.floor(Math.random() * 3));
@@ -355,6 +432,7 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   const [heldMs, setHeldMs] = useState(0);
   const driftRef = useRef(50);
   const bandRef = useRef(0);
+  const pressStartRef = useRef(0);
   const [needIdx] = useState(() => Math.floor(Math.random() * 3));
   const [adjSize, setAdjSize] = useState("");
   const [lube, setLube] = useState(false);
@@ -363,17 +441,10 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   const [flow, setFlow] = useState(0);
   const [suctionOn, setSuctionOn] = useState(false);
   const [suctionT, setSuctionT] = useState(0);
-  // direct pressure
-  const [dressing, setDressing] = useState("");
+  // shared with LUCAS's strap-tightening step (see its own useEffect comment)
   const [pressing, setPressing] = useState(false);
   const [dpHeld, setDpHeld] = useState(0);
-  // wound packing
-  const [opened, setOpened] = useState(false);
-  const [packDepth, setPackDepth] = useState(0);
-  const [packPressing, setPackPressing] = useState(false);
-  const [packHeld, setPackHeld] = useState(0);
   // fundal massage
-  const [located, setLocated] = useState("");
   const [massaging, setMassaging] = useState(false);
   const [firm, setFirm] = useState(0);
   // recovery position
@@ -393,23 +464,19 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   const [usIdx, setUsIdx] = useState(0);
   const [usFine, setUsFine] = useState(20);
   const [usFindings, setUsFindings] = useState([]);
-  // cardioversion / transcutaneous pacing
-  const [energy, setEnergy] = useState(50);
-  const [paceRate, setPaceRate] = useState(70);
-  const [mA, setMa] = useState(0);
-  const [captureOk, setCaptureOk] = useState(false);
   // ICD/pacemaker magnet and chest tube
-  const [magnetSecured, setMagnetSecured] = useState(false);
   const [ctSwept, setCtSwept] = useState(false);
+  // cpap/vent waveform phase
+  const [ventPhase, setVentPhase] = useState(0);
 
-  useEffect(() => {
-    if (!(twist && procId === "tq")) return undefined;
-    const id = setInterval(() => setTight((t) => Math.min(1, t + 0.03)), 80);
-    return () => clearInterval(id);
-  }, [twist, procId]);
   useEffect(() => {
     if (procId !== "chestSeal") return undefined;
     const id = setInterval(() => setPhase((p) => (p + 0.04) % 1), 100);
+    return () => clearInterval(id);
+  }, [procId]);
+  useEffect(() => {
+    if (procId !== "cpap" && procId !== "vent") return undefined;
+    const id = setInterval(() => setVentPhase((p) => p + 1), 100);
     return () => clearInterval(id);
   }, [procId]);
   // Manual C-spine: the head drifts and you nudge it back; scored over 12 s.
@@ -430,18 +497,17 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
     const id = setInterval(() => setSuctionT((t) => t + 0.1), 100);
     return () => clearInterval(id);
   }, [suctionOn, procId]);
-  // Direct pressure: cumulative seconds under sustained hold.
+  // LUCAS strap tightening: cumulative seconds under sustained hold. Reuses
+  // the same pressing/dpHeld state bleeding control used to use here before
+  // it moved to its own BleedingControlMinigame — this was a real, previously
+  // silent bug found while removing that dead code: this effect used to key
+  // on procId==="directPressure", which lucas's own procId never matches, so
+  // dpHeld could never advance and the strap-tightening step was unwinnable.
   useEffect(() => {
-    if (!(pressing && procId === "directPressure")) return undefined;
+    if (!(pressing && procId === "lucas")) return undefined;
     const id = setInterval(() => setDpHeld((t) => t + 0.1), 100);
     return () => clearInterval(id);
   }, [pressing, procId]);
-  // Wound packing's own post-pack hold, same shape as direct pressure's.
-  useEffect(() => {
-    if (!(packPressing && procId === "pack")) return undefined;
-    const id = setInterval(() => setPackHeld((t) => t + 0.1), 100);
-    return () => clearInterval(id);
-  }, [packPressing, procId]);
   // Fundal massage: firmness rises while actively massaged, relaxes (atony)
   // when you stop — a real uterus doesn't stay firm on its own until the
   // uterotonic response is established, so letting go too early costs ground.
@@ -455,27 +521,43 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
   const fail = (why) => setFlash({ ok: false, why });
   const win = (why) => setFlash({ ok: true, why });
 
+  // Direct-manipulation click/press handlers, shared between the drawn
+  // scene (ProcScene, above the step text) and body()'s own step logic —
+  // clicking/pressing the ACTUAL image resolves the step, replacing what
+  // used to be a same-named dropdown choice or a separate confirm button.
+  const onNeedleSite = (key) => (["mcl2", "aal5"].includes(key) ? setStep(1)
+    : fail("That isn't a decompression site. Use the 2nd ICS midclavicular or the 4th to 5th ICS anterior axillary line."));
+  const onChestTubeSite = (key) => (key === "safety" ? setStep(1)
+    : fail(key === "mcl2" ? "That's the needle decompression landmark, not a chest tube. Too high and too medial for a tube." : "Too far posterior. You risk the latissimus and the long thoracic nerve. Stay in the triangle of safety."));
+  const onHeadTiltGrip = (key) => (key === "bony" ? setStep(1)
+    : fail(key === "soft" ? "Pressing the soft tissue under the jaw pushes the tongue back and closes the airway." : "Lifting the neck flexes it and worsens the obstruction."));
+  const onJawThrustGrip = (key) => (key === "angle" ? setStep(1) : fail("That isn't a jaw thrust. Both hands go behind the angles of the jaw."));
+  const onSealPressUp = () => (!wiped ? fail("The skin was wet and the seal slides off. Wipe it dry first.")
+    : phase <= 0.5 ? fail("You sealed it on the inhale and trapped air. Apply it as they breathe out.") : win("Sealed on the exhale, and the vent is working."));
+  const onTankClick = () => setTankOpen(true);
+  const onBagClick = () => setBagFilled(true);
+  const onFundusClick = (key) => (key === "umbilicus" ? setStep(1)
+    : fail(key === "pubis" ? "Too low. You'd feel the bladder, not the fundus, and you'd miss it entirely." : "Too high. That's not where the fundus sits right after delivery."));
+  const onFundusPressUp = () => (firm < 0.8 ? fail("Still soft and boggy. Keep massaging — a boggy uterus is an actively bleeding one.") : win("The fundus is firm now. Bleeding is slowing."));
+  const onRollClick = (key) => { setRollSide(key); if (key === "side") setStep(1);
+    else fail("Face down makes it impossible to watch their breathing or clear the airway if they vomit."); };
+  const onStanceClick = (key) => { setStance(key); if (key === "behind") setStep(1);
+    else fail("Pushing on the chest from the front doesn't generate the subdiaphragmatic thrust that expels the obstruction."); };
+  const onHandPosClick = (key) => { setHandPos(key); if (key === "navel") setStep(2);
+    else fail("That's not the right landmark for an abdominal thrust."); };
+  const onPelvicSiteClick = (key) => (key === "troch" ? setStep(1)
+    : fail(key === "crest" ? "Too high. At the iliac crests it can't close the pelvic ring the way this injury needs." : "Too low. Across the thighs it does nothing for a pelvic fracture."));
+  const onIcdSiteClick = (key) => (key === "found" ? setStep(1) : fail("Most ICDs and pacemakers sit in a subcutaneous pocket on the upper chest, not the abdomen. Recheck there."));
+  const onIcdPressDown = () => { pressStartRef.current = Date.now(); setHeld(true); };
+  const onIcdPressUp = () => { setHeld(false);
+    if (Date.now() - pressStartRef.current < 900) fail("You let go too soon. Hold it centered over the device.");
+    else win("Magnet seated over the device. Shock therapy is suspended for as long as it stays in place.");
+  };
+
   const body = () => {
     switch (procId) {
-      case "tq": {
-        if (step === 0) return (<><Line>1. Place the tourniquet 2 to 3 inches above the wound, on bare limb and never over a joint.</Line>
-          <Choice value={tqPos} onChange={setTqPos} placeholder="Choose a position..." options={[["high", "2 to 3 inches above the wound, on the limb"], ["wound", "Directly on the wound"], ["joint", "Over the elbow or knee"], ["below", "Below the wound"]]} /><Gap />
-          <button style={GO} disabled={!tqPos} onClick={() => (tqPos === "high" ? setStep(1) : fail({ wound: "Placing it on the wound crushes the injury and doesn't compress the artery.",
-            joint: "A tourniquet over a joint can't occlude the artery against the bone.", below: "Below the wound it does nothing for the bleeding." }[tqPos]))}>Slide it into place</button></>);
-        if (step === 1) return (<><Line>2. Hold to twist the windlass until the bleeding just stops. Too little leaves a venous tourniquet that bleeds more, too much is needless pain.</Line>
-          <Bar v={tight} lo={0.55 - 0.1 * (tol - 1)} hi={0.85 + 0.1 * (tol - 1)} />
-          <button style={GO} onPointerDown={() => setTwist(true)} onPointerUp={() => setTwist(false)} onPointerLeave={() => setTwist(false)}>Hold to twist</button><Gap />
-          <button style={NEUTRAL} onClick={() => (tight < 0.55 - 0.1 * (tol - 1) ? fail("Not tight enough. It's venous only and the limb bleeds more. Tighten until the bleeding stops.")
-            : tight > 0.9 + 0.1 * (tol - 1) ? fail("Far tighter than needed. Loosen and reset it, since over-tightening injures the limb.") : setStep(2))}>Lock the windlass</button></>);
-        return (<><Line>3. Note the time it went on, since the clock matters at the hospital.</Line>
-          <button style={timed ? NEUTRAL : GO} onClick={() => setTimed(true)}>{timed ? "Time written on it" : "Write the time on the tourniquet"}</button><Gap />
-          <button style={GO} onClick={() => (timed ? win("Bleeding controlled and the time is marked.") : win("Bleeding controlled, but you never marked the time. Say it aloud at handoff."))}>Done</button></>);
-      }
       case "needleD": {
-        if (step === 0) return (<><Line>1. Find your landmark for the affected side.</Line>
-          <Choice value={site} onChange={setSite} placeholder="Choose a site..." options={[["mcl2", "2nd intercostal space, midclavicular line"], ["aal5", "4th to 5th intercostal space, anterior axillary line"], ["low", "8th intercostal space, posterior"], ["abd", "Upper abdomen"]]} /><Gap />
-          <button style={GO} disabled={!site} onClick={() => (site === "mcl2" || site === "aal5" ? setStep(1)
-            : fail("That isn't a decompression site. Use the 2nd ICS midclavicular or the 4th to 5th ICS anterior axillary line."))}>Mark the site</button></>);
+        if (step === 0) return (<Line>1. Click your landmark on the ribcage above, for the affected side.</Line>);
         if (step === 1) return (<><Line>2. Insert just over the TOP of the rib, since the nerve and vessels run under its lower border: needle at {rib}% (aim over the top, about 60).</Line>
           <Slider value={rib} onChange={setRib} />
           <button style={GO} onClick={() => (Math.abs(rib - 60) > 20 * tol ? fail("You caught the lower rib border and the neurovascular bundle. Redirect over the top of the rib.") : setStep(2))}>Position the needle</button></>);
@@ -489,35 +571,20 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
           <button style={wiped ? NEUTRAL : GO} onClick={() => setWiped(true)}>{wiped ? "Wound wiped dry" : "Wipe the skin"}</button><Gap />
           <button style={GO} onClick={() => setStep(1)}>Continue</button></>);
         const exhaling = phase > 0.5;
-        return (<><Line>2. Apply the seal as the patient breathes OUT so you don't trap air.</Line>
+        return (<><Line>2. Press and hold the seal directly on the wound as the patient breathes OUT so you don't trap air.</Line>
           <div style={{ textAlign: "center", fontSize: 13, color: exhaling ? C.hr : C.amber, marginBottom: 8 }}>{exhaling ? "Breathing out" : "Breathing in"}</div>
-          <Bar v={phase} lo={0.5} hi={1} /><Gap />
-          <button style={GO} onClick={() => (!wiped ? fail("The skin was wet and the seal slides off. Wipe it dry first.")
-            : !exhaling ? fail("You sealed it on the inhale and trapped air. Apply it as they breathe out.") : win("Sealed on the exhale, and the vent is working."))}>Apply the seal</button></>);
+          <Bar v={phase} lo={0.5} hi={1} /></>);
       }
-      case "defib":
-      case "aedShock":
-        return (<><Line>Before you shock, make sure everyone is clear.</Line>
-          {[["hands", "Hands off. Nobody touching the patient or the stretcher"], ["o2", "Oxygen moved away from the chest"], ["call", "Call it: \"I'm clear, you're clear, everybody clear\""]].map(([k, l]) => (
-            <div key={k} style={{ marginBottom: 6 }}>
-              <button style={clear[k] ? NEUTRAL : GO} onClick={() => setClear({ ...clear, [k]: true })}>{clear[k] ? `Done: ${l}` : l}</button>
-            </div>))}
-          <Gap />
-          <button style={DANGER} onClick={() => (!(clear.hands && clear.o2 && clear.call) ? fail("You shocked before clearing everyone. That shock could have hurt a rescuer.") : win("Clear. Shock delivered."))}>Deliver the shock</button></>);
       case "headTilt": {
-        if (step === 0) return (<><Line>1. One hand on the forehead, two fingers under the BONY part of the chin, never the soft tissue under the jaw.</Line>
-          {suspectSpine && <div style={{ fontSize: 12, color: C.amber, marginBottom: 8 }}>Suspected spinal injury on this patient. A jaw thrust is the safer opener.</div>}
-          <Choice value={grip} onChange={setGrip} placeholder="Choose your grip..." options={[["bony", "Fingers on the bony chin, palm on the forehead"], ["soft", "Fingers on the soft tissue under the jaw"], ["neck", "Hand behind the neck, lifting"]]} /><Gap />
-          <button style={GO} disabled={!grip} onClick={() => (grip === "bony" ? setStep(1) : fail(grip === "soft" ? "Pressing the soft tissue under the jaw pushes the tongue back and closes the airway." : "Lifting the neck flexes it and worsens the obstruction."))}>Take the grip</button></>);
+        if (step === 0) return (<>{suspectSpine && <div style={{ fontSize: 12, color: C.amber, marginBottom: 8 }}>Suspected spinal injury on this patient. A jaw thrust is the safer opener.</div>}
+          <Line>1. Click the grip above: one hand on the forehead, two fingers under the BONY part of the chin, never the soft tissue under the jaw.</Line></>);
         return (<><Line>2. Tilt the head back and lift the chin until the airway lines up: extension {ext}% (aim for about 65).</Line>
           <Slider value={ext} onChange={setExt} />
           <button style={GO} onClick={() => (ext < 65 - 15 * tol ? fail("Not enough extension. The tongue still blocks the airway.")
             : ext > 65 + 20 * tol ? fail("Over-extended. That closes the airway and strains the neck.") : win(suspectSpine ? "Airway opened, but you tilted a patient with a possible spinal injury. Use a jaw thrust next time." : "Airway open, chin lifted."))}>Hold the position</button></>);
       }
       case "jawThrust": {
-        if (step === 0) return (<><Line>1. Fingers behind the angle of the jaw on BOTH sides, thumbs on the cheekbones, without moving the neck.</Line>
-          <Choice value={grip} onChange={setGrip} placeholder="Choose your grip..." options={[["angle", "Behind the angles of the jaw, both hands"], ["chin", "Under the chin, one hand"], ["neck", "Behind the neck"]]} /><Gap />
-          <button style={GO} disabled={!grip} onClick={() => (grip === "angle" ? setStep(1) : fail("That isn't a jaw thrust. Both hands go behind the angles of the jaw."))}>Take the grip</button></>);
+        if (step === 0) return (<Line>1. Click the grip above: fingers behind the angle of the jaw on BOTH sides, thumbs on the cheekbones, without moving the neck.</Line>);
         return (<><Line>2. Keep the head in line: position {headPos}% (centre it at 50).</Line>
           <Slider value={headPos} onChange={setHeadPos} />
           <Line>Now thrust the jaw forward: {ext}% (aim for about 65).</Line>
@@ -583,12 +650,10 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
       case "o2nc":
       case "o2nrb": {
         const nrb = procId === "o2nrb", lo = nrb ? 10 : 2, hi = nrb ? 15 : 6;
-        if (step === 0) return (<><Line>1. Open the cylinder valve and check the gauge.</Line>
-          <button style={tankOpen ? NEUTRAL : GO} onClick={() => setTankOpen(true)}>{tankOpen ? "Cylinder open" : "Open the tank"}</button><Gap />
-          <button style={GO} onClick={() => setStep(nrb ? 1 : 2)}>Continue</button></>);
-        if (step === 1) return (<><Line>2. Pre-fill the reservoir bag with your thumb over the valve until it's inflated, so the patient can draw from it.</Line>
-          <button style={bagFilled ? NEUTRAL : GO} onClick={() => setBagFilled(true)}>{bagFilled ? "Reservoir inflated" : "Fill the reservoir bag"}</button><Gap />
-          <button style={GO} onClick={() => setStep(2)}>Continue</button></>);
+        if (step === 0) return (<><Line>1. Click the cylinder valve above to open it and check the gauge.</Line>
+          {tankOpen && <button style={GO} onClick={() => setStep(nrb ? 1 : 2)}>Continue</button>}</>);
+        if (step === 1) return (<><Line>2. Click the reservoir bag above to pre-fill it with your thumb over the valve, so the patient can draw from it.</Line>
+          {bagFilled && <button style={GO} onClick={() => setStep(2)}>Continue</button>}</>);
         return (<><Line>{nrb ? "3" : "2"}. Set the flow: {flow} L/min (aim for {lo} to {hi}).</Line>
           <Slider value={flow} onChange={setFlow} max={15} />
           <button style={GO} onClick={() => (!tankOpen ? fail("The cylinder valve is closed. No oxygen is flowing.")
@@ -596,47 +661,13 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
             : flow < lo ? fail(nrb ? "Too low. A non-rebreather needs 10 to 15 L/min or the bag collapses." : "Too little flow to matter. Turn it up.")
             : flow > hi ? fail(nrb ? "That's past the regulator's range." : "Above 6 L/min a nasal cannula dries and irritates the nose and adds nothing. Use a mask.") : win("Oxygen is flowing and the patient is breathing it."))}>Put it on the patient</button></>);
       }
-      case "directPressure": {
-        if (step === 0) return (<><Line>1. Get a barrier between you and the wound before you touch it.</Line>
-          <Choice value={dressing} onChange={setDressing} placeholder="Choose what you press with..." options={[["gauze", "A gauze pad or trauma dressing"], ["bareHand", "Your bare gloved hand, no dressing"], ["occlusive", "An occlusive (vented) seal"]]} /><Gap />
-          <button style={GO} disabled={!dressing} onClick={() => (dressing === "gauze" ? setStep(1)
-            : fail(dressing === "bareHand" ? "You can press without a dressing, but a bare glove gives you nothing to bulk the pressure with and no way to keep the wound clean. Grab a dressing."
-              : "An occlusive seal is for a sucking chest wound, not a bleeding one. It won't tamponade anything here."))}>Place the dressing</button></>);
-        return (<><Line>2. Push down firm and hold. Don't peek, don't let up, don't check it early — lifting the dressing breaks the seal and the bleeding restarts.</Line>
-          <Bar v={Math.min(1, dpHeld / 8)} lo={0.75} hi={1} />
-          <button style={GO} onPointerDown={() => setPressing(true)} onPointerUp={() => setPressing(false)} onPointerLeave={() => setPressing(false)}>Hold firm pressure</button><Gap />
-          <button style={NEUTRAL} onClick={() => (dpHeld < 6 ? fail("You let up too soon. Direct, firm, continuous pressure needs real time to work — keep holding.")
-            : win("Bleeding has slowed to a trickle. Keep the dressing in place and secure it with a wrap."))}>Check the wound</button></>);
-      }
-      case "pack": {
-        if (step === 0) return (<><Line>1. Open the gauze and get the packing ready. Pack the wound itself, not just the entrance.</Line>
-          <button style={opened ? NEUTRAL : GO} onClick={() => setOpened(true)}>{opened ? "Gauze open, ready to pack" : "Open the gauze"}</button><Gap />
-          <button style={GO} disabled={!opened} onClick={() => setStep(1)}>Continue</button></>);
-        if (step === 1) return (<><Line>2. Pack it in, layer by layer, all the way to the base of the wound: {Math.round(packDepth)}% (aim for at least 85 — dead space left unpacked keeps bleeding).</Line>
-          <Slider value={packDepth} onChange={setPackDepth} />
-          <button style={GO} onClick={() => (packDepth < 70 ? fail("Only the surface is packed. There's dead space below and the bleeding continues from down there.") : setStep(2))}>Pack it to the base</button></>);
-        return (<><Line>3. Hold firm pressure directly on top of the packed gauze so it tamponades against the bleeding vessel.</Line>
-          <Bar v={Math.min(1, packHeld / 5)} lo={0.6} hi={1} />
-          <button style={GO} onPointerDown={() => setPackPressing(true)} onPointerUp={() => setPackPressing(false)} onPointerLeave={() => setPackPressing(false)}>Hold pressure on top</button><Gap />
-          <button style={NEUTRAL} onClick={() => (packHeld < 3 ? fail("The gauze is packed but nothing held it in place under pressure. Hold firmly on top before you let go.")
-            : win("Packed to the base and held firm. Bleeding controlled."))}>Finish the pack</button></>);
-      }
       case "fundalMassage": {
-        if (step === 0) return (<><Line>1. Find the fundus. Immediately postpartum it sits right at the level of the umbilicus.</Line>
-          <Choice value={located} onChange={setLocated} placeholder="Palpate and choose..." options={[["umbilicus", "Firm mass at the level of the umbilicus"], ["pubis", "Down near the pubic bone"], ["ribs", "Up under the ribs"]]} /><Gap />
-          <button style={GO} disabled={!located} onClick={() => (located === "umbilicus" ? setStep(1)
-            : fail(located === "pubis" ? "Too low. You'd feel the bladder, not the fundus, and you'd miss it entirely." : "Too high. That's not where the fundus sits right after delivery."))}>Cup your hand over it</button></>);
-        return (<><Line>2. Massage in firm, circular motions until it firms up like a grapefruit. Ease off and it goes soft (boggy) again, so keep at it.</Line>
-          <Bar v={firm} lo={0.8} hi={1} />
-          <button style={GO} onPointerDown={() => setMassaging(true)} onPointerUp={() => setMassaging(false)} onPointerLeave={() => setMassaging(false)}>Massage the fundus</button><Gap />
-          <button style={NEUTRAL} onClick={() => (firm < 0.8 ? fail("Still soft and boggy. Keep massaging — a boggy uterus is an actively bleeding one.")
-            : win("The fundus is firm now. Bleeding is slowing."))}>Check the fundus</button></>);
+        if (step === 0) return (<Line>1. Click on the abdomen above where you palpate the fundus. Immediately postpartum it sits right at the level of the umbilicus.</Line>);
+        return (<><Line>2. Press and hold directly on the fundus in firm, circular motions until it firms up like a grapefruit. Ease off and it goes soft (boggy) again, so keep at it.</Line>
+          <Bar v={firm} lo={0.8} hi={1} /></>);
       }
       case "recovery": {
-        if (step === 0) return (<><Line>1. Roll them. Away from you, onto their side — never flat on the back or face-down.</Line>
-          <Choice value={rollSide} onChange={setRollSide} placeholder="Choose the position..." options={[["side", "Onto their side"], ["back", "Leave them on their back"], ["stomach", "Onto their stomach"]]} /><Gap />
-          <button style={GO} disabled={!rollSide} onClick={() => (rollSide === "side" ? setStep(1)
-            : fail(rollSide === "back" ? "Flat on the back, an unconscious airway can obstruct and vomit pools in the throat." : "Face down makes it impossible to watch their breathing or clear the airway if they vomit."))}>Roll them</button></>);
+        if (step === 0) return (<Line>1. Click above to roll them — away from you, onto their side. Never flat on the back or face-down.</Line>);
         if (step === 1) return (<><Line>2. Stabilize them so they don't roll back: the lower arm out in front for support, the upper knee bent to prop the body.</Line>
           <button style={armSet ? NEUTRAL : GO} onClick={() => setArmSet(true)}>{armSet ? "Lower arm extended" : "Extend the lower arm in front"}</button><Gap />
           <button style={kneeSet ? NEUTRAL : GO} onClick={() => setKneeSet(true)}>{kneeSet ? "Upper knee bent" : "Bend the upper knee forward"}</button><Gap />
@@ -647,14 +678,8 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
             : ext > 55 + 20 * tol ? fail("Over-tilted for a passive position like this — ease off.") : win("On their side, braced, head tilted to drain. Airway protected."))}>Finish positioning</button></>);
       }
       case "abdThrust": {
-        if (step === 0) return (<><Line>1. Get into position behind them.</Line>
-          <Choice value={stance} onChange={setStance} placeholder="Choose your position..." options={[["behind", "Stand behind, arms around the waist"], ["front", "Face them, push on the chest"], ["side", "Beside them, one arm over the shoulder"]]} /><Gap />
-          <button style={GO} disabled={!stance} onClick={() => (stance === "behind" ? setStep(1)
-            : fail(stance === "front" ? "Pushing on the chest from the front doesn't generate the subdiaphragmatic thrust that expels the obstruction." : "You can't get a real thrust from the side. Get directly behind them."))}>Take your position</button></>);
-        if (step === 1) return (<><Line>2. Make a fist, thumb side in, and place it in the right spot.</Line>
-          <Choice value={handPos} onChange={setHandPos} placeholder="Choose where..." options={[["navel", "Above the navel, below the xiphoid process"], ["sternum", "On the sternum"], ["ribs", "Over the lower ribs"]]} /><Gap />
-          <button style={GO} disabled={!handPos} onClick={() => (handPos === "navel" ? setStep(2)
-            : fail(handPos === "sternum" ? "That's a chest-compression landmark, not an abdominal-thrust one." : "Thrusting on the ribs risks fracturing them without generating the right force vector."))}>Set your grip</button></>);
+        if (step === 0) return (<Line>1. Click above to get into position — behind them, arms around the waist.</Line>);
+        if (step === 1) return (<Line>2. Make a fist, thumb side in, and click where it goes above.</Line>);
         return (<><Line>3. Grab your fist with the other hand and give quick inward-and-upward thrusts. {thrusts} of 5.</Line>
           <button style={GO} disabled={thrusts >= 5} onClick={() => setThrusts((t) => Math.min(5, t + 1))}>Give a thrust</button><Gap />
           <button style={NEUTRAL} onClick={() => (thrusts < 5 ? fail("You stopped early. Keep alternating thrusts (and back blows) until it clears or they go unresponsive.") : win("Five thrusts delivered. Check the airway."))}>Check the airway</button></>);
@@ -671,55 +696,17 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
           <button style={GO} onClick={() => (tractionForce < 30 - 15 * tol ? fail("Not enough traction. The spasm keeps pulling the fragments and it still hurts.")
             : tractionForce > 70 + 15 * tol ? fail("Over-distracted. That can separate the fracture site rather than align it.") : win("Aligned, hitched and traction set. Pain eases and the limb is stable."))}>Lock the ratchet</button></>);
       }
-      case "cardiovert": {
-        if (step === 0) return (<><Line>1. This is cardioversion, not defibrillation — the patient still has a pulse. The shock must be SYNCHRONIZED to fire on the R wave, never during the vulnerable T wave, or you risk inducing VF.</Line>
-          <Choice value={grip} onChange={setGrip} placeholder="Choose a mode..." options={[["sync", "Enable SYNC mode"], ["async", "Leave it in standard (unsynchronized) mode"]]} /><Gap />
-          <button style={GO} disabled={!grip} onClick={() => (grip === "sync" ? setStep(1) : fail("You shocked asynchronously on a patient with a pulse. An unsynchronized shock can land on the T wave and induce VF, exactly what cardioversion exists to avoid."))}>Set the mode</button></>);
-        if (step === 1) return (<><Line>2. Watch the monitor: a sync marker should land on top of every QRS complex before you charge. If it isn't marking every beat, the device may not fire at all.</Line>
-          <button style={GO} onClick={() => setStep(2)}>Sync markers tracking every QRS, charge</button></>);
-        return (<><Line>3. Select your energy, then make sure everyone is clear — same as a defibrillation, and expect a short delay while it waits for the next R wave.</Line>
-          <Line>Energy: {energy} J (start low, about 50 to 100, and escalate if it doesn't convert).</Line>
-          <Slider value={energy} onChange={setEnergy} max={200} />
-          {[["hands", "Hands off. Nobody touching the patient or the stretcher"], ["o2", "Oxygen moved away from the chest"], ["call", "Call it: \"I'm clear, you're clear, everybody clear\""]].map(([k, l]) => (
-            <div key={k} style={{ marginBottom: 6 }}>
-              <button style={clear[k] ? NEUTRAL : GO} onClick={() => setClear({ ...clear, [k]: true })}>{clear[k] ? `Done: ${l}` : l}</button>
-            </div>))}
-          <Gap />
-          <button style={DANGER} onClick={() => (!(clear.hands && clear.o2 && clear.call) ? fail("You shocked before clearing everyone. That shock could have hurt a rescuer.")
-            : energy < 30 ? fail("Too little energy to reliably convert this rhythm. Go higher.")
-            : win(`Synchronized shock delivered at ${energy} J. The monitor waited for the R wave and fired cleanly.`))}>Deliver the synchronized shock</button></>);
-      }
-      case "pacing": {
-        if (step === 0) return (<><Line>1. Place the pacing pads anterior-posterior, one over the left precordium, one on the back below the left scapula. Anterior-lateral (the defib placement) captures less reliably for pacing.</Line>
-          <Choice value={grip} onChange={setGrip} placeholder="Choose pad placement..." options={[["ap", "Anterior-posterior"], ["al", "Anterior-lateral, same as defib pads"]]} /><Gap />
-          <button style={GO} disabled={!grip} onClick={() => (grip === "ap" ? setStep(1) : fail("Anterior-lateral placement is fine for a shock, but it captures less reliably for transcutaneous pacing. Use anterior-posterior."))}>Place the pads</button></>);
-        if (step === 1) return (<><Line>2. Set the pacing rate: {paceRate} bpm (aim for about 70 to 80, a normal rate that gives real cardiac output).</Line>
-          <Slider value={paceRate} onChange={setPaceRate} min={40} max={120} />
-          <button style={GO} onClick={() => (paceRate < 60 ? fail("Too slow. That barely improves on the bradycardia you're trying to fix.") : paceRate > 100 ? fail("Faster than this needs to be. This is a bridge back to a normal rate, not an emergency override.") : setStep(2))}>Set the rate</button></>);
-        return (<><Line>3. Increase the current (mA) from zero until you see electrical capture, a pacer spike followed by a wide QRS, then confirm MECHANICAL capture with a pulse check — electrical capture alone can be misread on the monitor.</Line>
-          <Line>Current: {mA} mA</Line>
-          <Slider value={mA} onChange={setMa} max={140} /><Gap />
-          <button style={captureOk ? NEUTRAL : GO} onClick={() => setCaptureOk(mA >= 50)}>
-            {captureOk ? "Pulse confirmed at the paced rate" : "Check for a pulse matching the paced rate"}
-          </button><Gap />
-          <button style={GO} onClick={() => (mA < 50 ? fail("No capture yet at this current. Every pacer spike is followed by a flat line, not a QRS. Turn it up.")
-            : !captureOk ? fail("You never confirmed a pulse. Electrical capture on the monitor doesn't guarantee the heart is actually contracting. Check mechanically before you trust it.")
-            : win(`Capturing at ${mA} mA, ${paceRate} bpm, with a palpable pulse to match. Leave a margin above threshold.`))}>Confirm and hold</button></>);
-      }
+      // cardiovert/pacing moved to MonitorScreenMinigame.jsx — a real
+      // device screen with a genuine sync-marker overlay and pacer-capture
+      // waveform instead of the generic slider-below-text steps this used
+      // to be.
       case "icdMagnet": {
-        if (step === 0) return (<><Line>1. Find the device. It sits in a subcutaneous pocket, usually upper chest, left or right of the sternum, feel for a firm, coin-sized lump.</Line>
-          <Choice value={site} onChange={setSite} placeholder="Palpate and choose..." options={[["found", "Firm generator felt under the skin, upper chest"], ["notFound", "Nothing palpable, check the abdomen instead"]]} /><Gap />
-          <button style={GO} disabled={!site} onClick={() => (site === "found" ? setStep(1) : fail("Most ICDs and pacemakers sit in a subcutaneous pocket on the upper chest, not the abdomen. Recheck there."))}>Locate the device</button></>);
-        return (<><Line>2. Place the magnet directly over the center of the device and hold it there. This suspends SHOCK therapy on an ICD (it does not stop pacing on a pacemaker) — the real fix for a device firing inappropriately.</Line>
-          <button style={held ? NEUTRAL : GO} onPointerDown={() => setHeld(true)} onPointerUp={() => setMagnetSecured(true)} onPointerLeave={() => setHeld(false)}>
-            {held ? "Holding it centered" : "Place the magnet over the device"}
-          </button><Gap />
-          <button style={GO} disabled={!magnetSecured} onClick={() => win("Magnet seated over the device. Shock therapy is suspended for as long as it stays in place.")}>Confirm it's seated</button></>);
+        if (step === 0) return (<Line>1. Click above where you feel a firm, coin-sized lump — a subcutaneous pocket, usually upper chest, left or right of the sternum.</Line>);
+        return (<><Line>2. Press and hold the magnet directly over the center of the device. This suspends SHOCK therapy on an ICD (it does not stop pacing on a pacemaker) — the real fix for a device firing inappropriately.</Line>
+          <Bar v={held ? 1 : 0} lo={0.5} hi={1} /></>);
       }
       case "chestTube": {
-        if (step === 0) return (<><Line>1. Landmark the triangle of safety on the affected side: 5th intercostal space, between the anterior and mid-axillary lines.</Line>
-          <Choice value={site} onChange={setSite} placeholder="Choose a site..." options={[["safety", "5th ICS, anterior to mid-axillary line"], ["mcl2", "2nd ICS, midclavicular line"], ["nipple", "Directly at the nipple line, posterior"]]} /><Gap />
-          <button style={GO} disabled={!site} onClick={() => (site === "safety" ? setStep(1) : fail(site === "mcl2" ? "That's the needle decompression landmark, not a chest tube. Too high and too medial for a tube." : "Too far posterior. You risk the latissimus and the long thoracic nerve. Stay in the triangle of safety."))}>Mark the site</button></>);
+        if (step === 0) return (<Line>1. Click your landmark on the ribcage above — the triangle of safety on the affected side: 5th intercostal space, between the anterior and mid-axillary lines.</Line>);
         if (step === 1) return (<><Line>2. Bluntly dissect down, over the TOP of the rib to stay clear of the neurovascular bundle on its lower border: position {rib}% (aim for about 60).</Line>
           <Slider value={rib} onChange={setRib} />
           <button style={GO} onClick={() => (Math.abs(rib - 60) > 20 * tol ? fail("You tracked along the lower rib border and risk the intercostal vessels and nerve. Stay over the top of the rib.") : setStep(2))}>Dissect to the pleura</button></>);
@@ -743,9 +730,7 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
           <button style={NEUTRAL} onClick={() => (dpHeld < 3 ? fail("The straps are loose. The device shifts off the sternum with the first compression.") : win("Straps secure, piston centered. Start the device, compressions are automatic and your hands are free."))}>Start the device</button></>);
       }
       case "pelvicBinder": {
-        if (step === 0) return (<><Line>1. Position the binder level with the greater trochanters, not up at the iliac crests, too high and it can't close the pelvic ring.</Line>
-          <Choice value={site} onChange={setSite} placeholder="Choose the level..." options={[["troch", "At the level of the greater trochanters"], ["crest", "Higher, at the iliac crests"], ["thigh", "Lower, across the mid-thighs"]]} /><Gap />
-          <button style={GO} disabled={!site} onClick={() => (site === "troch" ? setStep(1) : fail(site === "crest" ? "Too high. At the iliac crests it can't close the pelvic ring the way this injury needs." : "Too low. Across the thighs it does nothing for a pelvic fracture."))}>Slide it into place</button></>);
+        if (step === 0) return (<Line>1. Click above to position the binder — level with the greater trochanters, not up at the iliac crests, too high and it can't close the pelvic ring.</Line>);
         return (<><Line>2. Tighten until the pelvis feels stable, not until it's crushing: {snug}% (aim for about 55).</Line>
           <Slider value={snug} onChange={setSnug} />
           <button style={GO} onClick={() => (snug < 55 - 18 * tol ? fail("Too loose. The pelvic ring can still open and the bleeding continues.") : snug > 55 + 18 * tol ? fail("Overtightened. That can worsen a lateral-compression fracture and injure the skin.") : win("Binder seated at the trochanters and snugged to a stable pelvis."))}>Secure the binder</button></>);
@@ -838,13 +823,34 @@ export default function ProcMinigame({ open, kind, procId, procName, pat, assist
           </div>
         )}
         {!flash && (
-          <ProcScene procId={procId} tight={tight} twist={twist} rib={rib} depth={depth} phase={phase} wiped={wiped}
+          <ProcScene procId={procId} rib={rib} depth={depth} phase={phase} wiped={wiped}
             ext={ext} headPos={headPos} snug={snug} drift={drift} held={held} flow={flow}
             tankOpen={tankOpen} bagFilled={bagFilled} suctionOn={suctionOn} suctionT={suctionT}
-            pressing={pressing} dpHeld={dpHeld} opened={opened} packDepth={packDepth} packPressing={packPressing}
+            pressing={pressing} dpHeld={dpHeld}
             massaging={massaging} firm={firm}
             rollSide={rollSide} armSet={armSet} kneeSet={kneeSet} stance={stance} handPos={handPos} thrusts={thrusts}
-            aligned={aligned} hitch={hitch} tractionForce={tractionForce} usIdx={usIdx} usFine={usFine} />
+            aligned={aligned} hitch={hitch} tractionForce={tractionForce} usIdx={usIdx} usFine={usFine}
+            ventTrace={ventPhase}
+            onGripClick={(procId === "headTilt" && step === 0) ? onHeadTiltGrip : (procId === "jawThrust" && step === 0) ? onJawThrustGrip : undefined}
+            onSiteClick={(procId === "needleD" && step === 0) ? onNeedleSite : (procId === "chestTube" && step === 0) ? onChestTubeSite : undefined}
+            onTankClick={((procId === "o2nc" || procId === "o2nrb") && step === 0 && !tankOpen) ? onTankClick : undefined}
+            onBagClick={(procId === "o2nrb" && step === 1 && !bagFilled) ? onBagClick : undefined}
+            onFundusClick={(procId === "fundalMassage" && step === 0) ? onFundusClick : undefined}
+            onRollClick={(procId === "recovery" && step === 0) ? onRollClick : undefined}
+            onStanceClick={(procId === "abdThrust" && step === 0) ? onStanceClick : undefined}
+            onHandPosClick={(procId === "abdThrust" && step === 1) ? onHandPosClick : undefined}
+            onPelvicSiteClick={(procId === "pelvicBinder" && step === 0) ? onPelvicSiteClick : undefined}
+            onIcdSiteClick={(procId === "icdMagnet" && step === 0) ? onIcdSiteClick : undefined}
+            onPressDown={
+              procId === "chestSeal" && step === 1 ? () => {}
+              : procId === "fundalMassage" && step === 1 ? () => setMassaging(true)
+              : procId === "icdMagnet" && step === 1 ? onIcdPressDown
+              : undefined}
+            onPressUp={
+              procId === "chestSeal" && step === 1 ? onSealPressUp
+              : procId === "fundalMassage" && step === 1 ? () => { setMassaging(false); onFundusPressUp(); }
+              : procId === "icdMagnet" && step === 1 ? onIcdPressUp
+              : undefined} />
         )}
         {!flash && body()}
         {flash && (

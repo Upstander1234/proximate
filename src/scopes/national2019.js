@@ -105,7 +105,6 @@ export default {
     iv: 3,                 // IV — 18g antecubital
     io: 3,                 // IO — humeral head
     etco2: 3,              // Waveform capnography
-    ecgRead: 4,            // 12-lead — INTERPRET
     defib: 4,              // Defibrillate 200 J (manual)
     cardiovert: 4,         // Synchronised cardioversion
     pacing: 4,             // Transcutaneous pacing

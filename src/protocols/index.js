@@ -18,17 +18,18 @@ const discovered = Object.values(modules)
 
 export const PROTOCOLS = Object.fromEntries(discovered.map((p) => [p.id, p]));
 
-// "default" always leads (it's the safe, always-available fallback); every
-// other discovered protocol follows in alphabetical-by-name order, so a
-// newly dropped-in file appears in Settings without touching this file.
+// "national" (the NASEMSO National Model EMS Clinical Guidelines) always
+// leads — it's the default, always-available protocol; every other
+// discovered protocol follows in alphabetical-by-name order, so a newly
+// dropped-in file appears in Settings without touching this file.
 export const PROTOCOL_ORDER = [
-  "default",
+  "national",
   ...discovered
-    .filter((p) => p.id !== "default")
+    .filter((p) => p.id !== "national")
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((p) => p.id),
 ];
 
 export function getProtocol(id) {
-  return PROTOCOLS[id] || PROTOCOLS.default;
+  return PROTOCOLS[id] || PROTOCOLS.national;
 }

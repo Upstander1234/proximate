@@ -26,7 +26,7 @@ import { BACKGROUNDS, portraitFor, onImgError, AUDIO, vehicleArt, MODE_ART, EVEN
 import { DOWNTIME_EVENTS, rollDowntimeEvent } from "./downtimeEvents.js";
 import { generateDialogueSync, shouldSpeakUnprompted, pickUnpromptedEvent, pushDialogueMemory, requestLocalUpgrade } from "./dialogue/dialogueManager.js";
 import { neuralTts } from "./dialogue/neuralTts.js";
-import { PROCEDURE_OUTCOME } from "./procedureOutcome.js";
+import { PROCEDURE_OUTCOME, POST_MINIGAME_CONFIRM_S } from "./procedureOutcome.js";
 import { buildDialogueContext } from "./dialogue/dialogueContext.js";
 import { resolveActingCrew, npcId, rememberNpcLine } from "./dialogue/characterBrain.js";
 import { ACHIEVEMENTS, newlyUnlocked } from "./achievements.js";
@@ -83,6 +83,22 @@ import { TESTER_KEY, TESTER_PASSWORD, isTesterUnlocked } from "./testerGate.js";
 // the same-machine relay default so local `npm run dev` + `npm run
 // coop-server` still works unconfigured, exactly as before.
 const DEFAULT_COOP_URL = import.meta.env.VITE_COOP_RELAY_URL || "ws://localhost:8787";
+
+// Every action id that start() routes into a mini-game popup (mirrors the
+// id lists in start() itself — see the accessMinigame dispatch block). The
+// real time cost for these is however long the player takes playing the
+// mini-game, plus the fixed POST_MINIGAME_CONFIRM_S confirmation window —
+// a flat pre-play "Xs" estimate next to the action is stale/misleading and
+// is suppressed for these ids wherever the action list renders a time badge.
+const MINIGAME_ACTION_IDS = new Set([
+  "iv","io","laryngoscopy","ett","cric","sga","prep","pupils","lungs","heart","bvm","splint","manualBP",
+  "tq","pack","directPressure",
+  "needleD","chestSeal","defib","aedShock","headTilt","jawThrust","cCollar","cspine","opa","npa","suction",
+  "o2nc","o2nrb","fundalMassage","recovery","abdThrust","traction","ultrasound","cardiovert","pacing",
+  "icdMagnet","chestTube","lucas","pelvicBinder","artLine","reboa","paCath","cpap","vent","mouthMask","mouthMouth",
+  "gluc","cpr",
+]);
+const opensMinigame=(a)=>MINIGAME_ACTION_IDS.has(a.id)||/^attach_/.test(a.id)||!!(a.drug&&DRUGS[a.drug]);
 import Shell from "./components/Shell.jsx";
 import BootScreen from "./components/BootScreen.jsx";
 import CreditsScreen from "./components/CreditsScreen.jsx";
@@ -94,15 +110,18 @@ import SGAMinigame from "./components/SGAMinigame.jsx";
 import DrawUpMinigame from "./components/DrawUpMinigame.jsx";
 import PupilMinigame from "./components/PupilMinigame.jsx";
 import GiveMedMinigame from "./components/GiveMedMinigame.jsx";
+import HangMinigame from "./components/HangMinigame.jsx";
 import TwelveLeadPrint from "./components/TwelveLeadPrint.jsx";
 import GlucometerMinigame from "./components/GlucometerMinigame.jsx";
 import DeviceMinigame from "./components/DeviceMinigame.jsx";
 import PulseOxScreen from "./components/PulseOxScreen.jsx";
 import CprMinigame from "./components/CprMinigame.jsx";
 import ProcMinigame from "./components/ProcMinigame.jsx";
+import MonitorScreenMinigame from "./components/MonitorScreenMinigame.jsx";
 import BvmMinigame from "./components/BvmMinigame.jsx";
 import AuscultationMinigame from "./components/AuscultationMinigame.jsx";
 import SplintMinigame from "./components/SplintMinigame.jsx";
+import BleedingControlMinigame from "./components/BleedingControlMinigame.jsx";
 import BpMinigame from "./components/BpMinigame.jsx";
 import BodyMap from "./components/BodyMap.jsx";
 import { VNScene, VNBox, VNDialogue, VNHeader, VNSprite } from "./components/VNShell.jsx";
@@ -429,7 +448,7 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   // field for the first time behaves exactly as it always did.
   procedureAssist:"standard",
   region:"torso",tab:"assess",panel:"actions",micnOpen:0,newUnit:null,
-  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,leadsOn:0,ecgRead:0,leadsSecured:0,
+  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,leadsOn:0,leadsSecured:0,
   devices:{},defib:{energy:null,charged:0},bpMode:null,devTick:0,ecgInterp:null,autoBPAt:null,ecgTxAt:null,
   o2Psi:2000,
   vomited:0,aspirated:0,cleared:0,pushedDeeper:0,badOrder:0,refused:0,paCath:0,arrestLogged:0,
@@ -443,7 +462,7 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   allowedKinds:DEFAULT_ALLOWED,arrivalArrest:null,confirmDeath:0,department:null,allowedDepartments:DEFAULT_ALLOWED_DEPARTMENTS,
   saveId:null,saveName:"",gmode:null,career:null,customParams:null,pendingHandoffUnit:null,
   playerFirst:"John",playerLast:"Doe",playerGender:"",playerPronouns:"",
-  firstStreak:0,firstVar:1,sceneRank:null,sandboxFirst:null,protocol:"default",weather:"clear",timeOfDay:"day",lastProtocol:0,settingsOpen:0,volume:1,musicVolume:1,voiceVolume:1,lastSaveAt:null,
+  firstStreak:0,firstVar:1,sceneRank:null,sandboxFirst:null,protocol:"national",weather:"clear",timeOfDay:"day",lastProtocol:0,settingsOpen:0,volume:1,musicVolume:1,voiceVolume:1,lastSaveAt:null,
   call911:0,call911Asked:0,candidatePool:[],policeCalled:0,alsRequested:0,bystanderDismissed:0,securedIds:[],money:0,speedBoost:1,hazardEventRolled:0,learningMode:null,
   // Upfront 2D/3D render preference, picked once at campaignRenderPref (just
   // after the zth learningMode pick) and changeable later in Settings.
@@ -1279,7 +1298,7 @@ const scenOf=(s)=>s.scen==="custom"?(s.customParams?buildCustomScenario(s.custom
 // nstemi, stableAngina, unstableAngina, ami) separately author their own,
 // more specific `probes.ecg` finding (anterior STEMI for takotsubo,
 // lateral ST depression for nstemi, etc) — but every real ECG display site
-// in this file (the ecgRead action, the transmitted-to-base readback, the
+// in this file (the ecgAcquire action, the transmitted-to-base readback, the
 // live 12-lead JSX panel) called `ecgReadout()` directly, never once
 // consulting `scenOf(state).probes.ecg` the way every other exam action
 // composes its own scenario override. The authored, clinically-specific
@@ -1779,17 +1798,14 @@ export default function App({onHome}={}){
       return {say:`${j} J delivered. Everyone clear — resume compressions immediately.`,kind:"good"};
     }
     if(p.id==="ecgAcquire"){s.leadsOn=1;
-      return {say:"Twelve-lead on the screen."+(L<4?" You are looking at it. You are not permitted to interpret it — that is a paramedic skill. Transmit it and let the hospital read it.":""),
+      // Acquiring must NOT hand the player the diagnosis. The strip goes
+      // live on the monitor (raw waveform) and can be printed and self-read
+      // (TwelveLeadPrint — a real self-quiz: the player commits to a
+      // rhythm/finding before the key is revealed) or transmitted to base
+      // for a physician readback. No interpretation is stated here.
+      if(g.patient?.seizing) return {say:"Twelve-lead acquired, but too much motion artifact for a clean strip — the patient is actively seizing. Wait it out.",kind:"warn",find:"12-lead acquired (motion artifact)."};
+      return {say:"Twelve-lead acquired. The strip is live on the monitor — read it yourself, print it, or transmit it to base.",
         kind:"obs",find:"12-lead acquired."};}
-    if(p.id==="ecgRead"){if(!s.leadsOn) return {say:"You have no leads on. Acquire first.",kind:"warn"};
-      // Real seizure activity defeats any lead job — no amount of reseating
-      // fixes a trace during active convulsions, so this is the one artifact
-      // source ecgRead itself still refuses through, distinct from the
-      // reseatable loose-lead/settling artifact the monitor panel shows.
-      if(g.patient?.seizing) return {say:"Too much motion artifact to read — the patient is actively seizing. Wait it out.",kind:"warn"};
-      s.ecgRead=1; const r=ecgLiveText(s,v);
-      return {say:`Twelve-lead: ${r}`,kind:["stemi","peakedT","VF","VT","PEA","wideQRS"].includes(v.ecg)?"warn":"obs",
-        find:`ECG: ${r}`, evid:["stemi","peakedT","afib","VF","VT"].includes(v.ecg)?`12-lead: ${r}`:null};}
     if(p.id==="valsalva"&&v.ecg!=="svt") return {say:"Sinus tachycardia does not respond to a vagal maneuver. Treat the CAUSE.",kind:"warn"};
     if(p.id==="etco2"){const pr=pron(scenOf(s));return {say:`EtCO₂ ${v.etco2}.`+(v.etco2<25?` Low. In a tachypnoeic patient that is dead space — ${pr.subj} ${pr.is} ventilating lung that has no blood in it.`:v.etco2>50?" High, with a low rate. Respiratory failure.":""),
       kind:(v.etco2<25||v.etco2>50)?"warn":"obs",meas:{"EtCO₂":`${v.etco2}`},find:`EtCO₂ ${v.etco2}.`,
@@ -2052,7 +2068,7 @@ export default function App({onHome}={}){
           cost:6,lvl:0,doneKey:`remove_${id}`,
           run:(s)=>{const nd={...(s.devices||{})}; delete nd[id]; s.devices=nd;
             const dn={...s.done}; delete dn[`attach_${id}`]; s.done=dn;   // allow attaching again
-            if(id==="leads"){s.leadsOn=0;s.leadsSecured=0;s.ecgRead=0;s.ecgInterp=null;s.leadsPlacementQuality=null;}
+            if(id==="leads"){s.leadsOn=0;s.leadsSecured=0;s.ecgInterp=null;s.leadsPlacementQuality=null;}
             if(id==="pads"){s.defib={energy:null,charged:0};}
             return {say:`${d.name} removed.`+(d.wave?" The trace goes flat.":""),kind:"obs",find:`${d.name} removed.`};}});
       }
@@ -3136,8 +3152,32 @@ export default function App({onHome}={}){
         attempts:(s.accessAttempts||{})[`manualBP@${a.region}`]||0,
         alertBaseline:(s.eventAlertQueue||[]).length}};
     }
-    if(["tq","needleD","chestSeal","defib","aedShock","headTilt","jawThrust","cCollar","cspine","opa","npa","suction","o2nc","o2nrb","directPressure","pack","fundalMassage","recovery","abdThrust","traction","ultrasound",
-      "cardiovert","pacing","icdMagnet","chestTube","lucas","pelvicBinder","artLine","reboa","paCath","cpap","vent","mouthMask","mouthMouth"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
+    // Bleeding control: tourniquet, wound packing and direct pressure are
+    // one real sequence (BleedingControlMinigame) instead of three separate
+    // flat actions — direct pressure first, then a real branch to packing
+    // or a tourniquet, one-handed or crew-assisted two-handed.
+    if(["tq","pack","directPressure"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
+      const isLimb=LIMBS.includes(a.region);
+      const availableCrew=(s.crew||[]).filter(c=>!s.cBusy[c.id]).map(c=>({id:c.id,name:c.name}));
+      return {...s,accessMinigame:{action:a,kind:"bleedingControl",site:a.region,isLimb,availableCrew,
+        attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
+        alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    // AED/defibrillator/cardioversion/pacing: a real device screen
+    // (MonitorScreenMinigame), not the generic torso+pads ProcMinigame
+    // scene. aedAnalyze previously had NO minigame at all. screenType
+    // distinguishes a screenless BLS/EMT-scope AED from a paramedic's
+    // monitor running in AED mode (both aedAnalyze/aedShock, lvl 0) from
+    // the full manual monitor-defibrillator (defib/cardiovert/pacing, all
+    // lvl 4 already) — a real equipment-tier distinction, not decorative.
+    if(["aedAnalyze","aedShock","defib","cardiovert","pacing"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
+      const screenType=(a.id==="aedAnalyze"||a.id==="aedShock")?(L>=4?"aedScreen":"aedBasic"):"monitorDefib";
+      return {...s,accessMinigame:{action:a,kind:"monitor",site:a.region,procId:a.id,procName:PROCS[a.id].name,screenType,
+        attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
+        alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
+    if(["needleD","chestSeal","headTilt","jawThrust","cCollar","cspine","opa","npa","suction","o2nc","o2nrb","fundalMassage","recovery","abdThrust","traction","ultrasound",
+      "icdMagnet","chestTube","lucas","pelvicBinder","artLine","reboa","paCath","cpap","vent","mouthMask","mouthMouth"].includes(a.id)&&!a._skipMinigame&&PROCS[a.id]){
       return {...s,accessMinigame:{action:a,kind:"proc",site:a.region,procId:a.id,procName:PROCS[a.id].name,
         attempts:(s.accessAttempts||{})[`${a.id}@${a.region}`]||0,
         alertBaseline:(s.eventAlertQueue||[]).length}};
@@ -3168,9 +3208,19 @@ export default function App({onHome}={}){
       {
         const r=d.route;
         const lineOnly=(r.includes("IV")||r.includes("IO"))&&!r.includes("IM")&&!r.includes("IN");
-        const mode=lineOnly?"line":r.includes("IM")?"im":r.includes("IN")?"in":/NEB|INH/.test(r)?"neb":"oral";
         const accessOptions=(s.accessTypes||{})[a.region]||["IV"];
-        return {...s,accessMinigame:{action:a,kind:"give",site:a.region,mode,access:accessOptions[0],accessOptions,drugName:d.name,warnings,
+        // Fluid bags and drip pressors don't go in via a syringe push — you
+        // hang them (spike the bag/premix, prime the tubing, connect, set a
+        // real drip/pump rate), a genuinely different real skill from
+        // GiveMedMinigame's push-bolus flow. HangMinigame handles both.
+        if(lineOnly&&(d.pkModel==="fluid"||d.drip)){
+          return {...s,accessMinigame:{action:a,kind:"hang",site:a.region,access:accessOptions[0],accessOptions,
+            drugId:a.drug,drugName:d.name,fluidMode:d.pkModel==="fluid",warnings,
+            attempts:(s.accessAttempts||{})[`give@${a.id}`]||0,
+            alertBaseline:(s.eventAlertQueue||[]).length}};
+        }
+        const mode=lineOnly?"line":r.includes("IM")?"im":r.includes("IN")?"in":/NEB|INH/.test(r)?"neb":"oral";
+        return {...s,accessMinigame:{action:a,kind:"give",site:a.region,mode,access:accessOptions[0],accessOptions,drugName:d.name,pushRate:d.pushRate,warnings,
           attempts:(s.accessAttempts||{})[`give@${a.id}`]||0,
           alertBaseline:(s.eventAlertQueue||[]).length}};
       }
@@ -3367,7 +3417,7 @@ export default function App({onHome}={}){
     setG(s=>({...s,accessMinigame:null,fatigue:cprFatigue(s,sum.count),
       log:[...s.log,{t:s.t,kind:"obs",text:`Compressions stopped: ${cprSummaryText(sum)}.`}]}));
     // Re-enter the normal CPR action so its own logic (e.g. clearing an FBAO) still runs.
-    start({...mg.action,_skipMinigame:true,cost:5});};
+    start({...mg.action,_skipMinigame:true,cost:POST_MINIGAME_CONFIRM_S});};
   const cprAbort=()=>setG(s=>({...s,accessMinigame:null}));
   // Hand the work to a crew member: end the player's session, keep the
   // compressions going without a gap (a fresh dose now), and order the task.
@@ -3415,6 +3465,18 @@ export default function App({onHome}={}){
           meas:{"BP (R)":`${sbp}/${dbp}`},find:`BP ${sbp}/${dbp} (manual).`});});
       return;
     }
+    if(outcome===PROCEDURE_OUTCOME.SUCCESS&&mg.kind==="bleedingControl"){
+      // The player may have ended on directPressure alone, or escalated to
+      // pack or tq — re-enter start() with WHICHEVER real action actually
+      // controlled the bleeding, not the original action that opened the
+      // combined minigame, so procActs()'s real fx (bleed -.3/-.4/stopsBleed)
+      // fires for the real thing that was done.
+      const finalId=detail?.finalProc||mg.action.id;
+      const finalAction=PROC_ACTS.find(x=>x.id===finalId&&x.region===mg.site)||mg.action;
+      setG(s=>({...s,accessMinigame:null}));
+      start({...finalAction,_skipMinigame:true,cost:POST_MINIGAME_CONFIRM_S});
+      return;
+    }
     if(outcome===PROCEDURE_OUTCOME.SUCCESS&&mg.kind==="auscultate"){
       // Nothing to pass or fail here: the player listened, and whatever they typed
       // is what they tell the crew. The engine's own finding still lands in the log
@@ -3423,7 +3485,7 @@ export default function App({onHome}={}){
       setG(s=>{const note=detail&&(detail.hear||detail.think);
         return {...s,accessMinigame:null,log:note?[...s.log,
           {t:s.t,kind:"disp",text:`YOU: "${detail.what}${detail.hear?` — ${detail.hear}`:""}${detail.think?`. I think ${detail.think}.`:""}"`}]:s.log};});
-      start({...mg.action,_skipMinigame:true,cost:5});
+      start({...mg.action,_skipMinigame:true,cost:POST_MINIGAME_CONFIRM_S});
       return;
     }
     if(outcome===PROCEDURE_OUTCOME.SUCCESS){
@@ -3467,7 +3529,7 @@ export default function App({onHome}={}){
       // s.leadsPlacementQuality — the thing the monitor's artifact calc
       // reads (see the Monitor panel below).
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:5,...leadsExtra});
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -3487,6 +3549,23 @@ export default function App({onHome}={}){
         log:[...s.log,{t:s.t,kind:"obs",text:detail||"IV attempt missed."}]};
     });
   };
+
+  // BleedingControlMinigame's "two-handed" escalation: direct an idle crew
+  // member to hold pressure while the player packs a wound or applies a
+  // tourniquet. A real, minimal cBusy entry (same dur:9999 continuous shape
+  // as the "cspine" task) so they read as busy everywhere else in the UI;
+  // released the moment the minigame resolves, not left holding forever.
+  const directHoldPressure=(cid)=>setG(s=>{
+    const c=(s.crew||[]).find(x=>x.id===cid); if(!c||s.cBusy[cid]) return s;
+    return {...s,cBusy:{...s.cBusy,[cid]:{name:c.name,task:"Holding direct pressure",taskId:"holdPressure",dur:9999,left:9999,startedAt:s.t,fn:()=>null}},
+      log:[...s.log,{t:s.t,kind:"disp",text:`YOU: "${c.name}, hold pressure here."`},
+        {t:s.t,kind:"good",text:`${c.name.toUpperCase()}: "Got it, holding."`}]};
+  });
+  const releaseHoldPressure=(cid)=>setG(s=>{
+    if(!cid||s.cBusy[cid]?.taskId!=="holdPressure") return s;
+    const cb={...s.cBusy}; delete cb[cid];
+    return {...s,cBusy:cb};
+  });
 
   // Cancel a crew member's in-progress task (monitoring included).
   const cancelCrew=(cid)=>setG(s=>{const b=s.cBusy[cid]; if(!b) return s;
@@ -3751,7 +3830,7 @@ export default function App({onHome}={}){
       <div>{a.label}{a.drug&&g.given[a.drug]?<span style={{color:C.hr,fontFamily:MONO,fontSize:10}}> ×{g.given[a.drug]}</span>:null}
         {a.prepped&&a.drug?<span style={{color:C.hr,fontFamily:MONO,fontSize:9}}> · PRE-DRAWN ½</span>:null}</div>
       <div style={{fontFamily:MONO,fontSize:10,color:w?C.red:C.dim,marginTop:2}}>
-        {w||`${Math.round(a.cost)}s`}{a.lvl>0&&!w?` · ${LNAME(a.lvl)}+`:""}</div>
+        {w||(opensMinigame(a)?"":`${Math.round(a.cost)}s`)}{a.lvl>0&&!w?` · ${LNAME(a.lvl)}+`:""}</div>
     </button>);};
 
   // Voice-activated crew commands AND player self-commands (settings-gated,
@@ -3939,7 +4018,7 @@ export default function App({onHome}={}){
         {[["THE CLOCK NEVER STOPS","One pair of hands. While you cannulate, the disease keeps working. The patient's clock starts when you REACH them — not at the tones."],
           ["NOTHING IS ON SCREEN THAT YOU DID NOT GO AND GET","Vitals start blank and go STALE. A pressure from four minutes ago is not a pressure."],
           ["THE BODY IS THE MENU","Blood pressure lives under the arms. BOTH of them. Nothing will remind you that she has two."],
-          ["AN EMT CAN ACQUIRE A 12-LEAD AND MAY NOT READ IT","That is the National Scope. You will see the strip on the screen. You will not be told what it says. Interpretation is a paramedic skill."],
+          ["THE STRIP IS ON THE SCREEN — READ IT YOURSELF","Acquiring a 12-lead shows you the read directly. Nobody interprets it for you."],
           ["EVERY PAIR OF HANDS HAS ITS OWN LICENCE","Bystanders are already there. Units arrive mid-call. You command them — and only within THEIR scope. They read the order back. Then they report the result."],
           ["BASE CONTACT IS A CONSULTATION, NOT AN ABDICATION","The physician is working from the report YOU gave her, and sometimes she is wrong. Accept, Question, or Refuse — but you can only refuse with a finding you actually have."],
           ["YOU ARE GRADED ON REASONING, NOT ON GUESSING","Commit with no evidence and survive anyway, and the debrief will say you got lucky. Which is worse than being wrong."],
@@ -10104,6 +10183,12 @@ export default function App({onHome}={}){
       site={g.accessMinigame.site} pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="bleedingControl"&&<BleedingControlMinigame open kind="bleedingControl"
+      site={g.accessMinigame.site} isLimb={g.accessMinigame.isLimb} availableCrew={g.accessMinigame.availableCrew}
+      pat={g.patient} assist={g.procedureAssist}
+      onDirectCrew={directHoldPressure} onReleaseCrew={releaseHoldPressure}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="bp"&&<BpMinigame open kind="bp"
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
@@ -10112,6 +10197,12 @@ export default function App({onHome}={}){
       procId={g.accessMinigame.procId} procName={g.accessMinigame.procName}
       pat={g.patient} assist={g.procedureAssist}
       suspectSpine={scenOf(g)?.cat==="trauma"||(g.patient?.brainInjury||0)>0}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="monitor"&&<MonitorScreenMinigame open kind="monitor"
+      procId={g.accessMinigame.procId} screenType={g.accessMinigame.screenType}
+      energyJ={g.defib?.charged?g.defib.energy:null}
+      pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="gluc"&&<GlucometerMinigame open kind="gluc"
@@ -10139,6 +10230,12 @@ export default function App({onHome}={}){
       onProgress={cprProgress} onFinish={cprFinish} onAbort={cprAbort}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="give"&&<GiveMedMinigame open kind="give" warnings={g.accessMinigame.warnings}
       drugName={g.accessMinigame.drugName} mode={g.accessMinigame.mode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
+      pushRate={g.accessMinigame.pushRate}
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="hang"&&<HangMinigame open kind="hang" warnings={g.accessMinigame.warnings}
+      drugName={g.accessMinigame.drugName} fluidMode={g.accessMinigame.fluidMode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
@@ -10601,10 +10698,11 @@ export default function App({onHome}={}){
                 Print 12-lead</button>
               {(g.twelveLeadPrints||[]).map(sn=><TwelveLeadPrint key={sn.n} snap={sn}
                 onClose={()=>setG(s=>({...s,twelveLeadPrints:(s.twelveLeadPrints||[]).filter(x=>x.n!==sn.n)}))}/>)}
-              {L>=4&&g.ecgRead
-                ?<div style={{fontSize:13.5,color:["stemi","peakedT","VF","VT","PEA"].includes(V.ecg)?C.amber:C.text,lineHeight:1.6}}>
-                   {ecgLiveText(g,V)}</div>
-                :g.ecgInterp
+              {/* No auto-interpretation is ever shown here — the strip
+                  (waveform above, and each printed copy) is the only source
+                  of truth. The player reads it themselves via Print, or
+                  gets a genuine physician readback via Transmit. */}
+              {g.ecgInterp
                 ?<div style={{fontSize:13,color:C.spo2,lineHeight:1.6}}>
                    <span style={{fontFamily:MONO,fontSize:9,letterSpacing:".14em",color:C.dim,display:"block",marginBottom:3}}>BASE HOSPITAL READ — TRANSMITTED 12-LEAD</span>
                    {g.ecgInterp}
@@ -10621,9 +10719,8 @@ export default function App({onHome}={}){
                 :g.ecgTxAt!=null
                 ?<div style={{fontSize:12.5,color:C.amber}}>Transmitting the 12-lead to base… the physician will read it back.</div>
                 :<>
-                  <div style={{fontSize:12.5,color:L>=4?C.dim:C.amber,lineHeight:1.6,marginBottom:8}}>
-                    {L>=4?<>You have the strip. Run <b style={{color:C.text}}>12-lead — INTERPRET</b> from the chest, or transmit it to base for a read.</>
-                      :"You may acquire and TRANSMIT a 12-lead, but not interpret it — that is a paramedic skill. Send it to base and let the hospital read it back."}</div>
+                  <div style={{fontSize:12.5,color:C.dim,lineHeight:1.6,marginBottom:8}}>
+                    You have the strip. Read it yourself off the waveform and the printed copy, or transmit it to base for a second opinion.</div>
                   <button disabled={!!g.busy} onClick={()=>setG(s=>({...s,ecgTxAt:s.t,
                       log:[...s.log,{t:s.t,kind:"disp",text:"You transmit the 12-lead to the receiving facility for interpretation."}]}))}
                     className="px-3 py-2 rounded" style={{background:C.panelHi,border:`1px solid ${C.spo2}`,color:C.spo2,fontSize:12.5,cursor:"pointer"}}>

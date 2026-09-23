@@ -113,7 +113,11 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
         diffNote={diff.band !== "routine" ? "vein is smaller/deeper than usual" : ""} onCancel={cancel} onAbandon={abandon} flash={flash} finish={finish}
         resultText={flash === "success" ? "Flash! You're in the vein." : flash === "angle" ? "Wrong angle, missed the vein." :
           flash === "shallow" ? "Too shallow, no flash." : flash === "blown" ? "Blew through the back wall." : ""}>
-        <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12 }}>
+        <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12, touchAction: "none",
+            cursor: step === "insert" && !flash ? (holding ? "grabbing" : "grab") : "default" }}
+          onPointerDown={() => { if (step === "insert" && !flash) setHolding(true); }}
+          onPointerUp={() => { if (holding) releaseNeedle(); }}
+          onPointerLeave={() => { if (holding) releaseNeedle(); }}>
           <defs>
             <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#E3AE87" />
@@ -145,29 +149,13 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
         {step === "uncap" && <StepButton onClick={() => setStep("insert")}>Uncap the needle</StepButton>}
         {step === "insert" && !flash && (
           <>
-            <Hint>Angle {angle.toFixed(0)}° (◀ ▶ arrow keys, or the buttons below, to adjust); press and hold to advance ({(depth * 100).toFixed(0)}%).</Hint>
-            {/* Spec 2.14: the arrow-key listener above has no touch
-                equivalent — on a phone there was no way to correct angle
-                at all mid-advance. Plain onClick buttons work identically
-                via a tap's synthetic click event, no separate touch
-                handling needed, and don't interfere with the Hold button's
-                own mouse/touch handlers since they're a separate element. */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <Hint>Angle {angle.toFixed(0)}° (◀ ▶ below, or arrow keys, to adjust). Press and hold directly on the arm to advance the needle ({(depth * 100).toFixed(0)}%).</Hint>
+            <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
               <button onClick={() => setAngle(a => Math.max(0, a - 1))} className="px-3 py-2 rounded"
                 style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>◀ Angle</button>
               <button onClick={() => setAngle(a => Math.min(60, a + 1))} className="px-3 py-2 rounded"
                 style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Angle ▶</button>
             </div>
-            <button
-              onMouseDown={() => setHolding(true)}
-              onMouseUp={releaseNeedle}
-              onMouseLeave={() => { if (holding) releaseNeedle(); }}
-              onTouchStart={(e) => { e.preventDefault(); setHolding(true); }}
-              onTouchEnd={(e) => { e.preventDefault(); releaseNeedle(); }}
-              className="px-3 py-2 rounded w-full"
-              style={{ background: holding ? "#3A1A20" : "#2A1418", border: `1px solid ${C.red}`, color: C.red, userSelect: "none" }}>
-              {holding ? "Advancing… release to stick" : "Hold to advance the needle"}
-            </button>
           </>
         )}
       </MinigameShell>

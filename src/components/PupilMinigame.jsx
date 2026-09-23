@@ -19,18 +19,62 @@ const CHOICES = [
   { key: "fixed", label: "Fixed and dilated" },
 ];
 
+// A real eye, socketed, not a stack of flat CSS circles: lidded sclera with
+// faint vessels, a radial-gradient iris with real fiber texture, a pupil
+// that actually constricts on the same timescale `st.react` describes (a
+// sluggish reaction visibly takes longer to close than a brisk one, not
+// just a smaller end size), and a genuine corneal light reflex (the small
+// bright glint every real penlight exam produces) rather than a CSS glow.
 function Eye({ side, st, lit, onLight }) {
-  const px = lit ? Math.max(3, st.size - st.size * 0.55 * st.react) : st.size;
+  const px = lit ? Math.max(2.5, st.size - st.size * 0.55 * st.react) : st.size;
+  const uid = side === "Right" ? "R" : "L";
   return (
     <button onClick={onLight} aria-label={`Shine light in ${side} eye`}
-      style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center" }}>
-      <div style={{ width: 84, height: 84, borderRadius: "50%", background: "#D9D4C7", display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: lit ? "0 0 22px #FFF6B0" : "none", border: `2px solid ${C.line}` }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#5B7F95", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: px * 2, height: px * 2, borderRadius: "50%", background: "#050505", transition: `all ${0.25 / Math.max(st.react, 0.1)}s` }} />
-        </div>
-      </div>
-      <div style={{ fontSize: 11, color: C.faint, marginTop: 4 }}>{side} · tap to light</div>
+      style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: 0 }}>
+      <svg viewBox="0 0 100 76" width={100} height={76}>
+        <defs>
+          <radialGradient id={`eyeSocket${uid}`} cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stopColor="#E3AE87" />
+            <stop offset="100%" stopColor="#B87A54" />
+          </radialGradient>
+          <radialGradient id={`eyeSclera${uid}`} cx="42%" cy="38%" r="70%">
+            <stop offset="0%" stopColor="#F5F2E6" />
+            <stop offset="75%" stopColor="#E8E0CC" />
+            <stop offset="100%" stopColor="#C9BFA0" />
+          </radialGradient>
+          <radialGradient id={`eyeIris${uid}`} cx="50%" cy="50%" r="55%">
+            <stop offset="0%" stopColor="#7B9AAE" />
+            <stop offset="55%" stopColor="#5B7F95" />
+            <stop offset="100%" stopColor="#324656" />
+          </radialGradient>
+        </defs>
+        {/* socket / lid shading */}
+        <ellipse cx={50} cy={38} rx={48} ry={30} fill={`url(#eyeSocket${uid})`} opacity={0.9} />
+        <path d="M6,36 Q50,4 94,36 Q50,20 6,36 Z" fill="#00000022" />
+        <path d="M6,40 Q50,68 94,40 Q50,54 6,40 Z" fill="#00000018" />
+        {/* sclera */}
+        <ellipse cx={50} cy={38} rx={34} ry={20} fill={`url(#eyeSclera${uid})`} stroke="#00000030" strokeWidth={1} />
+        {/* faint vessels */}
+        <path d="M20,38 Q30,34 40,37" fill="none" stroke="#C2596A" strokeWidth={0.6} opacity={0.35} />
+        <path d="M80,40 Q70,44 60,39" fill="none" stroke="#C2596A" strokeWidth={0.6} opacity={0.35} />
+        {/* iris */}
+        <circle cx={50} cy={38} r={st.size + 4} fill={`url(#eyeIris${uid})`} />
+        {Array.from({ length: 14 }, (_, i) => {
+          const a = (i / 14) * Math.PI * 2;
+          const r1 = (st.size + 4) * 0.35, r2 = st.size + 3.5;
+          return <line key={i} x1={50 + Math.cos(a) * r1} y1={38 + Math.sin(a) * r1} x2={50 + Math.cos(a) * r2} y2={38 + Math.sin(a) * r2}
+            stroke="#1B2A33" strokeWidth={0.5} opacity={0.4} />;
+        })}
+        {/* pupil, its own transition duration keyed to reactivity — sluggish
+            really does take visibly longer to close, not just end smaller */}
+        <circle cx={50} cy={38} r={px} fill="#050505" style={{ transition: `r ${0.35 / Math.max(st.react, 0.12)}s ease-out` }} />
+        {/* corneal light reflex, the real penlight-exam glint */}
+        <circle cx={50 - px * 0.4} cy={38 - px * 0.4} r={Math.max(1, px * 0.28)} fill="#FFFFFF" opacity={lit ? 0.9 : 0.35} />
+        {/* upper lid */}
+        <path d="M6,36 Q50,2 94,36 L94,30 Q50,-2 6,30 Z" fill={`url(#eyeSocket${uid})`} />
+        {lit && <ellipse cx={50} cy={38} rx={40} ry={26} fill="#FFF6B0" opacity={0.22} />}
+      </svg>
+      <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>{side} · tap to light</div>
     </button>
   );
 }

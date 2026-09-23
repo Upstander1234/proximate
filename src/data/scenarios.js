@@ -374,7 +374,7 @@ ami: {cat: "medical", id: "CARDIAC-010", pronouns: "he", title: "Male, 58. Crush
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const aspirin = s.given.aspirin, nitro = s.given.nitro || s.given.nitroOwn;
     if (!aspirin && !died) notes.push("No aspirin. 324 mg chewed, first-line, nearly free, and it changes outcomes.");
-    if (!s.done?.ecgAcquire && !s.doses.some(d => d.id === "ecgRead") && !died) notes.push("No twelve-lead acquired. This diagnosis lives on the monitor — the history alone doesn't confirm it.");
+    if (!s.done?.ecgAcquire && !died) notes.push("No twelve-lead acquired. This diagnosis lives on the monitor — the history alone doesn't confirm it.");
     if (s.committedAt && s.committedAt > 700) notes.push("Long scene time for a STEMI — this is a 'load and go, treat en route' presentation, not a 'work it up on scene' one.");
     if (aspirin) notes.push("Aspirin given. Simple, fast, and it belongs on every cardiac chest pain that isn't actively bleeding.");
     // Other ACS-family scenarios in this file (nstemi, stableAngina, etc.)
@@ -928,7 +928,7 @@ chestPainM: {cat: "medical", id: "CARD-021", pronouns: "he", title: "Male, 54. C
     if (died && !nitroLow) cause = (arr?.story ? arr.story + "\n\n" : "") + "He arrested — likely a lethal dysrhythmia off the ischemic myocardium. Early aspirin, oxygen only if hypoxic, a twelve-lead transmitted, and a fast ALS handoff are the wins here.";
     if (s.given.aspirin) notes.push("Aspirin — the single highest-yield drug in ACS. Chewed, early."); else notes.push("No aspirin given. It's the highest-yield ACS intervention and it was indicated.");
     if (s.given.nitro && !nitroLow) notes.push("Nitro assisted with an adequate pressure — reasonable for ongoing ischemic pain.");
-    if (s.done.ecgAcquire || s.done.ecgRead) notes.push("Twelve-lead obtained — the difference between a STEMI going to a cath lab and one that doesn't."); else notes.push("No twelve-lead. Acquisition (and transmission) is how this patient reaches the right destination.");
+    if (s.done.ecgAcquire) notes.push("Twelve-lead obtained — the difference between a STEMI going to a cath lab and one that doesn't."); else notes.push("No twelve-lead. Acquisition (and transmission) is how this patient reaches the right destination.");
     return {died, cause, notes, correct: s.pi === "CPMI" || s.pi === "CPSC", truth: "Acute coronary syndrome (STEMI)"};},
 },
 
@@ -958,7 +958,7 @@ chestPainF: {cat: "medical", id: "CARD-022", pronouns: "she", title: "Female, 54
     if (nitroLow) {died = 1; cause = "Nitro with a systolic under 100 — you took the preload out from under a marginal pressure and it collapsed. Confirm the pressure first.";}
     if (died && !nitroLow) cause = (arr?.story ? arr.story + "\n\n" : "") + "She arrested off the ischemic myocardium. Atypical presentations in women are frequently under-treated — the aspirin, twelve-lead and fast handoff matter just as much here.";
     if (s.given.aspirin) notes.push("Aspirin given — highest-yield in ACS, and easy to miss when the presentation is 'atypical.'"); else notes.push("No aspirin. The atypical presentation doesn't lower the indication — it raises the risk of under-treating it.");
-    if (s.done.ecgAcquire || s.done.ecgRead) notes.push("Twelve-lead obtained — essential; women's ACS is under-diagnosed partly because the ECG isn't done early.");
+    if (s.done.ecgAcquire) notes.push("Twelve-lead obtained — essential; women's ACS is under-diagnosed partly because the ECG isn't done early.");
     return {died, cause, notes, correct: s.pi === "CPMI" || s.pi === "CPSC", truth: "Acute coronary syndrome (atypical presentation)"};},
 },
 
@@ -1056,7 +1056,7 @@ stableAngina: {cat: "medical", id: "CARD-024", pronouns: "she", title: "Female, 
     if (nitroLow) {died = 1; cause = "Nitro with a systolic under 100 — even in a stable-angina patient, stacking nitrates onto a falling pressure drops the preload out from under her. Check the pressure before every dose.";}
     if (nitro && !nitroLow) notes.push("Nitro given — appropriate: it relieves the demand ischemia by dropping preload and wall stress, the same mechanism rest is using.");
     if (aspirin) notes.push("Aspirin given — reasonable; you cannot exclude ACS in the field, and it is low-risk. Do not let 'it's just her angina' talk you out of the standard cardiac workup.");
-    if (!s.done?.ecgAcquire && !s.doses.some(d => d.id === "ecgRead") && !died) notes.push("No twelve-lead. Even a resolving episode gets one — it is how you catch the stable pattern that has quietly become unstable.");
+    if (!s.done?.ecgAcquire && !died) notes.push("No twelve-lead. Even a resolving episode gets one — it is how you catch the stable pattern that has quietly become unstable.");
     if (!died) notes.push("This fit stable angina: exertional, relieved by rest and nitro, pattern unchanged, resolving on scene. The right disposition is treat-and-transport for evaluation, not a lights-and-siren STEMI activation — but the moment the story changes (pain at rest, longer, worse), it is ACS until proven otherwise.");
     return {died, cause, notes, correct: s.pi === "CPSC" || s.pi === "CPMI", truth: "Stable angina (exertional, rest-relieved)"};},
 },

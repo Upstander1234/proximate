@@ -84,7 +84,7 @@
 //   autoBP (Blood pressure — automated, 2) · glucometer (Blood glucose, 2) ·
 //   ecgAcquire (12-lead — acquire/transmit, 2) · traction (Traction splint, 2) ·
 //   iv (IV — 18g antecubital, 3) · io (IO — humeral head, 3) ·
-//   etco2 (Waveform capnography, 3) · ecgRead (12-lead — INTERPRET, 4) ·
+//   etco2 (Waveform capnography, 3) ·
 //   defib (Defibrillate 200 J manual, 4) · cardiovert (Synchronised cardioversion, 4) ·
 //   pacing (Transcutaneous pacing, 4) · ett (Endotracheal intubation, 4) ·
 //   laryngoscopy (Direct laryngoscopy/Magill forceps, 4) ·
@@ -151,7 +151,7 @@
 //   aedAnalyze, aedShock, recovery, abdThrust, directPressure, tq, pack, opa,
 //   bvm, o2nc, o2nrb, suction, manualBP, cCollar, splint, chestSeal,
 //   pelvicBinder, warm, npa, sga, cpap, pulseox, autoBP, glucometer,
-//   ecgAcquire, traction, iv, io, etco2, ecgRead, defib, cardiovert, pacing,
+//   ecgAcquire, traction, iv, io, etco2, defib, cardiovert, pacing,
 //   ett, laryngoscopy, cric, needleD, valsalva, chestTube, vent, ultrasound,
 //   reboa, paCath, artLine.
 // - If the pasted document does not mention a drug/procedure from that list

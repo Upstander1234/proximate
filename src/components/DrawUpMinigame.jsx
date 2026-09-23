@@ -71,9 +71,10 @@ function Vial({ name, cap, selected, active, onClick }) {
 // The syringe itself: barrel graduated to 6 mL, plunger position driven live
 // by `vol`, and an air bubble at the tip that only clears once flicked. A
 // tinted fill (the vial's own cap color) shows what's actually in it.
-function Syringe({ vol, max, cap, bubble, hasVial }) {
+function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
   const bx = 20, bw = 220, by = 40, bh = 26;
   const fillW = Math.max(0, Math.min(bw - 6, (vol / max) * (bw - 6)));
+  const canFlick = hasVial && bubble && vol > 0.15;
   return (
     <svg viewBox="0 0 280 90" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
       {/* needle */}
@@ -90,8 +91,16 @@ function Syringe({ vol, max, cap, bubble, hasVial }) {
       {/* plunger */}
       <rect x={bx + fillW - 2} y={by - 4} width={6} height={bh + 8} rx={1.5} fill="#C8D3D9" />
       <rect x={bx + fillW + 4} y={by + bh / 2 - 3} width={30} height={6} fill="#C8D3D9" />
-      {/* bubble, trapped near the needle end until flicked out */}
-      {hasVial && bubble && vol > 0.15 && <circle cx={bx + 9} cy={by + bh / 2} r={3.4} fill="#0B0F12" stroke="#5C6E78" strokeWidth={1} />}
+      {/* bubble, trapped near the needle end — click/tap directly on it to
+          flick it up the barrel, a real repeated tap gesture rather than a
+          "mark as done" checkbox */}
+      {canFlick && (
+        <g onClick={onFlick} style={{ cursor: "pointer" }}>
+          <circle cx={bx + 9} cy={by + bh / 2} r={3.4} fill="#0B0F12" stroke="#5C6E78" strokeWidth={1}
+            transform={flicks ? `translate(0,${-flicks * 1.5})` : undefined} />
+          <circle cx={bx + 9} cy={by + bh / 2} r={10} fill="transparent" />
+        </g>
+      )}
       {vol >= max - 0.05 && <text x={bx + bw / 2} y={by + bh + 14} textAnchor="middle" fontSize={8} fill={C.amber}>full barrel</text>}
     </svg>
   );
@@ -105,7 +114,15 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   const [vial, setVial] = useState(null);
   const [vol, setVol] = useState(0);
   const [bubble, setBubble] = useState(true);
+  const [flicks, setFlicks] = useState(0);
   const [flash, setFlash] = useState(null);
+  // A real repeated-tap gesture directly on the bubble, not a checkbox —
+  // three taps to work it up the barrel and out, same idea as this
+  // project's other "hold/press to do the physical motion" minigames.
+  const onFlick = () => {
+    const n = flicks + 1;
+    if (n >= 3) { setBubble(false); setFlicks(0); } else setFlicks(n);
+  };
 
   if (!open || kind !== "prep") return null;
 
@@ -157,13 +174,12 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
                 <Vial key={v.id} name={v.name} cap={capColorFor(v.id)} selected={vial === v.id} active={vial === v.id} onClick={() => setVial(v.id)} />
               ))}
             </div>
-            <Syringe vol={vol} max={6} cap={vial ? capColorFor(vial) : "#5C6E78"} bubble={bubble} hasVial={!!vial} />
+            <Syringe vol={vol} max={6} cap={vial ? capColorFor(vial) : "#5C6E78"} bubble={bubble} hasVial={!!vial} onFlick={onFlick} flicks={flicks} />
             <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Pull the plunger: {vol.toFixed(1)} mL</div>
             <input type="range" min={0} max={6} step={0.1} value={vol} onChange={(e) => setVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
-            <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: C.faint, marginBottom: 12 }}>
-              <input type="checkbox" checked={!bubble} onChange={(e) => setBubble(!e.target.checked)} />
-              3. Tap the barrel and expel the air
-            </label>
+            <div style={{ fontSize: 12, color: bubble ? C.faint : C.hr, marginBottom: 12 }}>
+              3. {bubble ? "Tap the bubble in the barrel above to flick it out." : "Air expelled."}
+            </div>
             <button onClick={draw} className="px-3 py-2 rounded w-full" style={{ background: "#122A18", border: `1px solid ${C.hr}`, color: C.hr }}>Confirm and cap</button>
           </>
         )}

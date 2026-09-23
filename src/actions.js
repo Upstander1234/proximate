@@ -237,18 +237,11 @@ export const LIB=[
     run:(s,v)=>v.sbp>=LIM.sbpRadial?{say:`Present. ${v.hr}.`,meas:{HR:`${v.hr}`}}
       :{say:"You cannot find it. A radial needs about 90 systolic to be felt. Its ABSENCE is a finding — go central.",kind:"warn",
         evid:"Radial absent, carotid present — hypoperfusion, SBP under 90."}},
-  {id:"pulseox",region:"armR",tab:"assess",label:"Pulse oximeter",gerund:"Applying pulse oximeter",cost:12,lvl:2,bag:"monitor",
-    run:(s,v)=>{if(v.hr===0||v.sbp<60) return {say:"It searches and searches. It cannot find a pulse to read. That is information.",kind:"crit"};
-      const pr=Math.max(0,v.hr+(v.sbp<LIM.sbpShock?-14:0)),dis=Math.abs(pr-v.hr)>8;
-      return {say:`SpO₂ ${v.spo2}%. Pulse rate ${pr}.`+(dis?" That is not the rate you counted at the wrist.":""),
-        kind:(dis||v.spo2<90)?"warn":"obs",meas:{"SpO₂":`${v.spo2}%`,PR:`${pr}`},
-        evid:dis?"Oximeter PR ≠ palpated HR — poor peripheral perfusion.":null};}},
-  {id:"pulseox",region:"armL",tab:"assess",label:"Pulse oximeter",gerund:"Applying pulse oximeter",cost:12,lvl:2,bag:"monitor",
-    run:(s,v)=>{if(v.hr===0||v.sbp<60) return {say:"It searches and searches. It cannot find a pulse to read. That is information.",kind:"crit"};
-      const pr=Math.max(0,v.hr+(v.sbp<LIM.sbpShock?-14:0)),dis=Math.abs(pr-v.hr)>8;
-      return {say:`SpO₂ ${v.spo2}%. Pulse rate ${pr}.`+(dis?" That is not the rate you counted at the wrist.":""),
-        kind:(dis||v.spo2<90)?"warn":"obs",meas:{"SpO₂":`${v.spo2}%`,PR:`${pr}`},
-        evid:dis?"Oximeter PR ≠ palpated HR — poor peripheral perfusion.":null};}},
+  // The old "pulseox" quick-action here read v.spo2 instantly with no device
+  // actually attached — a decorative shortcut around the real attach_pulseox
+  // -> DeviceMinigame -> s.devices.pulseox path (devices.js), which is the
+  // only way a monitor should ever produce a reading. Removed; SpO2 is only
+  // available once a probe is genuinely attached somewhere it can read from.
   // The real bedside "100% oxygen test" (V2-6, scoped slice): reads the
   // genuine room-air-vs-high-flow PaO2 delta respiratory.js's own shunt
   // equation already produces (see that file's comment) — this action is
@@ -471,6 +464,11 @@ export const LIB=[
       return {say:"\"No, not really.\"",find:"Denies thirst."};}},
 ];
 export const P=(id,region,tab,x={})=>{
+  // pack/directPressure deliberately stay OFF multiSite despite now being
+  // registered on limbs too (below) — several scenarios.js hemorrhage-
+  // control checks read the bare s.done.pack/s.done.directPressure flags
+  // unscoped by region (e.g. "was packing done ANYWHERE this call"), so a
+  // per-region doneKey would silently break those checks.
   const multiSite=id==="iv"||id==="io"||id==="tq"; // can be applied to more than one limb at once
   return {id,region,tab,label:PROCS[id].name,gerund:PROCS[id].name,cost:PROCS[id].cost,
     lvl:PROCS[id].lvl,bag:PROCS[id].bag,pocket:PROCS[id].pocket,tip:PROCS[id].note,proc:1,
@@ -502,7 +500,7 @@ export const PROC_ACTS=[
   P("defib","torso","procedures",{hideInList:1}),P("cardiovert","torso","procedures"),P("pacing","torso","procedures",{once:1}),
   P("icdMagnet","torso","procedures",{once:1}),
   P("valsalva","torso","procedures",{once:1}),P("chestSeal","torso","procedures",{once:1}),
-  P("ecgAcquire","torso","procedures",{once:1}),P("ecgRead","torso","procedures",{once:1}),
+  P("ecgAcquire","torso","procedures",{once:1}),
   P("needleD","torso","procedures",{once:1}),P("chestTube","torso","procedures",{once:1}),
   P("ultrasound","torso","procedures"),P("paCath","torso","procedures",{once:1}),P("warm","torso","procedures",{once:1}),
   P("moveToShade","torso","procedures",{once:1}),P("activeCooling","torso","procedures",{once:1}),
@@ -537,11 +535,19 @@ export const PROC_ACTS=[
   // nasal cannula on a spontaneously breathing patient (no advanced airway
   // required) or inline on an SGA/ETT for continuous waveform capnography.
   P("etco2","head","assess",{label:"EtCO₂ — capnography (mouth)"}),
+  // pack/directPressure registered on limbs too, not just abdo — bleeding
+  // control (BleedingControlMinigame, App.jsx) starts with direct pressure
+  // on ANY wound and can escalate to packing there before a tourniquet is
+  // even on the table.
   P("tq","armR","procedures",{once:1}),P("splint","armR","procedures",{once:1}),
+  P("pack","armR","procedures"),P("directPressure","armR","procedures"),
   P("tq","armL","procedures",{once:1}),P("splint","armL","procedures",{once:1}),
+  P("pack","armL","procedures"),P("directPressure","armL","procedures"),
   P("tq","legR","procedures",{once:1}),P("splint","legR","procedures",{once:1}),
+  P("pack","legR","procedures"),P("directPressure","legR","procedures"),
   P("traction","legR","procedures",{once:1}),P("reboa","legR","procedures",{once:1}),
   P("tq","legL","procedures",{once:1}),P("splint","legL","procedures",{once:1}),
+  P("pack","legL","procedures"),P("directPressure","legL","procedures"),
   P("traction","legL","procedures",{once:1}),P("reboa","legL","procedures",{once:1}),
 ];
 

@@ -21,3 +21,11 @@ export const PROCEDURE_OUTCOME = Object.freeze({
   INTERRUPTED: "interrupted",
   ABORTED: "aborted",
 });
+
+// A successful mini-game attempt already WAS the real time cost (however
+// long the player took playing it) — charging the procedure's full abstract
+// `cost` on top of that would double-count it. This is a short, fixed
+// confirmation window after a SUCCESS, not the original flat cost. Kept as
+// one named constant (App.jsx re-enters `start()` with this at every
+// SUCCESS site) rather than a repeated literal.
+export const POST_MINIGAME_CONFIRM_S = 3;

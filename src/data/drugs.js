@@ -641,7 +641,14 @@ export const DRUGS = {
     fx: {},
     antiarrhythmic: { avSlowing: 1.0 },
     rhythmFix: "svt",
-    note: "Contraindicated in WPW+AF. Does NOT touch sinus tach. Warn them: it feels like dying."
+    // Real adenosine technique is the OPPOSITE of every other IV push drug
+    // in this formulary: its plasma half-life is under 10 seconds, so a
+    // slow push never reaches the AV node at an effective concentration —
+    // it has to go in as a rapid bolus (1-3 seconds) immediately followed
+    // by a fast saline flush. GiveMedMinigame.jsx reads this to invert its
+    // push-rate check for this one drug instead of penalizing a fast push.
+    pushRate: "fast",
+    note: "Contraindicated in WPW+AF. Does NOT touch sinus tach. Warn them: it feels like dying. Rapid IV push, then a rapid saline flush immediately behind it — a slow push never reaches the AV node."
   },
 
   diltiazem: {
@@ -1158,6 +1165,10 @@ export const DRUGS = {
     dose: 1,                                    // per‑dose amount (infusion handled by repeated doses)
     fx: {},
     receptors: { alpha: 1.0, beta1: 0.3 },
+    // A real infusion, not a bolus — GiveMedMinigame/HangMinigame (App.jsx)
+    // read this to open the hang-and-titrate flow instead of a syringe push:
+    // you don't push a pressor, you hang it on a pump and start it low.
+    drip: true,
     note: "First‑line vasopressor for septic shock. Titrate to MAP ≥ 65 mmHg."
   },
 
@@ -1168,6 +1179,7 @@ export const DRUGS = {
     dose: 1,
     fx: {},
     receptors: { alpha: 1.0 },
+    drip: true,
     note: "Pure alpha. Raises pressure, DROPS heart rate — the one for tachycardic hypotension."
   },
 

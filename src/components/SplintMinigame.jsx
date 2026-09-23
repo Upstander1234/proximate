@@ -48,7 +48,7 @@ function pulseText(do2) {
 // splint (of either material) is on. Cardboard shows as two flat rails
 // strapped to the outside; vacuum shows as a bag that opacifies/stiffens as
 // it's pumped down, and needs no separate padding step since it conforms.
-function LimbScene({ limb, splintType, immobilizeVal, padded, strapped, snugBad }) {
+function LimbScene({ limb, splintType, immobilizeVal, padded, strapped, snugBad, holdable, onHoldDown, onHoldUp, holding }) {
   const isArm = limb === "arm";
   const w = isArm ? 20 : 28;
   const x0 = 26, y = 52, midX = 104, endX = isArm ? 168 : 178;
@@ -56,7 +56,9 @@ function LimbScene({ limb, splintType, immobilizeVal, padded, strapped, snugBad 
   const kink = splintOn ? 0 : (isArm ? 10 : 8);
   const rigidity = Math.min(1, immobilizeVal);
   return (
-    <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
+    <svg viewBox="0 0 200 100" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10, touchAction: "none",
+        cursor: holdable ? (holding ? "grabbing" : "grab") : "default" }}
+      onPointerDown={holdable ? onHoldDown : undefined} onPointerUp={holdable ? onHoldUp : undefined} onPointerLeave={holdable ? onHoldUp : undefined}>
       <defs>
         <linearGradient id="limbSkinGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#E3AE87" />
@@ -157,14 +159,11 @@ export default function SplintMinigame({ open, kind, site, pat, assist, interrup
       const done = immobilizeVal >= 0.8;
       return (<>
         {splintType === "cardboard" ? (
-          <Line>3. Cardboard can't bend to fit the limb. Hold it in the position it's in — don't try to straighten an angulated fracture — while the splint goes rigid against it.</Line>
+          <Line>3. Cardboard can't bend to fit the limb. Press and hold directly on the limb above — don't try to straighten an angulated fracture — while the splint goes rigid against it.</Line>
         ) : (
-          <Line>3. Wrap the vacuum splint around the limb in the position it's already in, then hold to draw the air out with the hand pump until it's rigid.</Line>
+          <Line>3. Wrap the vacuum splint around the limb in the position it's already in, then press and hold on it to draw the air out with the hand pump until it's rigid.</Line>
         )}
-        <Bar v={immobilizeVal} lo={0.8} hi={1} />
-        <button style={GO} onPointerDown={() => setHolding(true)} onPointerUp={() => setHolding(false)} onPointerLeave={() => setHolding(false)}>
-          {splintType === "cardboard" ? "Hold the limb steady" : "Hold to pump"}
-        </button><Gap />
+        <Bar v={immobilizeVal} lo={0.8} hi={1} /><Gap />
         <button style={done ? GO : NEUTRAL} disabled={!done}
           onClick={() => (immobilizeVal < 0.8
             ? fail(splintType === "cardboard" ? "You let go too soon. The limb shifted before the splint set and it has to be redone from the start."
@@ -234,7 +233,8 @@ export default function SplintMinigame({ open, kind, site, pat, assist, interrup
           </div>
         )}
         {!flash && <LimbScene limb={info.limb} splintType={splintType} immobilizeVal={step >= 2 ? immobilizeVal : 0}
-          padded={padded} strapped={strapped} snugBad={snugBad} />}
+          padded={padded} strapped={strapped} snugBad={snugBad}
+          holdable={step === 2} holding={holding} onHoldDown={() => setHolding(true)} onHoldUp={() => setHolding(false)} />}
         {!flash && body()}
         {flash && (
           <div style={{ marginTop: 12 }}>

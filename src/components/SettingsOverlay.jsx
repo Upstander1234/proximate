@@ -306,12 +306,12 @@ export default function SettingsOverlay({g,setG}){
         </Row>}
 
         {/* Treatment protocol — only meaningful within a shift */}
-        {inShift&&<Row label="CREW TREATMENT PROTOCOL" note="Which protocol a higher-level provider on scene runs when directing the crew. Default is a simple universal BLS set; the agency files ship empty, ready to author.">
+        {inShift&&<Row label="CREW TREATMENT PROTOCOL" note="Which protocol a higher-level provider on scene runs when directing the crew. Default is the NASEMSO National Model EMS Clinical Guidelines; the agency files ship empty, ready to author.">
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
-            {PROTOCOL_ORDER.map(pid=>{const sel=(g.protocol||"default")===pid,empty=pid!=="default"&&(PROTOCOLS[pid].rules||[]).length===0;
-              return Chip(sel,()=>setG(s=>({...s,protocol:pid})),`${pid==="default"?"◆ ":""}${PROTOCOLS[pid].name}${empty?" (empty)":""}`,pid);})}
+            {PROTOCOL_ORDER.map(pid=>{const sel=(g.protocol||"national")===pid,empty=pid!=="national"&&(PROTOCOLS[pid].rules||[]).length===0;
+              return Chip(sel,()=>setG(s=>({...s,protocol:pid})),`${pid==="national"?"◆ ":""}${PROTOCOLS[pid].name}${empty?" (empty)":""}`,pid);})}
           </div>
-          <button onClick={()=>setG(s=>({...s,protocol:"default"}))} style={{background:C.panelHi,border:`1px solid ${C.hr}`,color:C.hr,fontSize:12,padding:"7px 12px",borderRadius:6,cursor:"pointer"}}>
+          <button onClick={()=>setG(s=>({...s,protocol:"national"}))} style={{background:C.panelHi,border:`1px solid ${C.hr}`,color:C.hr,fontSize:12,padding:"7px 12px",borderRadius:6,cursor:"pointer"}}>
             Use Default Protocol</button>
           {/* F19: community-facing invite, not a technical control — the folder
               this list is generated from (src/protocols/) ships an authoring

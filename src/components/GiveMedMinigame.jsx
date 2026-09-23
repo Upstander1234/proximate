@@ -97,21 +97,27 @@ function Scene({ mode, access, scrubbed, patent, pinch, angle, nostril, flow, st
   );
 }
 
-// Hold-to-push bar. Holding advances the plunger at `speed`; a push faster
-// than `maxSpeed` counts as too fast (`onDone(tooFast)` when it completes).
-function PushBar({ label, speed, maxSpeed, onDone }) {
+// Hold-to-push bar. Holding advances the plunger at `speed`. By default a
+// push faster than `maxSpeed` counts as too fast (`onDone(violated)` when it
+// completes) — the real teaching point for nearly every IV push drug (push
+// too fast, risk a reaction). `invert` flips that to a MINIMUM speed instead
+// — adenosine's own real technique (GiveMedMinigame's own pushRate:"fast"
+// check below): its plasma half-life is under 10 seconds, so a slow push
+// never reaches the AV node, and the failure mode is pushing too SLOWLY.
+function PushBar({ label, speed, maxSpeed, invert, onDone }) {
   const [p, setP] = useState(0);
-  const fast = useRef(0);
+  const bad = useRef(0);
   const timer = useRef(null);
   const doneRef = useRef(false);
+  const violating = invert ? speed < maxSpeed : speed > maxSpeed;
   const stop = () => { clearInterval(timer.current); timer.current = null; };
   const start = () => {
     if (timer.current || doneRef.current) return;
     timer.current = setInterval(() => {
       setP((x) => {
         const n = Math.min(1, x + speed * 0.02);
-        if (speed > maxSpeed) fast.current += 1;
-        if (n >= 1 && !doneRef.current) { doneRef.current = true; stop(); setTimeout(() => onDone(fast.current > 3), 0); }
+        if (violating) bad.current += 1;
+        if (n >= 1 && !doneRef.current) { doneRef.current = true; stop(); setTimeout(() => onDone(bad.current > 3), 0); }
         return n;
       });
     }, 100);
@@ -121,14 +127,14 @@ function PushBar({ label, speed, maxSpeed, onDone }) {
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>{label}</div>
       <div style={{ height: 10, background: "#10151A", border: `1px solid ${C.line}`, borderRadius: 5, overflow: "hidden", marginBottom: 8 }}>
-        <div style={{ width: `${p * 100}%`, height: "100%", background: speed > maxSpeed ? C.red : C.hr }} />
+        <div style={{ width: `${p * 100}%`, height: "100%", background: violating ? C.red : C.hr }} />
       </div>
       <button onPointerDown={start} onPointerUp={stop} onPointerLeave={stop} style={GO}>Hold to push</button>
     </div>
   );
 }
 
-export default function GiveMedMinigame({ open, kind, drugName, mode, access: accessProp, accessOptions, warnings, pat, assist, interrupted, onResolve }) {
+export default function GiveMedMinigame({ open, kind, drugName, mode, access: accessProp, accessOptions, pushRate, warnings, pat, assist, interrupted, onResolve }) {
   const [step, setStep] = useState(0);
   const [scrubbed, setScrubbed] = useState(false);
   const [patent, setPatent] = useState(false);
@@ -149,7 +155,11 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
   const both = mode === "line" && accessOptions && accessOptions.length > 1;
   const access = picked || accessProp;
   const tol = assistToleranceMult(assist);
-  const maxSpeed = 5 * tol;
+  const fastPush = pushRate === "fast";
+  // A fast-push drug's threshold isn't a wider version of the slow-push
+  // one — it's the opposite direction, so it gets its own real minimum
+  // rather than reusing maxSpeed's own scale inverted.
+  const maxSpeed = fastPush ? 8 / tol : 5 * tol;
   const awake = !pat?.consciousness || pat.consciousness === "awake";
   const title = { line: `Push ${drugName} via ${access}`, im: `Inject ${drugName} IM`, in: `${drugName} intranasal`, oral: `Give ${drugName}`, neb: `Set up ${drugName}` }[mode] || `Give ${drugName}`;
   const fail = (why) => setFlash({ ok: false, why });
@@ -169,14 +179,20 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
         <div style={{ height: 8 }} />
         <button style={GO} onClick={() => { if (!patent) return fail(`You pushed without confirming the ${access} was patent. It could be infiltrated.`); setStep(2); }}>Continue to push</button></>);
       if (step === 2) return (<>
-        <div style={{ fontSize: 12, color: C.faint }}>3. Push rate: {speed}{speed > maxSpeed ? " (too fast)" : ""}</div>
+        <div style={{ fontSize: 12, color: C.faint }}>
+          3. Push rate: {speed}{fastPush ? (speed < maxSpeed ? " (too slow)" : "") : (speed > maxSpeed ? " (too fast)" : "")}
+        </div>
+        {fastPush && <div style={{ fontSize: 11, color: C.amber, marginBottom: 6 }}>Rapid IV push — this drug's half-life is under 10 seconds. A slow push never reaches the AV node.</div>}
         <input type="range" min={1} max={10} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: "100%", marginBottom: 8 }} />
-        <PushBar label="Steady pressure on the plunger." speed={speed} maxSpeed={maxSpeed}
+        <PushBar label={fastPush ? "Push it in fast, in 1 to 3 seconds." : "Steady pressure on the plunger."} speed={speed} maxSpeed={maxSpeed} invert={fastPush}
           onDone={(f) => { setFast(f); setStep(3); }} /></>);
       return (<>
-        <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>4. Flush the line so the drug reaches the patient.</div>
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
+          4. {fastPush ? "Flush hard and fast right behind it, before it clears the line." : "Flush the line so the drug reaches the patient."}
+        </div>
         <button style={GO} onClick={() => (!scrubbed ? fail("The hub was never scrubbed. Contaminated line, redo it clean.")
-          : fast ? fail("You pushed too fast. Rapid push risks a reaction, slow it down.") : win("Pushed, flushed, and the line is still good."))}>Flush and finish</button></>);
+          : fast ? fail(fastPush ? "You pushed too slowly. Adenosine's half-life is under 10 seconds — a slow push never reaches the AV node before it's metabolized. It won't work." : "You pushed too fast. Rapid push risks a reaction, slow it down.")
+          : win(fastPush ? "Pushed fast and flushed hard right behind it — that's the only way this drug reaches the AV node intact." : "Pushed, flushed, and the line is still good."))}>Flush and finish</button></>);
     }
     if (mode === "im") {
       if (step === 0) return (<>
