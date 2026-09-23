@@ -446,9 +446,22 @@ already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
 defect on unmodified master (confirmed by grep: zero failures attributed to
 `norepinephrineOverdose` specifically beyond that pre-existing class), and
 `norepinephrineOverdose` itself appears in the sweep's own per-scenario
-output with sane, in-range values throughout its run. `mechanismWiring.mjs`
-[see the immediately-following note for its own completion status and
-numbers, filled in once the background run finished].
+output with sane, in-range values throughout its run. `mechanismWiring.mjs` **could NOT be confirmed complete within this
+session's own time budget** — it was still running against 6+ other
+concurrent invocations of the same suite from other sessions sharing this
+environment (confirmed via `ps aux`, the exact contention pattern lesson 14
+documents) well past its own normal ~22-minute unhindered runtime. Stated
+honestly, not assumed clean: a future session should re-run
+`node src/scripts/mechanismWiring.mjs` to completion and diff the failure
+SET against the pre-existing baseline (`mechanismWiring.mjs 612 passed, 5
+failed`, per section 2's current baseline table) before treating this
+batch as fully suite-verified — the new
+`[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]` section's own
+three assertions were confirmed passing via the standalone, isolated probe
+described above (lesson 8's sanctioned technique), which is real, measured
+evidence for the new mechanism specifically, but is not a substitute for
+the full-suite run's own regression coverage of everything else in the
+file when the environment allows one to finish.
 
 **The other five items in this session's assigned scope (a hazmat scene
 mechanic, a breath-odor mechanism, the opioidOD near-apnea architectural
