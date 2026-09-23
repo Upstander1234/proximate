@@ -343,6 +343,88 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 — Assigned scope: two queue items closed via re-audit (item 26, CPR quality; item 23's receptor-class gap), several genuinely large items (16, 17, 18, 25) confirmed still open and correctly not attempted blind under the time budget. No new physiology mechanism was built this session; both closures are documentation corrections against code that was already real, per lesson 16.
+
+**Item 26 (CPR depth/rate/duty) — CLOSED. Its own "compression depth, rate,
+and duty have no independent effect on output" claim was stale.** Traced
+the full CPR chain before touching anything: `cardiovascular.js`'s
+`mechAct = 0.17 * cpr` floor reads `pat.cprActive`, and `pk.js`'s `"cpr"`
+dose handler already multiplies a real depth+rate quality composite into
+that SAME `cprActive` — `pat.cprActive = Math.max(pat.cprActive, intensity
+* freshness * cq)`, where `cq` is exactly `pat.cprQuality` (0-1,
+`CprMinigame.jsx`'s own real `depthScore * rateScore` from the player's
+actual compressions, expiring 30s after the last scored one so
+crew/unscored CPR correctly defaults to `cq=1`, i.e. the OLD, undegraded
+floor) and `freshness` is a real ~12s-tau decay from the last CPR dose
+(Berg et al., Circulation 2001; Kern et al., Circulation 2002). This
+consumer evidently shipped in an earlier, undocumented session — the
+in-code comment at the `"cpr"` handler even states "a prior investigation
+measured this directly," confirming it predates this session. A
+documenting cross-reference comment was added at `cardiovascular.js`'s
+own floor line (the site this item's stale text pointed at) so a future
+reader lands on the real mechanism immediately instead of re-discovering
+this. Deliberately did NOT add a second consumer there — `cardiovascular.js`
+reading `pat.cprActive` already inherits the quality-scaled value, so a
+second multiplier would double-count `cq`. Compression rate specifically
+has no separate timing consumer (`compressionRate=110` stays fixed for
+EtCO2 cycle timing); its contribution is already folded into the one
+composite score, and splitting it out would need its own real
+justification, not attempted. `node --check`/`npx eslint
+src/physio/cardiovascular.js`: clean. No suite re-run needed — the change
+is comment-only, zero functional difference (confirmed by reading the
+diff, not assumed).
+
+**Item 23 (ketamine/receptor-class gap) — re-audited, and the remaining
+gap is reclassified from "unbuilt" to "blocked on a missing producer."**
+Grepped the full `drugs.js` formulary for any drug that would drive a
+histamineH1/H2, serotonin, or second NMDA receptor term through the
+continuous `receptors` mechanism `pk.js` already uses for
+alpha1/beta1/beta2/muscarinic/etc — none exists (no H2-blocker,
+SSRI/MAOI/triptan-class drug, or second NMDA agent is in this formulary).
+Building those receptor classes now would be a field with no real
+producer ever able to set it — the inverse of section 1's "written, never
+read" rule, but the same defect in spirit. Both real clinical pictures
+this item implicitly gestures at already have a real mechanism through a
+DIFFERENT, already-adequate route: cutaneous urticaria is real and
+consumed via `pat.urticaria` (patient.js/conditions.js's
+`allergicReactionMild`, treated by `diphen`'s own `pkModel:"curve"`
+`fx:{urticaria:-0.5}`, not the continuous `receptors` object — a real H1-
+antagonist consequence expressed through a simpler mechanism because
+diphenhydramine's own PK entry never needed the more general one);
+serotonin toxicity is real and shipped as its own full condition,
+`serotoninSyndrome` (conditions.js), a condition-level mechanism rather
+than a drug-receptor one, correctly so given no serotonergic drug exists
+to react against. Left unbuilt, correctly — the natural place to add a
+histamineH1/H2/serotonin/second-NMDA receptor class is the same batch
+that ever adds the drug needing it, not speculatively ahead of time. No
+code changed; audit-only.
+
+**Items 16 (respiratory-muscle structured state), 17 (RAAS →
+`pat.renal` refactor), 18 (nephron segment chain beyond the already-
+shipped osmotic-diuresis slice), and 25 (fetal compartment — fetal
+oxygenation/placental-umbilical flow/fetal Hb, distinct from the
+already-shipped `pat.fetalHR`) were read in full and confirmed still
+genuinely open, matching their own current text, and were NOT attempted
+this session.** Each is real, large, separately-scoped mechanism or
+refactor work (a new `pat.respiratoryMuscles` structured state; a
+single-writer-discipline object refactor touching every existing RAAS
+consumer; the full glomerulus→PCT→loop-of-Henle→DCT→collecting-duct
+nephron ladder plus a first diuretic drug; a genuinely new fetal DO2/
+Hb/umbilical-flow compartment coupled to placental perfusion) that would
+need its own dedicated, carefully-measured batch with fresh
+`mechanismWiring.mjs`/`scenarioSweep.mjs` verification, not a rushed
+addition alongside two documentation-only closures. Stated honestly
+rather than guessed at under time pressure, per section 4's own
+discipline against exactly that.
+
+**Verification for this session's own two real changes.** `node --check`
+and `npx eslint` clean on the one touched source file
+(`src/physio/cardiovascular.js`, comment-only edit, zero functional
+change). Since neither change alters any executed code path, the full
+`mechanismWiring.mjs`/`scenarioSweep.mjs` suites were not re-run — stated
+honestly, not assumed. No new patient field was added, so no
+`scenarioSweep.mjs` list changes were needed.
+
 ### 2026-09-22 — Queue items 39/40/42/44 re-verified against the tree (lesson 16): item 40's own flagged "biggest finding" (outcomeReport() has no caller) and items 42/44's own "still open" gaps are ALL already resolved, evidently by concurrent/earlier work never reflected back into this document. No new physiology code was written; this was a verification-and-documentation pass, stated honestly.
 
 **Item 40 (structural vs. functional damage) is now CLOSED in full, not
@@ -3065,17 +3147,46 @@ future event can opt in the same way). Still open:
    lever (attenuating atrial kick for AV-dissociated rhythms) already on
    record as tried and MEASURED WORSE — do not retry it blind. Read a previous item in the queue's own entry in full before attempting either.
 
-23. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed, see
-   section 3's newest entry; the rest of the item remains open.** Ketamine's
-   cardiovascular mechanism is now a real dual NMDA-antagonist effect
+23. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed;
+   re-audited this session — the remaining receptor classes are genuinely
+   BLOCKED on a missing producer, not simply unbuilt.** Ketamine's
+   cardiovascular mechanism is a real dual NMDA-antagonist effect
    (indirect sympathomimetic, scaled by the existing `pat.adrenalReserve`
    signal, plus a direct, ordinarily-masked myocardial depression term) —
    the previously-asserted-not-identified `myocardialDepression` coefficient
-   this item's own text used to flag is now real. `drugs.js`'s `receptors`
+   this item's own text used to flag is real. `drugs.js`'s `receptors`
    object architecture (alpha1/beta1/beta2/muscarinic/vagalBlock/
-   calciumChannel/etc.) remains the substrate for the rest of this item —
-   still genuinely open: histamineH1/H2, serotonin, and NMDA receptor
-   classes beyond ketamine's own use have no real consumer yet.
+   calciumChannel/etc., continuous concentration-driven consumption in
+   `pk.js`) remains the substrate for the rest of this item.
+
+   **Re-audited this session, not attempted blind**: grepped the FULL
+   `drugs.js` formulary for any drug that would meaningfully DRIVE a
+   histamineH1/H2, serotonin, or (beyond ketamine's own) NMDA receptor
+   term through this continuous mechanism — none exists. No H2-blocker,
+   SSRI/MAOI/triptan-class drug, or second NMDA agent is carried in this
+   formulary, so a `receptors.histamineH1`/`.serotonin` field would have no
+   real PRODUCER to set it and therefore no way to ever move — the exact
+   inverted decorative-field problem section 1 warns about (not "written,
+   never read" but "declared, never written"). The two real clinical
+   pictures this item's own text implicitly points at both already HAVE a
+   real, if differently-shaped, mechanism: (1) histamine-driven cutaneous
+   urticaria is real and consumed today via `pat.urticaria`
+   (patient.js/conditions.js's `allergicReactionMild`, treated by
+   `diphen`'s own `fx:{urticaria:-0.5}` curve-model effect — a real H1-
+   antagonist consequence, just expressed through this engine's simpler
+   `pkModel:"curve"` fx pattern rather than the continuous `receptors`
+   object, since diphenhydramine's own PK entry never needed the latter);
+   (2) serotonin toxicity is real and shipped as its own full condition,
+   `serotoninSyndrome` (conditions.js), with its own real hyperthermia/
+   clonus/autonomic-instability mechanism — a condition-level, not a
+   drug-receptor-level, representation, correct given no serotonergic
+   DRUG exists in this formulary to react against. Building the generic
+   `receptors` classes now, with nothing in the tree to ever set them,
+   would be speculative unused surface area, not real mechanism work —
+   correctly left unbuilt until a real histamine-H2/serotonergic/second-
+   NMDA drug is ever added to the formulary, at which point THAT drug's
+   own batch is the natural place to add its receptor class alongside it.
+   No code changed this session; this is an audit-only finding.
 
 24. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    newest entry.** A real, first slow-timescale state variable now exists:
@@ -3126,21 +3237,44 @@ future event can opt in the same way). Still open:
    than directly scripting fetal distress is the correct design target once
    this is attempted.
 
-26. **AUDITED (2026-09-03), confirmed genuinely PARTIAL — still open.**
-   Read `cardiovascular.js`'s full-loop CPR block directly (~line 1045):
-   chest compressions are already real external mechanical activation
-   (not a stat write) whose resulting pressure/CO/DO2 and EtCO2 (via the
-   alveolar dead-space model reading compression-generated flow, per the
-   code's own comment) fall out of the same shared circulation every other
-   state uses — genuine mechanism for the PRESENCE of CPR. What's
-   confirmed NOT modeled: `pat.cprActive` drives a FIXED output floor
-   (`mechAct = 0.17 * cpr`, "~25-30% of native CO") and a FIXED
-   `compressionRate = 110` — compression depth, rate, and duty (fraction
-   of time actually compressing) have no independent effect on output, so
-   technically poor and textbook-perfect CPR are indistinguishable to the
-   engine today. Extending the fixed floor into a depth/rate/duty-driven
-   one is genuine remaining mechanism work, not attempted this session;
-   left open, not closed.
+26. **CLOSED (re-audited this session, lesson 16) — this item's own
+   "confirmed NOT modeled" claim was itself stale.** Re-read
+   `cardiovascular.js`'s full-loop CPR block (`mechAct = 0.17 * cpr`) AND
+   `pk.js`'s `"cpr"` dose handler directly before touching anything, per
+   this document's own standing discipline: a real depth/rate quality
+   consumer already exists and was simply undocumented here.
+   `CprMinigame.jsx` computes a genuine `depthScore * rateScore` composite
+   (adult target 5-6cm depth, 100-120/min rate, both drawn from the AHA
+   guideline bands) into `pat.cprQuality` (0-1) from the player's actual
+   compressions; `pk.js`'s `"cpr"` dose handler already multiplies this
+   directly into `pat.cprActive` itself — `pat.cprActive = Math.max(
+   pat.cprActive, intensity * freshness * cq)`, where `cq` IS
+   `pat.cprQuality` (expiring 30s after the last scored compression, so
+   crew/unscored CPR correctly defaults to `cq=1`) and `freshness` is a
+   real ~12s-tau decay from the last CPR dose (Berg et al., Circulation
+   2001; Kern et al., Circulation 2002 — real coronary/cerebral perfusion
+   pressure collapses within seconds of compressions stopping and takes
+   several compressions to rebuild, the evidence base behind AHA's
+   "minimize interruptions"/compression-fraction teaching). Since
+   `cardiovascular.js`'s `mechAct = 0.17 * cpr` floor reads this SAME
+   `pat.cprActive`, degraded depth/rate technique already produces a
+   genuinely smaller mechanical floor and therefore genuinely lower
+   CO/DO2/EtCO2 through the shared circulation — technically poor and
+   textbook-perfect CPR are NOT indistinguishable to the engine today, as
+   this item's own text previously (and, per its own dated header,
+   apparently already incorrectly) claimed. A duplicate second consumer
+   was investigated and deliberately NOT added at `cardiovascular.js`'s own
+   floor line (would double-count the identical `cq` signal already
+   folded into `cprActive` upstream) — a documenting comment was added at
+   that site instead, cross-referencing the real mechanism's actual
+   location. Compression RATE specifically has no SEPARATE timing
+   consumer (`compressionRate = 110` stays fixed for EtCO2 cycle timing) —
+   its contribution is already folded into the one composite `cprQuality`
+   score, and splitting it into a second live variable would need its own
+   real justification (e.g. modeling compression-rate-driven EtCO2 cadence
+   independent of depth), not attempted here. `node --check`/`npx eslint`
+   clean on the one touched file (`cardiovascular.js`, comment-only). No
+   suite re-run needed (no functional change).
 
 27. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
    Investigated first: CO poisoning's pulse-ox blind spot (`pat.cohb`) and

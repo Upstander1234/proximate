@@ -1117,6 +1117,22 @@ function updateFullLoopODE(pat, dt) {
   // through the alveolar dead-space model, which is the physiological basis for
   // using capnography to judge CPR quality and to recognise ROSC.
   const cpr = clamp(pat.cprActive || 0, 0, 1);
+  // NOTE (audited this session, queue item 42): compression QUALITY already
+  // reaches this floor through pat.cprActive itself, not through a second
+  // multiplier here. pk.js's "cpr" dose handler (see its own comment there)
+  // scales cprActive by intensity*freshness*cq, where cq is exactly
+  // pat.cprQuality (0-1, the real depth-score*rate-score composite
+  // CprMinigame.jsx computes from actual player input) whenever a scored
+  // compression happened in the last 30s, and freshness is a real ~12s-tau
+  // decay from the last CPR dose (Berg et al., Circulation 2001; Kern et
+  // al., Circulation 2002 — coronary/cerebral perfusion pressure collapses
+  // within seconds of compressions stopping). So poor depth/rate technique
+  // already produces a genuinely smaller cprActive, which this 0.17*cpr
+  // floor already tracks proportionally — a second multiplier here would
+  // double-count the same signal. compressionRate stays fixed at the
+  // guideline-nominal 110 for cycle/EtCO2 timing only, since actual rate is
+  // already folded into cprQuality above, not a separate live variable this
+  // engine tracks as its own timing signal.
   if (cpr > 0 && mechAct < 0.17 * cpr) mechAct = 0.17 * cpr;   // ~25-30% of native CO
   pat._fullMechAct = approach(pat._fullMechAct ?? mechAct, mechAct, dt, 0.02); // ~1s onset/recovery
   const effMech = pat._fullMechAct;
