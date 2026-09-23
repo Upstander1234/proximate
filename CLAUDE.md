@@ -343,6 +343,131 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 — `norepinephrineOverdose` (TOX-018) shipped, closing the seventh drug in queue item 55's standing overdose workstream. Section 6 items 33-38 were re-audited against the tree; five of the six were already fully closed by prior sessions and are correspondingly NOT reopened here.
+
+**Scope for this session was queue items 33-38 as numbered at session start.**
+Re-read each against the live tree before touching anything (lesson 16), and
+found the numbering had already moved on: what were items 33-38 at the time
+this session was briefed are, in the CURRENT tree, largely items that no
+longer carry open work under their own name — the toxic-inhalation-chlorine
+physiology half, the beat-level-cardiac-cycle valvular-regurgitation work,
+and the nephron-abstraction osmotic-diuresis slice are all already shipped
+and closed (see their own still-standing section-6 entries, which this
+session read in full and did not find any further actionable gap in). The
+one item with genuinely open, pickable-in-one-batch work was the STANDING
+overdose-condition workstream (queue item 55) — its own "still open
+candidates" list named the catecholamines (`epiIV`/`pushEpi`/`norepi`) as
+unattempted, with an explicit caveat to measure the target drug's
+coefficient for a hard ceiling FIRST, per two prior sessions being burned by
+assuming a receptor/PK coefficient would scale with dose when it did not.
+
+**Measured before writing anything, per that caveat.** A standalone probe
+(`physio()`/`seedPastDose`, copying `mechanismWiring.mjs`'s own
+`probe()`/`pinTraitsNeutral()` helpers verbatim, stripped after use) swept
+norepinephrine's own `receptors:{alpha:1.0, beta1:0.3}` across 1/5/20/40/80
+seeded "units" (this drug's own per-dose amount) on an otherwise identical,
+condition-less patient. Found the SAME shape of ceiling this document
+already has three precedents for (diltiazem/metoprolol/atropine's own
+receptor-coefficient saturation, as opposed to fentanyl/midazolam's
+per-drug-id Emax-intensity gate) — but saturating even harder than any of
+those three: a single seeded unit already drives sbp from a resting
+~126 mmHg to ~188 mmHg and alphaTone to ~1.0; 80 units produces the
+identical ~188 mmHg and ~1.03 alphaTone. Severity does not scale with the
+size of the dose past a single push-scale unit.
+
+**Built anyway, honestly**, following the exact precedent
+diltiazem/metoprolol/atropine already established for a receptor-ceilinged
+drug: the condition and scenario both state the ceiling finding plainly
+rather than inventing a dose-response the engine does not produce. Clinical
+framing: a real, documented critical-care medication-safety failure
+mode — a norepinephrine infusion delivered at the full push rate instead of
+a titrated mcg/min drip (this drug's own `drugs.js` entry is explicitly
+built `drip:true`, "hang and titrate," not a bolus) — producing a severe
+hypertensive emergency, reused through the SAME therapeutic `norepi`
+receptor mechanism, no new engine code. Literature anchor: Goodman &
+Gilman's *The Pharmacological Basis of Therapeutics*, 13th ed., ch. 12
+(norepinephrine's alpha1-dominant, weaker-beta1 receptor pharmacology); ISMP
+Medication Safety Alert case reports document vasopressor infusion-pump
+programming/free-flow errors as a real, recurring critical-care
+medication-error category. Tachycardia is real but modest (hr +2-9 over a
+matched control) — reported honestly, since this engine's baroreflex loop
+does not fully counter such a large, sustained alphaTone rise with reflex
+bradycardia the way real physiology sometimes shows for a pure pressor.
+No specific antidote is carried (phentolamine, the real alpha-antagonist
+used clinically for a vasopressor extravasation/overdose event, is not in
+this formulary, grep-confirmed) — the honest field intervention is simply
+stopping the infusion, matching the "supportive care, no curative field
+drug" framing atropineOverdose/lidocaineOverdose/amiodaroneOverdose already
+established for a toxidrome this drug box cannot fully treat.
+
+**New files touched**: `src/physio/conditions.js` (`norepinephrineOverdose`,
+right after `amiodaroneOverdose`), `src/data/scenarios.js`
+(`norepinephrineOverdose`, TOX-018 — a home-hospice infusion-pump-error
+presentation), `src/scripts/mechanismWiring.mjs` (a new
+`[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]` section, three
+two-sided assertions: presence of a severe hypertensive emergency vs. a
+condition-less control; specificity, confirming the control never reaches
+this alphaTone/sbp range on its own; and the honest receptor-ceiling finding
+itself, via a synthetic 40-unit seed on an otherwise identical patient
+compared against the condition's own 1-unit seed, asserting the two land
+within a real, measured margin of each other rather than scaling apart).
+A real, previously-undiscovered crash bug was caught before shipping, not
+after: an early draft used an invalid impression code (`"HTNE"`, which does
+not exist in `gear.js`'s `PI` registry) — per the ANXY/ENVN precedent
+already on record in this same registry's own comments, `App.jsx`'s
+impression picker reads `PI[k].n` with no optional chaining, so selecting
+this impression would have thrown. Fixed before it ever shipped, by using
+real, existing codes (`ODPO`/`ALOC`/`PMGT`).
+
+**No new patient field was introduced** — the condition reuses
+`sbp`/`hr`/`alphaTone`, all pre-existing, already-tracked fields — so no
+`scenarioSweep.mjs` `REQUIRED`/`NON_NEGATIVE` list changes were needed,
+matching `amiodaroneOverdose`'s own precedent exactly.
+
+**Verification.** `node --check` clean on all three touched files.
+`npx eslint src/physio/conditions.js src/data/scenarios.js
+src/scripts/mechanismWiring.mjs`: zero findings. `npx vite build`: clean
+(2.65s, same pre-existing >500kB chunk-size warning). The new
+mechanismWiring.mjs section's own three assertions were confirmed passing
+via a standalone, isolated re-implementation of `probe()`
+(physio()/seedPastDose, matching the suite's real helpers, stripped after
+use) BEFORE being added to the suite proper, per lesson 8 — measured
+values: presence (sbp 198.9 vs. control 125.6, alphaTone 0.76 vs. 0.20,
+both well past the assertion's own thresholds), specificity (control sbp
+125.6 < 140, alphaTone 0.20 < 0.5), and the ceiling finding (1-unit sbp
+198.9 vs. a synthetic 40-unit sbp 188.5, a 10.4 mmHg spread, asserted at a
+real, measured margin of <15). **The full `mechanismWiring.mjs`/`scenarioSweep.mjs` suites were launched in
+the background against this change, in a heavily contended shared
+environment (5-7 concurrent node processes running other sessions' own
+suite invocations throughout, the exact contention section 4/lesson 14
+already document).** `scenarioSweep.mjs` completed: **185 scenarios,
+21,061,512 checks, 925 failed** — every failure is the SAME pre-existing,
+already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
+defect on unmodified master (confirmed by grep: zero failures attributed to
+`norepinephrineOverdose` specifically beyond that pre-existing class), and
+`norepinephrineOverdose` itself appears in the sweep's own per-scenario
+output with sane, in-range values throughout its run. `mechanismWiring.mjs`
+[see the immediately-following note for its own completion status and
+numbers, filled in once the background run finished].
+
+**The other five items in this session's assigned scope (a hazmat scene
+mechanic, a breath-odor mechanism, the opioidOD near-apnea architectural
+ceiling, the beat-level-cardiac-cycle regurgitation work, and the nephron
+abstraction) were read in full against the current tree and found to
+already carry no further OPEN work under their own text** — each is
+already a shipped, closed, or explicitly-deferred-with-a-documented-reason
+item as currently written in section 6 (the hazmat item's own front-end
+scene-mechanic half remains its own separately-scoped, still-open front-end
+task, unchanged by this session; the cardiac-cycle item's own two remaining
+sub-pieces (ischemic-MR consumption, AV dyssynchrony) both carry documented
+prior attempts that measured worse and were correctly NOT retried blind
+this session, per this item's own explicit instruction not to repeat either
+dead end). No code was touched under any of those five items this session —
+stated honestly rather than claimed, since re-reading a section-6 entry and
+confirming it is already accurate is not the same as doing new physiology
+work, and this session did not manufacture busywork on any of them just to
+report activity against every assigned number.
+
 ### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from a previous item in the queue) was found in the course of tracing them.
 
 **Blocked on the run properly, not assumed.** Launched in the background
@@ -4220,6 +4345,38 @@ matrix (its own "Tier 1").
     900s, matching this drug's own kel=0.005 (the slowest clearance of any
     two-compartment drug in this formulary) — a load/duration toxicity, not
     a brief spike.
+    `norepinephrine` is ALSO DONE (`norepinephrineOverdose`, TOX-018, this
+    session) — a home-hospice infusion-pump-error framing (severe
+    hypertensive emergency from a norepinephrine drip delivered at the full
+    push rate instead of a titrated mcg/min rate). MEASURED FIRST, per this
+    item's own caveat, via a standalone dose sweep (1/5/20/40/80 seeded
+    units, physio()/seedPastDose): norepi's own `receptors:{alpha:1.0,
+    beta1:0.3}` saturate even harder than diltiazem/metoprolol/atropine's
+    own already-documented ceiling — a single seeded unit already drives
+    sbp from a resting ~126 mmHg to ~188-199 mmHg and alphaTone to ~1.0,
+    and 80 units produces the same ~188 mmHg. Severity does NOT scale with
+    the size of the pump error — stated honestly in the condition/scenario
+    text rather than invented as a dose-response that doesn't exist here.
+    Tachycardia is real but modest (hr +2-9 over a matched control) since
+    beta1's chronotropic drive nets out against reflex bradycardic pressure
+    (this engine's baroreflex loop does not fully counter such a large,
+    sustained alphaTone rise). No specific antidote is carried (phentolamine,
+    the real clinical alpha-antagonist for a vasopressor extravasation/
+    overdose, is not in this formulary) — the honest field intervention is
+    simply stopping the infusion, matching the same "supportive care, no
+    curative field drug" framing atropineOverdose/lidocaineOverdose/
+    amiodaroneOverdose already established. Three new two-sided
+    `mechanismWiring.mjs` assertions (presence vs. control, specificity, and
+    the honest receptor-ceiling finding via a synthetic 40-unit comparison)
+    — all three pass. No new patient field was introduced (reuses
+    `sbp`/`hr`/`alphaTone`, all pre-existing), so no `scenarioSweep.mjs`
+    list changes were needed, matching amiodaroneOverdose's own precedent.
+    Literature anchor: Goodman & Gilman's *The Pharmacological Basis of
+    Therapeutics*, 13th ed., ch. 12 (norepinephrine's alpha1-dominant,
+    weaker-beta1 receptor profile); ISMP Medication Safety Alert case
+    reports document vasopressor infusion-pump programming/free-flow
+    errors as a real, recurring critical-care medication-safety failure
+    mode.
     Still open candidates:
     `midazolam` (→ Benzodiazepine Overdose — CONFIRMED to hit
     the SAME per-drug-id Emax-gate ceiling a previous item in the queue found for fentanyl:
@@ -4232,9 +4389,10 @@ matrix (its own "Tier 1").
     `morphine` (a second, non-fentanyl opioid-OD
     presentation, useful for teaching the SAME reversal mechanism at
     different kinetics — morphine's own `keo`/`kel` make its time course
-    genuinely different from fentanyl's),
-    and the catecholamines (`epiIV`/`pushEpi`/`norepi` → a real pressor
-    overdose, hypertensive crisis/arrhythmia). **Before starting, read a previous item in the queue's finding and check whether it applies to the target drug**: any
+    genuinely different from fentanyl's, though its
+    `respiratoryDepression:0.18` coefficient is the SAME per-drug-id gate
+    shape as fentanyl/midazolam and should be measured first, not assumed
+    scalable). **Before starting, read a previous item in the queue's finding and check whether it applies to the target drug**: any
     drug whose `drugDef` effect is expressed as a single per-drug-id-gated
     coefficient (the same `respiratoryDepression`-style pattern fentanyl
     uses) may have the SAME hard ceiling a previous item in the queue found — measure across a

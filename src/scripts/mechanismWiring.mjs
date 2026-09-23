@@ -20,6 +20,7 @@
 //
 // Run:  node src/scripts/mechanismWiring.mjs
 import { physio, activePatient, outcomeReport } from "../physiology.js";
+import { seedPastDose } from "../physio/pk.js";
 import { Patient } from "../physio/patient.js";
 import { updateVenousReturn } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
@@ -3859,6 +3860,51 @@ console.log("\n[AMIODARONE OVERDOSE — queue item 40, sixth drug]");
   // No specific antidote exists in this formulary (grep-confirmed) — this
   // section is presence/specificity/time-course-only, the same honest
   // framing atropineOverdose's own section already established.
+}
+
+console.log("\n[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]");
+{
+  // Unlike amiodarone, norepi's own receptor coefficients (alpha:1.0,
+  // beta1:0.3) WERE found saturated almost immediately at any IV-push-scale
+  // dose (see conditions.js's own comment for the 1/5/20/40/80-unit sweep) —
+  // the same shape of ceiling diltiazem/metoprolol/atropine already
+  // documented, just saturating even harder. Asserted accordingly: presence
+  // + specificity + the honest "not a scaling toxidrome" finding, no
+  // dose-response claim.
+  const nOd = probe({ scen: "norepinephrineOverdose", settle: 30, run: 600 });
+  const control = probe({ scen: "abdPain", settle: 30, run: 600 });
+  const presentOk = nOd.after.sbp > control.after.sbp + 40 && nOd.after.alphaTone > control.after.alphaTone + 0.3;
+  presentOk ? pass++ : fail++;
+  if (!presentOk) failures.push(`norepinephrineOverdose should present with a severe hypertensive emergency vs control, got sbp=${nOd.after.sbp} (control ${control.after.sbp}) alphaTone=${nOd.after.alphaTone} (control ${control.after.alphaTone})`);
+  console.log(`  ${presentOk ? "PASS" : "FAIL"}  ${"norepinephrineOverdose -> severe hypertensive emergency".padEnd(46)} sbp=${nOd.after.sbp.toFixed(1)} (control ${control.after.sbp.toFixed(1)}) alphaTone=${nOd.after.alphaTone.toFixed(2)}`);
+
+  // Specificity: a condition-less control never reaches this alphaTone/sbp
+  // range on its own.
+  const specOk = control.after.sbp < 140 && control.after.alphaTone < 0.5;
+  specOk ? pass++ : fail++;
+  if (!specOk) failures.push(`condition-less control should not show a hypertensive-emergency picture, got sbp=${control.after.sbp} alphaTone=${control.after.alphaTone}`);
+  console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...specificity: condition-less control shows no such picture".padEnd(46)} sbp=${control.after.sbp.toFixed(1)} alphaTone=${control.after.alphaTone.toFixed(2)}`);
+
+  // The real, honest finding this condition exists to teach: severity does
+  // NOT scale with a bigger seeded dose — the receptor model saturates at a
+  // single push-scale unit. Compare this condition's own 1-unit seed
+  // against a synthetic 40-unit seed on an otherwise identical patient.
+  const s40 = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+  for (let T = STEP; T <= 180; T += STEP) { s40.t = T; physio(s40); pinTraitsNeutral(activePatient(s40)); }
+  {
+    const p40 = activePatient(s40);
+    p40.drugInstances.push(seedPastDose(p40, "norepi", 40, 10));
+  }
+  for (let T = 182; T <= 600; T += STEP) { s40.t = T; physio(s40); }
+  const after40 = activePatient(s40);
+  const ceilingOk = Math.abs(after40.sbp - nOd.after.sbp) < 15;
+  ceilingOk ? pass++ : fail++;
+  if (!ceilingOk) failures.push(`norepinephrineOverdose severity should NOT scale with a much larger seeded dose (receptor ceiling), 1 unit sbp=${nOd.after.sbp} vs 40 units sbp=${after40.sbp}`);
+  console.log(`  ${ceilingOk ? "PASS" : "FAIL"}  ${"...confirmed: severity is receptor-ceilinged, not dose-scaling".padEnd(46)} 1 unit sbp=${nOd.after.sbp.toFixed(1)} vs 40 units sbp=${after40.sbp.toFixed(1)}`);
+
+  // No specific antidote (phentolamine) exists in this formulary
+  // (grep-confirmed) — this section is presence/specificity/ceiling-only,
+  // the same honest framing amiodaroneOverdose's own section established.
 }
 
 console.log("\n[TRICYCLIC ANTIDEPRESSANT OVERDOSE — queue item 7]");
