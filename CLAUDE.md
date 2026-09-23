@@ -343,6 +343,108 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 — Front-end batch (queue items 4-9 as numbered this session): one new MCI-backlog scenario shipped (`rectalForeignBody`, content-only), the rest of the assigned scope surveyed and left honestly open rather than rushed.
+
+**Scope note.** Assigned queue items 3-8 (as originally numbered) mapped,
+after this document's own item numbers had shifted from other concurrent
+sessions' work, onto: item 4 (Procedure Gameplay spec), item 5 (bug-hunt
+pass), item 6 (procedures respond to live physiology), item 7 (Zero-To-Hero
+campaign content), item 8 (MCI multi-unit/unbuilt scenarios), and item 9
+(physiology-adjacent follow-ups). Each of items 4, 6, 7 is an explicitly
+large, multi-session standing workstream; item 9 is explicitly correctly
+NOT attempted per its own text (deeper comorbidity mechanisms need real
+physiology-engine work, out of scope for a front-end batch). Given the
+session's time budget, one concrete, well-scoped, currently-open sub-piece
+was picked from item 8 (MCI) and shipped completely; the rest were surveyed
+against the current tree (per lesson 16 — never trust a queue item's own
+text without checking it against the code first) and are reported as
+genuinely still open, not guessed at or partially started and left in an
+unverified state.
+
+**Shipped: `rectalForeignBody` (MISC-043), item 8's own named "still
+unbuilt" scenario.** Item 8's text named two remaining unbuilt MCI-adjacent
+scenarios, active-shooter and rectal-foreign-body, "each needs a new
+mechanic or condition." Checked against the tree first: rectal foreign
+body does NOT need a new mechanic or condition — the real clinical
+teaching point (an embarrassment-delayed history, benign-looking vitals, no
+field procedure to remove the object, the real danger being an occult
+bowel perforation rather than the object itself) is entirely a HISTORY and
+EXAM-FINDING teaching point, with no physiological derangement to model at
+EMS timescales for an uncomplicated case — the exact same shape
+`testicularTorsion` (MISC-035) already established as a legitimate
+content-only, condition-less scenario for an analogous embarrassment-driven
+genitourinary presentation. Built `rectalForeignBody` (`src/data/
+scenarios.js`) directly from that precedent: no `condition:` key (matching
+testicularTorsion), a private-history reveal once the roommate steps out
+(`opqrst`), a reassuring-but-not-definitive abdominal exam (`abdo`) that
+explicitly teaches the real danger sign (a rigid/distended/worsening
+abdomen -> possible perforation) without simulating one, and a `resolve()`
+whose notes state the actual clinical teaching (no field removal procedure,
+privacy/non-judgmental history-taking as the actual skill being assessed,
+escalate on peritoneal signs). Registered in `App.jsx`'s `SCEN_BODY_SYSTEM`
+map under "Other" (id `MISC-043`, the next free MISC- number after
+MISC-042), the same category `testicularTorsion`/`sickleCellCrisis` already
+use for single-scenario genitourinary/hematologic presentations with no
+dedicated Sandbox section. No em dashes in any player-facing text (dispatch,
+dialogue, exam findings, resolve notes) — checked by hand while writing,
+per section 4's standing rule.
+
+**Verified.** A direct Node import of `scenarios.js` confirmed the
+scenario object loads (`SCEN.rectalForeignBody` exists, `id:"MISC-043"`,
+`imps:["ABDP"]`), its `resolve()` returns `correct:true`/`died:false` for
+the expected impression, and its `opqrst` probe returns real text — a
+smoke test of the exact shape a scenario needs to be reachable, not just
+present in source. `node --check src/data/scenarios.js` clean. `npx eslint
+src/data/scenarios.js src/App.jsx`: the same pre-existing 3-error
+`react-refresh/only-export-components` baseline in `App.jsx`, zero new
+findings in either file. `npx vite build`: clean (3.41s), same
+pre-existing >500kB chunk-size warnings. Since this is a content-only
+scenario with no new condition/mechanism, `mechanismWiring.mjs`/
+`scenarioSweep.mjs` do not need re-running (same precedent this document
+already states for every other content-only scenario batch). NOT verified:
+a real in-browser click-through (no dev-server session was run this
+batch) — the data-layer smoke test above is real but is not a substitute
+for seeing the scenario render and resolve in the actual running game.
+
+**Surveyed, left open, stated honestly — the rest of the assigned scope.**
+- **Item 8's other remaining piece, active-shooter, is correctly still
+  unbuilt** — it genuinely needs a new scene mechanic (multiple casualties
+  with an active, evolving scene-safety hazard distinct from the existing
+  static hazmat/hazard flag other MCI scenarios use), which is real,
+  separately-scoped front-end work this session did not attempt rather
+  than rush. The real multi-unit system (several ambulances each
+  transporting a different patient) is unchanged and still open, per the
+  item's own text — a hard networking-shaped problem shared with the co-op
+  workstream, correctly not attempted in this batch.
+- **Items 4, 6, 7 (Procedure Gameplay, live-physiology probes, Zero-To-Hero
+  campaign) were not touched this session.** Each is large enough, and
+  each already has enough live, uncommitted-elsewhere state (in-progress
+  campaign chapters, a large standing procedure-gameplay backlog, an
+  extensive probe-audit history) that picking up a sub-piece blind, without
+  first re-reading the FULL current text of each item end to end (which
+  this session's time budget did not allow alongside actually shipping and
+  verifying something), risked either duplicating work a concurrent session
+  might already be mid-way through (this document's own section 3 entries
+  repeatedly show multiple sessions editing `App.jsx`/`conditions.js`/
+  `campaign.js` concurrently) or leaving a half-finished sub-item with no
+  honest verification, which section 4 explicitly treats as worse than
+  doing less. Deliberately not started rather than started and left
+  incomplete.
+- **Item 5 (bug-hunt pass) — surveyed, no new destructive-action or
+  breadth-pass work performed.** The item's own text already lists four
+  completed breadth-pass slices and names the destructive/one-way actions
+  (Declare death, AMA/refusal wizard, Abandon call) as the next honest
+  target, plus ~139 uncovered scenarios. Not attempted this session for the
+  same reason as items 4/6/7 above: a real Playwright click-through batch
+  needs its own dedicated session time to run and verify multiple times,
+  which this session's remaining budget did not have after shipping and
+  fully verifying the MCI scenario above.
+- **Item 9 (physiology-adjacent follow-ups) — confirmed still correctly
+  open, no code touched.** Its own text is explicit that the remaining
+  half (HTN/HLD/diabetic autonomic-vascular comorbidity mechanisms) needs
+  real physiology-engine work, filed under the physiology queue rather than
+  repeated here, and correctly out of scope for a front-end-scoped batch.
+
 ### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from a previous item in the queue) was found in the course of tracing them.
 
 **Blocked on the run properly, not assumed.** Launched in the background
@@ -2616,9 +2718,14 @@ Still open: a real multi-UNIT system (several ambulances each actually
 transporting a different patient, rather than the other roster members
 being narrated as handed off and scored on frozen vitals) — the same hard
 networking-shaped problem as a previous item in the queue's co-op step 2, just for units instead of
-players. Also still unbuilt: active-shooter and rectal-foreign-body
-scenarios (each needs a new mechanic or condition). A sickle-cell-crisis
-scenario shipped in a later batch (see section 3), so that gap is closed.
+players. Also still unbuilt: an active-shooter scenario (needs a new scene
+mechanic). A sickle-cell-crisis scenario shipped in a later batch (see
+section 3), so that gap is closed. **Rectal foreign body shipped this
+session** (`rectalForeignBody`, MISC-043, see section 3's newest entry) —
+content-only, no new physiology, the same reasoning `testicularTorsion`
+already established for an embarrassment-delayed genitourinary/GI
+presentation. Only the active-shooter scenario and the real multi-unit
+system remain open under this item.
 
 9. **Two physiology-adjacent follow-ups.** **The medication-allergy
 mechanism is wired into a real scenario for the first time (most recent
