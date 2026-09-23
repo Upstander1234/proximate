@@ -485,6 +485,46 @@ septicShock: {cat: "medical", id: "SHOCK-012", pronouns: "she", title: "Female, 
     return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Septic shock (urosepsis source), hyperdynamic/warm phase"};},
 },
 
+// Toxic shock syndrome (condition-library workstream, Infectious Disease
+// category, section 8) — a genuinely different mechanism from septicShock
+// above, not a re-skin: superantigen (TSST-1)-driven near-total T-cell
+// activation, hours-scale onset, more fluid-refractory vasoplegia. Presents
+// via the classic menstrual/retained-tampon vector; the teaching point is
+// recognizing a young, previously healthy patient in florid distributive
+// shock with a diffuse sunburn-like rash — a picture that looks nothing
+// like the older, comorbid urosepsis patient septicShock trains for.
+toxicShockSyndrome: {cat: "medical", id: "INFD-052", pronouns: "she", title: "Female, 24. Found weak and confused in her dorm room, high fever.",
+  limit: 1300, transport: 480,
+  bystanders: "Her roommate found her like this and called 911, badly frightened — 'she just seemed to have the flu yesterday.'",
+  units: [{at: 340, level: "paramedic", name: "Medic 9"}],
+  dispatch: ["24F. Found weak, confused, high fever.", "Roommate says she seemed fine two days ago."],
+  update: ["Roommate: \"She said her period started a few days ago and she felt achy and feverish yesterday. This morning she wasn't making sense.\""],
+  impression: "On the floor beside her bed, flushed with a diffuse, sunburn-like rash across her trunk. Breathing fast, answers slowly, drifts mid-sentence. Her skin is hot to the touch, not cool or clammy.",
+  imps: ["SEPS", "FEVR", "SHOK", "HOTN", "ALOC"],
+  condition: "toxicShockSyndrome",
+  patient: {age: 24, gender: "female"},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "Roommate: \"She's had her period for a few days. Yesterday she felt achy, feverish, like the flu. Today she got a lot worse, fast — this rash, and she stopped making sense.\"", kind: "pt",
+      evid: "A young, previously healthy patient with a flu-like prodrome during menstruation who deteriorates into confusion and shock within about 24 hours is the classic toxic shock syndrome timeline — far faster than an ordinary bacteremic infection would progress.", find: "Hx (collateral): flu-like prodrome during menstruation, rapid deterioration over ~24h."}),
+    sample: () => ({say: "Roommate: \"No allergies I know of. No medications, no other health problems. She's never been sick like this before.\"", kind: "pt",
+      evid: "No prior chronic illness and no medication explains this any other way — a toxin-mediated process in an otherwise healthy young adult is the whole story.", find: "SAMPLE: NKDA, no medications, no prior history, tampon use during current menses."}),
+    skin: (s, v) => ({say: `Hot and flushed, with a diffuse, blanching, sunburn-like rash across the trunk and thighs. ${v.sbp < 100 ? "Cap refill is brisk despite how low that pressure is." : "Cap refill brisk."}`, kind: "crit",
+      evid: "The diffuse macular erythroderma (\"sunburn rash\") is a specific, named criterion of the CDC toxic shock syndrome case definition, and it distinguishes this from a plain urosepsis: this isn't just distributive shock, it's a specific toxin-mediated exanthem plus shock.", find: "Diffuse macular erythroderma (sunburn-like rash), hot and flushed skin, brisk cap refill despite hypotension."}),
+    heart: (s, v) => ({say: `Fast and bounding. Pressure reads ${v.sbp}/${v.dbp}, pulse pressure wide.`, find: `Heart: tachycardic, bounding pulses. BP ${v.sbp}/${v.dbp}.`}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    const fluidL = (s.given.saline || 0) * 0.5 + (s.given.plasmalyte || 0) * 0.5;
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Untreated toxic shock syndrome: the superantigen-driven vasoplegia and fever this process drives outpace anything the field can hold back on its own, and it moves faster than an ordinary bacteremic infection would.";
+    notes.push("A young, previously healthy patient with a rapid (about 24-hour) flu-like-to-shock progression, a diffuse sunburn-like rash, high fever, and hypotension with WARM, flushed skin is the toxic shock syndrome pattern — mechanistically a superantigen-driven cytokine storm, not an ordinary slow-building bacteremia.");
+    if (fluidL >= 1.5) notes.push("Large-volume crystalloid was the right call — toxic shock syndrome is notoriously more fluid-refractory than ordinary septic shock, and this process often needs more volume than a typical distributive-shock patient before pressure responds at all.");
+    else notes.push("Limited fluid resuscitation given. Toxic shock syndrome's vasoplegia is more severe and more fluid-refractory than ordinary septic shock — this call needed aggressive, large-volume crystalloid as the first move, likely more than would be given for a typical shock patient.");
+    if (s.given.norepi) notes.push("A pressor is a reasonable escalation once large-volume fluid alone isn't holding a MAP — toxic shock's own fluid-refractoriness makes early pressor use more likely to be needed here than in an ordinary septic patient.");
+    notes.push("There is no field antitoxin and no way to remove the toxin source (a retained tampon or infected wound) in this box — the fever, rash and falling pressure all trace back to a toxin nothing here can neutralize. The job is recognizing the pattern fast, running aggressive volume, considering an early pressor, and getting her to a facility that can provide source control and supportive critical care.");
+    return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Toxic shock syndrome (superantigen-mediated distributive shock)"};},
+},
+
 takotsubo: {cat: "medical", id: "STRS-011B", pronouns: "she", title: "Female, 68. Crushing chest pain and breathlessness an hour after her husband's funeral.",
   limit: 1500, transport: 540,
   bystanders: "Her son is beside her, still in a dark suit. 'She collapsed at the reception. She keeps saying it's just grief.'",
