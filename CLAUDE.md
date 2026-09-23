@@ -343,6 +343,18 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 — queue item (formerly numbered 86) CLOSED for real: receptor desensitization now genuinely consumed by drug intensity, not just computed and decayed. Full mechanismWiring.mjs/scenarioSweep.mjs re-run, zero new regressions, confirmed by an explicit before/after A/B (not assumed). Five other assigned items (hyperkalemia treatment-responsiveness, PaCO2/pH resting fixed-point drift, midazolam/morphine calibration drift, national.js thermometer, national.js drug-coverage audit) were NOT reached this session — stated honestly, see below.
+
+**The fix.** `pk.js`'s per-drug-instance intensity computation (`updateDrugs`, the PK branch) now multiplies the Emax-normalized `intensity` by `(1 - pat[desensCls])` for whichever desensitization class (`gabaDesens`/`opioidDesens`/`beta2Desens`) the drug belongs to, applied AFTER the competitive-antagonism ec50 shift (naloxone) and BEFORE `intensity` is used by any downstream consumer. These three fields were already computed and decayed correctly every tick (built for an earlier queue item) but nothing ever read them — a real "written, decayed, and still inert" defect per section 1's third rule. `desensClassOf()` and the three `DESENS_PARAMS` (ceiling/rate) were already defined earlier in the same function scope, so no new state or duplicate logic was needed.
+
+**MEASURED against the real engine (lesson 8), not assumed.** Single midazolam dose for a forced moderate seizure (glucose=35, epilepticDrive=1): anticonvulsant plateaus at 0.348, gabaDesens climbs to 0.107 by t=300s from the single dose's own sustained occupancy. Three repeated midazolam doses over 1800s: anticonvulsant on the THIRD dose is measurably LOWER than the first dose's own peak (0.271 vs 0.348) despite identical dosing, with gabaDesens at 0.387 — real, working tachyphylaxis, the actual clinical reason guidelines escalate to a second-line anticonvulsant rather than a third benzo dose. Repeated albuterol on `asthmaAttack` (3 doses, 600s apart): effectiveBroncho still improves each dose but by a shrinking amount as beta2Desens climbs to 0.221 — matches the prior session's own qualitative claim for this mechanism, now finally real. Repeated fentanyl on `abdPain` (3 doses, 540s apart): respDriveSuppression 0.145 with opioidDesens 0.145, vs. a single-dose-only arm's 0.117 at the same total elapsed time despite the extra doses — desensitization is genuinely blunting what would otherwise be a larger cumulative depression. A condition-less, dose-less control confirmed all three fields stay at exactly 0 (zero regression to any patient that never receives a class-matched drug).
+
+**A real, honest interaction with the still-open midazolam/morphine calibration-drift item (filed 2026-09-13, unrenumbered pointer: "midazolam/morphine documented-calibration drift"): this fix makes that item's own shortfall WORSE, not better, and that item was correctly NOT touched to compensate.** That item's own failing `physiologyValidation.mjs` assertion uses a SINGLE midazolam dose, and gabaDesens genuinely climbs to ~0.107 by the time that assertion's own measurement window closes (t=300s) purely from that one dose's sustained occupancy — meaning the already-measured ~19% intensity shortfall that item documents is now compounded by a further real (if smaller) desensitization-driven reduction. This is not a bug in this fix; it is the correct, literal behavior real receptor desensitization has on an already-underpowered coefficient. Left exactly as filed — recalibrating midazolam's own `anticonvulsant` coefficient needs the dedicated cross-drug audit that item already specifies, not a reactive patch here.
+
+**Verification, complete, with a real before/after control (not a single run trusted blind).** `node --check`/targeted `npx eslint src/physio/pk.js`: clean. Since this touches `pk.js`'s shared drug-intensity hot path — every PK-model drug in the formulary passes through it — the FULL `mechanismWiring.mjs` was run twice: once WITH the fix (**707 passed, 7 failed**) and, via a `git stash` isolating just this one file's diff, once WITHOUT it as a true control (**708 passed, 6 failed**). The failure sets are identical except for one entry: `torsades + synchronised cardioversion -> no effect` (12/20 vs. the needed >=13, an `assertMostTrials`-style Bernoulli draw) failed only in the WITH-fix run and passed in the WITHOUT-fix run — confirmed as pre-existing stochastic noise, not a regression, because (a) this assertion's own mechanism (cardioversion timing/torsades conversion) reads none of `gabaDesens`/`opioidDesens`/`beta2Desens`/`intensity`'s desensitization multiplier, and (b) it is already documented elsewhere in this file as a standing flaky trial. The other 6 failures present in BOTH runs (the BVM trio — `ventUnloadFraction`/`workOfBreathing`/`vtPrev` — plus a vo2Demand/agitationBurden control mismatch, a severe-acidemia/hyperkalemia near-miss, and an untreated-neurogenic-shock sbp-drift near-miss) are confirmed identical before and after, i.e. genuinely pre-existing and unrelated to this fix. `node src/scripts/scenarioSweep.mjs`: **184 scenarios, 20,947,666 checks, 920 failed** — every failure is the same already-documented, pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect (CLAUDE.md's own 2026-09-10 entry), with the failure count scaling proportionally to the scenario-library's growth since that baseline (915 failures at 183 scenarios -> 920 at 184), not a new defect. `npx vite build`: clean, same pre-existing >500kB chunk-size warning. No new field was added (the three desensitization fields were already tracked in `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists and `patient.js`'s constructor from the earlier session that built them), so no sweep-list changes were needed. The two throwaway probe scripts used to measure the numbers above were stripped before this entry was written, confirmed via a directory listing showing none remaining under `src/scripts/` or the session scratchpad.
+
+**The other five items assigned this session were NOT reached — stated honestly, not claimed.** Each is a real, meaty, already-well-specified physiology bug that explicitly warns against blind patching of shared, engine-wide code (rhythm-substrate `rhythmInstability`, the resting PaCO2/pH fixed-point drift spanning respiratory/cardiovascular-autonomic/metabolic modules, a cross-drug calibration audit across every `drugs.js` comment citing a specific intensity figure, and two `national.js` protocol-library gaps needing a new device/task and a formulary audit respectively). Given the time this session's own investigation-and-full-suite-verification cycle for the one item above consumed (two full mechanismWiring.mjs runs plus one scenarioSweep.mjs run, each several minutes, to get a genuine before/after control rather than a single trusted run), attempting any of the remaining five without the same rigor would have meant cutting corners on exactly the discipline these items themselves demand. They remain open, unchanged, at their existing queue text (still filed as "midazolam/morphine documented-calibration drift," the hyperkalemia rhythm-substrate treatment-responsiveness question, the PaCO2/pH resting-drift item, and the two national.js items).
+
 ### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from a previous item in the queue) was found in the course of tracing them.
 
 **Blocked on the run properly, not assumed.** Launched in the background
@@ -6299,32 +6311,6 @@ plausible but not fitted to trial data.
     determine whether the drift is common to all drugs (shared intensity
     formula regression) or isolated to these two (per-drug coefficient
     drift), before touching any code.
-
-86. **NEW, filed 2026-09-13 — a previous item in the queue's receptor-desensitization
-    fields (`pat.opioidDesens`/`gabaDesens`/`beta2Desens`) are computed and
-    decayed correctly every tick but are NEVER READ anywhere, a real
-    "written, decayed, and still inert" defect per section 1's own third
-    rule, found while investigating a previous item in the queue above.** Confirmed by grep
-    across all of `src/`: `pk.js` computes and updates all three fields
-    (verified live via probe: `gabaDesens` climbs from 0 toward ~0.39 over
-    a real 30-minute sustained midazolam exposure, exactly matching that
-    item's own section-3 write-up), and `patient.js`/`scenarioSweep.mjs`
-    declare/track them — but no code anywhere multiplies `intensity` (or
-    any other consumer) by `(1 - desensitization)`, the mechanism these
-    fields were built to express. Confirmed this is NOT the cause of
-    either a previous item in the queue's own failure (both failing assertions use a single,
-    non-repeated dose, and desensitization starts at exactly 0 with
-    negligible buildup by the time either measurement is taken — this is a
-    real, independent, second defect, not a contributing cause of the
-    first). Not fixed here: wiring the multiplication in at `pk.js`'s
-    per-drug-instance intensity computation is a real, small code change,
-    but verifying it doesn't silently alter every already-calibrated
-    drug's own therapeutic-dose behavior (since `intensity` currently
-    reaches its full, un-desensitized value on every first dose of every
-    drug in the formulary) needs its own dedicated batch re-running
-    `mechanismWiring.mjs`/`scenarioSweep.mjs` to completion afterward, not
-    a same-session addition on top of an unrelated verification pass.
-
 
 87. **NEW, filed 2026-09-21 — `national.js` cannot take a temperature,
     named as baseline monitoring by Universal Care (p.14).** Waveform

@@ -1115,6 +1115,26 @@ export function updateDrugs(pat, s, dt) {
         // that could exceed the drug's own maximum.
         const totalC = totalConcByDrug[dr.id] ?? dr.effectConc;
         intensity = totalC / (ec50Eff + totalC);
+        // RECEPTOR DESENSITIZATION CONSUMED HERE (queue item 45c/86 fix).
+        // The three desensitization accumulators just above (gabaDesens/
+        // opioidDesens/beta2Desens) were computed and decayed correctly every
+        // tick but multiplied into nothing -- a real "written, decayed, and
+        // still inert" defect (section 1's third rule), found while chasing
+        // the midazolam/morphine calibration drift (item 85) and filed
+        // separately since desensitization starting at 0 on a single dose
+        // was confirmed NOT the cause of that drift. Fixed here: whichever
+        // class this drug belongs to, its CURRENT desensitization state
+        // reduces intensity multiplicatively, matching real receptor
+        // desensitization (reduced potency at the target broadly, not one
+        // hand-picked downstream effect). Applied AFTER competitive-
+        // antagonism's ec50 shift above, not instead of it -- these are two
+        // independent, physiologically distinct mechanisms (antagonist
+        // occupancy vs. agonist-induced receptor downregulation) and both
+        // should compose.
+        const desensCls = desensClassOf(drugDef);
+        if (desensCls) {
+          intensity *= (1 - (pat[desensCls] ?? 0));
+        }
         if (ec50Eff !== ec50) {
           // Reported for the monitor and the wiring suite: how much of this
           // opioid's effect the antagonist is currently removing. Derived, not
