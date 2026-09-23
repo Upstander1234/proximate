@@ -307,13 +307,18 @@ function NeedleLine({ angle, depth, pivotY, depthScale, xOffset = 0, vertical = 
   // short of the vein. "Depth" now means the same thing visually as it
   // does in the win-condition check.
   const tipY = pivotY + depth * depthScale;
-  // Horizontal reach follows from the vertical travel and the chosen
-  // insertion angle (tipY-pivotY = tan(angle) * horizontal), so the drawn
-  // needle actually points along the angle the player set, just anchored
-  // to the correct depth. Guard near-zero angle so tan() doesn't blow the
-  // line off-canvas.
-  const tanA = Math.max(0.15, Math.tan(rad));
-  const tipX = vertical ? cx : cx + Math.min(95, (depth * depthScale) / tanA);
+  // Horizontal lean is a small, capped cosmetic tilt (shallower angle leans
+  // more) — NOT the old tan(angle)-derived traversal of the full vertical
+  // depth, which sent the tip up to ~200px sideways at a realistic ~22
+  // degree insertion angle. That was invisible back when the vein was
+  // drawn as a flat bar spanning the whole width, but the vein is now drawn
+  // as a gentle curve that only actually passes through the win-condition
+  // target at the fixed entry x (cx) — so the old formula dragged the
+  // needle tip visibly away from where the vein bends, even on a
+  // successful stick. Keep the tip anchored near the entry point instead.
+  const LEAN_MAX = 16;
+  const lean = vertical ? 0 : LEAN_MAX * Math.max(0, Math.min(1, 1 - angle / 60)) * depth;
+  const tipX = vertical ? cx : cx + lean;
   return (
     <line x1={vertical ? cx : cx - Math.cos(rad) * 40} y1={vertical ? pivotY - 20 : pivotY - Math.sin(rad) * 40}
       x2={tipX} y2={Math.max(pivotY, tipY)} stroke={C.text || "#DDE"} strokeWidth={2.5} strokeLinecap="round" />
