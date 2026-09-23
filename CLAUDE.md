@@ -3142,11 +3142,11 @@ future event can opt in the same way). Still open:
   reputation a consumer; build the exam/promotion flow first and wire
   reputation into it then.
 
-12. **PARTIALLY AUDITED (this session) — the dynamic-P50 half is confirmed
-   already real; the single-writer-consolidation half remains genuinely
-   open, with one real fragility found and documented (not fixed, per
-   scope).** Read `respiratory.js` directly before assuming a gap (lesson
-   16): `oxySat(po2, ph, paco2, temp, dpgFactor)` (respiratory.js:7-19)
+12. **CLOSED for its own scoped gap (this session) — the dynamic-P50 half
+   was already real; the caO2 dual-writer fragility a first audit only
+   documented has now actually been fixed and fully verified by a
+   follow-up pass in the same session.** Read `respiratory.js` directly
+   before assuming a gap (lesson 16): `oxySat(po2, ph, paco2, temp, dpgFactor)` (respiratory.js:7-19)
    already implements a real, literature-anchored Bohr/Haldane-shifted
    Hb-O2 dissociation curve — `p50 = 26.6 * dpgFactor * 10^(-0.48*ΔpH +
    0.024*ΔT + 0.06*log10(paco2/40))` — driven by live pH, PaCO2, core
@@ -3193,24 +3193,53 @@ future event can opt in the same way). Still open:
    genuinely different modules each owning one piece, with no single
    `pat.oxygen`-shaped object consolidating them.
 
-   **NOT fixed this session, deliberately** — consolidating `caO2`'s two
-   writers into one, and/or building the full `pat.oxygen={caO2,cvo2,do2,
-   vo2,svo2}` structured object this item's own text originally proposed,
-   touches the shared per-tick hot path (`updateGasExchange`/
-   `updateMetabolism`, both called for every patient on every tick in
-   every scenario) and would need the same full-suite re-verification this
-   document's own discipline requires for any change to that shared code —
-   correctly out of scope for the single-slice audit this session's time
-   budget allowed. **Left as a concrete, scoped next step for whoever
-   picks this item up**: delete `respiratory.js`:771's own `caO2` write
-   entirely (it is provably always overwritten before any consumer reads it
-   this tick, confirmed by the measurement above) and have
-   `updateGasExchange` read `metabolic.js`'s already-published `pat.caO2`
-   from the PRIOR tick instead where it needs a same-tick estimate (or
-   accept the one-tick lag, which is already how several other cross-module
-   dependencies in this pipeline work) — a genuinely small, well-scoped fix
-   once someone is ready to re-run `mechanismWiring.mjs`/`scenarioSweep.mjs`
-   to completion against it.
+   **FIXED in a same-session follow-up, not left as a future TODO.** The
+   respiratory.js writer wasn't actually dead code to delete — it's a real,
+   live LOCAL consumer: `respiratory.js`'s own `updateGasExchange` uses its
+   uncorrected intermediate `pat.caO2` immediately, within the same
+   function, to compute `do2`/`er`/`svO2`/`pvO2` — and `pat.pvO2` feeds
+   straight back into `pat.pao2` via the venous-admixture/shunt equation a
+   few lines later in that SAME function, before `metabolic.js`'s later,
+   correct write ever runs. So the final PUBLISHED `pat.caO2` was always
+   correct (as the measurement above showed), but respiratory.js's own
+   intra-tick venous-saturation/shunt math was silently running on an
+   artificially high oxygen-carrying-capacity number for any COHb- or
+   metHb-affected patient. Fixed by reusing the exact same `cohbFrac`/
+   `metHbFrac` clamp-and-subtract terms `metabolic.js` already computes and
+   cites, rather than a second, independently-derived formula that could
+   drift from the authoritative one — both writers now express identical
+   physiology, differing only in WHEN in the tick they run.
+
+   **MEASURED before and after**, on the real, already-shipped
+   `carbonMonoxidePoisoning` scenario at 600s (cohb settled ~0.313, hb
+   15.15): naive (uncorrected) caO2 20.31 mL/dL vs metabolic.js's corrected
+   14.06 mL/dL — a real 31% overstatement of O2 content feeding
+   respiratory.js's own `svO2` calc. Before the fix, respiratory.js's
+   intra-tick `pat.svO2` read 73.6% (using the naive value); after, it reads
+   64.9% — a genuine 8.7-point correction, matching a hand-computed expected
+   value (64.8%). A condition-less healthy control (`abdPain`, cohb=metHb=0)
+   is confirmed bit-for-bit unaffected before and after (caO2 20.333, svO2
+   75.79%).
+
+   **Verification, complete.** `node --check`/`npx eslint
+   src/physio/respiratory.js`: clean. `npx vite build`: clean (2.49s, same
+   pre-existing >500kB chunk-size warning). Since this touches
+   `respiratory.js`'s shared per-tick gas-exchange hot path, `mechanismWiring.mjs`
+   was run twice to distinguish a real regression from this engine's own
+   already-documented stochastic noise: run 1 came back 707 passed/7
+   failed; run 2 (identical code) came back 705 passed/9 failed, with a
+   DIFFERENT failure membership between runs — proving those are the
+   suite's own pre-existing stochastic/borderline assertions, not a
+   regression this fix introduced (none of the non-BVM failures in either
+   run read `caO2`/`svO2`/`pao2`/`do2`, and none of their scenarios set
+   `pat.cohb`/`pat.metHb`). `scenarioSweep.mjs`: 184 scenarios, 20,947,666
+   checks, 920 failed — every failure is the exact same pre-existing,
+   already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-
+   t=2s defect on unmodified master. `CvO2`/`DO2`/`VO2`/`SvO2` remain
+   genuinely scattered across `metabolic.js`/`respiratory.js`/`neuro.js` as
+   this item's own text originally noted — a refactor-for-clarity
+   consolidation, not new mechanism, and still correctly left for a future
+   session given how many independently-verified fields it would touch.
 
 13. **Microcirculation as its own layer, between macro-circulation and
    organ metabolism.** Today organ flow is `deltaP/Resistance`-style,

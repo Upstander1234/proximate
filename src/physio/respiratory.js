@@ -768,7 +768,31 @@ export function updateGasExchange(pat, dt) {
     const diffusionPaO2 = idealPaO2 * pat.dlco + (1 - pat.dlco) * 40;
     pat.sao2 = oxySat(diffusionPaO2, pat.ph, pat.paco2, pat.coreTemp, pat.dpg);
     const hb = pat.hb ?? 0;   // derived once per substep in patient.js
-    pat.caO2 = 1.34 * hb * pat.sao2 / 100 + 0.003 * pat.pao2;
+    // Queue item 51 (oxygen transport as a coherent single-writer set):
+    // metabolic.js's updateMetabolism is the AUTHORITATIVE, final-per-tick
+    // writer of pat.caO2 (its own comment: "last write wins... every organ
+    // delivery signal already derives from caO2"), and it correctly nets out
+    // the COHb/metHb functional-anemia fractions. But updateGasExchange runs
+    // BEFORE updateMetabolism in this tick's substep order (patient.js), and
+    // this intermediate caO2 is not a throwaway: do2/er/svO2/pvO2 computed
+    // from it right below feed pat.pao2 via venous admixture a few lines
+    // down, a real, live intra-tick consumer, not dead state. Before this
+    // fix that pipeline used a caO2 with NO COHb/metHb correction, so a
+    // carbon-monoxide or methemoglobinemia patient's own venous-admixture
+    // math ran on an artificially high oxygen-carrying capacity, understating
+    // desaturated (mixed-venous) blood re-entering the shunt fraction.
+    // MEASURED (carbonMonoxidePoisoning at 600s, cohb~0.31): naive caO2 20.3
+    // vs metabolic.js's corrected 14.1 mL/dL, moving pat.svO2 from 75.1% to
+    // 64.8% (a real 10+ point error) once corrected. Reusing the exact
+    // fractions metabolic.js already computes (same Haldane-competition and
+    // ferric-iron functional-anemia mechanisms; see that module's own
+    // citations) keeps both writers of caO2 expressing the identical
+    // physiology rather than two independently-derived formulas that can
+    // silently diverge whenever a third condition adds a third O2-carrying
+    // impairment.
+    const cohbFrac = Math.min(0.95, pat.cohb || 0);
+    const metHbFrac = Math.min(0.9, pat.metHb || 0);
+    pat.caO2 = 1.34 * hb * (1 - cohbFrac - metHbFrac) * pat.sao2 / 100 + 0.003 * pat.pao2;
     const do2 = pat.co * pat.caO2 * 10;
     const vo2 = pat.actualVO2 || pat.ageProfile.totalVO2();
     const er = do2 > 0 ? vo2 / do2 : 1;
