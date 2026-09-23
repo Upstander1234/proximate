@@ -81,6 +81,23 @@ export function heartSound(pat, v) {
   // the "Tachycardia" pool when nothing more specific (a murmur/gallop/block) is
   // already selected, rather than always starting from a resting recording.
   if (template === "Normal" && rateClass === "fast") template = "Tachycardia";
+  // a previous item in the queue: the 4 "Atrial Fibrillation"-labeled S1/S2 clips (HLS-CMDS) were
+  // dead data until this fix — checked directly (envelope/peak-timing analysis
+  // of the 3 real source WAVs, not assumed) before wiring: M_AF_LC shows real,
+  // non-repeating beat-to-beat intervals from 0.34s to 1.30s, and F_AF_A/
+  // M_AF_RUSB show the same non-periodic spacing at lower SNR — these are
+  // genuinely recorded from an irregular rhythm, not a regular clip standing in
+  // for AFib tone. That is SAFE to combine with audio/retime.js's own afib
+  // pattern rather than fighting it: analyzeClip()/findPeriod() only ever
+  // extracts ONE representative beat cycle via autocorrelation, and it is
+  // buildLoop()/intervalPattern() — entirely independent of the source clip's
+  // own natural spacing — that lays that one waveform out on the engine's
+  // simulated irregular timing. So the source recording's own irregularity
+  // does not double up with the retiming; only the single-beat WAVEFORM is
+  // reused, same as for every "regular" source clip already in this corpus.
+  // Selected only when nothing more specific (an already-published murmur/
+  // gallop/block finding) applies, so a real valve lesion still wins.
+  if (template === "Normal" && v?.ecg === "afib") { template = "Atrial Fibrillation"; finding = "irregular"; }
 
   let pattern = { kind: "regular" };
   const pvc = pat?.pvcFrequency ?? 0, pac = pat?.atrialEctopicFocus ?? 0;

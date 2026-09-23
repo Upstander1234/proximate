@@ -343,6 +343,159 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 (c) — Assigned scope: items 58-63 as numbered at session start (in practice, the three items whose own text matched the assignment: 61 the dead HEART_SOUNDS categories, 62 the Auscultation Practice tab, 63 the leftover `s.given.X`/`s.done` tracking bugs). All three closed or made real progress on; items 58-60 (12-lead territory, minigame physiology, other auscultation follow-ups) were not touched — not in the assignment's own described scope, stated honestly rather than silently claimed.
+
+**Item 63 (leftover `s.given.X`/`s.done` tracking bugs) — CLOSED, all three sub-cases fixed for real, no drug/mechanism corners cut.**
+- **`magill` dead reference, fixed.** `choking40`'s own resolve() checked
+  `s.done.laryngoscopy || s.given.magill` — neither key was ever real
+  (`s.done.laryngoscopy` doesn't exist either; confirmed by grep and by
+  tracing `App.jsx`'s own `m.done={...(m.done||{}),[a.doneKey||a.id]:...}`
+  convention). The real Magill-forceps action id is `clearFB`
+  (`scenarios.js`, `bag:"airway"`, `lvl:4`), which DOES stamp
+  `s.done.clearFB` automatically via that same convention. Fixed to read
+  `s.done.clearFB` directly — this was a genuinely dead check before, not
+  just a redundant one: the note it gates ("Direct laryngoscopy...") could
+  never have fired for a player who actually did the real action.
+- **The `TASKS`/`crewFn` bare-`dose`-no-`doneKey` gap, fixed generally in
+  the shared mechanism, not per-callsite, per the assignment's own
+  instruction.** `App.jsx`'s `crewFn` (~line 2396) only stamped
+  `m.done[t.doneKey]` when a task declared an explicit `doneKey` — any
+  `TASKS` entry with a bare `dose` and nothing else (e.g. `gear.js`'s `o2`
+  entry, `dose:"o2nrb"`) silently never marked itself done when
+  crew-directed, even though the player's OWN equivalent action (`o2nrb`,
+  whose doneKey defaults to its own `a.id`) does. Fixed by defaulting
+  `crewDoneKey = t.doneKey || t.dose`, mirroring the player-action
+  convention (`a.doneKey||a.id`) exactly. Verified this changes nothing for
+  any task that already declares its own `doneKey` (untouched — `||`
+  short-circuits), and confirmed via reading `orderableTasksFor`/the dup
+  check that stamping `m.done` for a repeatable drug task does not block
+  re-ordering it (no code path gates the crew task LIST on `g.done`,
+  confirmed by grep — only `workingIds`/`doseActive` gate duplicates,
+  unaffected by this change).
+- **`diazepam`/`lorazepam`/`lactatedRingers` — resolved via the item's own
+  explicitly-sanctioned fallback (rewrite the checks/text, don't fake a
+  drug), after confirming these do NOT actually name an unavailable drug
+  in player-facing text.** Read every site directly before deciding: none
+  of the six `s.given.diazepam`/`s.given.lorazepam`/`s.given.lactatedRingers`
+  references ever appears inside a `say:`/`notes.push` string that NAMES the
+  missing drug — the player-facing text says generic terms ("A
+  benzodiazepine...", "aggressive crystalloid...") and the dead drug ids
+  were only ever redundant OR-branches that could never be true (since only
+  `midazolam`/`saline`/`plasmalyte` exist in this formulary). So this was
+  not the misleading-debrief-text defect the item's own text worried about
+  — it was dead, always-false code. Simplified every site to check only the
+  real drug ids that exist (`midazolam` for the two benzo checks, and
+  `saline||plasmalyte` for the fluid-volume check). **One real, substantive
+  bug found and fixed in the same pass**: the eclampsia scenario's own
+  volume-caution note computed `fluids = s.given.saline + s.given.lactatedRingers`
+  — since `lactatedRingers` never exists, a patient given ONLY
+  `plasmalyte` (a real, already-implemented second crystalloid) was
+  silently exempt from the "don't flood a preeclamptic patient" note.
+  Fixed to `saline + plasmalyte`, the actual formulary. Implementing
+  diazepam/lorazepam/lactatedRingers as real drugs.js entries with their
+  own receptor/PK mechanisms was deliberately NOT attempted in this pass —
+  midazolam and saline/plasmalyte already cover their respective classes
+  functionally, and building three near-duplicate entries with no
+  distinguishing pharmacology would itself be the kind of decorative,
+  quick-copy addition section 4 forbids; a real future benzo/crystalloid
+  variant would need its own literature-anchored distinguishing mechanism
+  (e.g., a genuinely different onset/duration), not attempted here.
+- **Verification.** `node --check`/`npx eslint` clean on both touched
+  files (`App.jsx`, `scenarios.js`) — exactly the documented 3-error
+  `react-refresh/only-export-components` baseline, zero new findings.
+  `npx vite build` clean (same pre-existing >500kB chunk-size warning). Not
+  re-run against the full physiology suites (`mechanismWiring.mjs`/
+  `scenarioSweep.mjs`) — these three fixes are scenario-content/`App.jsx`
+  UI-bookkeeping only, touching no `physio/` module, matching this
+  document's own established precedent that content-only scenario fixes
+  don't need the physiology suites re-run.
+
+**Item 61 (three dead `HEART_SOUNDS` categories) — PARTIALLY RESOLVED: the
+Atrial Fibrillation clips are now wired, for real and measured, not
+guessed; Early/Late Systolic Murmur remain genuinely open, confirmed by a
+fresh literature check rather than re-asserted from the prior session's own
+text.**
+- **The 4 AFib clips were actually inspected before wiring, per the
+  item's own explicit instruction and the assignment's "listen or spectrally
+  inspect first."** Wrote a standalone envelope/peak-timing probe (Python,
+  rectify + moving-average envelope, local-maxima peak-picking) against
+  the 3 real source WAVs (`F_AF_A`, `M_AF_LC`, `M_AF_RUSB`, all HLS-CMDS,
+  4 kHz mono). Result: genuine, non-repeating beat-to-beat intervals —
+  `M_AF_LC` ranges 0.34s to 1.30s with no discernible pattern, and
+  `F_AF_A`/`M_AF_RUSB` show the same non-periodic spacing at lower SNR.
+  These are recordings of a genuinely irregular rhythm, not a regular
+  clip mislabeled for AFib tone.
+- **Checked whether that irregularity actually conflicts with
+  `audio/retime.js`'s own afib pattern mechanism, per the item's own
+  stated concern, by reading the retiming code rather than assuming.**
+  It does not: `analyzeClip()`/`findPeriod()` (autocorrelation-based) only
+  ever extract ONE representative beat-cycle waveform from a clip; it is
+  `buildLoop()`/`intervalPattern()` — driven entirely by the ENGINE's own
+  simulated rhythm, with zero dependency on the source clip's natural
+  spacing — that lays that single extracted waveform out on the target's
+  irregular timing. So a genuinely irregular source clip's own spacing is
+  irrelevant to the retiming math; only its single-beat timbre is reused,
+  exactly like every other "regular" source clip already in this corpus.
+  No quality-gate exists in `analyzeClip`/`pickHeartClip` that would reject
+  a lower-quality autocorrelation fit either (confirmed by grep — `quality`
+  is computed and exposed but nothing thresholds on it), so there is no
+  hidden gate this wiring could silently trip.
+  Fixed: `heartSound()` (`physio/auscultation.js`) now selects
+  `template = "Atrial Fibrillation"` for a real `v.ecg === "afib"` patient
+  when nothing more specific (an already-published murmur/gallop/block
+  finding) applies — placed after the murmur/gallop/AV-block checks so a
+  real valve lesion still wins, matching a previous item in the queue's own
+  Tachycardia/AV-Block precedent exactly. Verified two-sided via a direct
+  probe against the real function (not reconstructed): a bare afib patient
+  now selects `"Atrial Fibrillation"`/`finding:"irregular"`; a plain sinus
+  patient still selects `"Normal"`; an afib patient WITH a real mitral
+  regurgitation fraction still correctly selects `"Holosystolic Murmur"`
+  (the valve finding takes priority, unaffected).
+- **Early Systolic Murmur / Late Systolic Murmur remain genuinely
+  unwired — re-confirmed, not re-asserted blind.** The engine's real
+  AS/MR/AR/MS severity fields already fully cover systolic/diastolic
+  murmur PRESENCE; nothing in `cardiovascular.js` tracks murmur TIMING
+  within systole (early- vs. late-peaking), which is the real, distinct
+  clinical distinction these two categories exist to teach (late-systolic
+  in particular is the classic mitral-valve-prolapse finding, a condition
+  this engine does not model). Building a genuinely new
+  systolic-murmur-timing mechanism, or a new MVP-specific condition, is
+  real physiology-engine work beyond this bounded item's scope — left open
+  rather than force-wired onto an existing, mechanistically-different
+  finding.
+- **Verification.** `node --check`/`npx eslint` clean on
+  `physio/auscultation.js`. `node src/scripts/ausculRetimeTest.mjs`:
+  **141 passed, 0 failed** (run in the background, polled — this suite
+  doesn't call `heartSound()` directly, so it's confirming no regression
+  to the retiming math itself, not the new template-selection branch).
+  `npx vite build` clean. The throwaway Python probe and the Node direct-
+  probe script were both stripped after use (confirmed via directory
+  listing — no `_tmp_*`/`_probe_*` files remain under `src/scripts/`).
+
+**Item 62 (Auscultation Practice tab) — CLOSED: the real browser
+click-through this item's own text flagged as the one thing not yet done
+now exists and passes clean, twice.** New
+`tools/browser/verifyAuscultationPracticeTab.mjs` (real Playwright, not
+state-injection — Education Mode isn't reachable via
+`__proximateTestSetState`, which is `App.jsx`/game-state-only): real click
+Education → Auscultation Practice tab → confirms a real `<audio src=...wav>`
+element and 4 real choice buttons render in Quiz mode, answering reveals
+correct/incorrect and updates the score line, Next draws a genuinely new
+clip (fresh audio src, fresh unrevealed choices), Browse mode renders a
+real inline `<audio controls>` player for every one of the >100 (647
+expected) clips and a text filter genuinely narrows the list, and zero
+console errors throughout — including with Firebase unconfigured in this
+dev environment, confirming the "Report this clip" button correctly
+degrades to not rendering at all rather than throwing (per
+`reportingEnabled`'s own gate). Run twice against a real `npm run dev`
+server (started and polled in the background, not blocked on in the
+foreground): **12 passed, 0 failed, both runs.** The pneumothorax-recording
+search this item also mentions was not re-attempted — the prior session's
+own conclusion (a structural absence, not a missed dataset) stands
+unchanged, out of this session's scope. `npx eslint`/`node --check` clean
+on the new script; dev server and Playwright browser both cleanly
+shut down after verification.
+
 ### 2026-09-22 (b) — Assigned scope: items 51-57 as numbered at session start. Two real, verified, low-risk mechanism deepenings shipped (pupil-diameter drivers, 12-lead infarct territory); the rest of the assigned scope (national.js pediatric dosing, protocol porting, live browser verification, pupil stored-diameter refactor, minigame physiology hooks) is honestly left untouched — stated as such below, not silently dropped.
 
 **Pupil-diameter mechanism deepened (queue item, formerly 92/now 57).**
@@ -5097,38 +5250,29 @@ plausible but not fitted to trial data.
     the 258 clip IDs in the regenerated manifest still resolves to a real file
     on disk.
 
-61. **NEW, filed 2026-09-22 — three more `HEART_SOUNDS` categories are dead
-    data with no defensible physiological trigger identified, left unfixed
-    rather than force-wired.** Found in the same audit as a previous item in the queue(i)-(k)
-    above: `Early Systolic Murmur` (14 clips), `Late Systolic Murmur` (5),
-    and `Atrial Fibrillation` (4) are declared in `auscultationSounds.js` but
-    `heartSound()`'s template selector (`physio/auscultation.js`) never
-    returns any of these three strings, so `pickHeartClip()` can never reach
-    them — 23 clips, unreachable except via the unfiltered base-pool
-    fallback a `near` match would otherwise prefer. Deliberately NOT wired
-    this session: the engine's existing murmur logic already fully covers
-    systolic/diastolic findings via the real AS/MR/AR/MS severity fields
-    (`aorticStenosisSeverity`/`mitralRegurgFrac`/`aorticRegurgFrac`/
-    `mitralStenosisSeverity`), so `Early`/`Late Systolic Murmur` would need
-    either a genuinely new, separately-timed systolic-murmur mechanism this
-    engine doesn't have (early- vs. late-peaking systolic murmurs are a real,
-    distinct auscultation teaching point from a holosystolic/mid-systolic
-    one, but nothing in `cardiovascular.js` currently distinguishes murmur
-    TIMING within systole) or duplicating an already-covered finding under a
-    different label, either of which is worse than leaving them unwired.
-    `Atrial Fibrillation` is a real rhythm state (`v.ecg==="afib"`) already
-    fully modeled through the separate `pattern` mechanism (irregular R-R via
-    `audio/retime.js`'s `intervalPattern()`), independent of `template` — the
-    4 AFib-labeled S1/S2 recordings would only ever add acoustic-authenticity
-    polish (the same reasoning that justified a previous item in the queue's own `Tachycardia`/
-    `AV Block` fixes), but doing that correctly means checking whether these
-    specific clips were recorded from a genuinely irregular rhythm (in which
-    case retiming them onto the engine's own exact afib pattern could fight
-    or double up with the recording's own irregularity) or a regular one
-    used only as a source of AFib-adjacent tone — not established this
-    session, so left open rather than guessed at. Whoever picks this up
-    should listen to (or at minimum spectrally inspect) the 4 AFib source
-    clips before wiring them.
+61. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
+    clips are now wired and measured; Early/Late Systolic Murmur remain
+    genuinely open.** See section 3's newest entry for the full writeup: a
+    direct envelope/peak-timing inspection of the 3 real source WAVs
+    confirmed genuine, non-repeating beat-to-beat irregularity (not a
+    regular clip standing in for AFib tone), and reading `audio/retime.js`
+    directly confirmed the source's own irregularity cannot fight the
+    engine's own `intervalPattern()` retiming (only a single beat-cycle
+    waveform is ever extracted via autocorrelation; the irregular SPACING
+    is applied entirely by the engine's own simulated pattern, independent
+    of the source). `heartSound()` now selects `template = "Atrial
+    Fibrillation"` for a real `v.ecg==="afib"` patient when no more
+    specific murmur/gallop/block finding applies — verified two-sided via
+    direct probe (afib->"Atrial Fibrillation", sinus->"Normal", afib+real
+    MR->still "Holosystolic Murmur"). `Early Systolic Murmur` (14 clips)
+    and `Late Systolic Murmur` (5) remain unwired: this engine's real
+    AS/MR/AR/MS severity fields already cover systolic/diastolic murmur
+    PRESENCE, but nothing in `cardiovascular.js` tracks murmur TIMING
+    within systole (early- vs. late-peaking — late-systolic in particular
+    is the classic mitral-valve-prolapse finding, a condition this engine
+    doesn't model), so wiring either would need a genuinely new mechanism
+    or would misuse an existing, mechanistically-different finding — real,
+    still-open physiology-engine work, not attempted here.
 
 62. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
     Education Mode, quizzing every one of the 647 heart/lung clips with a
@@ -5181,12 +5325,22 @@ plausible but not fitted to trial data.
     pre-existing >500kB chunk-size warning. A direct probe (not just eslint)
     confirmed: 647 total clips match `HEART_SOUNDS`/`LUNG_SOUNDS`'s own
     combined count exactly; every choice set is valid; every clip URL
-    exists on disk. Not verified live in a browser this session (no dev
-    server click-through) — the logic itself was verified directly against
-    the real data/manifest, per this document's own "instrument, don't
-    reconstruct" discipline, but a real click-through (open the tab, answer
-    a few, submit a report with Firebase configured) is still worth doing
-    before treating this as fully proven in the actual running app.
+    exists on disk. **RESOLVED (2026-09-22, same day, see section 3's newest
+    entry) — the real dev-server click-through this paragraph flagged as
+    still owed is now done.** New `tools/browser/
+    verifyAuscultationPracticeTab.mjs`, run twice against a real `npm run
+    dev` server: real click Education -> Auscultation Practice -> a real
+    playable `<audio>` element and 4 real choice buttons in Quiz mode,
+    answering reveals correct/incorrect and updates the score, Next draws a
+    genuinely fresh clip, Browse mode renders a real inline player for every
+    one of the >100 clips checked with a working text filter, zero console
+    errors both runs (including confirming "Report this clip" correctly
+    renders nothing at all with Firebase unconfigured, rather than
+    crashing). **12 passed, 0 failed, both runs.** Submitting an actual
+    report with Firebase configured remains untested (no configured
+    Firebase project in this environment) — the gate itself (button absent
+    when `reportingEnabled` is false) is now live-confirmed, not the
+    write path beyond that gate.
 
     **The pneumothorax-recording search, re-attempted from a different
     angle, came back empty again — for a real, now-confirmed structural
@@ -5206,36 +5360,6 @@ plausible but not fitted to trial data.
     session's "didn't find one" — a future session re-attempting this
     should expect the same structural answer, not assume a dataset was
     simply missed.
-
-63. **NEW, filed 2026-09-22 — leftover `s.given.X` cases in `scenarios.js`
-    deliberately left unfixed by this session's tracking sweep (see the
-    session's own entry immediately above item 98 for the fix that closed
-    the main bug — `s.given` was drug-only, procedures needed `s.done`).**
-    Three distinct, separate loose ends, none a same-shape rename:
-    - **`magill`** (one site, `s.given.laryngoscopy || s.given.magill`) — a
-      dead reference. No `id:"magill"` exists anywhere in the codebase; the
-      real Magill-forceps action in the `fbao` scenario is named `clearFB`
-      instead. Harmless (always false inside the `||`), but there's no
-      correct substitute to rename it to — needs either a real `magill`
-      action id or removing the dead clause.
-    - **`monitor`/`o2` (partial)** — `s.given.monitor` and `s.given.o2` use
-      a `TASKS` mechanism (`gear.js`) that's neither `s.given` nor
-      `s.done`/doneKey: monitor attachment is tracked via `s.monitorBy`
-      (set at `App.jsx` ~2674/2732), and `TASKS`' plain `o2` entry
-      (`dose:"o2nrb"`, no `doneKey`) never stamps `s.done` at all today —
-      a real, separate gap in `TASKS`/`crewFn` itself (any `TASKS` entry
-      with a bare `dose` and no `doneKey` silently never marks itself
-      done), not a rename. The player-path half (`o2nrb`) was already
-      fixed to `s.done.o2nrb`; the crew-path `o2` task gap remains open.
-    - **`diazepam`/`lorazepam`/`lactatedRingers`** (5 sites total) — not a
-      given/done tracking bug at all: these drugs were never implemented
-      in `drugs.js` in the first place (only `midazolam` exists for benzos,
-      only `saline`/`plasmalyte` for crystalloid), so debrief text
-      referencing them is describing treatment options that don't exist in
-      this formulary. Either implement the drugs for real (each would need
-      its own `drugs.js` entry with a real receptor/PK mechanism, per
-      section 4's discipline — not a quick add) or rewrite the debrief text
-      to stop naming unavailable options.
 
 ---
 

@@ -2278,7 +2278,18 @@ export default function App({onHome}={}){
     // in with its own doneKey (see TASKS' "leads" entry) rather than this
     // defaulting to t.id, since not every crew task corresponds to a
     // player-facing action id.
-    if(t.doneKey) m.done={...(m.done||{}),[t.doneKey]:{at:m.t}};
+    // a previous item in the queue: a TASKS entry with a bare `t.dose` and no explicit
+    // `doneKey` used to stamp nothing at all, silently leaving s.done blind to
+    // crew-directed work a player's own equivalent action (whose doneKey
+    // defaults to a.id, e.g. "o2nrb") DOES stamp — e.g. crew-directed "o2"
+    // (dose:"o2nrb") never set s.done.o2nrb, even though the player's own
+    // o2nrb action does. Default to t.dose, mirroring the player-action
+    // convention (a.doneKey||a.id), so a crew task's completion is visible
+    // under the same key a scenario/resolve() check already reads. Any task
+    // that already declares its own doneKey (e.g. TASKS' "leads" entry) is
+    // completely unaffected — this only fills in the previously-blank case.
+    const crewDoneKey=t.doneKey||t.dose;
+    if(crewDoneKey) m.done={...(m.done||{}),[crewDoneKey]:{at:m.t}};
     return t.report?{say:`${c.name.toUpperCase()}: ${applyPron(t.report,pr)}`,kind:"good"}:null;};
 
   // A supervisor's forced order maps to ONE action the player can actually perform (within their scope).
