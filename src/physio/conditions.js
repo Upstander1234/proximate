@@ -3730,6 +3730,78 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== NOREPINEPHRINE INFUSION-PUMP ERROR (queue item 55's standing
+  // "overdose an existing formulary drug via seedPastDose" workstream,
+  // TOX-018) =====
+  //
+  // Per that item's own explicit caveat — "measure before writing the
+  // condition, rather than re-discovering a previous item's finding blind
+  // for a different drug" — norepi's own `receptors:{alpha:1.0,beta1:0.3}`
+  // was swept across a dose range (1, 5, 20, 40, 80 units) via a standalone
+  // probe (physio()/seedPastDose, stripped after use, per lesson 8) before
+  // any of this was written. FOUND, not assumed: this is the SAME shape of
+  // ceiling diltiazem/metoprolol/atropine already documented — a receptor
+  // coefficient, not the fentanyl/midazolam per-drug-id Emax-intensity gate
+  // — but it saturates even harder than any of those three. A single
+  // seeded "unit" (this drug's own per-dose amount, the same unit a real
+  // drip's rate-programming step delivers) already drives sbp from a
+  // resting 126 mmHg to ~188 mmHg and alphaTone to ~1.0-1.03; 80 units
+  // produces the identical 188 mmHg and ~1.03 alphaTone. Severity here
+  // does NOT scale with how large the programming/pump error is — it is
+  // fully explained by the receptor model's own EC50 being reached almost
+  // immediately at any IV-push-scale concentration, exactly the same
+  // "the coefficient is the real ceiling, not the dose" finding this
+  // session's own diltiazem/metoprolol/atropine work already established
+  // for three other drugs. This is stated honestly in the scenario's own
+  // resolve() text rather than dramatized with an invented dose-response
+  // that does not exist in this engine.
+  //
+  // Clinical framing: a real, documented critical-care medication-safety
+  // failure mode — a norepinephrine infusion programmed or free-flowing at
+  // the FULL push rate instead of a titrated mcg/min drip (this drug's own
+  // `drugs.js` entry is explicitly built as a "hang and titrate" drip, not
+  // a bolus — see its `drip:true` note) — producing a hypertensive
+  // emergency, not a slow, subtle rise. Real anchors: norepinephrine is a
+  // mixed but alpha1-dominant agonist whose peripheral vasoconstriction is
+  // the primary driver of its pressor effect (Goodman & Gilman's The
+  // Pharmacological Basis of Therapeutics, 13th ed., ch. 12,
+  // "Adrenergic Agonists and Antagonists" — norepinephrine's potent alpha1
+  // effect with weaker beta1 activity relative to epinephrine); accidental
+  // vasopressor free-flow/overdose events from ICU/ED infusion pumps are a
+  // real, published medication-error category (ISMP Medication Safety
+  // Alert case reports on vasopressor programming errors) producing acute,
+  // severe hypertension requiring immediate drip cessation rather than a
+  // pharmacologic reversal. MEASURED tachycardia is real but modest (hr
+  // 95->~98-104, a net effect of beta1's chronotropic drive outweighing
+  // any baroreceptor-mediated reflex slowing this engine's baroreflex loop
+  // produces against such a large, sustained alphaTone rise) — reported
+  // honestly rather than asserting a dramatic bradycardia this engine does
+  // not produce for this drug.
+  //
+  // No specific reversal agent exists in this formulary. The real clinical
+  // antidote for a norepinephrine extravasation/overdose event —
+  // phentolamine, a pure alpha-antagonist — is not carried (grep-confirmed
+  // against drugs.js), so the honest field intervention is simply STOPPING
+  // the infusion (a `stopsBleed`-style discrete on/off drug in this
+  // formulary has no "stop the drip" action of its own; the real fix is a
+  // dispatcher/crew-side pump correction, not a counter-drug) — the same
+  // "supportive care, no curative field drug" framing atropineOverdose/
+  // lidocaneOverdose/amiodaroneOverdose above already established for a
+  // toxidrome this drug box cannot fully treat.
+  norepinephrineOverdose: {
+    initial: { age: 68, hr: 96, sbp: 126, dbp: 82, rr: 18, glu: 100, pain: 0 },
+    progress(pat) {
+      if (!pat._norepiOdSeeded) {
+        pat._norepiOdSeeded = true;
+        // A single "unit" (this drug's own per-dose amount) 10 minutes
+        // before EMS contact — MEASURED to already reach this receptor
+        // model's own effective ceiling (see the comment above), so a
+        // larger seeded dose would not change the presentation.
+        pat.drugInstances.push(seedPastDose(pat, "norepi", 1, 10));
+      }
+    },
+  },
+
   // ===== TOXIC INHALATION — CHLORINE GAS =====
   // Queue item 28's physiology half. Chlorine reacts with airway water to
   // form hypochlorous/hydrochloric acid — a real, direct chemical injury

@@ -5519,6 +5519,47 @@ amiodaroneOverdose: {cat: "medical", id: "TOX-017", pronouns: "she", title: "Fem
     return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "DYSR", truth: "Amiodarone overdose (IV medication error) — hypotension and QT prolongation from the same potassium-channel/sodium-channel/vasodilating mechanisms therapeutic amiodarone uses, without a significant rate effect; no specific field antidote, supportive care and monitoring for torsades are the real interventions"};},
 },
 
+// Norepinephrine infusion-pump error (queue item 55's standing overdose
+// workstream — TOX-018). See conditions.js's norepinephrineOverdose comment
+// for the full mechanism/measurement writeup: a home-hospice/inter-facility
+// vasopressor drip programmed at the full push rate instead of a titrated
+// mcg/min rate, producing a real hypertensive emergency through the SAME
+// alpha1/beta1 receptor mechanism the therapeutic `norepi` entry already
+// uses. MEASURED (not assumed): severity saturates almost immediately at
+// this drug's own receptor ceiling, so the presentation is dramatic but
+// does not worsen with a bigger error — reported honestly in resolve()
+// rather than invented as a scaling toxidrome.
+norepinephrineOverdose: {cat: "medical", id: "TOX-018", pronouns: "he", title: "Male, 68. Home hospice patient, found flushed and pounding headache, IV pump alarming.",
+  limit: 900, transport: 480,
+  bystanders: "His home-hospice nurse, alarmed. \"He's on a norepinephrine drip for his blood pressure — his heart failure team started it last week. The pump alarm went off and when I looked, the rate was way higher than it's supposed to be. I think it free-flowed, or somebody keyed it in wrong. I stopped it as soon as I saw it, maybe five minutes ago, but he already looks awful.\"",
+  units: [{at: 360, level: "paramedic", name: "Medic 4"}],
+  dispatch: ["68M, home hospice patient, IV pump malfunction, severe headache.", "Caregiver reports a norepinephrine infusion delivered at an incorrect rate about 10 minutes ago; drip has since been stopped."],
+  update: [],
+  impression: "Flushed, sweating, clutching his head, says his vision is blurry. IV pole and pump at bedside, tubing now clamped.",
+  imps: ["ODPO", "ALOC", "PMGT"],
+  condition: "norepinephrineOverdose",
+  patient: {age: 68, gender: "male"},
+  clothing: {top: "long", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    sample: () => ({say: "Nurse: \"He's on norepinephrine for cardiogenic shock management at home, on hospice orders. The pump should be running at a slow titrated rate. About ten minutes ago it alarmed and I found it had delivered way more than it should have, all at once. I clamped the line right away.\"", kind: "pt",
+      evid: "A norepinephrine infusion delivered at the full push rate instead of a titrated mcg/min drip is a real, documented infusion-pump medication-error pattern, and the timing (~10 minutes prior) fits an acute-onset hypertensive presentation rather than a slow build.", find: "SAMPLE (collateral): home norepinephrine infusion for cardiogenic shock support; pump delivered an incorrect, much larger dose approximately 10 minutes prior; infusion has since been stopped."}),
+    opqrst: () => ({say: "\"My head is pounding, worst headache I've had in years, and everything looks blurry.\"", kind: "pt",
+      evid: "Sudden severe headache and visual disturbance immediately following an inadvertent vasopressor overdose is the real hypertensive-emergency picture — end-organ symptoms from an acute, severe pressure spike, not a coincidental new complaint.", find: "OPQRST: sudden severe headache and blurred vision, onset immediately after the pump error, ~10 minutes ago."}),
+    // Reads live physiology (conditions.js/cardiovascular.js) rather than a
+    // scripted line — the real hr/sbp this receptor mechanism produces.
+    heart: (s, v) => ({say: `Rate ${v.hr}, pressure ${v.sbp}/${v.dbp ?? "?"}. Skin flushed, diaphoretic.`, kind: v.sbp > 180 ? "crit" : "obs",
+      find: `Heart: rate ${v.hr}, sbp ${v.sbp}/${v.dbp ?? "?"}.`,
+      evid: "Severe hypertension with only modest tachycardia is the real norepinephrine picture — its dominant alpha1 vasoconstriction drives the pressure, while its weaker beta1 effect keeps the rate change modest rather than producing a dramatic tachyarrhythmia."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Norepinephrine overdose from an infusion-pump error, with a hypertensive emergency unanswered.";
+    notes.push("This is a real, documented infusion-pump medication-error toxidrome — a norepinephrine drip delivered at the full push rate instead of a titrated mcg/min rate produces severe hypertension through the same alpha1-dominant vasoconstriction (with a weaker beta1 chronotropic effect) the therapeutic drip uses in cardiogenic/septic shock, just far in excess of the intended dose.");
+    notes.push("The infusion is already stopped, which is the correct first step and the real, honest field intervention here — this formulary carries no specific vasopressor-reversal antidote (phentolamine, the real clinical alpha-blocker used for a vasopressor extravasation/overdose event, is not in this drug box), so supportive care and monitoring for end-organ hypertensive-emergency effects (headache, visual change, and — untreated — a real stroke/MI risk) is the job, not another pressor or an attempted counter-drug.");
+    notes.push("A bigger pump error would not have produced a worse presentation than this one — the receptor mechanism driving this patient's pressure is already at its own physiologic ceiling, the same way a small overdose and a massive one of several other drugs in this drug box land at the same severity once the receptor is saturated.");
+    return {died, cause, notes, correct: s.pi === "ODPO" || s.pi === "ALOC", truth: "Norepinephrine overdose (infusion-pump error) — severe hypertensive emergency from excess alpha1/beta1 agonism, already stopped by the caregiver; no field antidote carried, supportive care and hypertensive-emergency monitoring are the real interventions"};},
+},
+
 // Cocaine toxicity (queue item 7, Toxicology backlog — TOX-016). A young
 // patient with a sympathomimetic toxidrome and real cocaine-associated
 // chest pain from coronary vasospasm — see conditions.js's cocaineToxicity
