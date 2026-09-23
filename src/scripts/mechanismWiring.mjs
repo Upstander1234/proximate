@@ -27,6 +27,7 @@ import { LIM } from "../scope.js";
 import { CONDITIONS } from "../physio/conditions.js";
 import { establishPregnancy } from "../physio/obstetric.js";
 import { updateFluidShifts } from "../physio/metabolic.js";
+import { pupilState } from "../physio/pupils.js";
 
 const STEP = 2;
 
@@ -7523,6 +7524,58 @@ console.log("[RV/PULMONARY-VASCULAR COUPLING — queue item V2-25]");
   controlQuiet ? pass++ : fail++;
   if (!controlQuiet) failures.push(`a healthy control should show normal RV EF (>0.55) and normal PVR (<2 Wood units), got rvEf=${control.after.rvEf}, pvrWood=${control.after.pvrWood}`);
   console.log(`  ${controlQuiet ? "PASS" : "FAIL"}  ${"...matched healthy control shows normal RV EF and PVR".padEnd(46)} rvEf=${control.after.rvEf.toFixed(3)}, pvrWood=${control.after.pvrWood.toFixed(1)}`);
+}
+
+{
+  console.log("\n[PUPIL DIAMETER — queue item, deepened drivers]");
+
+  // Opioid overdose: pinpoint pupils, then naloxone genuinely reverses the
+  // miosis through the same opioidMiosis/opioidBlockade competitive-
+  // antagonism mechanism the respiratory-depression reversal already uses.
+  const odUntreated = probe({ scen: "od", settle: 60, run: 300 });
+  const odTreated = probe({ scen: "od", settle: 60, run: 300, apply: ["naloxone_iv"] });
+  const puUntreated = pupilState(odUntreated.patient, { hr: 70 });
+  const puTreated = pupilState(odTreated.patient, { hr: 70 });
+  const odPinpoint = puUntreated.key === "pinpoint" || puUntreated.L.mm < 2.5;
+  odPinpoint ? pass++ : fail++;
+  if (!odPinpoint) failures.push(`untreated opioid OD should read pinpoint pupils, got key=${puUntreated.key} mm=${puUntreated.L.mm}`);
+  console.log(`  ${odPinpoint ? "PASS" : "FAIL"}  ${"od: untreated opioid overdose reads pinpoint pupils".padEnd(46)} key=${puUntreated.key}, mm=${puUntreated.L.mm.toFixed(2)}`);
+
+  const naloxoneReverses = puTreated.L.mm > puUntreated.L.mm + 0.5;
+  naloxoneReverses ? pass++ : fail++;
+  if (!naloxoneReverses) failures.push(`naloxone should measurably reverse opioid miosis, got treated mm=${puTreated.L.mm}, untreated mm=${puUntreated.L.mm}`);
+  console.log(`  ${naloxoneReverses ? "PASS" : "FAIL"}  ${"od: naloxone genuinely reverses opioid miosis".padEnd(46)} treated mm=${puTreated.L.mm.toFixed(2)}, untreated mm=${puUntreated.L.mm.toFixed(2)}`);
+
+  // Sympathomimetic toxidrome (cocaine): real mydriasis via agitationBurden,
+  // a genuinely different pathway from the opioid one above, and NOT present
+  // in a matched healthy control.
+  const coc = probe({ scen: "cocaineToxicity", settle: 60, run: 600 });
+  const control = probe({ scen: "abdPain", settle: 60, run: 600 });
+  const puCoc = pupilState(coc.patient, { hr: 130 });
+  const puControl = pupilState(control.patient, { hr: 80 });
+  const cocMydriasis = puCoc.L.mm > puControl.L.mm + 0.5;
+  cocMydriasis ? pass++ : fail++;
+  if (!cocMydriasis) failures.push(`cocaine toxicity should show real mydriasis vs. a healthy control, got cocaine mm=${puCoc.L.mm}, control mm=${puControl.L.mm}`);
+  console.log(`  ${cocMydriasis ? "PASS" : "FAIL"}  ${"cocaineToxicity: real mydriasis vs. healthy control".padEnd(46)} cocaine mm=${puCoc.L.mm.toFixed(2)}, control mm=${puControl.L.mm.toFixed(2)}`);
+
+  const controlNotDilated = puControl.key !== "dilated" && puControl.key !== "blown";
+  controlNotDilated ? pass++ : fail++;
+  if (!controlNotDilated) failures.push(`a healthy control should not read dilated/blown pupils, got key=${puControl.key}`);
+  console.log(`  ${controlNotDilated ? "PASS" : "FAIL"}  ${"...healthy control does not read dilated/blown".padEnd(46)} key=${puControl.key}`);
+
+  // Severe hypothermia mimics death on pupil exam alone (a real, graded,
+  // pre-arrest sign, not just full reactivity until the pulse is lost).
+  const puWarm = pupilState({ ageProfile: { age: 40 }, coreTemp: 37 }, { hr: 70 });
+  const puCold = pupilState({ ageProfile: { age: 40 }, coreTemp: 24 }, { hr: 30 });
+  const hypothermiaFixes = puCold.key === "dilated" || puCold.key === "fixed";
+  hypothermiaFixes ? pass++ : fail++;
+  if (!hypothermiaFixes) failures.push(`24C core temp should read dilated/fixed pupils, got key=${puCold.key}`);
+  console.log(`  ${hypothermiaFixes ? "PASS" : "FAIL"}  ${"hypothermia: 24C core temp reads dilated/fixed pupils".padEnd(46)} key=${puCold.key}, mm=${puCold.L.mm.toFixed(2)}, react=${puCold.L.react.toFixed(2)}`);
+
+  const warmSpecific = puWarm.key === "perrl";
+  warmSpecific ? pass++ : fail++;
+  if (!warmSpecific) failures.push(`normothermic patient should read normal PERRL pupils, got key=${puWarm.key}`);
+  console.log(`  ${warmSpecific ? "PASS" : "FAIL"}  ${"...normothermic patient reads normal PERRL".padEnd(46)} key=${puWarm.key}`);
 }
 
 console.log("\n" + "=".repeat(74));

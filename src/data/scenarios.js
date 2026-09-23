@@ -351,7 +351,15 @@ ami: {cat: "medical", id: "CARDIAC-010", pronouns: "he", title: "Male, 58. Crush
   impression: "Gray, sweating through his shirt in the cold. One fist pressed flat to his sternum. \"I'm fine. She overreacts.\"",
   imps: ["CPMI", "CPSC", "CPNC", "DYSR"],
   condition: "ami",
-  patient: {age: 58},
+  // Queue item 93: infarctTerritory now set per scenario, feeding the real
+  // 12-lead synthesis (twelveLead.js) and ECG readout (ecg.js) — without
+  // this, every STEMI drew inferior by twelveLead.js's own fallback
+  // default, regardless of the scenario's own presentation. Anterior is the
+  // classic, most common, and most severe LAD-territory infarct, matching
+  // this scenario's own crushing exertional pain radiating to the left arm
+  // and jaw and its own comment above about backward heart-failure risk
+  // once the infarct is large.
+  patient: {age: 58, infarctTerritory: "anterior"},
   clothing: {top: "long", bottom: "pants", shoes: true},
   seed: () => ({}),
   probes: {
@@ -905,7 +913,12 @@ chestPainM: {cat: "medical", id: "CARD-021", pronouns: "he", title: "Male, 54. C
   impression: "Sitting upright, anxious, one hand on his chest. Pale and diaphoretic. He looks unwell and he knows it.",
   imps: ["CPMI", "CPSC", "CPNC", "DYSR"],
   condition: "ami",
-  patient: {age: 54, gender: "male"},
+  // Queue item 93: this scenario's own resolve() text already teaches the
+  // classic "preload-dependent infarct (think inferior/RV)" nitro-caution
+  // point — infarctTerritory:"inferior" makes the real 12-lead synthesis
+  // (twelveLead.js) agree with that already-authored teaching text instead
+  // of drawing an unrelated territory.
+  patient: {age: 54, gender: "male", infarctTerritory: "inferior"},
   clothing: {top: "long", bottom: "pants", shoes: true},
   seed: () => ({}),
   probes: {
@@ -941,7 +954,13 @@ chestPainF: {cat: "medical", id: "CARD-022", pronouns: "she", title: "Female, 54
   impression: "Upright, anxious, working to breathe. Pale and diaphoretic. Women often describe it as pressure, fatigue, or breathlessness rather than crushing pain — take it just as seriously.",
   imps: ["CPMI", "CPSC", "CPNC", "DYSR"],
   condition: "ami",
-  patient: {age: 54, gender: "female"},
+  // Queue item 93: a lateral-territory infarct, deliberately DIFFERENT from
+  // chestPainM's own inferior one — both share the `ami` condition, so
+  // without a per-scenario override every STEMI in this game would draw
+  // identically (twelveLead.js's own inferior fallback). This also gives a
+  // real teaching contrast: lateral STEMI is not the preload-dependent,
+  // nitro-caution territory chestPainM's own resolve() text warns about.
+  patient: {age: 54, gender: "female", infarctTerritory: "lateral"},
   clothing: {top: "long", bottom: "pants", shoes: true},
   seed: () => ({}),
   probes: {
@@ -2230,9 +2249,16 @@ severePreeclampsia: {cat: "medical", id: "OBGY-027", pronouns: "she", title: "Fe
     if (s.given.magnesium) notes.push("Magnesium sulfate — correct, and it is SEIZURE PROPHYLAXIS, not an antihypertensive. Expect the pressure to stay up; that is not treatment failure.");
     else notes.push("No magnesium. It is the single drug that changes outcome here: it roughly halves progression to eclampsia against any alternative anticonvulsant.");
     if (pat && pat.seizing) notes.push("She seized — eclampsia. Protect the airway, left lateral, oxygen, magnesium.");
-    const fluids = (s.given.saline || 0) + (s.given.lactatedRingers || 0);
+    // a previous item in the queue: this formulary has no lactatedRingers/lorazepam entry — only
+    // saline/plasmalyte for crystalloid and midazolam for benzodiazepines
+    // exist in drugs.js. These checks previously ORed in the nonexistent
+    // drug ids, which could never be true; fixed to the real formulary
+    // (plasmalyte was the actual missing crystalloid, not a cosmetic dead
+    // reference — a plasmalyte-only fluid strategy was silently exempt
+    // from this volume-caution note before this fix).
+    const fluids = (s.given.saline || 0) + (s.given.plasmalyte || 0);
     if (fluids >= 2) notes.push("Careful with volume. Her plasma is contracted but her capillaries leak and her albumin is low — aggressive crystalloid fills the lungs rather than the vessels. Preeclampsia is one of the few shocked-looking patients you do NOT flood.");
-    if (s.given.midazolam || s.given.lorazepam) notes.push("A benzodiazepine will stop the fitting, but magnesium is first-line for the eclamptic mechanism specifically and prevents recurrence better.");
+    if (s.given.midazolam) notes.push("A benzodiazepine will stop the fitting, but magnesium is first-line for the eclamptic mechanism specifically and prevents recurrence better.");
     return {died, cause, notes, correct: s.pi === "OBEM", truth: "Severe preeclampsia (34 weeks), with cerebral and hepatic features"};},
 },
 
@@ -2355,7 +2381,7 @@ seizure: {cat: "medical", id: "NEUR-027", pronouns: "he", title: "Male, 25. Post
     if (s.done.recovery || s.done.opa || s.done.npa || s.done.suction) notes.push("Airway protected during the post-ictal period — the main risk in a drowsy patient.");
     if (s.done.o2nrb || s.done.o2nc) notes.push("Oxygen given — reasonable while he reoxygenates from the seizure.");
     if (s.done.gluc) notes.push("Glucose checked — hypoglycemia is the classic reversible trigger and must be excluded."); else notes.push("No glucose check. Hypoglycemia mimics and triggers seizures — always check it.");
-    if (s.given.midazolam || s.given.diazepam) notes.push("Benzodiazepines are for an ACTIVE seizure (or status), not the post-ictal state — he's already stopped. Giving them now mostly deepens his sedation and his airway risk.");
+    if (s.given.midazolam) notes.push("Benzodiazepines are for an ACTIVE seizure (or status), not the post-ictal state — he's already stopped. Giving them now mostly deepens his sedation and his airway risk.");
     return {died, cause, notes, correct: s.pi === "SEIZ" || s.pi === "ALOC", truth: "Breakthrough generalized seizure, now post-ictal"};},
 },
 
@@ -2390,7 +2416,7 @@ seizureCombative: {cat: "medical", id: "NEUR-035", pronouns: "he", title: "Male,
     notes.push("Scene safety first: give him space, keep bystanders back, and let PD manage physical safety while you stay ready to assess — approaching too fast or trying to physically control him usually prolongs the agitation, not shortens it.");
     if (s.done.gluc) notes.push("Glucose checked despite the combativeness — worth the fight, since hypoglycemia can look exactly like this and is immediately reversible."); else notes.push("No glucose check attempted. It's harder to get on a combative patient, but hypoglycemia can present as agitation just as easily as drowsiness, and it's the one thing here you can fix in the field.");
     if (s.done.recovery || s.done.opa || s.done.npa || s.done.suction) notes.push("Airway considered even though he was fighting you — the right instinct; combativeness doesn't make the airway risk go away, it just makes it harder to manage.");
-    if (s.given.midazolam || s.given.diazepam) notes.push("A benzodiazepine here would need real justification (recurrent/status seizure, not simple post-ictal agitation) — sedating a confused-but-breathing patient to make the scene easier is a safety call, not a treatment, and should be named as such if it's the reason.");
+    if (s.given.midazolam) notes.push("A benzodiazepine here would need real justification (recurrent/status seizure, not simple post-ictal agitation) — sedating a confused-but-breathing patient to make the scene easier is a safety call, not a treatment, and should be named as such if it's the reason.");
     return {died, cause, notes, correct: s.pi === "SEIZ" || s.pi === "ALOC", truth: "Breakthrough generalized seizure with post-ictal agitation/combativeness"};},
 },
 
@@ -2461,7 +2487,7 @@ choking40: {cat: "medical", id: "CHOKE-029", pronouns: "she", title: "Female, 40
     if (cleared) notes.push("You cleared the obstruction — the entire problem. Compressions in the unresponsive choking patient, then a look with the laryngoscope and Magill forceps.");
     else notes.push("The object stayed in. Nothing you give works until the airway is mechanically cleared — that's the whole call.");
     if ((s.done.bvm || s.done.mouthMask) && !cleared) notes.push("You can't bag air past a lodged object — clear it first, then ventilate.");
-    if (s.done.laryngoscopy || s.given.magill) notes.push("Direct laryngoscopy to remove the object under vision — the definitive move once BLS maneuvers fail.");
+    if (s.done.clearFB) notes.push("Direct laryngoscopy to remove the object under vision — the definitive move once BLS maneuvers fail.");
     return {died, cause, notes, correct: s.pi === "CHOK", truth: "Foreign body airway obstruction (unresponsive)"};},
 },
 
@@ -3661,7 +3687,7 @@ activeSeizureGTC: {cat: "medical", id: "NEUR-042", pronouns: "he", title: "Male,
       evid: "Active convulsive seizure compromises airway protection directly — positioning/suction, not forcing anything into the mouth.", find: "Airway compromised by ongoing convulsive activity; cyanosis present."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const benzoDoses = s.doses.filter(d => ["midazolam","lorazepam","diazepam"].includes(d.id)).length;
+    const benzoDoses = s.doses.filter(d => d.id === "midazolam").length; // a previous item in the queue: only midazolam exists in this formulary
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Ongoing convulsive activity was never terminated, with progressive hypoxia and rising metabolic demand the airway could not keep up with.";
     if (benzoDoses >= 2) notes.push("A repeat benzodiazepine dose was given after the first didn't fully terminate the seizure — the correct move. A single dose does not reliably stop every seizure, and reassessing rather than waiting is what separates this from status epilepticus.");
     else if (benzoDoses === 1) notes.push("A benzodiazepine was given — the correct first-line field treatment. If it doesn't fully terminate the seizure within a few minutes, that's a real, common outcome (not every seizure stops on one dose) — reassess and consider a repeat dose rather than assuming it failed to work at all.");
@@ -3690,7 +3716,7 @@ statusEpilepticus: {cat: "medical", id: "NEUR-043", pronouns: "she", title: "Fem
       evid: "Real hyperthermia from sustained convulsive muscular activity, not incidental.", find: "Skin hot, flushed, diaphoretic; temperature elevated."}),
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
-    const doses = s.doses.filter(d => ["midazolam","lorazepam","diazepam"].includes(d.id)).length;
+    const doses = s.doses.filter(d => d.id === "midazolam").length; // a previous item in the queue: only midazolam exists in this formulary
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "True status epilepticus, refractory to the treatment given, with progressive hyperthermia and hypoxia the seizure itself never stopped causing.";
     if (doses >= 2) notes.push("Repeat benzodiazepine dosing was given — appropriate here. Status epilepticus is frequently refractory to a single dose, unlike an ordinary brief seizure.");
     else if (doses === 1) notes.push("One dose of benzodiazepine was given without clear termination. True status epilepticus often needs repeat dosing or a second-line agent — reassess and consider another dose rather than waiting.");
@@ -4818,7 +4844,7 @@ excitedDeliriumAgitated: {cat: "medical", id: "MISC-042", pronouns: "he", title:
   },
   resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
     const cooled = s.done.activeCooling || s.done.moveToShade;
-    const sedated = s.given.midazolam || s.given.lorazepam || s.given.diazepam || s.given.ketamine;
+    const sedated = s.given.midazolam || s.given.ketamine; // a previous item in the queue: lorazepam/diazepam do not exist in this formulary
     if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Severe catecholamine-driven hyperthermia and cardiac irritability progressed to a fatal arrhythmia — a real, physiologic risk this presentation carries independent of the restraint itself.";
     if (sedated) notes.push("Sedation was given — the correct priority once this is recognized as a medical emergency: lowering the catecholamine drive is the actual treatment, not further physical struggle.");
     else notes.push("No sedation was given to a patient in a severe, prolonged catecholaminergic crisis — chemical sedation (once safely possible) is the real treatment lever here, more than continued physical restraint alone.");

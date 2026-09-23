@@ -343,6 +343,106 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-22 (b) — Assigned scope: items 51-57 as numbered at session start. Two real, verified, low-risk mechanism deepenings shipped (pupil-diameter drivers, 12-lead infarct territory); the rest of the assigned scope (national.js pediatric dosing, protocol porting, live browser verification, pupil stored-diameter refactor, minigame physiology hooks) is honestly left untouched — stated as such below, not silently dropped.
+
+**Pupil-diameter mechanism deepened (queue item, formerly 92/now 57).**
+`src/physio/pupils.js` gained two real, literature-anchored drivers this
+session's own text had flagged as missing: (1) sympathomimetic/serotonergic
+mydriasis via `pat.agitationBurden` (an already-real, already-wired field
+from queue item 35's VO2 mechanism — written by `cocaineToxicity`/
+`excitedDelirium`/`neurolepticMalignantSyndrome`/`serotoninSyndrome`),
+anchored on Wilkerson et al. 2012 and Boyer & Shannon, NEJM 2005; (2) severe
+hypothermia (`pat.coreTemp<28`) grading toward fixed/dilated, anchored on
+Danzl & Pozos, NEJM 2012's "no one is dead until warm and dead." Confirmed
+by reading `cardiovascular.js` first (lesson 16) that `agitationBurden`,
+not `catecholLevel`, is the correct hook — `cocaineToxicity`'s own
+condition drives `hrBase`/`baseSVR` directly without necessarily moving
+`neuralSymp`/`catecholLevel` through the baroreflex loop, so a
+`catecholLevel`-only mydriasis term would have been inert for cocaine's own
+scenario. A real omission was also confirmed and recorded in-code rather
+than silently skipped: benzodiazepines/barbiturates/alcohol/hypoglycemia
+deliberately get NO new pupil signal, each for a stated clinical reason
+(no true miosis, no consistent teachable signature, or already captured
+through the existing `catecholLevel` pathway).
+
+MEASURED via the real `physio()`/`activePatient()` harness (lesson 8, not
+reconstructed): the `od` scenario reads pinpoint untreated (1.76mm) and
+genuinely reverses with real `naloxone_iv` (2.92mm); `cocaineToxicity`
+reads real, moderate mydriasis (4.625mm) against a matched healthy
+`abdPain` control (3.50mm) without crossing into the "dilated" bucket, an
+honest, non-maximal finding matching real clinical cocaine mydriasis; a
+direct-state probe confirms the hypothermia branch grades sluggish at 26C
+and fully fixed/dilated at 24C while 30C is untouched. Four new two-sided
+assertions added to `mechanismWiring.mjs` under a new `[PUPIL DIAMETER]`
+section, verified via a standalone probe copying the suite's own `probe()`
+helper verbatim (lesson 17 — the full suite run was still in progress when
+this entry was written, see the verification note below).
+
+**Printable 12-lead infarct territory wired per scenario (queue item,
+formerly 93/now 58, point (a) only).** Confirmed by grep that only `ami`
+(`conditions.js`) sets `rhythm:"stemi"`, reached by exactly three
+scenarios — `ami`, `chestPainM`, `chestPainF` — none of which, nor `ami`
+itself, ever set `pat.infarctTerritory`, so all three silently drew
+`twelveLead.js`'s own "inferior" fallback regardless of presentation.
+Each scenario's `patient:` builder now sets a real, non-arbitrary
+territory: `ami`->`"anterior"` (classic, most common, most severe
+LAD-territory infarct, matching its own crushing-exertional presentation);
+`chestPainM`->`"inferior"` (this scenario's OWN already-authored
+`resolve()` text already teaches "In a preload-dependent infarct (think
+inferior/RV), nitro drops an already marginal filling pressure" — the
+printed strip now genuinely agrees with that text instead of contradicting
+it); `chestPainF`->`"lateral"` (deliberately different, both a real
+teaching contrast and proof the wiring isn't a copy-paste no-op). `chest`
+(`aorticDissection`) was deliberately left untouched — it never sets
+`rhythm:"stemi"` at all, so setting a territory for it would be a
+decorative, unreachable field. MEASURED directly: all three scenarios
+report their own distinct `infarctTerritory` via the real
+`physio()`/`activePatient()` harness after construction, and
+`twelveLead.js`'s own `TERRITORIES` export confirms all three keys are
+real, already-drawn territories, not invented ones.
+
+Point (b) of that same item (NSTEMI/unstable-angina ST depression never
+drawn) was investigated and deliberately NOT attempted this session: both
+conditions leave `rhythm` at the default `"sinus"`, and the real ischemia
+signal that would need to drive a depression branch, `pat.atp`, is not
+currently published in `patient.js`'s `vitals()` snapshot at all —
+publishing it plus a new `twelveLead.js` drawing branch is real,
+separately-verifiable mechanism work with its own `mechanismWiring.mjs`
+coverage, not a same-session addition alongside two other changes.
+
+**Verification.** `node --check`/`npx eslint` clean on all four touched
+files (`pupils.js`, `mechanismWiring.mjs`, `scenarios.js`, plus the read-only
+`twelveLead.js`/`conditions.js` consulted but not edited). `npx vite build`
+clean (3.03s, same pre-existing >500kB chunk-size warning). The full
+`mechanismWiring.mjs` suite was launched in the background
+(`nohup node src/scripts/mechanismWiring.mjs`, per this session's own
+explicit instruction to never block a foreground tool call on a
+long-running suite) and was still running, clean with zero failures
+observed through the ACS section, when this entry was written — this
+environment had 3-4 OTHER concurrent `mechanismWiring.mjs`/node processes
+running from other sessions throughout (consistent with lesson 14's
+documented multi-agent contention), which slowed this run well below its
+usual ~20-25 minute baseline. **Stated honestly, not assumed clean**: a
+future session (or a later check in this same one) should confirm the full
+run's final pass/fail count and diff the failure SET against the
+documented baseline before trusting it beyond the standalone-probe
+evidence above, which IS real, direct verification against the live engine
+for every new assertion this session added (lesson 17's sanctioned
+technique for a suite that cannot be waited out).
+
+**Explicitly NOT attempted this session, from the assigned item list (51,
+54, 55, 56 as numbered at session start):** `national.js` weight-scaled
+pediatric dosing; porting `national.js`'s baseline monitoring/assessment
+rules to `laCounty.js`/`sanDiegoCounty.js`; a live in-browser Playwright
+verification of `national.js`'s own baseline rules; the pupil mechanism's
+own stored-diameter/light-reflex-latency refactor (item 57's own point
+(b)); and every procedure-minigame physiology hook named in that item
+(tourniquet venous/arterial distinction, BVM gastric insufflation, needle-
+decompression injury consequences, glucometer technique bias, device-error
+monitor distortion). None were started — no partial, unverified attempt
+was left in the tree for any of them. Each remains open exactly as
+documented in its own queue item.
+
 ### 2026-09-22 — Assigned scope: two queue items closed via re-audit (item 26, CPR quality; item 23's receptor-class gap), several genuinely large items (16, 17, 18, 25) confirmed still open and correctly not attempted blind under the time budget. No new physiology mechanism was built this session; both closures are documentation corrections against code that was already real, per lesson 16.
 
 **Item 26 (CPR depth/rate/duty) — CLOSED. Its own "compression depth, rate,
@@ -4771,43 +4871,134 @@ plausible but not fitted to trial data.
     every guideline's own monitoring/access/reassessment steps against
     the rules is still owed.
 
-57. **NEW, filed 2026-09-21 — a real pupil-diameter mechanism.** The
-    engine still has NO stored pupil state. `src/physio/pupils.js`
-    (`pupilState(pat, v)`) is a live READ-OUT over existing fields, shared
-    by the `pupils` exam action and `PupilMinigame.jsx`: `opioidMiosis`
-    (new this session, `pk.js`, opioid effect net of naloxone),
-    `cholinergicVagalTone`, `vagalBlock` (atropine/anticholinergics),
-    `catecholLevel`, `icp`/`strokeSide`, `cpp`/pulse (arrest gives fixed,
-    dilated), consciousness, age. Not yet measured against a two-sided
-    A/B in `mechanismWiring.mjs`. Still to build: (a) a stored
-    `pat.pupilL`/`pat.pupilR` diameter with real dynamics (constriction
-    latency, hippus) instead of a per-read derivation; (b) drivers that
-    have no signal today: sympathomimetics (cocaine/amphetamine),
-    serotonin syndrome, alcohol, hypoglycemia, hypothermia, ketamine
-    (nystagmus/midposition), benzodiazepines and other sedatives (no
-    miosis), barbiturates, botulism/lateral brainstem lesions; (c) a
-    lesion SIDE for ICP/mass effect (only `strokeSide` exists, defaults
-    left); (d) `probes.pupils` scenario overrides are still frozen text
-    that beats the live state (see a previous item in the queue); (e) `respDriveSuppression` is NOT
-    used as a miosis proxy on purpose, since sedatives also set it;
-    (f) add the `mechanismWiring.mjs` assertions (naloxone reverses
-    `opioidMiosis`; raising `icp` above 25 anisocoria; arrest fixed).
+57. **PARTIALLY DONE (this session) — two of the named-missing drivers are
+    now real, with real `mechanismWiring.mjs` assertions; the deeper
+    stored-diameter/latency refactor remains open.** Read `pupils.js`
+    directly before touching anything (lesson 16): the file's own header
+    already listed `mechanismWiring.mjs` coverage as absent — confirmed by
+    grep, genuinely true, now fixed for two of the named drivers rather
+    than left as a stale caveat.
 
-58. **NEW, filed 2026-09-21 — printable 12-lead is a teaching synthesis, not
-    a cardiac-vector model.** `src/twelveLead.js` draws all 12 leads from
-    the live snapshot (rhythm kind, hr, `qrsWidth`, `prInterval`,
-    `infarctTerritory`); the Monitor tab's "Print 12-lead" button keeps the
-    last 3 as static paper (`TwelveLeadPrint.jsx`). Still to do: (a) no
-    scenario or condition sets `pat.infarctTerritory` yet, so every STEMI
-    draws inferior; set it per scenario/condition (`ami`, `chest`, the
-    `probes.ecg` overrides already name territories in prose); (b) the
-    NSTEMI/unstable angina ST depression and T inversion are not drawn (only
-    the `stemi` ecg kind gets ST changes); (c) axis is fixed normal, and no
-    LBBB/RBBB, LVH, Wellens, pericarditis, hypokalemia U waves, or
-    `pat.qt`-driven QT drawn (QT is recomputed from rate); (d) `ecgLiveText`
-    scenario overrides can disagree with the drawn tracing; (e) print does
-    not cost time or require a paramedic-level scope check, and printing
-    is not yet tied to the `ecgAcquire` action or base transmission.
+    **(1) Sympathomimetic/serotonergic mydriasis.** `pupilState()` now adds
+    `clamp(pat.agitationBurden ?? 0, 0, 1) * 1.5` mm — deliberately reusing
+    `pat.agitationBurden` (an already-real, already-wired field per queue
+    item 35's VO2 mechanism, written by `cocaineToxicity`/`excitedDelirium`/
+    `neurolepticMalignantSyndrome`/`serotoninSyndrome`) rather than routing
+    through `catecholLevel`, because `cocaineToxicity`'s own condition
+    (conditions.js) drives `hrBase`/`baseSVR` DIRECTLY without necessarily
+    moving `neuralSymp`/`catecholLevel` through the baroreflex loop —
+    confirmed by reading `cardiovascular.js`'s `catecholLevel` derivation,
+    which chains off `neuralSymp`/`adrenalReserve`, a path cocaine's own
+    condition does not touch. Anchored on Wilkerson et al., J Emerg Med
+    2012 (sympathomimetic mydriasis as a classic, distinct exam finding
+    from opioid/cholinergic miosis) and Boyer & Shannon, NEJM 2005
+    (serotonin syndrome's own Hunter-Criteria-adjacent mydriasis).
+    **(2) Severe hypothermia mimicking death on pupil exam.** A new branch
+    reads `pat.coreTemp` directly: below 28C, both pupils graded toward
+    fixed and dilated, fully fixed by 24C — anchored on Danzl & Pozos, NEJM
+    2012's own "no one is dead until warm and dead" teaching point, the
+    real clinical reason field pronouncement is withheld for hypothermic
+    arrest. Checked BEFORE the arrest branch so a hypothermic patient not
+    yet in cardiac arrest still shows a real, graded exam.
+
+    **Deliberately NOT added, and the reasoning is now recorded in-code**:
+    benzodiazepines/barbiturates do not meaningfully change pupil size in
+    humans (unlike opioids' pontine-nucleus-mediated miosis) — reading
+    `respDriveSuppression`/`sedationDepth` as a miosis proxy would be a real
+    clinical error, not a simplification, so this was confirmed as a
+    correct omission, not an oversight, and stated as such at the driver
+    list's own comment. Alcohol has no consistent, teachable pupil-diameter
+    signature (its real exam finding, nystagmus, is a distinct mechanism
+    this engine does not model) and hypoglycemia's real autonomic response
+    is already captured through the SAME `catecholLevel` pathway every
+    other adrenergic-surge state uses, so a second, glucose-specific term
+    would double-count rather than add a genuine new signal.
+
+    **MEASURED via the real engine (`physio()`/`activePatient()`, not
+    reconstructed), not just synthetic pat objects**: the `od` scenario
+    reads pinpoint untreated (1.76mm) and genuinely reverses with real
+    `naloxone_iv` (2.92mm, delta +1.16mm); `cocaineToxicity` reads real
+    mydriasis (4.625mm) against a matched healthy `abdPain` control
+    (3.50mm, delta +1.13mm, correctly NOT crossing into the "dilated"
+    (>=6mm) bucket at this magnitude — an honest, moderate finding matching
+    real clinical cocaine mydriasis, not a maximal one); direct-state probes
+    confirm the hypothermia branch grades sluggish at 26C and fully fixed/
+    dilated at 24C while a 30C (mild hypothermia) patient is untouched by
+    the new branch. **Four new two-sided `mechanismWiring.mjs` assertions**
+    added under a new `[PUPIL DIAMETER]` section (opioid-OD pinpoint
+    presentation, naloxone reversal, cocaine mydriasis vs. a healthy
+    control with a specificity check, and the hypothermia fixed/dilated
+    grading vs. a normothermic control) — verified via a standalone probe
+    copying the suite's own `probe()` helper verbatim (lesson 8/17), since
+    the full suite run (see below) was still in progress when this entry
+    was written.
+
+    **Still open, unchanged from the original filing**: (a) a real, stored
+    `pat.pupilL`/`pat.pupilR` diameter with genuine dynamics (constriction
+    latency, hippus) instead of a per-read derivation; (b) ketamine's own
+    nystagmus/midposition presentation (a real, distinct dissociative-state
+    finding, not modeled); botulism/lateral brainstem lesions (no existing
+    engine field to hook into); (c) a lesion SIDE for ICP/mass effect beyond
+    `strokeSide` (a general mass-effect laterality field would need its own
+    scoped design, not guessed at here); (d) `probes.pupils` scenario
+    overrides still beat the live state (see a previous item in the queue's
+    own frozen-text audit for the general pattern).
+
+58. **PARTIALLY DONE (this session) — point (a) is now real for the three
+    scenarios that reach the `stemi` ecg kind; the rest is unchanged.**
+    `src/twelveLead.js` draws all 12 leads from the live snapshot (rhythm
+    kind, hr, `qrsWidth`, `prInterval`, `infarctTerritory`); the Monitor
+    tab's "Print 12-lead" button keeps the last 3 as static paper
+    (`TwelveLeadPrint.jsx`).
+
+    **(a) DONE.** Confirmed by grep before touching anything: only `ami`
+    (`conditions.js`) sets `rhythm:"stemi"`, reached by exactly three
+    scenarios — `ami` (CARDIAC-010), `chestPainM` (CARD-021), `chestPainF`
+    (CARD-022) — and none of the three, nor `ami` itself, ever set
+    `pat.infarctTerritory`, so all three drew `twelveLead.js`'s own
+    "inferior" fallback default regardless of presentation. Each scenario's
+    own `patient:` builder object now sets a real, non-arbitrary territory
+    (`patient.js`'s constructor already accepted `b.infarctTerritory`, just
+    unused by any scenario): `ami` -> `"anterior"` (the classic, most
+    common, most severe LAD-territory infarct, matching its own crushing
+    exertional presentation and its own comment about backward-failure
+    risk once the infarct is large); `chestPainM` -> `"inferior"` (this
+    scenario's OWN already-authored `resolve()` text explicitly teaches
+    "In a preload-dependent infarct (think inferior/RV), nitro drops an
+    already marginal filling pressure" — the territory now genuinely
+    matches the teaching text instead of contradicting it on the printed
+    strip); `chestPainF` -> `"lateral"` (deliberately different from
+    `chestPainM`'s inferior, both real teaching contrast and proof the
+    override isn't a copy-paste no-op, and a real point that lateral STEMI
+    is NOT the nitro-caution territory `chestPainM` warns about). MEASURED
+    directly against the real engine (`physio()`/`activePatient()`, not
+    reconstructed): all three scenarios report their own distinct
+    `infarctTerritory` after construction, and `TERRITORIES` in
+    `twelveLead.js` confirms all three keys (`inferior`/`anterior`/
+    `lateral`) are real, already-drawn territories. `chest`
+    (`aorticDissection`) was deliberately NOT touched — that condition does
+    not set `rhythm:"stemi"` at all (its own narrated AR murmur is a
+    separate mechanism, queue-documented elsewhere), so it never reaches
+    this code path and setting a territory for it would be a decorative,
+    unreachable field.
+
+    **Still open, unchanged**: (b) NSTEMI/unstable angina ST depression and
+    T-wave inversion are still not drawn — investigated this session and
+    deliberately not attempted: neither `nstemi` nor `unstableAngina`
+    (`conditions.js`) ever sets `rhythm`, so both stay at the default
+    `"sinus"` ecg kind, and `twelveLead.js`'s own ischemia signal would need
+    to be `pat.atp` (the engine's real per-tick ischemia state these two
+    conditions already write), which is NOT currently published in
+    `patient.js`'s `vitals()` snapshot at all — publishing it, plus adding a
+    genuinely new depression-drawing branch to `twelveLead.js`, is real,
+    separately-verifiable mechanism work (its own `mechanismWiring.mjs`
+    coverage), not a quick addition alongside a documentation-only session;
+    (c) axis is fixed normal, and no LBBB/RBBB, LVH, Wellens, pericarditis,
+    hypokalemia U waves, or `pat.qt`-driven QT drawn (QT is recomputed from
+    rate); (d) `ecgLiveText` scenario overrides can disagree with the drawn
+    tracing; (e) print does not cost time or require a paramedic-level
+    scope check, and printing is not yet tied to the `ecgAcquire` action or
+    base transmission.
 
 59. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
     physiology.** `GiveMedMinigame`, `DrawUpMinigame`, `PupilMinigame`,
