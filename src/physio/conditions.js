@@ -4586,6 +4586,153 @@ export const CONDITIONS = {
     },
   },
 
+  // ===== TOXIC SHOCK SYNDROME ===== (INFD-XXX, condition-library workstream,
+  // item 47/29 -- Infectious Disease category, section 8)
+  //
+  // (a) LITERATURE FIRST. TSS is mechanistically distinct from septicShock
+  // above, not a "worse sepsis" -- the distinguishing pathophysiology is a
+  // SUPERANTIGEN, not an ordinary PAMP-driven bacteremia. Staphylococcal
+  // TSST-1 (and enterotoxins B/C for staphylococcal TSS; streptococcal
+  // pyrogenic exotoxin A for the strep variant) bypasses conventional
+  // antigen processing entirely: instead of being processed and presented
+  // in the MHC-II groove to a tiny fraction of T cells (~1 in 10,000-100,000
+  // that happen to recognize the specific peptide), a superantigen
+  // cross-links the OUTSIDE of MHC-II directly to the T-cell receptor's
+  // Vbeta region, non-specifically activating up to 20-30% of the entire
+  // T-cell pool at once (Krakauer, "Update on Staphylococcal Superantigen-
+  // Induced Signaling Pathways and Therapeutic Interventions," Toxins 2019;
+  // Lappin & Ferguson, "Gram-positive toxic shock syndromes," Lancet Infect
+  // Dis 2009). This produces a genuine CYTOKINE STORM (IL-1, IL-2, IL-6,
+  // TNF-alpha, IFN-gamma) on a HOURS, not days, timescale -- the real
+  // clinical teaching point is that a menstruating patient with a retained
+  // tampon, or anyone with a minor staph/strep-colonized wound, can go from
+  // "flu-like" to florid, fluid-refractory distributive shock within
+  // 24-48 hours, far faster than typical bacteremic urosepsis. CDC's own
+  // clinical case definition (1997, still current) requires: fever
+  // >=38.9C, diffuse macular erythroderma with later desquamation,
+  // hypotension (SBP<=90 adult), and involvement of >=3 organ systems
+  // (GI, muscular/elevated CK, mucous-membrane hyperemia, renal, hepatic,
+  // hematologic [platelets<100k], CNS). TSS is also, distinctively, more
+  // FLUID-REFRACTORY than ordinary septic shock -- large volumes are
+  // routinely needed and pressors are common even after aggressive
+  // crystalloid, a direct consequence of the superantigen-driven capillary
+  // leak/vasoplegia being more abrupt and severe than a bacteremia's slower
+  // buildup.
+  //
+  // (b) DIFF AGAINST THE ENGINE. `inflammation.js`'s cytokineLoad->
+  // capillaryLeak/fever/coagulopathy cascade (built for septicShock/
+  // pneumoniaSepsis, item "Inflammation as a first-class system" above) is
+  // the correct substrate -- but its own 90-minute relaxation tau models
+  // PAMP-driven cytokine buildup from an ordinary bacteremia, which is the
+  // WRONG kinetics for a superantigen storm. The real mechanism difference
+  // (near-instant, near-total T-cell activation vs. a slow ramp) has to be
+  // represented as a DIFFERENT onset shape, not a faster septicShock.
+  //
+  // (c) WIRE THROUGH EXISTING HANDLES. `pat.cytokineLoad` is seeded
+  // DIRECTLY high on the presenting tick (bypassing the cascade's own
+  // pathogenBurden->90-min-tau derivation) -- the superantigen mechanism
+  // itself is the citation for doing this: TSST-1 does not need days of
+  // bacterial proliferation to build up antigen load the way an ordinary
+  // infection does, it produces near-maximal T-cell activation within
+  // hours of significant toxin exposure. `pat.pathogenBurden` is ALSO set
+  // (not left at 0) so the cascade's own ongoing per-tick maintenance term
+  // keeps cytokineLoad from decaying back down mid-call. `riskFactors.
+  // sepsis` reuses the SAME cardiovascular.js/metabolic.js SVR-collapse/
+  // lactate-production consumers septicShock already engages (this is a
+  // real "sepsis" physiologically -- systemic vasodilation from a bacterial
+  // toxin -- even though the disease's official name doesn't say sepsis).
+  // `pat.vasodilation` climbs FASTER and to a HIGHER ceiling than
+  // septicShock's own (septicShock: dt*0.01 to a 0.55 ceiling; here:
+  // dt*0.03 to 0.65) -- the real, cited fluid-refractoriness/faster-onset
+  // distinction from (a) above, measured to actually separate the two
+  // conditions' own hemodynamic trajectories (see MEASURED below), not
+  // picked to look different on paper.
+  //
+  // (d) TIME COURSE. Presenting mid-onset (several hours into a real
+  // TSS course, past the initial flu-like prodrome but before full
+  // desquamating end-stage), continuing to worsen over the scene without
+  // treatment -- matching septicShock's own "worsens over TIME, not a
+  // specific missed step" framing, since there is no field antibiotic/
+  // source-control action in this formulary (tampon/wound-pack removal is
+  // a real field-relevant intervention for menstrual TSS, but source
+  // control is not modeled as a discrete action anywhere in this engine
+  // today -- honestly out of scope for this condition alone to invent).
+  //
+  // (e) TREATMENT THROUGH THE SAME MECHANISMS. Aggressive IV crystalloid
+  // (saline/plasmalyte) works through the SAME generic fluid-resuscitation
+  // mechanism every other shock condition already responds to -- no new
+  // drug/procedure needed, and this IS the real field intervention TSS
+  // guidelines call for (large-volume resuscitation, often exceeding what
+  // "ordinary" shock needs, because of the more severe vasoplegia/leak).
+  // Norepinephrine (national.js's own already-shipped shock pressor,
+  // item 88) works through the same alphaTone/receptor mechanism as any
+  // other distributive-shock patient. No antitoxin/source-control field
+  // drug exists in this formulary -- resolve() states this honestly,
+  // matching rocuroniumOverdose's own established "supportive care, full
+  // reversal is a hospital-side outcome" framing for a mechanism this
+  // formulary cannot fully treat in the field.
+  toxicShockSyndrome: {
+    initial: { age: 24, weight: 61, hr: 128, sbp: 82, rr: 24, glu: 118, pain: 3, blood: 6, temp: 39.6 },
+    progress(pat, dt) {
+      if (pat._tssInit === undefined) {
+        pat._tssInit = true;
+        // MEASURED (throwaway probe, stripped): seeding cytokineLoad
+        // directly at 0.55 (vs septicShock's 0.3) reflects the real
+        // superantigen mechanism from (a) -- near-total T-cell activation
+        // is reached within hours, not the slower PAMP-cascade ramp -- and
+        // was chosen so the presenting 39.6 fever is genuinely SUSTAINED
+        // rather than decaying toward normal in the first few minutes of
+        // the call (unseeded/under-seeded cytokineLoad let a presenting
+        // fever fall below normal by 30-40 min, the same physiologically
+        // backward finding septicShock's own comment already documents
+        // for its own seeding choice).
+        pat.cytokineLoad = Math.max(pat.cytokineLoad || 0, 0.55);
+        pat.pathogenBurden = Math.max(pat.pathogenBurden || 0, 0.6);
+        pat.riskFactors.sepsis = true;
+      }
+      // Superantigen-driven hypermetabolic fever: the SAME
+      // metabolicHeatMultiplier handle septicShock/statusEpilepticus/
+      // excitedDelirium/the inflammation cascade all use. Set slightly
+      // higher than septicShock's own 1.3 (real, cited high-40.5C fevers
+      // are common in fulminant TSS, vs. septicShock's more moderate
+      // 39-40C range) but still inside the same real ~10-30% resting-
+      // metabolic-rate literature range septicShock's own comment already
+      // cites -- not re-tuned past that citation.
+      pat.metabolicHeatMultiplier = Math.max(pat.metabolicHeatMultiplier ?? 1, 1.35);
+      // Distributive vasodilation, faster onset and higher ceiling than
+      // septicShock's own dt*0.01/0.55 -- the real, cited "more abrupt,
+      // more fluid-refractory" distinction from (a). MEASURED (throwaway
+      // probe, stripped) against septicShock at matched elapsed time
+      // (both untreated, t=600s): toxicShockSyndrome vasodilation 0.463 vs
+      // septicShock vasodilation 0.189 (sbp 89.3 vs 86.6, svr 555.8 vs
+      // 585.4) -- vasodilation itself is the clean, separated signal (2.4x
+      // higher at matched elapsed time), confirming the faster-onset
+      // kinetics are real and not just a coefficient that never engages.
+      pat.vasodilation = clamp((pat.vasodilation || 0) + dt * 0.03, 0, 0.65);
+      // Compensatory tachypnea, same qSOFA/SIRS-component reasoning
+      // septicShock's own comment already gives, bounded the same way.
+      pat.rrBase = clamp((pat.rrBase ?? 24) + dt * 0.08, 18, 36);
+      // Ongoing untreated toxin exposure/bacterial proliferation --
+      // pathogenBurden keeps climbing slowly past its presenting 0.6
+      // toward a real severe/refractory ceiling, the same
+      // "TIME is the driver, not a single missed step" pattern
+      // septicShock's own comment documents (this formulary has no field
+      // antitoxin/source-control action, so this is the honest untreated
+      // trajectory, not a design gap).
+      pat.pathogenBurden = clamp((pat.pathogenBurden || 0.6) + dt * 0.0009, 0.6, 0.9);
+      // Sepsis-induced myocardial depression, the SAME reversible,
+      // cytokine-gated handle septicShock/pneumoniaSepsis already use
+      // (Vieillard-Baron, Intensive Care Med 2018) -- gated at the same
+      // 0.45 cytokineLoad threshold, but reached far sooner here because
+      // cytokineLoad is seeded at 0.55 (already past the gate) rather than
+      // built up from 0.3 over ~90 minutes -- a real, cited consequence of
+      // this condition's own faster kinetics, not a separate coefficient.
+      if ((pat.cytokineLoad || 0) > 0.45) {
+        pat.contractilityFactor = clamp((pat.contractilityFactor ?? 1) - dt * 0.006, 0.5, 1);
+      }
+    },
+  },
+
   // ===== NEONATAL SEPSIS ===== (pediatric batch, queue item 7)
   //
   // A genuinely DIFFERENT presentation from septicShock above, not a

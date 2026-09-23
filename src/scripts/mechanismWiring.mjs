@@ -7526,8 +7526,8 @@ console.log("[RV/PULMONARY-VASCULAR COUPLING — queue item V2-25]");
   console.log(`  ${controlQuiet ? "PASS" : "FAIL"}  ${"...matched healthy control shows normal RV EF and PVR".padEnd(46)} rvEf=${control.after.rvEf.toFixed(3)}, pvrWood=${control.after.pvrWood.toFixed(1)}`);
 }
 
+console.log("\n[PUPIL DIAMETER — queue item, deepened drivers]");
 {
-  console.log("\n[PUPIL DIAMETER — queue item, deepened drivers]");
 
   // Opioid overdose: pinpoint pupils, then naloxone genuinely reverses the
   // miosis through the same opioidMiosis/opioidBlockade competitive-
@@ -7576,6 +7576,58 @@ console.log("[RV/PULMONARY-VASCULAR COUPLING — queue item V2-25]");
   warmSpecific ? pass++ : fail++;
   if (!warmSpecific) failures.push(`normothermic patient should read normal PERRL pupils, got key=${puWarm.key}`);
   console.log(`  ${warmSpecific ? "PASS" : "FAIL"}  ${"...normothermic patient reads normal PERRL".padEnd(46)} key=${puWarm.key}`);
+}
+
+console.log("[TOXIC SHOCK SYNDROME — condition-library workstream, Infectious Disease]");
+{
+  // Superantigen-driven distributive shock, mechanistically distinct from
+  // septicShock (both reuse riskFactors.sepsis/the inflammation cascade,
+  // but toxicShockSyndrome seeds cytokineLoad directly, near-instant, and
+  // ramps vasodilation 3x faster to a higher ceiling -- see the condition's
+  // own comment for the full literature trace).
+  const control = probe({ scen: "abdPain", settle: 2, run: 600 });
+  const tss = probe({ scen: "toxicShockSyndrome", settle: 2, run: 600 });
+  const sepsis = probe({ scen: "septicShock", settle: 2, run: 600 });
+
+  // Presence: TSS drives real, substantial cytokineLoad and distributive
+  // vasodilation, not a decorative flag.
+  const engaged = tss.after.cytokineLoad > 0.4 && tss.after.vasodilation > 0.3;
+  engaged ? pass++ : fail++;
+  if (!engaged) failures.push(`toxicShockSyndrome should show substantial cytokineLoad (>0.4) and vasodilation (>0.3) by 600s, got cytokineLoad=${tss.after.cytokineLoad}, vasodilation=${tss.after.vasodilation}`);
+  console.log(`  ${engaged ? "PASS" : "FAIL"}  ${"TSS engages real cytokineLoad + vasodilation".padEnd(46)} cytokineLoad=${tss.after.cytokineLoad.toFixed(3)}, vasodilation=${tss.after.vasodilation.toFixed(3)}`);
+
+  // Specificity: a healthy, condition-less control shows none of this.
+  const specific = control.after.cytokineLoad === 0 && control.after.vasodilation === 0;
+  specific ? pass++ : fail++;
+  if (!specific) failures.push(`a condition-less control should show exactly zero cytokineLoad/vasodilation, got cytokineLoad=${control.after.cytokineLoad}, vasodilation=${control.after.vasodilation}`);
+  console.log(`  ${specific ? "PASS" : "FAIL"}  ${"...healthy control shows zero cytokineLoad/vasodilation".padEnd(46)} cytokineLoad=${control.after.cytokineLoad.toFixed(3)}, vasodilation=${control.after.vasodilation.toFixed(3)}`);
+
+  // THE REAL DISTINGUISHING MECHANISM: at matched elapsed time, TSS's own
+  // faster-onset vasodilation ramp (dt*0.03 to a 0.65 ceiling) measurably
+  // outpaces septicShock's own slower one (dt*0.01 to a 0.55 ceiling) --
+  // this is not the same condition renamed, it is a genuinely different
+  // time course, per this condition's own cited literature distinction.
+  const fasterOnset = tss.after.vasodilation > sepsis.after.vasodilation * 1.5;
+  fasterOnset ? pass++ : fail++;
+  if (!fasterOnset) failures.push(`toxicShockSyndrome's vasodilation should measurably outpace septicShock's at matched elapsed time (>1.5x), got tss=${tss.after.vasodilation}, sepsis=${sepsis.after.vasodilation}`);
+  console.log(`  ${fasterOnset ? "PASS" : "FAIL"}  ${"TSS's vasodilation outpaces septicShock's (faster onset)".padEnd(46)} tss=${tss.after.vasodilation.toFixed(3)}, sepsis=${sepsis.after.vasodilation.toFixed(3)}`);
+
+  // Fever: real hypermetabolic fever via the shared metabolicHeatMultiplier
+  // handle, sustained rather than decaying below normal.
+  const feverSustained = tss.after.coreTemp > 37.0;
+  feverSustained ? pass++ : fail++;
+  if (!feverSustained) failures.push(`toxicShockSyndrome should sustain a real fever (coreTemp>37.0) at 600s, got coreTemp=${tss.after.coreTemp}`);
+  console.log(`  ${feverSustained ? "PASS" : "FAIL"}  ${"TSS sustains a real fever (metabolicHeatMultiplier)".padEnd(46)} coreTemp=${tss.after.coreTemp.toFixed(2)}`);
+
+  // Treatment response: large-volume crystalloid genuinely raises sbp
+  // through the SAME generic fluid mechanism every shock condition uses --
+  // no new drug/procedure needed, confirming this isn't a scripted outcome.
+  const treated = probe({ scen: "toxicShockSyndrome", settle: 2, run: 900, apply: ["saline"], reapply: 140 });
+  const untreated900 = probe({ scen: "toxicShockSyndrome", settle: 2, run: 900 });
+  const fluidHelps = treated.after.sbp > untreated900.after.sbp + 5;
+  fluidHelps ? pass++ : fail++;
+  if (!fluidHelps) failures.push(`repeated saline should measurably raise sbp vs. untreated at 900s, got treated sbp=${treated.after.sbp}, untreated sbp=${untreated900.after.sbp}`);
+  console.log(`  ${fluidHelps ? "PASS" : "FAIL"}  ${"aggressive crystalloid genuinely raises pressure".padEnd(46)} treated sbp=${treated.after.sbp.toFixed(1)}, untreated sbp=${untreated900.after.sbp.toFixed(1)}`);
 }
 
 console.log("\n" + "=".repeat(74));

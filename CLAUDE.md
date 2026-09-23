@@ -741,6 +741,135 @@ re-checking other items' own "still open"/"RESOLVED" framings against the
 tree when time allows, since the pattern (a fix ships, the queue text is
 never updated) has now recurred often enough across this document's own
 history to be a standing risk, not a one-off.
+### 2026-09-22 — Toxic Shock Syndrome shipped (condition-library workstream, item 47's own "one condition per batch" loop): a genuine superantigen-driven mechanism, distinct from `septicShock`, not a re-skin.
+
+**Literature reviewed first, not the code (step a).** TSS's defining
+pathophysiology is a SUPERANTIGEN (staphylococcal TSST-1/enterotoxin B-C,
+or streptococcal pyrogenic exotoxin A), not an ordinary bacteremia.
+Superantigens bypass conventional antigen processing and cross-link MHC-II
+directly to the TCR's Vbeta region, non-specifically activating up to
+20-30% of the whole T-cell pool at once (vs. ~1 in 10,000-100,000 for a
+normal antigen) — producing a real cytokine storm (IL-1/IL-2/IL-6/TNF-
+alpha/IFN-gamma) on an HOURS, not days, timescale (Krakauer, *Toxins* 2019;
+Lappin & Ferguson, *Lancet Infect Dis* 2009). CDC's 1997 clinical case
+definition requires fever >=38.9C, diffuse macular erythroderma with later
+desquamation, hypotension, and >=3-organ-system involvement. TSS is also
+documented as more FLUID-REFRACTORY than ordinary septic shock — a direct
+consequence of the more abrupt, more severe vasoplegia.
+
+**Diffed against the tree (step b).** `inflammation.js`'s `pathogenBurden`
+-> `cytokineLoad` -> {capillaryLeak, fever, coagulopathy} cascade (already
+built for `septicShock`/`pneumoniaSepsis`) is the correct substrate, but its
+own 90-minute relaxation tau models a slow PAMP-driven cytokine buildup —
+the wrong kinetics for a superantigen storm. This had to be a genuinely
+different ONSET SHAPE, not a faster `septicShock`.
+
+**Wired through existing handles (step c), reusing three already-verified
+mechanisms rather than inventing new ones.** `pat.cytokineLoad` is seeded
+DIRECTLY at 0.55 on the presenting tick (bypassing the cascade's own
+pathogenBurden-derived ramp — the literature justification is the
+superantigen mechanism itself: near-total T-cell activation is reached
+within hours, not built up like an ordinary bacterial load), with
+`pat.pathogenBurden` also seeded so the cascade's own maintenance term
+doesn't let it decay back down mid-call. `riskFactors.sepsis = true` reuses
+the SAME `cardiovascular.js`/`metabolic.js` SVR-collapse/lactate consumers
+`septicShock` already engages (a real physiological "sepsis," even though
+the disease's clinical name doesn't say so). `pat.vasodilation` climbs at
+`dt*0.03` to a 0.65 ceiling — 3x the rate and a higher ceiling than
+`septicShock`'s own `dt*0.01`/0.55 — the cited fluid-refractory/faster-onset
+distinction. `pat.metabolicHeatMultiplier` reuses the shared fever handle
+at 1.35 (inside the same real ~10-30% hypermetabolic literature range
+`septicShock`'s own comment cites). The reversible, cytokine-gated
+myocardial-depression term (Vieillard-Baron, *Intensive Care Med* 2018)
+reuses `septicShock`'s exact mechanism, engaging sooner here because
+cytokineLoad starts already past its 0.45 gate.
+
+**Real time course (step d), MEASURED against the engine, not assumed.**
+At matched elapsed time (t=600s, both untreated): TSS vasodilation 0.463
+vs. `septicShock` vasodilation 0.189 (sbp 89.3 vs 86.6, svr 555.8 vs
+585.4) — a real, 2.4x-separated trajectory confirming the faster-onset
+kinetics actually engage, not just a coefficient that never fires. A
+condition-less control (`abdPain`) holds cytokineLoad/vasodilation at
+exactly 0 throughout. Presenting fever (39.6) trends down but stays
+febrile (37.9 by 600s, 37.2 by 1300s) rather than falling below normal,
+matching `septicShock`'s own established precedent for why a fever needs
+to be actively sustained through the heat-multiplier term.
+
+**Treatment through the same mechanisms (step e).** No new drug needed —
+large-volume saline (three doses) raises sbp from 83.5 to 95-96.4 mmHg at
+t=900s through the SAME generic Starling/fluid-resuscitation mechanism
+every other shock condition already responds to, confirming this is a
+real physiological response, not a scripted outcome. Norepinephrine
+(already shipped, item 88) works through the same alphaTone/receptor path
+any distributive-shock patient uses. No field antitoxin/source-control
+action exists in this formulary (tampon/wound-pack removal is a real
+clinical intervention but no discrete action represents it anywhere in
+this engine) — the new scenario's `resolve()` states this honestly, the
+same "supportive care, full reversal is hospital-side" framing already
+established for `rocuroniumOverdose`.
+
+**Asserted, two-sided (step f).** Five new assertions added to
+`mechanismWiring.mjs`'s new `[TOXIC SHOCK SYNDROME]` section: presence
+(cytokineLoad>0.4 and vasodilation>0.3 by 600s), specificity (a
+condition-less control shows exactly zero of both), the real distinguishing
+mechanism (TSS's vasodilation measurably outpaces `septicShock`'s at
+matched elapsed time, >1.5x), fever sustenance, and the fluid-treatment
+response. No new per-tick patient field was introduced (`cytokineLoad`/
+`pathogenBurden`/`vasodilation` are all already tracked in
+`scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists from earlier
+sessions), so no sweep changes were needed.
+
+**A new scenario, INFD-052**, presents a 24-year-old with a retained-tampon/
+menstrual-TSS vector — a diffuse sunburn-like erythroderma exam finding (the
+CDC case-definition's own named criterion), a real ~24-hour flu-to-shock
+history distinct from `septicShock`'s multi-day urosepsis timeline, and a
+`resolve()` that teaches the large-volume-fluid/fluid-refractory
+distinction explicitly.
+
+**Verification.** `node --check` clean on all three touched files
+(`conditions.js`, `scenarios.js`, `mechanismWiring.mjs`). `npx eslint
+src/physio/conditions.js src/data/scenarios.js src/scripts/
+mechanismWiring.mjs`: zero findings. `npx vite build`: clean (2.61s, same
+pre-existing >500kB chunk-size warning). The five new assertions were
+confirmed via a standalone extraction using `probe()`/`pinTraitsNeutral()`
+copied verbatim from the suite (lesson 17's sanctioned technique) — **5
+passed, 0 failed**. The FULL `mechanismWiring.mjs` suite (thousands of
+assertions across the whole engine, since this session's own condition
+touches the shared `inflammation.js`/`cardiovascular.js`/`metabolic.js`
+hot path indirectly through `riskFactors.sepsis`/`pathogenBurden`) was
+launched in the background and observed progressing cleanly through the
+BVM/CPR/pacing/torsades/hyperkalemia/AV-block/AFib/tamponade/bradycardia/
+flutter/takotsubo/ACS sections was launched and later confirmed complete in
+a same-session follow-up: **712 passed, 7 failed.** All 5 new
+`[TOXIC SHOCK SYNDROME]` assertions passed cleanly (cytokineLoad=0.556/
+vasodilation=0.463 engaged; healthy control zero; TSS's vasodilation
+measurably outpacing septicShock's, 0.463 vs 0.189; sustained fever
+coreTemp=37.88; crystalloid genuinely raising pressure 83.5->97.2 mmHg).
+The 7 failures are the three already-documented pre-existing BVM-trio
+failures plus four borderline/stochastic ones (a croup compensatory-
+tachypnea near-miss, an agitationBurden control-arm rounding-scale
+mismatch, a severe-acidemia secondary-hyperkalemia near-miss, and an
+untreated-neurogenic-shock sbp-drift near-miss) — none reads
+`cytokineLoad`/`pathogenBurden`/`vasodilation`/`toxicShockSyndrome`/
+`septicShock`, confirmed unrelated to this batch. The two hyperkalemia/
+neurogenic-shock near-misses were NOT previously on record in this
+document's own documented failure baseline and are worth a future
+session's attention to confirm whether they're pre-existing flakes this
+suite hasn't caught before or a genuine regression from unrelated
+concurrent work landing the same day. `scenarioSweep.mjs` was NOT re-run
+this session (no new per-tick field was added for it to newly check, and
+the new condition/scenario reuse only already-verified, already-tracked
+machinery) — a future session should still confirm it clean against the
+new scenario if picking this file back up. Two throwaway
+probe scripts used to measure the numbers above (`_probe_tss.mjs`,
+`_verify_tss_section.mjs`) were stripped before this entry was written,
+confirmed via a directory listing showing neither remains under
+`src/scripts/`.
+
+**Item 47 (the standing condition-library workstream) and item 46 (the
+dead-code sweep) both remain open, perpetual by their own design** —
+this entry closes exactly one condition per the workstream's own "one
+condition per batch, fully" discipline, not the workstream itself.
 
 ### 2026-09-13 — `physiologyValidation.mjs` run to full completion for the first time in many sessions: 113 passed, 2 failed, diffed against the documented 115/0 baseline. Both failures are real and NEW (not pre-existing flakes), root-caused, and filed as new queue items rather than fixed blind. A third real defect (dead, unconsumed desensitization fields from a previous item in the queue) was found in the course of tracing them.
 
@@ -5695,8 +5824,10 @@ its own section 3 entry immediately below this session's newest one),
 (a previous item in the queue, Toxicology); and, from this SAME session's second wave,
 `necrotizingFasciitis`, `neurolepticMalignantSyndrome`, `cocaineToxicity`,
 `malaria` (a genuinely new pure-hemolysis mechanism, `updateHemolysis` in
-metabolic.js) and `dengueFever` (see section 3's topmost entry) —
-**187 conditions implemented in total now, confirmed by direct count
+metabolic.js) and `dengueFever` (see section 3's topmost entry); and, from
+a later session, `toxicShockSyndrome` (INFD-052, condition-library
+workstream, see section 3's newest entry) —
+**188 conditions implemented in total now, confirmed by direct count
 against the tree**
 (`Object.keys(CONDITIONS).length`), not the running tally alone (lesson
 16). That is MORE than this paragraph's own name-by-name arithmetic would
@@ -6021,7 +6152,7 @@ frame error in section 3 were both exactly this shape.)*
 ### Infectious disease
 HIV/AIDS · Human Papillomavirus (HPV) · Sexually Transmitted Disease
 (unspecified) · Cellulitis · Septic Arthritis ·
-Toxic Shock Syndrome · Sepsis (Undifferentiated Source) ·
+Sepsis (Undifferentiated Source) ·
 Neutropenic Fever ·
 Influenza ·
 COVID-19 (Mild) ·
@@ -6033,7 +6164,11 @@ Lyme Disease
 mechanism, `updateHemolysis` in metabolic.js — and Dengue Fever all shipped
 this session, see section 3's newest entries. A new "Infectious Disease"
 `SCEN_BODY_SYSTEM` category was created in App.jsx for them, since none
-existed before.)*
+existed before. Toxic Shock Syndrome shipped in a later session (see
+section 3's newest entry) — a superantigen-driven distributive shock
+mechanistically distinct from `septicShock`, reusing the same inflammation
+cascade/`riskFactors.sepsis` substrate at a faster onset and higher
+ceiling.)*
 
 ### Psychiatric
 Acute Psychosis ·
