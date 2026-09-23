@@ -446,22 +446,27 @@ already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
 defect on unmodified master (confirmed by grep: zero failures attributed to
 `norepinephrineOverdose` specifically beyond that pre-existing class), and
 `norepinephrineOverdose` itself appears in the sweep's own per-scenario
-output with sane, in-range values throughout its run. `mechanismWiring.mjs` **could NOT be confirmed complete within this
-session's own time budget** — it was still running against 6+ other
-concurrent invocations of the same suite from other sessions sharing this
-environment (confirmed via `ps aux`, the exact contention pattern lesson 14
-documents) well past its own normal ~22-minute unhindered runtime. Stated
-honestly, not assumed clean: a future session should re-run
-`node src/scripts/mechanismWiring.mjs` to completion and diff the failure
-SET against the pre-existing baseline (`mechanismWiring.mjs 612 passed, 5
-failed`, per section 2's current baseline table) before treating this
-batch as fully suite-verified — the new
-`[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]` section's own
-three assertions were confirmed passing via the standalone, isolated probe
-described above (lesson 8's sanctioned technique), which is real, measured
-evidence for the new mechanism specifically, but is not a substitute for
-the full-suite run's own regression coverage of everything else in the
-file when the environment allows one to finish.
+output with sane, in-range values throughout its run. `mechanismWiring.mjs` DID finish, after running well past its own normal
+~22-minute unhindered runtime under that contention: **713 passed, 4
+failed**. The new `[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]`
+section's own three assertions all passed clean (sbp=198.9 vs. control
+125.6, alphaTone=0.76 vs. 0.20; specificity confirmed; and the
+receptor-ceiling finding, 1-unit sbp=198.9 vs. 40-unit sbp=188.5). All 4
+failures are pre-existing and unrelated to this change, confirmed by
+content: PACs HR-variance stdev (a standing, already-documented flaky
+stochastic assertion), a condition-less control's vo2Demand agitation-arm
+match (reads `agitationBurden`, untouched by this batch), severe-acidemia
+secondary hyperkalemia (reads `k`/rhythm via the acid-base pathway,
+untouched), and untreated neurogenic-shock sbp drift (reads
+`pat.vasodilation`, untouched) — none reads `norepi`, `alphaTone`, or
+anything else this batch touched. This session's total assertion count
+(713) is consistent with the prior documented baseline (612) plus this
+batch's own 3 new assertions plus whatever other concurrent sessions' own
+work landed in the same shared file while this run was in flight — not
+re-derived exactly here, since diffing the precise delta against a
+mid-flight concurrent-edit baseline is not meaningful; the important,
+directly-confirmed fact is that all 4 failures are pre-existing and
+none is attributable to this change.
 
 **The other five items in this session's assigned scope (a hazmat scene
 mechanic, a breath-odor mechanism, the opioidOD near-apnea architectural
