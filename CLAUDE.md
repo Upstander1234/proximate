@@ -5286,14 +5286,29 @@ plausible but not fitted to trial data.
     formula regression) or isolated to these two (per-drug coefficient
     drift), before touching any code.
 
-51. **NEW, filed 2026-09-21 — `national.js` cannot take a temperature,
-    named as baseline monitoring by Universal Care (p.14).** Waveform
-    capnography DOES exist (`devices.js` `capno`, now crew-attachable via
-    `gear.js`'s `attachCapno` task and `national.js`'s `capnography` rule).
-    No thermometer device/task exists: needs a device entry, an
-    `attachDevice` task, a published temp reading, then hyper/hypothermia
-    and sepsis rules. Still owed: EtCO2-driven rules (CPR quality <10 mmHg,
-    p.6230; post-ROSC target 35-45, p.6551) now that the reading is live.
+51. **RESOLVED (this session) — a real thermometer device/task now exists.**
+    `devices.js` gained a `thermometer` entry (region `head`, `bag:"monitor"`,
+    `lvl:1`, `wave:null`, `reads:(v)=>{"Temp":...}` reusing `v.temp`, the same
+    field the hyper/hypothermia and heat-stroke rules already read — those
+    rules never needed a device to fire, since `ctx.v` is live physiology
+    regardless of what's attached, but nothing ever prompted the crew or the
+    player to actually go take a temperature or see one on the monitor).
+    `gear.js` gained `attachThermo` (mirrors `attachCapno` exactly), and
+    `national.js` gained a `thermometer` monitoring rule alongside `pulseOx`/
+    `bpCuff` (Universal Care, p.14's baseline full set of vital signs).
+    `deviceActs()`/the Monitor-tab readout panel are both fully generic over
+    `DEVICES`, so no `App.jsx` change was needed for either the player-facing
+    attach/remove action or the live readout. `node --check`/`npx eslint`
+    clean on all three touched files; `npx vite build` clean (same
+    pre-existing >500kB chunk-size warning). Sepsis rules reading temp were
+    not added — this engine's `pneumoniaSepsis`/`septicShock`/`toxicShockSyndrome`
+    conditions drive fever through `pat.metabolicHeatMultiplier`, and no
+    National guideline names a temperature-gated sepsis treatment step
+    distinct from what `CRITICAL`/`SHOCK` already cover, so no new rule was
+    invented for it. **Still open**: EtCO2-driven rules (CPR quality
+    <10 mmHg, p.6230; post-ROSC target 35-45, p.6551) — the capno reading
+    was already live before this session, this is a separate, unbuilt
+    treatment-rule gap, not a device gap.
 
 52. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
     ipratropium, dexamethasone, diltiazem, metoprolol, morphine, ketorolac,
@@ -5515,8 +5530,10 @@ plausible but not fitted to trial data.
     files. Verified by `scripts/ausculRetimeTest.mjs` (136 pass) and a
     headless-Chromium test (pneumothorax side measurably quieter, dragging
     builds exact-rate buffers, back view plays, typed note handed back,
-    no page errors). Still to do: (a) no scenario sets `pat.ptxSide` /
-    `pleuralEffusionSide`, so a pneumothorax is always on the right; (b) the
+    no page errors). Still to do: (a) **RESOLVED (2026-09-23)**: `stabChest`/`openPneumothorax` now set
+    `ptxSide:"L"` and `hemothorax` sets `pleuralEffusionSide:"R"` in their `patient:`
+    builders, matching each scenario's own text (`spontaneousPneumothorax` keeps the R default;
+    `stabbingPair`'s victim and `pleuralEffusion` left unset, no stated side); (b) the
     user's own hemothorax and pneumothorax-cough recordings are not added yet
     (need source and license); tension pneumothorax is a 0.03 gain attenuation,
     not a recording; (c) no pericardial rub, and only 3 stridor clips (the

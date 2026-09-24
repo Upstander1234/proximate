@@ -104,12 +104,14 @@
 // are the only agitation tasks. Norepinephrine now stands in for the shock
 // vasopressor; `pushEpi` remains for anaphylaxis.
 //
-// ASSESSMENT-DEVICE GAPS: Universal Care (p.14) also names temperature as
-// baseline monitoring, and this engine has no thermometer device or task, so
-// no rule can attach one. Pulse oximetry, BP cuff, waveform capnography, ECG
+// ASSESSMENT-DEVICE GAPS: Universal Care (p.14) names temperature as
+// baseline monitoring — a real `thermometer` device/task now exists
+// (devices.js/gear.js) and is prompted for below, same as pulse ox/BP cuff.
+// Pulse oximetry, BP cuff, thermometer, waveform capnography, ECG
 // leads/12-lead, pads, blood glucose, serial vitals (q5 min critical / q15
 // min stable / after each drug), vascular access and tourniquet application
-// ARE covered above.
+// ARE covered above. Still open: EtCO2-driven rules (CPR quality <10 mmHg,
+// p.6230; post-ROSC target 35-45, p.6551) now that the capno reading is live.
 //
 // TASK-CAP POLICY, stated once rather than per rule, matching this
 // project's own established discipline (see the LA County and San Diego
@@ -335,6 +337,11 @@ export default {
     //    "monitor" task has something to read. Critical patients first. ──
     { id: "pulseOx", when: (ctx) => !ctx.s.devices?.pulseox, task: "attachPulseOx", note: "continuous pulse oximetry" },
     { id: "bpCuff", when: (ctx) => !ctx.s.devices?.bpcuff, task: "attachBpCuff", note: "cuff on, baseline blood pressure" },
+    // p.14 (Universal Care): temperature as part of the baseline full set of
+    // vital signs — real teaching value for the hyper/hypothermia and sepsis
+    // guidelines below, which all key off ctx.v.temp directly but previously
+    // had no rule prompting the crew to actually go take one.
+    { id: "thermometer", when: (ctx) => !ctx.s.devices?.thermometer, task: "attachThermo", note: "baseline temperature" },
     // p.14 (Universal Care): "consider waveform capnography for patients with
     // respiratory complaints (essential for critical patients...)"; p.6228:
     // EtCO2 to monitor CPR effectiveness; p.6551: post-arrest EtCO2 35-45.

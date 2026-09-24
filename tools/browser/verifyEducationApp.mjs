@@ -4,7 +4,7 @@
 // available path — signed-in/crowdsource-review paths need Firebase
 // configured and are not exercised here.
 
-import { launch } from "./driver.mjs";
+import { launch, toTitleScreen } from "./driver.mjs";
 
 const URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 

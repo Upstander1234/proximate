@@ -54,6 +54,22 @@ export async function getState(page) {
   return page.evaluate(() => (window.__proximateTestGetState ? window.__proximateTestGetState() : null));
 }
 
+// RootApp's mode picker is the real first screen a fresh page load reaches
+// (Game/Education tiles), not the game's own title screen directly. A
+// cleared-localStorage session also shows a one-time first-run Credits
+// screen (App.jsx's own firstCredits gate) ahead of the boot screen. Call
+// this before any "Go on shift" click-through, after clearing localStorage
+// and reloading. "Play" as a substring also matches "Playing as guest"
+// (renders first in DOM order), so this matches the exact button text
+// rather than using clickText's substring .first() match.
+export async function toTitleScreen(page) {
+  await page.getByText("Play →", { exact: true }).click();
+  await page.waitForTimeout(300);
+  await clickText(page, "Continue");
+  await page.waitForTimeout(200);
+  await clickText(page, "CONTINUE WITHOUT AI");
+}
+
 export async function waitForPhase(page, phase, timeout = 5000) {
   await page.waitForFunction(
     (ph) => window.__proximateTestGetState && window.__proximateTestGetState()?.phase === ph,

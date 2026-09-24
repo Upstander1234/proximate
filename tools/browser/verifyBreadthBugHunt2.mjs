@@ -13,13 +13,16 @@
 //
 // Run: node tools/browser/verifyBreadthBugHunt2.mjs   (needs `npm run dev`)
 
-import { launch, clickText, waitForPhase, setState, getState } from "./driver.mjs";
+import { launch, clickText, waitForPhase, setState, getState, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
-  await clickText(page, "Continue without AI");
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");

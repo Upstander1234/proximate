@@ -10,7 +10,7 @@
 //
 // Run: node tools/browser/verifyCareerSetupWizard.mjs   (needs `npm run dev`)
 
-import { launch, clickText, waitForPhase, getState } from "./driver.mjs";
+import { launch, clickText, waitForPhase, getState, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
@@ -43,7 +43,9 @@ async function runChecks(page, consoleErrors) {
 
   const findings = [];
 
-  await clickText(page, "Continue without AI");
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");

@@ -11,12 +11,16 @@
 //
 // Run: node tools/browser/verifyCardiacHeartProbeLive.mjs   (needs `npm run dev`)
 
-import { launch, clickText, waitForPhase, setState, getState } from "./driver.mjs";
+import { launch, clickText, waitForPhase, setState, getState, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");
@@ -63,6 +67,10 @@ async function main() {
     await page.waitForTimeout(300);
 
     await clickText(page, "Auscultate heart sounds");
+    // The action now opens the free-placement AuscultationMinigame modal;
+    // finishing it is what resolves the action and logs the engine's finding.
+    await page.waitForTimeout(1500);
+    if (await page.getByText("Finish listening").count()) await clickText(page, "Finish listening");
     await page.waitForTimeout(3500);
 
     const afterState = await getState(page);

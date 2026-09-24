@@ -2,7 +2,7 @@
 // injection) proving Chapter 1's actual button handlers work: arrival
 // prompt -> gear-up -> a real queue gets seeded -> "station" renders with
 // the 3-call queue, then further into a real call.
-import { launch, clickText, getState } from "./driver.mjs";
+import { launch, clickText, getState, toTitleScreen } from "./driver.mjs";
 
 const URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
@@ -10,6 +10,10 @@ async function main() {
   const { browser, page, consoleErrors } = await launch({ headless: true });
   try {
     await page.goto(URL, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => { try { localStorage.clear(); localStorage.setItem("proximate_tester_unlocked", "1"); } catch {} });
+    await page.reload();
+    await page.waitForTimeout(500);
+    await toTitleScreen(page);
     await clickText(page, "Go on shift");
     await clickText(page, "I understand");
     await clickText(page, "New save");

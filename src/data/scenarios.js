@@ -2469,7 +2469,7 @@ stabChest: {cat: "trauma", id: "TRMA-028", pronouns: "he", title: "Male, 32. Sta
   impression: "Supine, semi-conscious, gurgling. A bleeding stab wound to the left chest that bubbles. Breath sounds are gone on the left, the neck veins are up, and the trachea is drifting to the right.",
   imps: ["TRMA", "RDOT", "SHOK", "RARF"],
   condition: "stabChestTension",
-  patient: {age: 32, gender: "male"},
+  patient: {age: 32, gender: "male", ptxSide: "L"},
   clothing: {top: "short", bottom: "pants", shoes: true},
   seed: () => ({}),
   probes: {
@@ -3259,7 +3259,7 @@ openPneumothorax: {cat: "trauma", id: "TRMA-039", pronouns: "she", title: "Femal
   impression: "Sitting against a wall, breathing fast and shallow, a single stab wound to the left chest audibly sucking air with each breath.",
   imps: ["TRMA", "RDOT"],
   condition: "openPneumothorax",
-  patient: {age: 27, gender: "female"},
+  patient: {age: 27, gender: "female", ptxSide: "L"},
   clothing: {top: "short", bottom: "pants", shoes: false},
   seed: () => ({}),
   probes: {
@@ -3290,7 +3290,7 @@ hemothorax: {cat: "trauma", id: "TRMA-040", pronouns: "he", title: "Male, 34. St
   impression: "Slumped against a loading dock, pale and diaphoretic, breathing fast and shallow. A single stab wound visible on his right posterior chest.",
   imps: ["SHOK", "RDOT", "TRMA"],
   condition: "hemothorax",
-  patient: {age: 34, gender: "male"},
+  patient: {age: 34, gender: "male", pleuralEffusionSide: "R"},
   clothing: {top: "long", bottom: "pants", shoes: false},
   seed: () => ({}),
   probes: {

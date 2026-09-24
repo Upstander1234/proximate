@@ -256,9 +256,18 @@ class DrugInstance {
     // kinetic model it uses.
     const r = (route || drugDef?.route || "IV").toUpperCase();
     this.route = r;
-    this.enteral = r.includes("PO") || r.includes("ORAL") || r.includes("SL") || r.includes("NG");
+    // ODT (orally-disintegrating tablet, e.g. ondansetron) was previously
+    // unmatched here — it fell through to the `else` IV-bolus-like branch
+    // below, the same previously-dead-route defect fixed for IN. It is
+    // enteral, not sublingual: it dissolves in saliva and is largely
+    // swallowed and absorbed via the GI tract, just faster-dissolving than
+    // a standard tablet, so it uses the ordinary (non-sublingual) ka/F.
+    this.enteral = r.includes("PO") || r.includes("ORAL") || r.includes("SL") || r.includes("NG") || r.includes("ODT");
     this.inhaled = r.includes("NEB") || r.includes("INH") || r.includes("MDI");
     this.intramuscular = r.includes("IM") && !r.includes("IV") && !r.includes("IO");
+    // Intranasal is its own route, not a synonym for IM — distinguished from
+    // "INH" (inhaled/nebulized) explicitly since both substrings contain "IN".
+    this.intranasal = r.includes("IN") && !r.includes("INH") && !r.includes("IV") && !r.includes("IO") && !r.includes("IM");
     // Local airway depot exists for inhaled drugs whether or not they carry a
     // full compartment model.
     this.airwayDose = this.inhaled ? dose * bioavailability : 0;
@@ -366,6 +375,34 @@ class DrugInstance {
           this.depot = dose * bioavailability;
           this.deepDepot = 0;
         }
+        this.central = 0;
+        this.airwayDose = 0;
+      } else if (this.intranasal) {
+        // INTRANASAL ROUTE.
+        // Absorbed across the nasal mucosa rather than injected into muscle or
+        // pushed straight into a vein — previously unhandled, so an "IN" route
+        // silently fell into the `else` bolus branch below and behaved exactly
+        // like IV (full dose in the central compartment instantly), erasing the
+        // real distinction the route exists to teach (this is also why
+        // naloxone_in/naloxone_im's own drugs.js `onset`/`dur` fields were dead:
+        // those fields are read only by the curve-model path, not this
+        // two-compartment one — the actual onset a twoCompartment drug produces
+        // comes from ka/ke0, and nothing here previously used route to set it).
+        // Nasal mucosal absorption is fast (Tmax commonly ~10-15 min across IN
+        // fentanyl/midazolam/naloxone formulations) and, unlike IM, is NOT
+        // perfusion-dependent in the same way skeletal muscle is: the nasal
+        // mucosa stays richly vascularized and is not a preferential target of
+        // peripheral vasoconstriction in early shock, so an IN dose does not
+        // get stranded the way an IM dose can. Bioavailability is genuinely
+        // lower than IV (atomized spray loses some dose to swallowing/mucosal
+        // clearance) — 0.6 is a literature-range midpoint (published IN
+        // bioavailability for these drug classes commonly falls ~50-90%), the
+        // same "identify the fact, use a conservative default absent a
+        // drug-specific figure" approach already used for enteral's F=0.4
+        // above; a drug can override with `drugDef.nasalBioavailability`.
+        this.ka = drugDef?.inKa ?? 0.11;
+        const F = drugDef?.nasalBioavailability ?? 0.6;
+        this.depot = dose * bioavailability * F;
         this.central = 0;
         this.airwayDose = 0;
       } else if (enteral) {
@@ -940,7 +977,7 @@ export function updateDrugs(pat, s, dt) {
         if (drugDef) {
           const bioavailability = drugDef.bioavailability ?? 1;
           const dose = d.amount ?? drugDef.dose ?? 1; // FIX: scenario‑provided dose
-          pat.drugInstances.push(new DrugInstance(d.id, dose, d.at, bioavailability));
+          pat.drugInstances.push(new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null));
         }
       }
     });

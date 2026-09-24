@@ -17,6 +17,13 @@ async function main() {
   const { browser, page, consoleErrors } = await launch();
   try {
     await page.goto(DEV_URL, { waitUntil: "networkidle" });
+    await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+    await page.reload({ waitUntil: "networkidle" });
+    // RootApp's mode picker and the first-run Credits screen sit ahead of boot.
+    await page.getByText("Play →", { exact: true }).click();
+    await page.waitForTimeout(300);
+    await clickText(page, "Continue");
+    await page.waitForTimeout(300);
 
     // 1. Boot is the very first phase on a fresh load.
     const s0 = await getState(page);

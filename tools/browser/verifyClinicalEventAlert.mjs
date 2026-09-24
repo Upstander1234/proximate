@@ -7,12 +7,16 @@
 //
 // Run: node tools/browser/verifyClinicalEventAlert.mjs   (needs `npm run dev`)
 
-import { launch, clickText, getState, waitForPhase } from "./driver.mjs";
+import { launch, clickText, getState, waitForPhase, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5174";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");

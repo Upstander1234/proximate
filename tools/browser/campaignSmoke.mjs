@@ -26,7 +26,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { launch, clickText, setState, getState } from "./driver.mjs";
+import { launch, clickText, setState, getState, toTitleScreen } from "./driver.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const URL = process.env.PROXIMATE_URL || "http://localhost:5173";
@@ -37,6 +37,10 @@ const slug = (s) => s.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "");
 
 async function establishBaseState(page) {
   await page.goto(URL, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => { try { localStorage.clear(); localStorage.setItem("proximate_tester_unlocked", "1"); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await clickText(page, "I understand"); // liability disclaimer #1 (title -> saves)
   await clickText(page, "New save");
@@ -46,6 +50,8 @@ async function establishBaseState(page) {
   await page.waitForTimeout(1700);
   await clickText(page, "Career Mode");
   await clickText(page, "Zero-To-Hero", { exact: true });
+  await page.waitForFunction(() => window.__proximateTestGetState?.()?.phase === "campaignRenderPref", null, { timeout: 10000 });
+  await clickText(page, "2D", { exact: true });
   await page.waitForFunction(
     () => window.__proximateTestGetState && window.__proximateTestGetState()?.phase === "campaignDisclaimer",
     null, { timeout: 10000 }

@@ -235,7 +235,11 @@ function useSiren(on,volume=1){useEffect(()=>{if(!on)return;let ctx,osc,iv;
 // either explicitly radio traffic (kind "disp"), a patient quote (kind
 // "pt"), or simply contains a quoted line -- which is how every scenario in
 // this game already marks actual spoken words vs narrated findings.
-const SPEAKABLE=(e)=>e.kind==="disp"||e.kind==="pt"||/"/.test(e.text);
+// kind "you" (the player's own typed line, askPatientFreeText) is excluded
+// even though it's quoted -- the player already knows what they just typed,
+// reading it back to them would be a strange, redundant echo, not a second
+// voice in the scene.
+const SPEAKABLE=(e)=>e.kind!=="you"&&(e.kind==="disp"||e.kind==="pt"||/"/.test(e.text));
 
 // Pulls a stable "who's talking" key out of a log line so different people
 // can get different voices instead of one flat narrator reading everything.
@@ -258,6 +262,35 @@ function speakerKeyFor(e){
 // else gets a `NAME: "..."` prefixed line, `kind:"disp"` (the same color
 // already used for radio traffic, so speech reads as a distinct color from
 // plain narration/findings).
+// Screen-reader accessibility for spoken dialogue: the NARRATIVE panel is a
+// plain scrolling history (correctly NOT itself aria-live -- making the
+// whole list live would re-announce the entire call's backlog every time one
+// line is appended). A blind or low-vision player has no other way to know
+// a patient/crew/bystander line just appeared -- voice-on players get audio,
+// but the caption text is otherwise silent to assistive tech. This renders
+// only the single MOST RECENT speakable line into a visually-hidden
+// aria-live region, so a screen reader announces new dialogue the moment it
+// lands, matching what a sighted+voice-on player hears, without re-reading
+// the whole log or requiring voice mode to be on at all.
+function LiveDialogueAnnouncer({log}){
+  const lastSpoken=useRef(null);
+  const [announced,setAnnounced]=useState("");
+  useEffect(()=>{
+    for(let i=log.length-1;i>=0;i--){
+      const e=log[i];
+      if(SPEAKABLE(e)){
+        if(lastSpoken.current!==e.text){
+          lastSpoken.current=e.text;
+          setAnnounced(e.text.replace(/[★●▲⚠_#"]/g,"").trim());
+        }
+        break;
+      }
+    }
+  },[log]);
+  return (<div aria-live="polite" aria-atomic="true" style={{position:"absolute",width:1,height:1,padding:0,margin:-1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap",border:0}}>
+    {announced}</div>);
+}
+
 function dialogueLineFor(speaker,text,role,patientName){
   // Every dialogue line now carries an explicit speaker label, patient
   // lines included — a generated line is otherwise indistinguishable from
@@ -292,74 +325,46 @@ function unlockSpeech(){
     a.volume=0;
     a.play().then(()=>a.pause()).catch(()=>{});
   }catch{/* ignore */}
-  // SpeechSynthesis (the every-device fallback voice) needs the same
-  // real-user-gesture priming on several mobile browsers -- a silent,
-  // near-zero-length utterance spoken here, inside the actual click, lets
-  // useReadAloud's later async calls (from the tick loop, not a click)
-  // actually produce sound instead of being silently ignored.
-  try{
-    if(typeof window!=="undefined"&&window.speechSynthesis){
-      const u=new SpeechSynthesisUtterance(" ");
-      u.volume=0;
-      window.speechSynthesis.speak(u);
-    }
-  }catch{/* ignore */}
 }
-// Browser SpeechSynthesis, used ONLY as a fallback when the real neural
-// voice (Kokoro, via neuralTts.js) isn't available on this device -- some
-// devices never finish (or never even start) downloading/compiling the WASM
-// model (limited memory, a blocked/slow model CDN, no WASM at all), and this
-// project's earlier "silent beats robotic" design meant those players heard
-// no voice ever, with nothing telling them why. SpeechSynthesis is supported
-// on effectively every browser (unlike SpeechRecognition, which Firefox
-// lacks entirely), so falling back to it is what actually makes voice output
-// work on EVERY device, at the cost of a robotic voice on the ones where the
-// nicer neural model can't run -- degrading gracefully, not staying silent.
-let _synthVoicesCache=null;
-function synthVoiceFor(speakerKey){
-  if(typeof window==="undefined"||!window.speechSynthesis) return null;
-  if(!_synthVoicesCache||!_synthVoicesCache.length) _synthVoicesCache=window.speechSynthesis.getVoices();
-  const voices=_synthVoicesCache||[];
-  if(!voices.length) return null;
-  let h=0; const k=speakerKey||"narrator";
-  for(let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
-  return voices[h%voices.length];
-}
-function speakWithSynthFallback(text,speakerKey,volume){
-  if(typeof window==="undefined"||!window.speechSynthesis) return false;
-  try{
-    const u=new SpeechSynthesisUtterance(text);
-    const v=synthVoiceFor(speakerKey);
-    if(v) u.voice=v;
-    u.volume=Math.max(0,Math.min(1,volume));
-    window.speechSynthesis.speak(u);
-    return true;
-  }catch{return false;}
-}
-function useReadAloud(log,voice,dispatchCue,volume=1){
+// How long a queued line will wait for the real neural voice (Kokoro, via
+// neuralTts.js) before it's dropped rather than spoken. There is
+// deliberately NO fallback to the browser's own SpeechSynthesis voice —
+// per explicit product direction, a robotic built-in voice is worse than no
+// voice at all, so a line that can't be spoken with the real voice is
+// simply skipped, not degraded. This cap only exists so a long queue built
+// up while the model is still loading doesn't suddenly all play back at
+// once, stacked, once it finally becomes ready — a stale line (older than
+// this) is silently dropped and the queue moves on. A device with no
+// working neural voice at all (isAvailable()===false, or a permanent
+// "failed" status with auto-retry exhausted) is therefore simply silent —
+// SettingsOverlay's NEURAL VOICE row is where a player sees and can retry
+// that, not a degraded voice mid-scene.
+const NEURAL_VOICE_MAX_WAIT_MS=20000;
+function useReadAloud(log,voice,dispatchCue,volume=1,patientGender=null){
   const lastLen=useRef(0);
   const queueRef=useRef([]);
   const speakingRef=useRef(false);
   const audioRef=useRef(null);
   // A pump loop is deliberately built by re-scheduling itself (setTimeout),
-  // not an unbounded synchronous recursion -- see the grace-window branch
-  // below, which needs to wait between attempts while the neural engine is
-  // still loading.
+  // not an unbounded synchronous recursion -- see the wait branch below,
+  // which needs to wait between attempts while the neural engine is still
+  // loading.
   const pump=async()=>{
     if(speakingRef.current) return;
     const next=queueRef.current.shift();
     if(next===undefined) return;
     const st=neuralTts.status();
     if(st!=="ready"){
-      // Give the neural voice a real grace window (it's the nicer voice,
-      // worth a short wait) but never let a line sit forever: once it's
-      // failed outright, or this particular line has already waited past
-      // the window, speak it via SpeechSynthesis instead of dropping it.
+      // Wait for the neural voice rather than degrading to a robotic one --
+      // but not forever: an unavailable device (unsupported, or a failure
+      // that hasn't started its own auto-retry back-off yet) drops the line
+      // immediately rather than spinning on something that can't recover
+      // right now, and any line queued too long is dropped as stale once
+      // it's waited past NEURAL_VOICE_MAX_WAIT_MS, so a long backlog built
+      // up while the model was loading can't suddenly all play at once.
+      if(!neuralTts.isAvailable()) return pump();
       const waited=(next._waitedMs||0);
-      if(st==="failed"||waited>=4000){
-        speakWithSynthFallback(next.text,next.speaker,volume);
-        return pump();
-      }
+      if(waited>=NEURAL_VOICE_MAX_WAIT_MS) return pump();
       queueRef.current.unshift({...next,_waitedMs:waited+150});
       setTimeout(pump,150);
       return;
@@ -367,7 +372,7 @@ function useReadAloud(log,voice,dispatchCue,volume=1){
     speakingRef.current=true;
     const finish=()=>{speakingRef.current=false; pump();};
     try{
-      const blob=await neuralTts.generate(next.text,next.speaker);
+      const blob=await neuralTts.generate(next.text,next.speaker,next.gender);
       const url=URL.createObjectURL(blob);
       const a=new Audio(url);
       a.volume=Math.max(0,Math.min(1,volume));
@@ -377,13 +382,18 @@ function useReadAloud(log,voice,dispatchCue,volume=1){
       await a.play().catch(done);
     }catch{
       // Generation itself failed for this one line (not just "not ready
-      // yet") -- fall back to SpeechSynthesis rather than silently
-      // dropping it, then move on.
-      speakWithSynthFallback(next.text,next.speaker,volume);
+      // yet") -- drop it and move on (no SpeechSynthesis fallback, see
+      // NEURAL_VOICE_MAX_WAIT_MS's own comment). If this failure is what
+      // just latched neuralTts._failed (a transient network blip, not a
+      // permanently unsupported device), arm its own auto-retry so later
+      // lines in this same session can still recover onto the neural voice
+      // -- generate()'s own throw doesn't otherwise trigger this the way
+      // preload()'s catch does.
+      neuralTts._maybeAutoRetry?.();
       finish();
     }
   };
-  const enqueue=(text,speaker)=>{if(!text) return; queueRef.current.push({text,speaker:speaker||"narrator"}); pump();};
+  const enqueue=(text,speaker,gender)=>{if(!text) return; queueRef.current.push({text,speaker:speaker||"narrator",gender}); pump();};
   // Start the real (potentially large) neural-voice download the moment
   // read-aloud is turned on, so it has a head start rather than only
   // beginning on the very first spoken line.
@@ -392,7 +402,8 @@ function useReadAloud(log,voice,dispatchCue,volume=1){
     if(!voice){lastLen.current=log.length;return;}
     log.slice(lastLen.current).forEach(e=>{
       if(SPEAKABLE(e)){const clean=e.text.replace(/[\u2605\u25cf\u25b2\u26a0_#]/g,"").replace(/"/g,"").trim();
-        enqueue(clean,speakerKeyFor(e));}
+        const key=speakerKeyFor(e);
+        enqueue(clean,key,key==="patient"?patientGender:null);}
     });
     lastLen.current=log.length;
     // log/enqueue aren't deps: both are fresh every render (enqueue isn't
@@ -1354,15 +1365,34 @@ function scheduleUnits(s, units){
   return {units:u.sort((a,b)=>a.eta-b.eta), rank};
 }
 
-// History taking — one button for SAMPLE, one for OPQRST. Each is tracked
-// independently (sampleAsked / opqrstAsked) so asking one does not consume
-// the other; each surfaces the scenario's scripted probe for that history,
-// falling back to the general `history` probe if a scenario hasn't been
-// split into separate sample/opqrst probes yet.
-const HX_SETS=[
-  ["sample","sampleAsked","SAMPLE history","Taking a SAMPLE history — signs & symptoms, allergies, medications, pertinent history, last oral intake, events leading up"],
-  ["opqrst","opqrstAsked","OPQRST history","Taking an OPQRST history — onset, provocation, quality, region/radiation, severity, time"],
-];
+// History taking used to be two fixed buttons ("Ask — SAMPLE history" /
+// "Ask — OPQRST history") that each dumped one scripted paragraph the
+// instant they were clicked. Replaced by askPatientFreeText below: the
+// player types an actual question into the narrative panel, and a keyword
+// match against these two real clinical vocabularies routes the question to
+// the scenario's own scripted SAMPLE or OPQRST content — still the exact
+// same authored, clinically-accurate text every scenario already carries
+// (probes.sample/probes.opqrst), just reached by asking for it in character
+// instead of pressing a labeled button. Anything that doesn't match either
+// vocabulary falls through to the real dialogue subsystem (tier 3 LLM, or a
+// tier-2 template) for an open-ended, in-character reply — see
+// askPatientFreeText's own header for why facts stay deterministic while
+// open conversation doesn't.
+const SAMPLE_KEYWORDS=/allerg|medicat|\bmeds?\b|\bpill|prescri|\bdrug|history|\bhx\b|surger|condition|illness|diagnos|\beat|\bate\b|\bmeal|\bfood|\bdrink|led up|leading up|before this|before it started|doing before/i;
+const OPQRST_KEYWORDS=/onset|start(ed)?|when did|begin|began|worse|better|provok|trigger|\bcaus|describe.*(pain|it|feel)|feel like|quality|radiat|spread|scale|out of ten|\b\d+ to \d+\b|how bad|how long|since when|constant|come and go|comes and goes/i;
+// A one-shot question tracked per-vocabulary the same way the old two
+// buttons were (sampleAsked/opqrstAsked) — a scenario's authored paragraph
+// is meant to be delivered once; asking a differently-worded SAMPLE-ish
+// question a second time gets an honest "repeats themselves," matching how
+// every other one-shot probe in this game already behaves.
+//
+// Deliberately no time cost is charged for asking (unlike the old buttons'
+// flat 25s): every other dialogue exchange in this game (crew reactions,
+// unprompted patient speech, procedure discomfort lines) is likewise free
+// in sim time — it rides on whatever tick is already running rather than
+// advancing the clock itself. Jumping s.t directly here, bypassing the tick
+// loop's own incremental ODE integration, would desync recorded vitals
+// timestamps from the physiology state they're supposed to describe.
 
 // Shared back-button, used on every setup screen (jumps one step back in
 // the wizard) and, with a confirm, on the live-call screens (jumps all
@@ -1382,6 +1412,11 @@ const BackBtn=({toPhase,label="← Back",confirmMsg,reset,setG})=>(
 
 export default function App({onHome}={}){
   const [g,setG]=useState(blank);
+  // Free-text "talk to the patient" input (replaces the old fixed SAMPLE/
+  // OPQRST buttons — see askPatientFreeText below). Local component state,
+  // not part of `g`: it's a draft the player is typing, not something a
+  // save needs to remember.
+  const [askInput,setAskInput]=useState("");
   // Autosave every 5 minutes of real time to the active slot (on top of the
   // existing save-around-each-call behavior). Reads the latest state through
   // a ref so the interval doesn't need to be torn down on every keystroke.
@@ -1484,7 +1519,7 @@ export default function App({onHome}={}){
   // regardless of the exact stale-render path that let it slip through — add
   // !!g.scen as a hard second gate (title/menu screens never have a scenario set).
   useSiren((g.phase==="response"||g.phase==="transport")&&!!g.scen&&!g.muted&&L!==0,(g.muted?0:1)*(g.musicVolume??1));
-  useReadAloud(g.log,g.voice,(g.phase==="kit"&&SC&&L!==0)?SC.dispatch.join(". "):null,(g.voiceVolume??1));
+  useReadAloud(g.log,g.voice,(g.phase==="kit"&&SC&&L!==0)?SC.dispatch.join(". "):null,(g.voiceVolume??1),g.patient?.sex||null);
   // Autosave: before every case (entering "kit", right after a scenario is
   // picked and before anything happens to the patient) and after every
   // case (entering "debrief", right after it resolves). Deliberately keyed
@@ -1516,6 +1551,47 @@ export default function App({onHome}={}){
   const pk=(p)=>!p||g.pockets.includes(p);
   const ok=(id)=>!g.scopeOff[id];
   const LIMBS=["armL","armR","legL","legR"];
+  // medActs: splits a drug's combined `route` string ("IV/IM/IN") into one
+  // group per real delivery mechanism, so the player can choose between
+  // genuinely different techniques rather than one ambiguous combined
+  // button. IV and IO collapse into one group (identical central-
+  // compartment delivery in pk.js's DrugInstance — no absorption
+  // compartment for either), as do PO/SL/ODT/NG (all enteral). IM and IN
+  // are kept apart from each other and from everything else: pk.js models
+  // IM as slow, perfusion-dependent muscle absorption and IN as nasal-
+  // mucosal absorption that does NOT share that perfusion dependence — a
+  // real mechanistic difference, not a cosmetic one.
+  const ROUTE_GROUP_OF=(tok)=>{
+    if(tok==="IV"||tok==="IO") return "vascular";
+    if(tok==="PO"||tok==="SL"||tok==="ODT"||tok==="NG"||tok==="ORAL") return "enteral";
+    if(tok==="NEB"||tok==="INH"||tok==="MDI") return "inhaled";
+    return tok; // IM, IN (or any future standalone route) stands on its own
+  };
+  const routeGroups=(routeStr)=>{
+    const seen=new Map();
+    routeStr.split("/").map(t=>t.trim()).filter(Boolean).forEach(tok=>{
+      const grp=ROUTE_GROUP_OF(tok);
+      if(!seen.has(grp)) seen.set(grp,[]);
+      seen.get(grp).push(tok);
+    });
+    return [...seen.values()].map(toks=>toks.join("/"));
+  };
+  // A route-specific, honest onset estimate for the "in." log line — pk.js's
+  // real per-route absorption model (DrugInstance) makes IM/IN/enteral
+  // genuinely slower than IV/IO now, so a single static d.onset field (which
+  // only ever described the drug's fastest, IV-bolus-like route) would be
+  // actively wrong for the others. IM ka=0.09/min and IN ka=0.11/min in
+  // pk.js both put practical onset in the 8-20 minute range; enteral's
+  // ka=0.035/min (sublingual 0.12/min) puts it slower still — these are the
+  // same order-of-magnitude figures already cited in pk.js's own comments
+  // for those branches, not independently invented here.
+  const routeOnsetSec=(routeLabel,d)=>{
+    if(routeLabel.includes("IV")||routeLabel.includes("IO")) return d.onset;
+    if(routeLabel==="IM") return Math.max(d.onset,600);
+    if(routeLabel==="IN") return Math.max(d.onset,480);
+    if(routeLabel==="ODT"||routeLabel==="PO"||routeLabel==="SL") return Math.max(d.onset,900);
+    return d.onset;
+  };
   // F4: the FIRST time this browser ever clicks "Go on shift," show the
   // liability disclaimer before proceeding — a flag in localStorage (not a
   // save field) since it's about the person at the keyboard having seen it
@@ -1603,6 +1679,99 @@ export default function App({onHome}={}){
     if(r.meas) Object.entries(r.meas).forEach(([k,v])=>{s.vitals={...s.vitals,[k]:{value:v,at:s.t}};});
     if(r.set) Object.assign(s,r.set);
     return s;};
+
+  // Talk to the patient directly, replacing the old fixed "Ask — SAMPLE
+  // history" / "Ask — OPQRST history" buttons. The player's own typed line
+  // is appended to the log exactly like anything else they say on scene
+  // (SPEAKABLE()/speakerKeyFor() in useReadAloud already recognize a "you"
+  // kind line as narrator's-own-voice text, not spoken aloud — matching how
+  // real chart documentation reads, not a script). Two different answer
+  // paths, deliberately NOT unified into one, because they carry different
+  // trust guarantees (CLAUDE.md's own F0 item 21: the LLM must never
+  // control or invent the authoritative simulation):
+  //   - A question that matches SAMPLE_KEYWORDS/OPQRST_KEYWORDS is answered
+  //     with the scenario's own scripted, clinically-authored probe text
+  //     (probes.sample/probes.opqrst) — the same real content the old
+  //     buttons delivered, completely independent of whether a local model
+  //     is loaded, so allergies/meds/onset are never left to an LLM to
+  //     hallucinate. Tracked once per vocabulary (sampleAsked/opqrstAsked),
+  //     same as before.
+  //   - Anything else is genuinely open-ended (small talk, "are you scared",
+  //     "what's your name") and goes through the real dialogue subsystem
+  //     (dialogueManager's tier 1-3 hierarchy) as a `player_question` event
+  //     carrying the player's own text — tier 3 (if enabled) can actually
+  //     read and respond to what was typed; tier 2's own player_question
+  //     pool is the offline fallback.
+  const askPatientFreeText=(rawText)=>setG(s=>{
+    const text=(rawText||"").trim();
+    if(!text||s.busy||!s.patient) return s;
+    const v=physio(s);
+    const n={...s,log:[...s.log,{t:s.t,kind:"you",text:`YOU: "${text}"`}]};
+    if(v._cons!=="awake"){
+      apply(n,{say:"Patient is unable to respond.",kind:"warn"});
+      return n;
+    }
+    const isSample=SAMPLE_KEYWORDS.test(text);
+    const isOpqrst=OPQRST_KEYWORDS.test(text);
+    if(isSample||isOpqrst){
+      // Ambiguous phrasing (rare — matches both vocabularies) resolves to
+      // whichever history hasn't been asked yet, so a single well-rounded
+      // question still surfaces new content instead of always favoring one.
+      const key=isSample&&isOpqrst?(n.opqrstAsked?"sample":"opqrst"):isSample?"sample":"opqrst";
+      const askedFlag=key==="opqrst"?"opqrstAsked":"sampleAsked";
+      if(n[askedFlag]){
+        apply(n,{say:"Patient repeats themselves — nothing new to add.",kind:"obs"});
+      } else {
+        const probes=scenOf(n).probes||{};
+        const pr=key==="opqrst"?(probes.opqrst||probes.history):probes.sample;
+        const fallback=key==="sample"
+          ? {say:'"Allergies — none that I know of. Medications — nothing I take regularly. No real medical history. I last ate a few hours ago. Nothing unusual led up to this."',
+             kind:"pt",find:"SAMPLE: NKDA, no regular meds, no significant hx, last oral intake hrs ago."}
+          : {say:"No further history offered — nothing more to go on.",kind:"obs"};
+        const r=pr?pr(n,v):fallback;
+        apply(n,{...r,set:{...(r.set||{}),[askedFlag]:1}});
+        // Real per-NPC "brain" hookup (characterBrain.js): the authoritative,
+        // clinically-authored facts are already locked into the log above —
+        // this is a SEPARATE, purely additive attempt at tier 3 (never tier
+        // 2 — a generic template would add nothing here) to have the SAME
+        // patient, in their own established personality and current
+        // emotional state, restate those exact facts in their own words
+        // right after. Never replaces the authoritative line; see
+        // dialogueProvider.js's whatHappenedLine/factGuardrailOk for the
+        // prompt instruction and the runtime safety check that keeps a bad
+        // generation from ever reaching the player even here. Silently does
+        // nothing if AI is disabled/unavailable/fails the guardrail — the
+        // authoritative text the player already has is the complete,
+        // correct answer either way.
+        if(r.say){
+          const facts=String(r.say).replace(/^"|"$/g,"").trim();
+          const evt={type:key==="opqrst"?"opqrst_history":"sample_history",speaker:"patient",text,facts};
+          const entryId=`dlg_ask_${key}_${Math.round(n.t*10)}`;
+          requestLocalUpgrade(evt,n,v,(upgraded)=>{
+            setG(s2=>({...s2,
+              log:[...s2.log,{t:n.t,id:entryId,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}],
+              dialogueMemory:pushDialogueMemory(s2.dialogueMemory,upgraded.text),
+              npcBrains:rememberNpcLine(s2.npcBrains,npcId("patient"),"patient",s2.idKnown?s2.patientName:null,upgraded.text)}));
+          });
+        }
+      }
+      return n;
+    }
+    const evt={type:"player_question",speaker:"patient",text};
+    const line=generateDialogueSync(evt,n,v);
+    let patch={};
+    if(line){
+      const entryId=`dlg_ask_${Math.round(n.t*10)}`;
+      patch={log:[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,n.idKnown?n.patientName:null)}],
+        dialogueMemory:pushDialogueMemory(n.dialogueMemory,line.text),
+        npcBrains:rememberNpcLine(n.npcBrains,npcId("patient"),"patient",n.idKnown?n.patientName:null,line.text)};
+      requestLocalUpgrade(evt,n,v,(upgraded)=>{
+        setG(s2=>({...s2,log:s2.log.map(e=>
+          e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}:e)}));
+      });
+    }
+    return {...n,...patch};
+  });
   // F15: shared by every one of the four code paths that can land on
   // "debrief" (resolve/handoffResolve below, the declare-death confirmation,
   // and the hospital-arrival handoff) — computes the lifetime-stat and
@@ -1674,18 +1843,38 @@ export default function App({onHome}={}){
       run:(s)=>{if(s.prepped) return {say:"A drug is already drawn up and in your hand.",kind:"obs"};
         s.prepped=1; return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
     Object.entries(DRUGS).forEach(([id,d])=>{
-      const ivOnly=(d.route.includes("IV")||d.route.includes("IO"))&&!d.route.includes("IM")&&!d.route.includes("IN");
-      const imN=d.route.includes("IM")||d.route.includes("IN");
-      if(ivOnly&&!(g.ivSites&&g.ivSites.length)) return;   // no line yet — IV/IO drugs stay hidden
-      // IV/IO drugs live on whichever cannulated limb you're currently viewing
-      // (falling back to the first site placed); IM/IN drugs follow whichever limb you click.
-      const region=ivOnly?(g.ivSites.includes(g.region)?g.region:g.ivSites[0]):(imN?(LIMBS.includes(g.region)?g.region:"legR"):"head");
-      const base=(d.route==="NEB"?25:d.route==="PO"?22:d.route==="INH"?20:15); // §5 realistic push/route times
-      const cost=Math.round(base*(g.prepped?.5:1));
-      out.push({id,region,tab:"meds",drug:id,prepped:!!g.prepped,label:`${d.name} · ${d.route}`,
-        gerund:`Giving ${d.name.split(" ")[0].toLowerCase()}`, cost,
-        lvl:lvlOf(id,d.lvl),bag:"drug",tip:d.note,
-        run:(s,v,act)=>{const ov=!!(act&&act._override);
+      // Split a combined route string into one action per REAL delivery
+      // mechanism, so a drug declared "IV/IM/IN" offers three real choices
+      // instead of one ambiguous combined button. IV and IO are kept
+      // together — they deliver identically to central circulation, so
+      // splitting them would be a decorative duplicate, not a real choice
+      // (see pk.js's DrugInstance: IV and IO both hit `this.central`
+      // directly with no absorption compartment). Enteral routes (PO/SL/
+      // ODT/NG) are likewise kept together for the same reason. IM and IN
+      // are genuinely different mechanisms — pk.js now models IM as
+      // perfusion-dependent muscle absorption and IN as nasal-mucosal
+      // absorption that is NOT perfusion-dependent — so each becomes its
+      // own action.
+      const groups=routeGroups(d.route);
+      groups.forEach(routeLabel=>{
+        const ivOnly=routeLabel.includes("IV")||routeLabel.includes("IO");
+        const imN=routeLabel==="IM"||routeLabel==="IN";
+        if(ivOnly&&!(g.ivSites&&g.ivSites.length)) return;   // no line yet — IV/IO drugs stay hidden
+        // IV/IO drugs live on whichever cannulated limb you're currently viewing
+        // (falling back to the first site placed); IM/IN drugs follow whichever limb you click.
+        const region=ivOnly?(g.ivSites.includes(g.region)?g.region:g.ivSites[0]):(imN?(LIMBS.includes(g.region)?g.region:"legR"):"head");
+        const base=(routeLabel==="NEB"?25:(routeLabel==="PO"||routeLabel==="ODT")?22:routeLabel==="INH"?20:15); // §5 realistic push/route times
+        const cost=Math.round(base*(g.prepped?.5:1));
+        // A route-specific action id only when a drug actually offers more
+        // than one route — every single-route drug's action id is
+        // unchanged, so nothing that keys off a drug's action id elsewhere
+        // (TASKS, mechanismWiring probes, s.given[id]'s own dose-count key
+        // is `id` the DRUG id below, unaffected either way) breaks.
+        const actionId=groups.length>1?`${id}@${routeLabel.replace(/\//g,"")}`:id;
+        out.push({id:actionId,region,tab:"meds",drug:id,route:routeLabel,prepped:!!g.prepped,label:`${d.name} · ${routeLabel}`,
+          gerund:`Giving ${d.name.split(" ")[0].toLowerCase()}`, cost,
+          lvl:lvlOf(id,d.lvl),bag:"drug",tip:d.note,
+          run:(s,v,act)=>{const ov=!!(act&&act._override);
           if(d.hold&&!ov){const h=d.hold(v);if(h)return {say:h,kind:"warn"};}
           // F6: a tourniquet occludes venous return from everything distal to
           // it — a line placed on that same limb cannot deliver anything to
@@ -1696,9 +1885,12 @@ export default function App({onHome}={}){
             // Confirmed anyway: the dose is spent but never reaches the patient.
             s.given={...s.given,[id]:(s.given[id]||0)+1};s.prepped=0;
             return {say:`You push it below the tourniquet. It pools in the limb and never reaches central circulation.`,kind:"warn"};}
+          // Dose count and max-dose cap are tracked per DRUG, not per route —
+          // giving 2mcg IV then 2mcg IN of the same drug is still 2 total
+          // doses of it, the same clinical ceiling either way.
           const n=(s.given[id]||0)+1;
           if(d.max&&n>d.max&&!ov) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
-          s.given={...s.given,[id]:n};giveDose(s,{id,at:s.t});s.prepped=0;
+          s.given={...s.given,[id]:n};giveDose(s,{id,at:s.t,route:routeLabel});s.prepped=0;
           if(id==="calcium") s.calcium=1;
           // F0 — treatment-response dialogue (item 18): analgesics are
           // identified by their own real, already-declared fx.pain delta,
@@ -1725,7 +1917,7 @@ export default function App({onHome}={}){
             allergyNote=` ALLERGIC REACTION — the chart never had this listed, but the patient's airway does not agree. Wheeze, swelling, tightening fast.`;
           }
           const dir=Object.entries(d.fx||{}).filter(([,m])=>m).map(([p,m])=>`${p.toUpperCase()} ${m>0?"↑":"↓"}${Math.abs(m)}`).join("  ");
-          return {say:`${d.name} in.${dir?"   ["+dir+" · onset "+d.onset+"s]":""}${allergyNote}`,kind:allergyNote?"crit":"good"};}});});
+          return {say:`${d.name} in.${dir?"   ["+dir+" · onset "+routeOnsetSec(routeLabel,d)+"s]":""}${allergyNote}`,kind:allergyNote?"crit":"good"};}});});});
     (g.ivSites||[]).forEach(limb=>out.push({id:`flush_${limb}`,region:limb,tab:"meds",label:"Flush the line",gerund:"Flushing",cost:15,lvl:3,bag:"drug",
       tip:"Calcium and bicarbonate precipitate together.",run:(s)=>{s.flushed=1;return {say:"Flushed.",kind:"good"};}}));
     return out;};
@@ -1921,22 +2113,9 @@ export default function App({onHome}={}){
       label:"Downgrade — cancel inbound ALS",gerund:"Cancelling ALS response",cost:10,lvl:3,once:1,
       run:(s)=>({say:"Dispatch copies — ALS response cancelled, BLS will handle transport.",kind:"obs",
         set:{sceneUnits:(s.sceneUnits||[]).filter(u=>!(topLevel(u)>=3&&!u.arrived))}})}]:[]),
-    ...HX_SETS.map(([key,askedFlag,label,gerund])=>({
-      id:`hx_${key}`,region:g.region,tab:"general",label:`Ask — ${label}`,gerund,cost:25,lvl:0,once:1,
-      run:(s)=>{
-        if(s[askedFlag]) return {say:"Patient repeats themselves — nothing new to add.",kind:"obs"};
-        const probes=scenOf(s).probes||{};
-        // OPQRST uses the scenario's opqrst probe (falling back to the general
-        // history line, which is written onset/quality-first). SAMPLE uses its
-        // own probe, falling back to a distinct SAMPLE-shaped reply — so the
-        // two buttons never read out the exact same line.
-        const pr = key==="opqrst" ? (probes.opqrst||probes.history) : probes.sample;
-        const fallback = key==="sample"
-          ? {say:'"Allergies — none that I know of. Medications — nothing I take regularly. No real medical history. I last ate a few hours ago. Nothing unusual led up to this."',
-             kind:"pt",find:"SAMPLE: NKDA, no regular meds, no significant hx, last oral intake hrs ago."}
-          : {say:"No further history offered — nothing more to go on.",kind:"obs"};
-        const r=pr?pr(s,physio(s)):fallback;
-        return {...r,set:{...(r.set||{}),[askedFlag]:1}};}})),
+    // SAMPLE/OPQRST history-taking is no longer a pair of fixed buttons —
+    // see askPatientFreeText and the narrative panel's own text input. Ask
+    // the patient directly, in the text box next to the log.
     // Granular equipment realism: a fresh lead placement (or one disturbed
     // by patient movement) shows real artifact until it's reseated — the
     // monitor's own ECG trace reads this (see the "monitor" panel below).
@@ -3213,11 +3392,15 @@ export default function App({onHome}={}){
       const warnings=[];
       const held=d.hold&&d.hold(physio(s));
       if(held) warnings.push(held);
-      const lineOnlyRoute=(d.route.includes("IV")||d.route.includes("IO"))&&!d.route.includes("IM")&&!d.route.includes("IN");
+      // a.route is the SPECIFIC route this action's own button was split
+      // into (medActs()) — falls back to the drug's raw combined route only
+      // for actions that predate the split or never had more than one
+      // route to begin with.
+      const lineOnlyRoute=((a.route||d.route).includes("IV")||(a.route||d.route).includes("IO"))&&!(a.route||d.route).includes("IM")&&!(a.route||d.route).includes("IN");
       if(lineOnlyRoute&&s.done?.[`tq@${a.region}`]) warnings.push("The tourniquet is still on this limb. Nothing pushed below it reaches central circulation.");
       if(d.max&&(s.given[a.drug]||0)>=d.max) warnings.push(`Maximum dose reached (${d.max}). Stop, or call Base.`);
       {
-        const r=d.route;
+        const r=a.route||d.route;
         const lineOnly=(r.includes("IV")||r.includes("IO"))&&!r.includes("IM")&&!r.includes("IN");
         const accessOptions=(s.accessTypes||{})[a.region]||["IV"];
         // Fluid bags and drip pressors don't go in via a syringe push — you
@@ -10798,7 +10981,7 @@ export default function App({onHome}={}){
 
         {g.panel==="log"&&(<div className="p-4 rounded" style={{background:C.panel,border:`1px solid ${C.line}`,maxHeight:490,overflowY:"auto"}}>
           {g.log.map((l,i)=>{const c=l.kind==="crit"?C.red:l.kind==="warn"?C.amber:l.kind==="good"?C.hr
-            :l.kind==="disp"?C.spo2:l.kind==="pt"?C.text:C.dim;
+            :l.kind==="disp"?C.spo2:l.kind==="you"?C.violet:l.kind==="pt"?C.text:C.dim;
             return (<div key={i} className="flex gap-2 mb-2.5" style={{fontSize:13,lineHeight:1.6}}>
               <span style={{fontFamily:MONO,fontSize:10,color:C.faint,paddingTop:2,flexShrink:0}}>{clk(l.t-(g.onSceneAt??0))}</span>
               <span style={{color:c,fontStyle:l.kind==="pt"?"italic":"normal"}}>{l.text}</span></div>);})}
@@ -10881,15 +11064,39 @@ export default function App({onHome}={}){
                 {v&&<div style={{fontFamily:MONO,fontSize:9,color:st?C.amber:soft?SOFTAMBER:C.faint}}>{st?`STALE · ${clk(age)} OLD`:soft?`aging · ${clk(age)}`:`taken ${clk(v.at-(g.onSceneAt??0))}`}</div>}</div>
             </div>);})}
         </div>
-        <div className="p-3 rounded" style={{background:C.panel,border:`1px solid ${C.line}`,padding:12,borderRadius:8,flex:"1 1 auto",minHeight:220,maxHeight:"62vh",overflowY:"auto"}}>
-          <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".18em",color:C.dim,marginBottom:8}}>NARRATIVE</div>
-          {g.log.length===0
-            ?<div style={{fontSize:12,color:C.faint,lineHeight:1.6}}>Nothing yet. What you do, and what it costs you, shows up here.</div>
-            :g.log.map((l,i)=>{const c=l.kind==="crit"?C.red:l.kind==="warn"?C.amber:l.kind==="good"?C.hr
-              :l.kind==="disp"?C.spo2:l.kind==="pt"?C.text:C.dim;
-              return (<div key={i} style={{display:"flex",gap:8,marginBottom:9,fontSize:12.5,lineHeight:1.55}}>
-                <span style={{fontFamily:MONO,fontSize:10,color:C.faint,paddingTop:2,flexShrink:0}}>{clk(l.t-(g.onSceneAt??0))}</span>
-                <span style={{color:c,fontStyle:l.kind==="pt"?"italic":"normal"}}>{l.text}</span></div>);})}
+        <div className="p-3 rounded" style={{background:C.panel,border:`1px solid ${C.line}`,padding:12,borderRadius:8,flex:"1 1 auto",minHeight:220,maxHeight:"62vh",display:"flex",flexDirection:"column"}}>
+          <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".18em",color:C.dim,marginBottom:8,flexShrink:0}}>NARRATIVE</div>
+          <div role="log" aria-label="Call narrative" style={{flex:"1 1 auto",minHeight:0,overflowY:"auto"}}>
+            <LiveDialogueAnnouncer log={g.log}/>
+            {g.log.length===0
+              ?<div style={{fontSize:12,color:C.faint,lineHeight:1.6}}>Nothing yet. What you do, and what it costs you, shows up here.</div>
+              :g.log.map((l,i)=>{const c=l.kind==="crit"?C.red:l.kind==="warn"?C.amber:l.kind==="good"?C.hr
+                :l.kind==="disp"?C.spo2:l.kind==="you"?C.violet:l.kind==="pt"?C.text:C.dim;
+                return (<div key={i} style={{display:"flex",gap:8,marginBottom:9,fontSize:12.5,lineHeight:1.55}}>
+                  <span style={{fontFamily:MONO,fontSize:10,color:C.faint,paddingTop:2,flexShrink:0}}>{clk(l.t-(g.onSceneAt??0))}</span>
+                  <span style={{color:c,fontStyle:l.kind==="pt"?"italic":"normal"}}>{l.text}</span></div>);})}
+          </div>
+          {/* Talk to the patient — replaces the old fixed SAMPLE/OPQRST
+              buttons (see askPatientFreeText). A real question ("when did
+              this start", "are you allergic to anything") routes to the
+              scenario's own scripted clinical answer; anything else goes to
+              the dialogue subsystem for an in-character, open-ended reply.
+              Disabled while the player's hands are busy with something
+              else, same gate every other patient-facing action respects. */}
+          {g.patient&&<form onSubmit={(e)=>{e.preventDefault();
+              if(!askInput.trim()||g.busy) return;
+              askPatientFreeText(askInput); setAskInput("");}}
+            style={{display:"flex",gap:6,marginTop:8,flexShrink:0,borderTop:`1px solid ${C.line}`,paddingTop:8}}>
+            <input type="text" value={askInput} onChange={(e)=>setAskInput(e.target.value)}
+              disabled={!!g.busy} maxLength={200}
+              aria-label="Talk to the patient"
+              placeholder={g.busy?"Hands busy…":'Ask the patient — "When did this start?"'}
+              style={{flex:1,minWidth:0,background:C.panelHi,border:`1px solid ${C.line}`,borderRadius:6,
+                color:C.text,fontSize:12.5,padding:"7px 9px"}}/>
+            <button type="submit" disabled={!!g.busy||!askInput.trim()}
+              style={{background:C.panelHi,border:`1px solid ${C.line}`,borderRadius:6,color:g.busy||!askInput.trim()?C.faint:C.text,
+                fontSize:12,padding:"7px 12px",cursor:g.busy||!askInput.trim()?"default":"pointer"}}>Ask</button>
+          </form>}
         </div>
       </div>
     </div>{/* end px-stage */}

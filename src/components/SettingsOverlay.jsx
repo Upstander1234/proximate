@@ -8,6 +8,7 @@ import { isTesterUnlocked } from "../testerGate.js";
 import { ASSIST_LEVELS, ASSIST_LABELS } from "../procedureAssist.js";
 import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi, importLocalAiModel } from "../dialogue/dialogueManager.js";
 import { MODEL_ZIP_URL } from "../dialogue/modelImport.js";
+import { neuralTts } from "../dialogue/neuralTts.js";
 
 // Checked once at module load (not per-render) — browser support doesn't
 // change mid-session. Effectively Chrome/Edge/Chromium-based browsers only;
@@ -46,6 +47,12 @@ export default function SettingsOverlay({g,setG}){
   const [aiState,setAiState]=useState(()=>getLocalAiState());
   const [importMsg,setImportMsg]=useState("");
   useEffect(()=>subscribeLocalAiProgress(setAiState),[]);
+  // Neural-voice (Kokoro) status/retry row -- same live-subscription shape
+  // as aiState above, reading neuralTts.js's own real state directly
+  // (a separate subsystem from the dialogue LLM, not routed through
+  // dialogueManager.js).
+  const [ttsState,setTtsState]=useState(()=>neuralTts.getState());
+  useEffect(()=>neuralTts.subscribeProgress(()=>setTtsState(neuralTts.getState())),[]);
   if(!g||!setG) return null;
   const inShift=!!g.scen||["response","approach","scene","transport","arrived"].includes(g.phase);
   const isSandbox=g.gmode==="sandbox";
@@ -279,6 +286,40 @@ export default function SettingsOverlay({g,setG}){
                   </label>
                   {importMsg&&<span>{importMsg}</span>}
                 </div>
+              </div>
+            )}
+          </div>
+        </Row>
+
+        {/* Real, on-device neural voice (Kokoro-82M, via neuralTts.js),
+            used for the read-aloud toggle whenever it's available. Per
+            explicit product direction there is NO fallback to the
+            browser's own robotic built-in SpeechSynthesis voice -- a line
+            that can't be spoken with the real voice is simply not spoken,
+            rather than degraded (App.jsx's useReadAloud). This row exists
+            so that isn't a silent, unexplained mystery: real status, and a
+            real manual retry (the same reliability fix LOCAL AI DIALOGUE
+            above already has) for the case that actually causes it -- a
+            Hugging Face connection reset partway through the ~90MB
+            download, which otherwise permanently strands a player with no
+            voice at all for the rest of their session. Not gated by a
+            separate enable/disable toggle of its own -- it's automatically
+            used whenever the in-scene "voice on" button is on; this row is
+            status/retry only. */}
+        <Row label="NEURAL VOICE" note="Patients and crew are read aloud with a real neural voice (Kokoro), entirely on your own device, whenever the in-scene voice toggle is on. There is no robotic fallback voice: if it can't load, dialogue simply isn't spoken until it can.">
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontFamily:MONO,fontSize:10.5,color:C.faint}}>
+              {ttsState.status==="ready"?"Status: neural voice ready on this device"
+                :ttsState.status==="loading"?`Status: loading${typeof ttsState.progress?.progress==="number"?` (${Math.round(ttsState.progress.progress*100)}%)`:"…"}`
+                :ttsState.status==="failed"?`Status: failed to load${
+                    ttsState.errorKind==="timeout"?" (timed out)"
+                    :ttsState.errorKind==="network"?" (network problem)"
+                    :""}. Dialogue won't be spoken aloud until this recovers -- try retrying below.`
+                :"Status: not yet started"}
+            </div>
+            {ttsState.status==="failed"&&(
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {Chip(false,()=>neuralTts.retry(),"retry","retry")}
               </div>
             )}
           </div>

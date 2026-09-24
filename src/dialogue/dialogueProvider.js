@@ -226,9 +226,113 @@ function buildPrompt(event, ctx) {
     `Situation: ${ctx?.situation?.scenarioTitle || "an emergency call"}, about ${brain.knows.elapsedMin ?? 0} minutes in.`,
     `Recent moments: ${recent}.`,
     ownSaid,
-    `What just happened: ${event.type.replace(/_/g, " ")}.`,
+    whatHappenedLine(event),
     "Reply with ONLY the line of dialogue itself, nothing else.",
   ].filter(Boolean).join("\n");
+}
+
+// `event.type==="player_question"` (askPatientFreeText, App.jsx) is a real
+// player-typed free-text line, not a fixed scripted moment — this is the
+// one place its actual text reaches a prompt. Kept separate from the plain
+// `event.type` label every other event uses, and deliberately does NOT
+// instruct the model to invent clinical facts (allergies/meds/onset stay
+// on the deterministic SAMPLE/OPQRST path in App.jsx, which never reaches
+// here at all — see askPatientFreeText's own header) — this only ever
+// covers open-ended conversational replies.
+//
+// `event.type==="sample_history"/"opqrst_history"` (also askPatientFreeText):
+// a genuinely different, higher-stakes case from player_question above. The
+// scenario's own scripted, clinically-authored SAMPLE/OPQRST paragraph
+// (`event.facts`) has ALREADY been shown to the player verbatim, as the
+// guaranteed-correct answer, before this ever gets called — this generation
+// is purely an ADDITIVE second line, the same facts restated once more in
+// the patient's own personality/emotional voice (the "brain" this file
+// already threads through personality/emotionalState for every other
+// event), never a replacement for the authoritative text. That asymmetry —
+// facts locked in first, flavor layered on after — is what lets this reuse
+// the LLM at all for something as safety-sensitive as an allergy or a
+// medication history without risking a hallucinated fact reaching the
+// player as if it were real (item 21's non-negotiable boundary). The
+// instruction below is deliberately blunt about the constraint, and
+// factGuardrailOk() below is the runtime check that backs it up: a
+// generation that violates it never reaches the player at all (see
+// LocalLLMProvider.generate()/WasmLLMProvider.generate()).
+function whatHappenedLine(event) {
+  if ((event.type === "sample_history" || event.type === "opqrst_history") && event.facts) {
+    const asked = event.text ? ` They just asked you: "${event.text}"` : "";
+    return `You already told them this, in these exact words: ${event.facts}${asked} Say it again, in your OWN words, filtered through how you're currently feeling — but every fact in what you already told them (each medication, allergy, condition, time, and detail) must still be true and present, just rephrased. Do not add ANY new fact (no new medication, allergy, condition, number, or detail) that wasn't already in what you told them, and do not drop or reverse any of the facts (if you said "no allergies," do not now claim one; if you named a medication, do not omit it).`;
+  }
+  if (event.type === "player_question" && event.text) {
+    return `The person caring for you just asked you directly: "${event.text}" Answer them in character, based only on how you feel and what you personally know — never invent a specific medical fact (a diagnosis, a drug name, a lab value) you would have no way of knowing.`;
+  }
+  return `What just happened: ${event.type.replace(/_/g, " ")}.`;
+}
+
+// Runtime safety net for the sample_history/opqrst_history restatement
+// above — cheap, heuristic, and deliberately conservative (reject on any
+// doubt; the worst case of rejecting a genuinely fine restatement is simply
+// that the additive flavor line never appears, and the authoritative
+// deterministic text the player already has stands unchanged either way).
+// Not a substitute for the prompt instruction, the same relationship
+// isDegenerateWasmOutput already has to this file's other guardrail-backed
+// generations — a second, independent check, not the only one.
+//
+// Four checks: (1) the same degenerate-repetition/empty-output shape
+// isDegenerateWasmOutput already catches, reused here since it's generic to
+// any generation, not WASM-specific; (2) a real length sanity check — a
+// restatement dramatically shorter than the facts it's restating has likely
+// dropped content, not just phrased it tersely; (3) a FLIP check: if the
+// authoritative facts contain an explicit NEGATIVE allergy/medication
+// finding ("no allergies," "NKDA," "no medications," "none"), the
+// restatement must not introduce an affirmative claim in that same
+// category — a model flipping "no allergies" into "allergic to penicillin"
+// is exactly the class of error item 21 exists to prevent; (4) an OMISSION
+// check, a real, separate gap (3) alone cannot catch: if the facts mention
+// allergies/medications AT ALL — including a real, POSITIVE one (an actual
+// named allergy or medication, not just "none") — the restatement must
+// still mention that category by name, even if the specific drug name gets
+// paraphrased differently. (3) catches a negative turned into a fabricated
+// positive; (4) catches a real positive finding (the case that matters
+// most — an actual allergy) getting silently dropped rather than flipped.
+// Neither check can catch every possible corruption (a restatement could
+// still, say, swap "penicillin" for "amoxicillin" while still saying
+// "allergic to a medication" and pass both checks) — this is a real,
+// deliberately cheap heuristic, not a full semantic diff, same honest
+// limitation isDegenerateWasmOutput's own header already states for its
+// own checks.
+function factGuardrailOk(text, facts) {
+  if (!text || !facts) return false;
+  const norm = text.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+  if (!norm) return false;
+  const words = norm.split(/\s+/).filter(Boolean);
+  if (words.length >= 3) {
+    let runLen = 1;
+    for (let i = 1; i < words.length; i++) {
+      runLen = words[i] === words[i - 1] ? runLen + 1 : 1;
+      if (runLen >= 3) return false;
+    }
+  }
+  // (2) A real restatement of a multi-fact paragraph is rarely much shorter
+  // than a third of the original — a severe undershoot is a strong signal
+  // content got dropped, not just compressed.
+  const factWords = facts.toLowerCase().split(/\s+/).filter(Boolean).length;
+  if (factWords >= 6 && words.length < factWords * 0.3) return false;
+  // (3) Negative-allergy/medication flip check.
+  const factsNoAllergy = /\ballerg(y|ies|ic)?\b[^.]*\b(none|no|nkda|not)\b|\b(no|none|denies|denies any)\b[^.]*\ballerg/i.test(facts);
+  const textClaimsAllergy = /\ballerg(y|ies|ic)\b/i.test(text) && !/\b(no|none|not|denies|never)\b[^.]*\ballerg/i.test(text) && !/\ballerg[^.]*\b(no|none|not)\b/i.test(text);
+  if (factsNoAllergy && textClaimsAllergy) return false;
+  const factsNoMeds = /\b(medications?|meds|pills?)\b[^.]*\b(none|no|not)\b|\b(no|none|not on)\b[^.]*\b(medications?|meds)\b/i.test(facts);
+  const textClaimsMeds = /\b(i take|taking|on)\b[^.]*\b(medication|medicine|pill|mg)\b/i.test(text);
+  if (factsNoMeds && textClaimsMeds) return false;
+  // (4) Category-omission check — independent of whether the fact was
+  // negative or positive.
+  const factsMentionAllergy = /\ballerg/i.test(facts);
+  const textMentionsAllergy = /\ballerg/i.test(text);
+  if (factsMentionAllergy && !textMentionsAllergy) return false;
+  const factsMentionMeds = /\b(medications?|meds\b|pills?|prescri|\bmg\b)/i.test(facts);
+  const textMentionsMeds = /\b(medications?|meds\b|pills?|prescri|\bmg\b|taking|takes|i take)/i.test(text);
+  if (factsMentionMeds && !textMentionsMeds) return false;
+  return true;
 }
 
 // Strips anything that would break this project's own player-facing-content
@@ -647,6 +751,17 @@ export class LocalLLMProvider {
     // measurably more reliable (CLAUDE.md's own real A/B record), so being
     // conservative about rejecting its output is the safer default here.
     text = truncateToCompleteSentence(text) || text;
+    // Fact-preservation guardrail (sample_history/opqrst_history only — see
+    // factGuardrailOk's own header). Throwing here is the same "never let a
+    // bad generation reach the player" contract this whole function already
+    // has for every other failure mode — the caller (App.jsx's
+    // askPatientFreeText, via requestLocalUpgrade) treats this exactly like
+    // any other tier-3 failure: the additive flavor line simply never
+    // appears, and the authoritative deterministic text already shown to
+    // the player is completely unaffected either way.
+    if ((event.type === "sample_history" || event.type === "opqrst_history") && event.facts && !factGuardrailOk(text, event.facts)) {
+      throw new Error("LocalLLMProvider: fact-restatement guardrail rejected output");
+    }
     // tier is "local-llm" — a distinct, honest tag from "template"/
     // "deterministic" (DialoguePanel/mechanismWiring-style callers can rely
     // on this to know which tier actually produced a given line).
@@ -786,6 +901,23 @@ const WASM_GENERATION_PARAMS = {
 function buildWasmPrompt(event, ctx) {
   const brain = buildCharacterBrain(event.speaker, ctx, event);
   const situation = ctx?.situation?.scenarioTitle || "an emergency call";
+  const isHistoryRestatement = (event.type === "sample_history" || event.type === "opqrst_history") && event.facts;
+  // The six-word ceiling every other WASM-tier line uses (measured and
+  // tuned for this tier's own small model, see the header comment below)
+  // is fundamentally incompatible with restating a whole SAMPLE/OPQRST
+  // paragraph without dropping content — so this one event type gets a
+  // longer budget instead of forcing the six-word instruction on a task it
+  // structurally cannot do. factGuardrailOk() (this file) is the real
+  // backstop either way: if this weaker model still drops or flips a fact
+  // even with more room to work with, the generation is rejected and the
+  // flavor line simply never appears, same fail-safe as every other tier.
+  if (isHistoryRestatement) {
+    return [
+      `You are the patient. You already told them this, in these exact words: ${event.facts}`,
+      "Say it again in your own words, filtered through how you feel right now — but keep EVERY fact (each medication, allergy, condition, and detail) true and present, just rephrased. Do not add a new fact. Do not drop or reverse a fact (if you said no allergies, still say no allergies).",
+      "Output ONLY the restated line, nothing else, at most 40 words.",
+    ].join("\n");
+  }
   let roleLine, example;
   if (brain.type === "crew") {
     roleLine = `You are ${brain.name}, an EMS crew member. React to what just happened in ONE short sentence, at most six words. Plain English. No stage directions.`;
@@ -808,7 +940,7 @@ function buildWasmPrompt(event, ctx) {
     roleLine,
     example,
     noRepeat,
-    `What just happened: ${event.type.replace(/_/g, " ")}.`,
+    whatHappenedLine(event),
     "Now write ONE new short line of dialogue for this exact moment. Output ONLY the line, nothing else, at most six words.",
   ].filter(Boolean).join("\n");
 }
@@ -1014,6 +1146,15 @@ export class WasmLLMProvider {
     if (isDegenerateWasmOutput(text, event)) {
       throw new Error(`WasmLLMProvider: degenerate output rejected ("${text}")`);
     }
+    // Same fact-preservation guardrail as LocalLLMProvider.generate() — see
+    // factGuardrailOk's own header. This weaker tier's own restatement
+    // prompt (buildWasmPrompt's isHistoryRestatement branch) is the one
+    // most likely to trip this, which is exactly the point: a smaller model
+    // is more likely to drop or garble a fact, so this is where the check
+    // matters most, not least.
+    if ((event.type === "sample_history" || event.type === "opqrst_history") && event.facts && !factGuardrailOk(text, event.facts)) {
+      throw new Error("WasmLLMProvider: fact-restatement guardrail rejected output");
+    }
     return { speaker: event.speaker || "patient", text, tier: "wasm-llm" };
   }
 }
@@ -1084,6 +1225,24 @@ function fill(template, ctx) {
 // fast model over a smart one for exactly this reason — tier 2 exists so
 // most ordinary moments never need inference at all).
 const TEMPLATES = {
+  // App.jsx's askPatientFreeText — the tier-2 fallback for a genuinely
+  // open-ended typed question (SAMPLE/OPQRST-shaped questions never reach
+  // here at all; they're answered deterministically from the scenario's
+  // own scripted probe text, see that function's own header). Without a
+  // real model to actually parse what was typed, this can only offer a
+  // generic, in-character non-answer rather than pretend to address the
+  // question's specific content — still better than dead silence, and
+  // upgraded in place by requestLocalUpgrade's own tier-3 attempt the
+  // instant a real backend is available (see dialogueManager.js).
+  player_question: {
+    calm: ["I'm not sure how to answer that right now.", "Sorry, can you ask me something simpler?"],
+    anxious: ["I don't know, I can't really think straight right now.", "I'm sorry, I'm too scared to think about that."],
+    irritable: ["I don't know. Can we not do this right now?", "Does it matter? Just help me."],
+    "in pain": ["I can't really focus on that, it hurts too much.", "Sorry, it's hard to think past the pain."],
+    frightened: ["I don't know, please, just don't leave me.", "I can't think, I'm scared."],
+    confused: ["Wait, what? I don't, I don't understand.", "I'm sorry, I'm having trouble following."],
+    exhausted: ["I don't know. I'm just so tired.", "Sorry, I don't have much left to answer that."],
+  },
   pain_unprompted: {
     calm: ["It hurts, but I'm okay.", "Still hurts some right there."],
     anxious: ["It really hurts. Is that normal?", "I don't like this, it's not going away."],

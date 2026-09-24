@@ -113,6 +113,7 @@ export const TASKS=[
   {id:"attachPulseOx",name:"Attach pulse oximeter",lvl:2,dur:12,readback:'"Pulse ox on."',report:'"Pulse ox is on and reading."',attachDevice:"pulseox"},
   {id:"attachBpCuff",name:"Apply the BP cuff",lvl:1,dur:12,readback:'"Cuff on."',report:'"Cuff is on, ready to cycle."',attachDevice:"bpcuff"},
   {id:"attachCapno",name:"Attach waveform capnography",lvl:3,dur:12,readback:'"Capno on."',report:'"Waveform is up, EtCO2 reading."',attachDevice:"capno"},
+  {id:"attachThermo",name:"Take a temperature",lvl:1,dur:12,readback:'"Getting a temp."',report:'"Temp is on the monitor."',attachDevice:"thermometer"},
   {id:"prep",name:"Draw up the next drug",lvl:2,dur:25,readback:'"Drawing up."',report:'"Drawn, labeled, and in your hand."',sets:{prepped:1}},
   {id:"cspine",name:"Hold manual C-spine",lvl:0,dur:9999,readback:'"I have the head."',report:""},
   {id:"fetch",name:"Fetch a bag from the truck",lvl:0,dur:25,readback:'"On my way."',fetch:1},

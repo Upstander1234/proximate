@@ -32,12 +32,16 @@
 // this fix reads live state, since it exercises the exact shipped
 // function with zero browser-timing dependency.
 
-import { launch, clickText, waitForPhase, setState, getState } from "./driver.mjs";
+import { launch, clickText, waitForPhase, setState, getState, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");
@@ -94,6 +98,8 @@ async function auscultate(page, scen, field, value) {
   await page.waitForTimeout(100);
   const preLogLen = ((await getState(page)).log || []).length;
   await clickText(page, "Auscultate lung fields");
+    await page.waitForTimeout(1500);
+    if (await page.getByText("Finish listening").count()) await clickText(page, "Finish listening");
   await page.waitForTimeout(3500);
   const afterState = await getState(page);
   const newLog = (afterState.log || []).slice(preLogLen);

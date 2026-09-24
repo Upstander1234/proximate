@@ -16,12 +16,16 @@
 //
 // Run: node tools/browser/verifyTesterGate.mjs   (needs `npm run dev` running)
 
-import { launch, clickText, getState, waitForPhase } from "./driver.mjs";
+import { launch, clickText, getState, waitForPhase, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5173";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   // Disclaimer may or may not show depending on prior localStorage in this
   // browser context — handle both.
