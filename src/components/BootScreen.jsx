@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { C, MONO } from "../theme.js";
 import Shell from "./Shell.jsx";
-import { getLocalAiState, subscribeLocalAiProgress, preloadLocalAi } from "../dialogue/dialogueManager.js";
+import { getLocalAiState, subscribeLocalAiProgress, preloadLocalAi, saveLocalAiPref, isLocalAiEnabled } from "../dialogue/dialogueManager.js";
 import { CONDITIONS } from "../physio/conditions.js";
 import { SCEN } from "../data/scenarios.js";
 import { MAPS } from "../data/maps.js";
@@ -58,7 +58,7 @@ export default function BootScreen({ g, setG }) {
   useEffect(() => {
     // Real, one-shot kickoff — never re-triggered by re-renders (empty dep
     // array), never awaited, never blocks the checklist below. preloadLocalAi
-    // itself is a no-op unless g.localAiEnabled===true (opt-in default —
+    // itself is a no-op only when g.localAiEnabled===false (now enabled by default unless explicitly false —
     // see dialogueManager.js's isLocalAiEnabled), so merely reaching the
     // boot screen no longer starts a download on its own.
     preloadLocalAi(g);
@@ -67,9 +67,14 @@ export default function BootScreen({ g, setG }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot kickoff by design, matching the empty-deps precedent this effect already used before g was read inside it
   }, []);
 
-  const enter = () => setG((s) => ({ ...s, phase: "title" }));
+  const enter = (useAi) => {
+    saveLocalAiPref(useAi);
+    if (useAi) preloadLocalAi({ localAiEnabled: true });
+    setG((s) => ({ ...s, localAiEnabled: useAi, phase: "title" }));
+  };
   const line = aiStatusLine(ai);
   const aiReady = ai.status === "ready";
+  const useAi = isLocalAiEnabled(g);
 
   return (<Shell g={g} setG={setG}>
     <div style={{ maxWidth: 560, margin: "0 auto", paddingTop: "clamp(40px,10vh,110px)", textAlign: "center" }}>
@@ -113,14 +118,22 @@ export default function BootScreen({ g, setG }) {
             ? `Runs entirely on this device${ai.backend === "wasm" ? " via WebAssembly (broad-compatibility mode)" : ""}. No account, no API key, nothing about this call is ever sent anywhere.`
             : "This browser or device can't run local AI dialogue. Proximate uses contextual template dialogue instead — nothing about the simulation depends on this."}
         </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          <button onClick={() => enter(true)} className="px-5 py-2.5 rounded" style={{
+            flex: "1 1 190px", background: useAi ? "#122A20" : C.panelHi,
+            border: `1px solid ${useAi ? C.hr : C.line}`, color: useAi ? C.hr : C.text,
+            fontSize: 12.5, fontFamily: MONO, letterSpacing: ".04em", cursor: "pointer" }}>
+            USE LOCAL AI
+          </button>
+          <button onClick={() => enter(false)} className="px-5 py-2.5 rounded" style={{
+            flex: "1 1 190px", background: "transparent", border: `1px solid ${C.line}`,
+            color: C.dim, fontSize: 12.5, fontFamily: MONO, letterSpacing: ".04em", cursor: "pointer" }}>
+            CONTINUE WITHOUT AI
+          </button>
+        </div>
       </div>
 
-      <button onClick={enter} className="px-8 py-3 rounded" style={{ marginTop: 26,
-        background: aiReady ? "#122A20" : C.panelHi, border: `1px solid ${aiReady ? C.hr : C.line}`,
-        color: aiReady ? C.hr : C.text, fontSize: 14, fontFamily: MONO, letterSpacing: ".05em" }}>
-        {aiReady ? "▲ ENTER PROXIMATE — LOCAL AI READY" : "▲ CONTINUE WITHOUT AI"}
-      </button>
-      {!aiReady && ai.supported && ai.status !== "failed" && (
+      {useAi && !aiReady && ai.supported && ai.status !== "failed" && (
         <div style={{ fontSize: 10.5, color: C.faint, marginTop: 10, fontFamily: MONO }}>
           {continueHint(ai)}
         </div>

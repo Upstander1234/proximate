@@ -158,83 +158,94 @@ export default function StatsTab({ user, onStartStudy, onNavigate, onStartDaily 
         )}
       </div>
 
-      {stats.domainAccuracy.length > 0 && (
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-          <div className="font-semibold mb-2">Accuracy by domain</div>
-          <div className="space-y-1.5">
-            {stats.domainAccuracy
-              .sort((a, b) => a.accuracy - b.accuracy)
-              .map((d) => (
-                <div key={d.domain} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">{d.domain}</span>
-                  <span className="text-slate-400">{d.accuracy}%</span>
+      {(stats.domainAccuracy.length > 0 ||
+        Object.keys(stats.byLevel).length > 0 ||
+        (stats.calibrationBias != null && analytics.calibration.length > 0) ||
+        stats.needsReview.length > 0 ||
+        stats.recentActivity.length > 0) && (
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Details</div>
+          <div className="divide-y divide-slate-800 border-t border-slate-800">
+            {stats.domainAccuracy.length > 0 && (
+              <div className="py-3">
+                <div className="text-sm font-medium text-slate-300 mb-1.5">Accuracy by domain</div>
+                <div className="space-y-1">
+                  {stats.domainAccuracy
+                    .sort((a, b) => a.accuracy - b.accuracy)
+                    .map((d) => (
+                      <div key={d.domain} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-300">{d.domain}</span>
+                        <span className="text-slate-500">{d.accuracy}%</span>
+                      </div>
+                    ))}
                 </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {Object.keys(stats.byLevel).length > 0 && (
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-          <div className="font-semibold mb-2">Accuracy by question level</div>
-          <div className="space-y-1.5">
-            {Object.entries(stats.byLevel).map(([lvl, v]) => (
-              <div key={lvl} className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">{lvl}</span>
-                <span className="text-slate-400">
-                  {v.seen ? Math.round((v.correct / v.seen) * 100) : "—"}% ({v.questions} question
-                  {v.questions === 1 ? "" : "s"})
-                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            )}
 
-      {stats.calibrationBias != null && analytics.calibration.length > 0 && (
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-          <div className="font-semibold mb-1">Predicted vs. actual performance</div>
-          <div className="text-sm text-slate-400 mb-3">
-            {stats.calibrationBias > 5
-              ? `Proximate tends to overestimate your chances by about ${stats.calibrationBias} points.`
-              : stats.calibrationBias < -5
-              ? `Proximate tends to underestimate your chances by about ${Math.abs(stats.calibrationBias)} points.`
-              : "Proximate's predictions are well-calibrated to your actual performance."}
-          </div>
-          {stats.calibration.length > 0 && (
-            <div className="space-y-1">
-              {stats.calibration.map((b) => (
-                <div key={b.bucketLabel} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Predicted {b.bucketLabel}</span>
-                  <span className="text-slate-400">
-                    actual {b.actualPct}% ({b.n})
-                  </span>
+            {Object.keys(stats.byLevel).length > 0 && (
+              <div className="py-3">
+                <div className="text-sm font-medium text-slate-300 mb-1.5">Accuracy by question level</div>
+                <div className="space-y-1">
+                  {Object.entries(stats.byLevel).map(([lvl, v]) => (
+                    <div key={lvl} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">{lvl}</span>
+                      <span className="text-slate-500">
+                        {v.seen ? Math.round((v.correct / v.seen) * 100) : "—"}% ({v.questions} question
+                        {v.questions === 1 ? "" : "s"})
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {stats.needsReview.length > 0 && (
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-          <div className="font-semibold mb-1">Questions needing review</div>
-          <div className="text-sm text-slate-400">{stats.needsReview.length} due right now — head to MCQ Practice.</div>
-        </div>
-      )}
-
-      {stats.recentActivity.length > 0 && (
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-          <div className="font-semibold mb-2">Recent activity</div>
-          <div className="space-y-1.5">
-            {stats.recentActivity.map((a, i) => (
-              <div key={i} className="flex items-center justify-between text-xs text-slate-400">
-                <span>{a.domain}</span>
-                <span className={a.correct ? "text-emerald-400" : "text-red-400"}>
-                  {a.correct ? "Correct" : "Incorrect"} (predicted {a.predictedPct}%)
-                </span>
               </div>
-            ))}
+            )}
+
+            {stats.calibrationBias != null && analytics.calibration.length > 0 && (
+              <div className="py-3">
+                <div className="text-sm font-medium text-slate-300 mb-1">Predicted vs. actual performance</div>
+                <div className="text-xs text-slate-500 mb-2">
+                  {stats.calibrationBias > 5
+                    ? `Proximate tends to overestimate your chances by about ${stats.calibrationBias} points.`
+                    : stats.calibrationBias < -5
+                    ? `Proximate tends to underestimate your chances by about ${Math.abs(stats.calibrationBias)} points.`
+                    : "Proximate's predictions are well-calibrated to your actual performance."}
+                </div>
+                {stats.calibration.length > 0 && (
+                  <div className="space-y-1">
+                    {stats.calibration.map((b) => (
+                      <div key={b.bucketLabel} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Predicted {b.bucketLabel}</span>
+                        <span className="text-slate-500">
+                          actual {b.actualPct}% ({b.n})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {stats.needsReview.length > 0 && (
+              <div className="py-3">
+                <div className="text-sm font-medium text-slate-300 mb-1">Questions needing review</div>
+                <div className="text-sm text-slate-500">{stats.needsReview.length} due right now — head to MCQ Practice.</div>
+              </div>
+            )}
+
+            {stats.recentActivity.length > 0 && (
+              <div className="py-3">
+                <div className="text-sm font-medium text-slate-300 mb-1.5">Recent activity</div>
+                <div className="space-y-1">
+                  {stats.recentActivity.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{a.domain}</span>
+                      <span className={a.correct ? "text-emerald-400" : "text-red-400"}>
+                        {a.correct ? "Correct" : "Incorrect"} (predicted {a.predictedPct}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

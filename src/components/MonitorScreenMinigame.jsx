@@ -91,7 +91,7 @@ function DeviceScreen({ ecgKind, w = 340, h = 90, sync, pacing, paceRate, mA, ca
   );
 }
 
-export default function MonitorScreenMinigame({ open, kind, procId, pat, screenType, energyJ, assist, interrupted, onResolve }) {
+export default function MonitorScreenMinigame({ open, kind, procId, pat, screenType, energyJ, assist, interrupted, onClearPatient, onResolve }) {
   const [phase, setPhase] = useState("ready");           // aedAnalyze: ready -> analyzing -> result
   const [clear, setClear] = useState({ hands: false, o2: false, call: false });
   const [sync, setSync] = useState(procId === "cardiovert" ? null : true); // cardiovert: null until chosen
@@ -118,7 +118,10 @@ export default function MonitorScreenMinigame({ open, kind, procId, pat, screenT
   const ClearChecklist = () => (
     <>{[["hands", "Hands off. Nobody touching the patient or the stretcher"], ["o2", "Oxygen moved away from the chest"], ["call", "Call it: \"I'm clear, you're clear, everybody clear\""]].map(([k, l]) => (
       <div key={k} style={{ marginBottom: 6 }}>
-        <button style={clear[k] ? NEUTRAL : GO} onClick={() => setClear({ ...clear, [k]: true })}>{clear[k] ? `Done: ${l}` : l}</button>
+        <button style={clear[k] ? NEUTRAL : GO} onClick={() => {
+          if (k === "hands" && !clear.hands) onClearPatient?.();
+          setClear((prev) => ({ ...prev, [k]: true }));
+        }}>{clear[k] ? `Done: ${l}` : l}</button>
       </div>))}</>
   );
 

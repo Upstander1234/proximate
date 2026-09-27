@@ -67,7 +67,7 @@ import { friendshipTier, toneBucket, createRelationship, adjustFriendship, adjus
 import { CONDITION_LIST, CONDITION_META, buildCustomScenario } from "./data/customScenario.js";
 import { TAXONOMY, CONDITION_TAXONOMY } from "./data/conditionTaxonomy.js";
 import { DEVICES, WAVE_META, DEFIB_ENERGIES, pulseRateFrom } from "./devices.js";
-import { getProtocol, evaluateProtocol } from "./protocols/index.js";
+import { getProtocol, evaluateProtocol, PROTOCOLS, PROTOCOL_ORDER } from "./protocols/index.js";
 import { getScope, effectiveLvl, SCOPES } from "./scopes/index.js";
 import { getCustomScope } from "./customScopes.js";
 import { pron, applyPron, PRONOUN_SETS } from "./pronouns.js";
@@ -436,7 +436,7 @@ function useReadAloud(log,voice,dispatchCue,volume=1,patientGender=null){
 // CARRY, so a returning player's own choice still persists across calls;
 // this only changes what a BRAND NEW save starts at. Still fully
 // adjustable any time via SettingsOverlay or the TIME SCALE picker itself.
-export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:4,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},
+export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:4,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},practiceScenarios:0,
   t:0,onSceneAt:null,pockets:[],bags:[],stretcher:0,
   log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},crew:[],
   busy:null,cBusy:{},ivSites:[],accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
@@ -939,7 +939,7 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   paramedicCertCallsSnapshot:0});
 // Fields carried across a "new call, same shift" reset — everything about
 // who you are and which save you're in, but none of the live-patient state.
-const CARRY=["level","roster","scopeOff","scopeOverride","scopeLocked","speed","muted","voice","mode","myVeh","department","allowedDepartments",
+const CARRY=["level","roster","scopeOff","scopeOverride","scopeLocked","practiceScenarios","speed","muted","voice","mode","myVeh","department","allowedDepartments",
   "saveId","saveName","gmode","career","allowedKinds","candidatePool","hospitalStaff",
   "firstStreak","firstVar","protocol","scopeProfile","weather","timeOfDay","volume","musicVolume","voiceVolume","alwaysCommand","partnerLimited","voiceCommandsEnabled",
   "playerFirst","playerLast","playerGender","playerPronouns","money","learningMode","achievements","lifetimeStats",
@@ -969,6 +969,43 @@ const CARRY=["level","roster","scopeOff","scopeOverride","scopeLocked","speed","
 // the component body. Career (zth or mos) is always limited; Sandbox opts
 // in via the "Limited Items" toggle on its scope-customization screen.
 const limitedItemsActive=(s)=>s.gmode==="career"||(s.gmode==="sandbox"&&!!s.limitedItems);
+
+// The manual setup flow now asks only for provider level, scope, and
+// protocols. These defaults keep every existing dispatch/transport system
+// fed without reintroducing the old department and vehicle pickers.
+const defaultManualSetup=(level)=>{
+  const n=level?LEVELS[level].n:0;
+  if(n===0) return {department:"Volunteer Agency",mode:"suburban",roster:[],
+    myVeh:{key:"none",kind:"none",type:"none",normalSeats:1,totalSeats:1,transport:false,name:"On foot. You are already here"}};
+  if(n<=3){
+    const K=KINDS.ambBLS;
+    return {department:K.agency,mode:"suburban",roster:[],myVeh:{...K.vehicle,kind:"ambBLS",name:K.label}};
+  }
+  if(n===4){
+    const K=KINDS.ambALS;
+    return {department:K.agency,mode:"suburban",roster:[],myVeh:{...K.vehicle,kind:"ambALS",name:K.label}};
+  }
+  const K=KINDS.ambALS;
+  return {department:K.agency,mode:"suburban",roster:[],myVeh:{...K.vehicle,kind:"ambALS",name:K.label}};
+};
+
+// Practice Scenarios deliberately remove dispatch noise: the player's unit
+// is an ambulance, exactly one partner rides, and no other unit is generated
+// or can be requested later. Existing setup choices are preserved when this
+// helper is re-run, so the toggle is idempotent.
+const withPracticeScenarioSetup=(s)=>{
+  const n=s.level?LEVELS[s.level].n:0;
+  const kind=n>=4?"ambALS":"ambBLS";
+  const K=KINDS[kind];
+  const partner=(s.roster||[]).find(p=>!p.pilot)
+    || (s.candidatePool||[]).find(p=>p.agency===K.agency&&LEVELS[p.level]?.n<=Math.max(1,n))
+    || (s.candidatePool||[]).find(p=>LEVELS[p.level]?.n<=Math.max(1,n))
+    || (()=>{const generated=K.crewFn({key:s.mode||"suburban",emrBias:0.25}).find(p=>!p.pilot);
+      return generated?{...generated,id:"practice_partner"}:null;})();
+  return {...s,practiceScenarios:1,department:K.agency,mode:s.mode||"suburban",
+    myVeh:{...K.vehicle,kind,name:K.label},roster:partner?[partner]:[],
+    sceneUnits:[],alsRequested:0,policeCalled:0};
+};
 // Which stock item (if any) a given player action consumes one unit of.
 // Drug actions carry the drug id in `a.drug` (medActs); the curated
 // consumable procedures are keyed by `a.id` directly (procActs/PROC_ACTS).
@@ -2074,7 +2111,7 @@ export default function App({onHome}={}){
         return {say:"Patient is unable to respond. No ID found, no bystanders on scene able to confirm identity.",
           kind:"warn"};
       }},
-    ...(!g.call911?[{id:"call911",region:g.region,tab:"general",label:"Call 911",gerund:"Calling 911",cost:10,lvl:0,once:1,
+    ...(!g.practiceScenarios&&!g.call911?[{id:"call911",region:g.region,tab:"general",label:"Call 911",gerund:"Calling 911",cost:10,lvl:0,once:1,
       // §2.5's tutorial exception (see call911Now's own matching branch):
       // Northwood PATROL, not a real dispatch, on a scripted one-minute ETA.
       run:(s)=>{if(s.tutorialHeatStrokeActive) return {say:'911 — "Northwood PATROL is already in the area, they\'re closer than we are — they\'re on their way."',
@@ -2086,7 +2123,7 @@ export default function App({onHome}={}){
     // F2: "call police" — only offered when the scenario has actually flagged
     // a crime/unsafe-scene concern (SC.crimeSuspected), not on every call. PD
     // shows up as a unit like any other, on the same eta/arrival machinery.
-    ...(SC?.crimeSuspected&&!g.policeCalled?[{id:"callPolice",region:g.region,tab:"general",label:"Call police",
+    ...(!g.practiceScenarios&&SC?.crimeSuspected&&!g.policeCalled?[{id:"callPolice",region:g.region,tab:"general",label:"Call police",
       gerund:"Calling for police",cost:10,lvl:0,once:1,
       run:(s)=>{const already=(s.sceneUnits||[]).some(u=>KINDS[u.kind]?.category==="police");
         if(already) return {say:"Dispatch: PD is already responding.",kind:"obs",set:{policeCalled:1}};
@@ -2100,7 +2137,7 @@ export default function App({onHome}={}){
     // ALS intercept if none is coming, or (AEMT+ only, since that's the
     // provider level actually authorized to make that call) cancel one that
     // hasn't arrived yet if the patient turns out not to need it.
-    ...(!(g.sceneUnits||[]).some(u=>topLevel(u)>=3)&&!g.alsRequested?[{id:"reqALS",region:g.region,tab:"general",
+    ...(!g.practiceScenarios&&!(g.sceneUnits||[]).some(u=>topLevel(u)>=3)&&!g.alsRequested?[{id:"reqALS",region:g.region,tab:"general",
       label:"Request ALS intercept",gerund:"Requesting ALS",cost:10,lvl:0,once:1,
       run:(s)=>{const etaBase={city:150,suburban:260,rural:480}[s.mode||"suburban"];
         const kind=effectiveAllowedKinds(s.allowedKinds,s.allowedDepartments).has("ambALS")?"ambALS":"squad";
@@ -2109,7 +2146,7 @@ export default function App({onHome}={}){
           solo:false, eta:s.t+Math.round(etaBase*(0.85+Math.random()*0.3)), arrived:false};
         return {say:"Dispatch copies — ALS is responding to intercept.",kind:"beat",
           set:{alsRequested:1,sceneUnits:[...(s.sceneUnits||[]),unit].sort((a,b)=>a.eta-b.eta)}};}}]:[]),
-    ...(L>=3&&(g.sceneUnits||[]).some(u=>topLevel(u)>=3&&!u.arrived)?[{id:"cancelALS",region:g.region,tab:"general",
+    ...(!g.practiceScenarios&&L>=3&&(g.sceneUnits||[]).some(u=>topLevel(u)>=3&&!u.arrived)?[{id:"cancelALS",region:g.region,tab:"general",
       label:"Downgrade — cancel inbound ALS",gerund:"Cancelling ALS response",cost:10,lvl:3,once:1,
       run:(s)=>({say:"Dispatch copies — ALS response cancelled, BLS will handle transport.",kind:"obs",
         set:{sceneUnits:(s.sceneUnits||[]).filter(u=>!(topLevel(u)>=3&&!u.arrived))}})}]:[]),
@@ -2471,6 +2508,66 @@ export default function App({onHome}={}){
     if(crewDoneKey) m.done={...(m.done||{}),[crewDoneKey]:{at:m.t}};
     return t.report?{say:`${c.name.toUpperCase()}: ${applyPron(t.report,pr)}`,kind:"good"}:null;};
 
+  // Defibrillation is a real team action, not a local checklist toggle: clear
+  // interrupts every active player/crew task first, then runs the device's
+  // normal three-item safety check, which stays mandatory (MonitorScreenMinigame's
+  // own allClear gate) — this never bypasses it.
+  //
+  // The continuous procedures are stopped by asking whether the DOSE is still
+  // live, NOT by asking whether a task object is still in flight. Those two are
+  // not the same question, and the first version of this function got it wrong:
+  // a crew member's "Compressions" task lasts 25 s but its cpr dose runs 150 s
+  // (bvm/lucas are dur:9999 — see data/procedures.js), so once that task
+  // completed the hand was gone from cBusy while the engine was still
+  // compressing/ventilating the patient. Keying the stop off task bookkeeping
+  // alone left a patient being compressed straight through the shock. doseActive
+  // is the same predicate procBusy()/exclConflict() already use for exactly this
+  // "is it still running" question, not a second, looser reimplementation.
+  //
+  // Scope is deliberately hands-on contact only (compressions, mechanical CPR,
+  // and the bag/mask ventilation methods). A mechanical ventilator, a CPAP mask
+  // or an O2 mask is not a person on the patient's chest — the existing
+  // "oxygen moved away from the chest" checklist item is what covers those, and
+  // ripping a ventilator out mid-call would be its own piece of wrong medicine.
+  const clearPatientForShock=()=>setG(s=>{
+    const tasks=Object.values(s.cBusy||{});
+    const dn={...s.done};
+    if(s.busy?.doneKey) delete dn[s.busy.doneKey];
+    const CONTACT={cpr:"chest compressions",lucas:"the mechanical CPR device",bvm:"the bag-valve-mask",
+      mouthMask:"the pocket mask",mouthMouth:"mouth-to-mouth"};
+    const stopped=Object.keys(CONTACT).filter(id=>doseActive(s,id));
+    const lines=[];
+    if(s.busy) lines.push(`You stop. ${s.busy.label} is cancelled.`);
+    tasks.forEach(b=>lines.push(`${b.name} stops. ${b.task} is cancelled.`));
+    stopped.forEach(id=>lines.push(`Hands off. ${CONTACT[id]} stopped.`));
+    // Say what actually happened. Claiming "every active task is interrupted"
+    // on a scene where nothing was running would be a false statement in
+    // player-facing text.
+    const clearText=lines.length
+      ? "You call, \"Clear!\" Every active task at the patient is interrupted. Complete the shock safety check before delivery."
+      : "You call, \"Clear!\" Nobody is working on the patient. Complete the shock safety check before delivery.";
+    return {...s,busy:null,forcedTask:null,cBusy:{},monitorBy:null,
+      accessMinigame:s.accessMinigame?.kind==="monitor"?s.accessMinigame:null,done:dn,
+      doses:(s.doses||[]).filter(d=>!stopped.includes(d.id)),
+      log:[...s.log,{t:s.t,kind:"warn",text:clearText},
+        ...lines.map(text=>({t:s.t,kind:"obs",text}))]};
+  });
+
+  const finishManualSetup=()=>setG(s=>{
+    if(s.scopeLocked) return {...s,phase:"ready"};
+    let s2=s.practiceScenarios?withPracticeScenarioSetup(s):s;
+    if(s2.gmode==="career"){
+      const pool=s2.level==="layperson"?Object.keys(SCEN).filter(k=>LAYPERSON_COMPLETABLE.has(k)):Object.keys(SCEN).filter(k=>k!=="baseline");
+      const shiftLen=3+Math.floor(Math.random()*5);
+      const queue=maybeInjectFrequentFlyer(
+        [...pool].sort(()=>Math.random()-.5).slice(0,shiftLen), s2);
+      s2={...s2,career:{queue,idx:0,results:[]},loadoutSelection:null,supplyStock:null,truckReserve:null,callsSinceLoadoutRefresh:0};
+    } else s2={...s2,career:null};
+    s2={...s2,scopeLocked:1};
+    writeSave(s2.saveId,s2,{name:s2.saveName,gmode:s2.gmode,level:s2.level,careerIdx:0});
+    return {...s2,phase:"ready"};
+  });
+
   // A supervisor's forced order maps to ONE action the player can actually perform (within their scope).
   const pickForcedOrder=(n,boss)=>{const v=physio(n),pl=LEVELS[n.level].n;
     const cands=[
@@ -2786,7 +2883,7 @@ export default function App({onHome}={}){
           n.crew=(n.crew||[]).map(c=>({...c,morale:Math.max(0,(c.morale??90)-randRange(3,10))}));
         }
       }
-      if(LEVELS[n.level].n===0&&n.pendingHandoffUnit&&n.onSceneAt&&(n.t-n.onSceneAt)>=300&&!n.handoffPending)
+      if(LEVELS[n.level].n===0&&!n.practiceScenarios&&n.pendingHandoffUnit&&n.onSceneAt&&(n.t-n.onSceneAt)>=300&&!n.handoffPending)
         n.handoffPending=1;
       if(n.handoffPending) return handoffResolve(n);
       (S.events||[]).forEach((e,i)=>{ if(n.onSceneAt&&(n.t-n.onSceneAt)>=e.at&&!n.fired[i]){
@@ -3897,7 +3994,7 @@ export default function App({onHome}={}){
   // generated fresh right now, with their ETA anchored to this moment (not
   // to when the scene started), so "help is 4 minutes out" means 4 minutes
   // from the call, not from whenever the player happened to arrive.
-  const call911Now=()=>setG(s=>{if(s.call911) return s;
+  const call911Now=()=>setG(s=>{if(s.call911||s.practiceScenarios) return s;
     // §2.5's one scripted exception to reusing the real call flow: this
     // isn't a real EMS dispatch, so it doesn't get genUnits' normal ETA —
     // Northwood PATROL takes over in exactly one minute (see the tick
@@ -5585,7 +5682,7 @@ export default function App({onHome}={}){
           practice against, so it isn't offered here. Career mode is unaffected. */}
       <div className="f2 flex flex-col gap-2 mt-5">
         {Object.entries(LEVELS).filter(([k])=>!(g.gmode==="sandbox"&&k==="layperson")).map(([k,v])=>(
-          <button key={k} onClick={()=>setG(s=>({...s,level:k,phase:"department"}))} className="text-left px-4 py-3 rounded"
+          <button key={k} onClick={()=>setG(s=>({...s,level:k,...defaultManualSetup(k),phase:"scope"}))} className="text-left px-4 py-3 rounded"
             style={{background:C.panelHi,border:`1px solid ${v.n===5?C.violet:C.line}`}}>
             <div className="flex justify-between items-baseline">
               <span style={{fontSize:15,fontWeight:600,color:v.n===5?C.violet:C.text}}>{v.name}</span>
@@ -5955,7 +6052,7 @@ export default function App({onHome}={}){
     const activeScopeName=(SCOPES[g.scopeProfile]||getCustomScope(g.scopeProfile)||SCOPES.national2019).name;
     return (<Shell g={g} setG={setG} css={css}><div style={{maxWidth:620,margin:"0 auto",paddingTop:40}}>
       <div className="f1" style={{fontFamily:MONO,fontSize:11,letterSpacing:".26em",color:C.dim,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span>SCOPE OF PRACTICE</span><BackBtn toPhase="mode" setG={setG}/></div>
+        <span>SCOPE OF PRACTICE</span><BackBtn toPhase="level" setG={setG}/></div>
       <div className="f2 mt-6 p-4 rounded" style={{background:C.panel,border:`1px solid ${C.line}`}}>
         <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".16em",color:C.spo2,marginBottom:8}}>CURRENTLY CONFIGURED</div>
         <div style={{fontSize:15,fontWeight:600}}>{activeScopeName}</div>
@@ -5968,9 +6065,28 @@ export default function App({onHome}={}){
           style={{background:C.panelHi,border:`1px solid ${C.spo2}`,color:C.spo2,fontSize:12.5,cursor:"pointer"}}>
           ⚙ Adjust in Settings</button>
         <div style={{fontSize:11.5,color:C.faint,marginTop:10,lineHeight:1.6}}>
-          Once you press Ready below, this scope is LOCKED for the life of this save — it can't be
-          changed mid-career. Make any adjustments before then.
+          Your scope and practice setup are LOCKED on the final step for the life of this save. Make any adjustments before then.
         </div>
+      </div>
+      <div className="f2 mt-4 p-4 rounded" style={{background:C.panel,border:`1px solid ${g.practiceScenarios?C.hr:C.line}`}}>
+        <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".16em",color:C.spo2,marginBottom:8}}>PRACTICE SCENARIOS</div>
+        <button disabled={g.scopeLocked} onClick={()=>setG(s=>{
+          // Deliberately does NOT touch scopeLocked. The button is disabled
+          // while locked, and clearing the flag here would mean a future
+          // removal of `disabled` could silently un-lock a finished save.
+          if(!s.practiceScenarios) return withPracticeScenarioSetup(s);
+          return {...s,...defaultManualSetup(s.level),practiceScenarios:0,
+            sceneUnits:[],alsRequested:0,policeCalled:0};
+        })} className="w-full text-left" style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"transparent",border:"none",cursor:g.scopeLocked?"default":"pointer",opacity:g.scopeLocked?.6:1}}>
+          <span>
+            <span style={{fontSize:14,fontWeight:600,color:g.practiceScenarios?C.hr:C.text}}>Practice Scenarios</span>
+            <div style={{fontSize:11.5,color:C.dim,marginTop:3,lineHeight:1.5}}>
+              Only you and one partner attend. No other responding units appear, and your unit is an ambulance.
+            </div>
+          </span>
+          <span style={{fontFamily:MONO,fontSize:18,color:g.practiceScenarios?C.hr:C.faint}}>{g.practiceScenarios?"☑":"☐"}</span>
+        </button>
+        {g.scopeLocked&&<div style={{fontSize:11,color:C.faint,marginTop:8}}>Practice Scenarios is locked with the rest of this save's setup.</div>}
       </div>
       {/* Medical Education Mode only: running calls and getting feedback on
           YOUR decisions is the whole point of this mode, so an arriving
@@ -6011,55 +6127,46 @@ export default function App({onHome}={}){
           <span style={{fontFamily:MONO,fontSize:18,color:g.limitedItems?C.hr:C.faint}}>{g.limitedItems?"☑":"☐"}</span>
         </button>
       </div>}
-      <button onClick={()=>setG(s=>{
-          let s2;
-          if(s.gmode==="career"){
-            // F17 step 7: a Layperson's queue must draw only from scenarios
-            // actually winnable at that scope (see LAYPERSON_COMPLETABLE) —
-            // the unfiltered pool includes calls (anaph, fbao, resp,
-            // stabChest…) whose only "correct" path needs a drug or
-            // procedure a layperson can never give, which handed out an
-            // unwinnable call through no fault of the player. Every other
-            // level still draws from the full library.
-            const pool=s.level==="layperson"?Object.keys(SCEN).filter(k=>LAYPERSON_COMPLETABLE.has(k)):Object.keys(SCEN).filter(k=>k!=="baseline");
-            // F17 step 3: HIDDEN shift duration / dynamic call volume — a
-            // real shift's length isn't known in advance to the crew working
-            // it. Previously always exactly 5; now 3-7, and the station
-            // screen (below) deliberately never reveals the total, only
-            // "call N" — the player finds out the shift is over the same way
-            // a real one would, when the calls stop coming.
-            const shiftLen=3+Math.floor(Math.random()*5);
-            // General: the recurring frequent-flyer patient (campaign.js)
-            // can sneak into ANY Career-mode shift's random draw — not just
-            // this zth save's own Chapter 1, and not gated on level, since
-            // every frequent-flyer scenario key is already confirmed
-            // LAYPERSON_COMPLETABLE-safe. A much lower per-shift chance than
-            // Chapter 1's own dedicated one (this pool is the whole
-            // library, not a small hand-picked one), so the character stays
-            // rare rather than becoming a fixture of every save.
-            const queue=maybeInjectFrequentFlyer(
-              [...pool].sort(()=>Math.random()-.5).slice(0,shiftLen), s);
-            // Limited-items: same reset as the campaign's own shift-start —
-            // a new shift means a freshly-loaded truck, not last shift's
-            // leftover selection/stock.
-            s2={...s,career:{queue,idx:0,results:[]},loadoutSelection:null,supplyStock:null,truckReserve:null,callsSinceLoadoutRefresh:0};
-          } else s2={...s,career:null};
-          // The scope is now permanent for this save — see the note above and
-          // the "the character is saved as of here" comment at the "ready"
-          // phase just below. ScopeEditor (Settings) reads this flag to
-          // switch from an editable grid to a read-only summary.
-          s2={...s2,scopeLocked:1};
-          writeSave(s2.saveId,s2,{name:s2.saveName,gmode:s2.gmode,level:s2.level,careerIdx:0});
-          return {...s2,phase:"ready"};
-        })} className="px-7 py-3 rounded mt-5"
-        style={{background:"#2A1418",border:`1px solid ${C.red}`,color:C.red,fontSize:14}}>▲ Ready</button>
+      <button onClick={()=>setG(s=>({...s,phase:"protocols"}))} className="px-7 py-3 rounded mt-5"
+        style={{background:"#2A1418",border:`1px solid ${C.red}`,color:C.red,fontSize:14}}>Continue</button>
+    </div></Shell>);
+  }
+
+  if(g.phase==="protocols"){
+    const selected=PROTOCOLS[g.protocol]||PROTOCOLS.national;
+    const ruleCount=selected.rules?.length||0;
+    return (<Shell g={g} setG={setG} css={css}><div style={{maxWidth:720,margin:"0 auto",paddingTop:40}}>
+      <div className="f1" style={{fontFamily:MONO,fontSize:11,letterSpacing:".26em",color:C.dim,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>WHAT ARE YOUR PROTOCOLS</span><BackBtn toPhase="scope" setG={setG}/></div>
+      <div className="f1" style={{fontSize:13,color:C.dim,marginTop:10,lineHeight:1.7}}>
+        Choose the treatment protocol your crew will follow when the selected protocol calls for a task.
+      </div>
+      <div className="f2 flex flex-col gap-2 mt-6">
+        {PROTOCOL_ORDER.map(pid=>{const p=PROTOCOLS[pid],on=(g.protocol||"national")===pid,count=p.rules?.length||0,locked=!!g.scopeLocked;
+          return (<button key={pid} disabled={locked} onClick={()=>{if(!locked)setG(s=>({...s,protocol:pid}));}} className="text-left px-4 py-3 rounded"
+            style={{background:on?"#16241C":C.panelHi,border:`1px solid ${on?C.hr:C.line}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12}}>
+              <span style={{fontSize:14,fontWeight:600,color:on?C.hr:C.text}}>{p.name}</span>
+              <span style={{fontFamily:MONO,fontSize:10,color:count?C.dim:C.faint}}>{count} active {count===1?"rule":"rules"}</span>
+            </div>
+            <div style={{fontSize:11.5,color:C.dim,marginTop:4}}>{count?`This protocol can direct ${count} crew ${count===1?"task":"tasks"} from the live patient state.`:"No automated tasks are defined for this protocol yet."}</div>
+          </button>);})}
+      </div>
+      <div className="f1 mt-5 p-3 rounded" style={{background:C.panel,border:`1px solid ${C.line}`}}>
+        <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".14em",color:C.amber}}>SELECTED PROTOCOL</div>
+        <div style={{fontSize:14,fontWeight:600,marginTop:6}}>{selected.name}</div>
+        <div style={{fontSize:11.5,color:C.dim,marginTop:4}}>{ruleCount} active {ruleCount===1?"rule":"rules"} available to the crew director.</div>
+      </div>
+      <button onClick={finishManualSetup} className="px-7 py-3 rounded mt-6"
+        style={{background:g.scopeLocked?"#16241C":"#2A1418",border:`1px solid ${g.scopeLocked?C.hr:C.red}`,color:g.scopeLocked?C.hr:C.red,fontSize:14}}>
+        {g.scopeLocked?"Return to ready":"Continue"}</button>
     </div></Shell>);
   }
 
   /* ═══ READY? — the character is saved as of here; this is the persistent entry point ═══ */
   if(g.phase==="ready"){
     return (<Shell g={g} setG={setG} css={css}><div style={{maxWidth:520,margin:"0 auto",paddingTop:110,textAlign:"center"}}>
-      <BackBtn toPhase="scope" setG={setG}/>
+      <BackBtn toPhase="protocols" setG={setG}/>
       <div style={{fontFamily:MONO,fontSize:11,letterSpacing:".3em",color:C.dim}}>{(g.saveName||"").toUpperCase()}</div>
       <div style={{fontSize:28,fontWeight:700,marginTop:16}}>Ready?</div>
       <div style={{fontSize:13,color:C.dim,marginTop:10,lineHeight:1.7}}>
@@ -6843,7 +6950,14 @@ export default function App({onHome}={}){
           {SC.dispatch.map((d,i)=><div key={i} style={{fontSize:14,lineHeight:1.7}}>— {d}</div>)}
           <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".16em",color:C.dim,marginTop:10}}>
             {(g.mode?MODES[g.mode].name.toUpperCase():"SUBURBAN")} RESPONSE · {(g.myVeh?.name||myVehicle(g.level,null).name).toUpperCase()}</div>
-          <div style={{fontSize:12.5,color:C.dim}}>Also responding: {(MODES[g.mode||"suburban"].units).map(u=>u.toUpperCase()).join(" · ")}. You'll get their ETAs and can pre-assign tasks en route.</div>
+          {/* Practice Scenarios suppress every other responding unit, so this
+              line must not advertise an engine/squad/PD that will never be
+              generated. Leaving it was a false statement in player-facing text
+              — the exact "decorative claim" failure mode. */}
+          <div style={{fontSize:12.5,color:C.dim}}>
+            {g.practiceScenarios
+              ? "You and your partner are the only ones responding. Nobody else is coming, and nobody else can be called."
+              : `Also responding: ${(MODES[g.mode||"suburban"].units).map(u=>u.toUpperCase()).join(" · ")}. You'll get their ETAs and can pre-assign tasks en route.`}</div>
         </>:<>
           <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".18em",color:C.spo2,marginBottom:8}}>ON SCENE</div>
           <div style={{fontSize:14,lineHeight:1.7}}>You're already here. No dispatch, no siren, no idea who — if anyone — is coming until you decide to call.</div>
@@ -6911,8 +7025,11 @@ export default function App({onHome}={}){
               Configure loadout →</button>
           </div>
         </div>);})()}
-      <button disabled={!ready} onClick={()=>setG(s=>{const isLay=LEVELS[s.level].n===0;
-        let ownCrew=(s.roster||[]).map(p=>({id:p.id,name:p.name,level:p.level,student:!!p.student,
+      <button disabled={!ready} onClick={()=>setG(s=>{
+        if(s.practiceScenarios) s=withPracticeScenarioSetup(s);
+        const isLay=LEVELS[s.level].n===0;
+        const crewRoster=s.practiceScenarios?(s.roster||[]).slice(0,1):(s.roster||[]);
+        let ownCrew=crewRoster.map(p=>({id:p.id,name:p.name,level:p.level,student:!!p.student,
           exp:p.exp||0,unitId:"own",vehicle:s.myVeh,solo:false,mine:true,pilot:!!p.pilot,fixed:!!p.fixed,
           title:p.title,role:p.role,crewTitle:p.student?"student":(p.pilot?"pilot":"partner")}));
         // Medical Education Mode: roll a physical limitation onto one
@@ -6971,7 +7088,7 @@ export default function App({onHome}={}){
         }
         const sWithLoc={...s,locations};
         let units=[];let sceneRank=1,nextStreak=s.firstStreak||0;
-        if(!isLay){let raw=genUnits(s.mode,{allowed:effectiveAllowedKinds(s.allowedKinds,s.allowedDepartments),severity:s.code});
+        if(!isLay&&!s.practiceScenarios){let raw=genUnits(s.mode,{allowed:effectiveAllowedKinds(s.allowedKinds,s.allowedDepartments),severity:s.code});
           const veh=s.myVeh||myVehicle(s.level,null);
           if(!veh.transport&&!raw.some(u=>u.vehicle.transport)) raw.push(blsAmbulance(s.mode));
           const sched=scheduleUnits(sWithLoc,raw); units=sched.units; sceneRank=sched.rank;
@@ -6984,7 +7101,7 @@ export default function App({onHome}={}){
         // either way. The 3D scenes are tester-gated the same way
         // Career/Co-op are (isTesterUnlocked()).
         return {...s,locations,mapVersion:dispatchMap.version,
-          phase:"response",sceneUnits:units,crew:ownCrew,call911:isLay?0:1,call911Asked:0,
+          phase:"response",sceneUnits:units,crew:ownCrew,call911:isLay||s.practiceScenarios?0:1,call911Asked:0,
           sceneRank,firstStreak:nextStreak,
           ...((s.drivingModeEnabled===false||!isTesterUnlocked())?{driveMiniDone:1}:{}),
           patientName,...flyerPatch,log:[...(s.log||[]),...flyerLog],
@@ -10398,7 +10515,7 @@ export default function App({onHome}={}){
       energyJ={g.defib?.charged?g.defib.energy:null}
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
-      onResolve={resolveAccessMinigame}/>}
+      onClearPatient={clearPatientForShock} onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="gluc"&&<GlucometerMinigame open kind="gluc"
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}

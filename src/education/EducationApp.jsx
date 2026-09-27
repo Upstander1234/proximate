@@ -135,12 +135,12 @@ const [submitPrefillLevel, setSubmitPrefillLevel] = useState(null);
         onProfile={() => setShowProfile(true)}
         profileVersion={profileVersion}
       />
-      <nav className="flex flex-wrap gap-1.5 mb-6 border-b border-slate-800 pb-3">
+      <nav className="flex flex-nowrap gap-1.5 mb-6 border-b border-slate-800 pb-3 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-track]:bg-transparent">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
               tab === t.key ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
             }`}
           >

@@ -43,10 +43,18 @@ async function main() {
     // 3. AI panel reflects real feature detection. In this headless
     // environment navigator.gpu has no real adapter, so UNSUPPORTED is the
     // expected, honest state — not a failure of this test.
+    //
+    // The accepted set must cover EVERY label aiStatusLine() can actually
+    // return (src/components/bootScreenText.js): UNSUPPORTED, READY, the three
+    // in-flight ones (DOWNLOADING / LOADING FROM CACHE / CHECKING FOR CACHED
+    // MODEL), UNAVAILABLE, and the not-yet-started SUPPORTED. An earlier
+    // version of this check listed only the first four plus SUPPORTED, which
+    // made it fail intermittently on the brief "loading" window — a gap in the
+    // TEST's accepted set, not a defect in the boot screen.
     const hasUnsupported = /UNSUPPORTED/.test(bodyText);
-    const hasAiState = /UNSUPPORTED|READY|DOWNLOADING|SUPPORTED|UNAVAILABLE/.test(bodyText);
+    const hasAiState = /UNSUPPORTED|READY|DOWNLOADING|LOADING FROM CACHE|CHECKING FOR CACHED MODEL|UNAVAILABLE|SUPPORTED/.test(bodyText);
     if (!hasAiState) throw new Error("AI panel did not render any recognizable status line");
-    const aiLineMatch = bodyText.match(/LOCAL AI DIALOGUE(UNSUPPORTED[^]*?WebGPU|READY[^]*?active|DOWNLOADING[^]*?|SUPPORTED[^]*?started|UNAVAILABLE[^]*?device)/);
+    const aiLineMatch = bodyText.match(/LOCAL AI DIALOGUE(UNSUPPORTED[^]*?WebAssembly|READY[^]*?active|DOWNLOADING[^]*?|LOADING FROM CACHE[^]*?|CHECKING FOR CACHED MODEL[^]*?|SUPPORTED[^]*?started|UNAVAILABLE[^]*?device)/);
     console.log(`PASS: AI panel shows a real status line: "${aiLineMatch?.[1] || "(see raw bodyText)"}" (${hasUnsupported ? "UNSUPPORTED, expected in headless Chromium" : "NOT unsupported — check real hardware result"})`);
 
     // 4. "Continue without AI" is clickable immediately and reaches title.

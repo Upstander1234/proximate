@@ -180,8 +180,19 @@ function QuizMode({
 
       <div className="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-5">
         <div className="text-center space-y-3">
-          <div className="text-xs uppercase tracking-wide text-slate-500">
-            {clip.kind === "heart" ? "Heart sound" : "Lung sound"}
+          <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+            <span>{clip.kind === "heart" ? "Heart sound" : "Lung sound"}</span>
+            {reportingEnabled && (
+              <>
+                <span className="text-slate-700">·</span>
+                <button
+                  onClick={onReport}
+                  className="normal-case tracking-normal text-slate-500 hover:text-amber-400 underline underline-offset-4"
+                >
+                  Report this clip
+                </button>
+              </>
+            )}
           </div>
           {/* key forces a fresh <audio> element per clip so autoplay-adjacent
               browser caching never carries over a stale src */}
@@ -225,16 +236,9 @@ function QuizMode({
                 {clip.loc && clip.loc !== "any" ? ` · ${clip.loc}` : ""}
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              {reportingEnabled && (
-                <button onClick={onReport} className="text-xs text-slate-500 hover:text-amber-400 underline underline-offset-4">
-                  Report this clip
-                </button>
-              )}
-              <button onClick={onNext} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
-                Next →
-              </button>
-            </div>
+            <button onClick={onNext} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
+              Next →
+            </button>
           </div>
         )}
       </div>
@@ -273,7 +277,7 @@ function BrowseMode({ filter, onFilterChange, onReport }) {
           <div key={`${c.kind}:${c.id}`} className="p-3 flex items-center gap-3 flex-wrap">
             <span
               className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border ${
-                c.kind === "heart" ? "border-rose-700 text-rose-300 bg-rose-950/40" : "border-sky-700 text-sky-300 bg-sky-950/40"
+                c.kind === "heart" ? "border-violet-700 text-violet-300 bg-violet-950/40" : "border-sky-700 text-sky-300 bg-sky-950/40"
               }`}
             >
               {c.kind}

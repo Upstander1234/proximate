@@ -32,8 +32,22 @@ import { importModelZip } from "./modelImport.js";
 // MUST route through this — checked once here rather than duplicated at each
 // caller, so a future call site (crew reactions, treatment-response) gets the
 // gate for free just by calling generateDialogue/requestLocalUpgrade.
+// UPDATE: the opt-in default above was reversed. The setting does not survive
+// a page reload, so an opt-in default made "Refresh to enable" land on a
+// disabled state. Unset now means ENABLED (auto-try); only an explicit
+// `false` (Settings' Disable chip) turns it off.
+// The explicit choice is mirrored to localStorage (g does not survive a
+// reload), wrapped in try/catch since storage can be blocked or throw.
+const LOCAL_AI_KEY = "proximate.localAiEnabled";
+export function saveLocalAiPref(val) {
+  try { localStorage.setItem(LOCAL_AI_KEY, val ? "1" : "0"); } catch { /* storage unavailable */ }
+}
+function loadLocalAiPref() {
+  try { const v = localStorage.getItem(LOCAL_AI_KEY); return v === "0" ? false : v === "1" ? true : undefined; } catch { return undefined; }
+}
 export function isLocalAiEnabled(s) {
-  return s?.localAiEnabled === true;
+  const v = s?.localAiEnabled ?? loadLocalAiPref();
+  return v !== false;
 }
 
 const deterministic = new DeterministicProvider();

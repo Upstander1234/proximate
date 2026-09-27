@@ -343,6 +343,80 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-27 — Three pieces of finished front-end work found sitting uncommitted and undocumented from a prior session; all three verified live this session and committed for the first time. No new work was started on top of them — verifying and documenting what already existed was this session's own contribution.
+
+**Shock-clearing race condition — fixed.** `clearPatientForShock()` (`App.jsx`)
+used to decide which patient-contact procedures to stop from TASK BOOKKEEPING
+(`g.busy`/`g.cBusy`) rather than from whether the DOSE was still live. A crew
+member's "Compressions" task lasts 25s but its `cpr` dose runs 150s
+(`bvm`/`lucas` are `dur:9999` — `data/procedures.js`), so once the task
+completed the hand was gone from `cBusy` while the engine was still
+compressing/ventilating — clearing the patient for a shock did nothing to
+actually stop CPR/BVM in that state, and the dose survived straight through
+the defibrillation. Fixed to key off `doseActive()` (the same predicate
+`procBusy()`/`exclConflict()` already use) instead of task-bookkeeping
+presence. Scope is deliberately hands-on-contact only (compressions,
+mechanical CPR, bag/mask ventilation methods) — a ventilator/CPAP/O2 mask is
+covered by the existing "oxygen moved away from the chest" checklist item,
+not this function. Verified live via `tools/browser/verifyShockClearing.mjs`
+(new): the three-item safety checklist still gates shock availability
+correctly; an in-progress player action and every in-flight crew task are
+interrupted on clear; a live cpr/bvm dose is stopped even with no task object
+attached (the exact regression case); the monitor minigame stays open across
+the clear; sim time keeps advancing throughout. 11/11 checks pass, zero
+console errors.
+
+**Practice Scenarios setup flow — new.** A new `g.practiceScenarios` flag
+(added to `blank()` and `CARRY`) drives a deliberately noise-free manual setup
+path: `defaultManualSetup()`/`withPracticeScenarioSetup()` (`App.jsx`) skip
+the department/vehicle/partners picker chain entirely and go
+level -> scope -> protocols -> ready, forcing a transport-capable ambulance
+(BLS or ALS by provider level) with exactly one partner and no other
+responding unit ever generated (`sceneUnits:[]`) or requestable
+(`call911`/`callPolice`/`reqALS`/`cancelALS` actions are all suppressed while
+`g.practiceScenarios` is set). `scopeLocked` prevents post-setup scope/protocol
+edits. A real bug was fixed in the same pass: the kit screen's dispatch text
+used to unconditionally print "Also responding: ENGINE · SQUAD · PD"
+regardless of whether any such unit would ever exist — now states honestly
+that the player and their one partner are the only responders. Verified live
+via `tools/browser/verifyPracticeScenarios.mjs` (new): the full setup chain,
+the protocols screen reporting real rule counts (116 active rules) off the
+real `PROTOCOLS`/`PROTOCOL_ORDER` data, the forced ALS-ambulance-plus-one-
+partner crew, zero extra units at a real dispatch, `call911`'s inability to
+summon help, and a control run with the option OFF being unaffected. 15/15
+checks pass, zero console errors.
+
+**UI/UX polish pass.** A design-token remap (`theme.js`/`index.css`), a
+`StatsTab.jsx` visual-hierarchy fix (secondary detail sections — domain
+accuracy, by-level breakdown, calibration, review queue, recent activity —
+now grouped under a single "Details" label with dividers instead of each
+floating as its own equal-weight card), an Education tab-nav overflow fix
+(horizontal scroll instead of wrapping/clipping on narrow widths), and an
+`AuscultationPracticeTab.jsx` fix moving the "Report this clip" control
+inline with the category badge instead of competing with the primary "Next"
+action for visual weight. New shared `src/components/ui.js` (small,
+already-used-elsewhere token/style helpers, not a new design system).
+Verified via `tools/browser/verifyUiPolishPass.mjs` (new, screenshot-based —
+Education dashboard/MCQ/auscultation/stats at desktop and mobile widths, plus
+the tab-nav and simulator scene/settings surfaces): zero console errors
+across every surface; screenshots inspected directly and show no truncation,
+overlap, or broken layout at either width.
+
+**Verification, complete for all three.** `npx eslint src` clean at the
+documented baseline (3 pre-existing `react-refresh/only-export-components`
+errors in `App.jsx`, zero new findings). `npx vite build` clean (same
+pre-existing >500kB chunk-size warning). Physiology suites were not re-run —
+correctly: none of these three changes touch `physio/`. `saveId` shape is
+unaffected for existing saves (`practiceScenarios` defaults falsy via
+`blank()`), so save compatibility holds for a returning player who never
+opts into Practice Scenarios.
+
+### 2026-09-23 — Local AI now auto-enables by default, and the Enable/Disable choice persists across reloads (front-end, queue item 1's Settings/boot surfaces).
+
+**Bug.** Enabling local AI showed "Local AI is ready. Refresh Proximate to enable dynamic dialogue.", but after the refresh it was disabled again. Cause: `isLocalAiEnabled(s)` (`dialogue/dialogueManager.js`) was opt-in (only `s.localAiEnabled === true` counted), and `g.localAiEnabled` does not survive a reload, so every fresh session read as disabled and `BootScreen`'s `preloadLocalAi(g)` was a no-op.
+
+**Fix.** Unset now means ENABLED; only an explicit `false` disables. The explicit choice is mirrored to `localStorage` key `proximate.localAiEnabled` (`saveLocalAiPref`, try/catch-wrapped), read as a fallback when `g.localAiEnabled` is unset. `SettingsOverlay.jsx`'s chips and its other enable site save the pref, and the chip highlight reads `isLocalAiEnabled(g)`. This reverses the earlier "opt-in by default" reliability decision: every new session now starts the ~370MB model load automatically (still never blocks gameplay; "Continue without AI" is unchanged). `eslint` clean on both files, `vite build` clean. NOT verified in a browser, and `tools/browser/verifyAiReadyNoticeAndToggle.mjs` (which expects enabled-by-default) was not re-run.
+
 ### 2026-09-22 (c) — Assigned scope: items 58-63 as numbered at session start (in practice, the three items whose own text matched the assignment: 61 the dead HEART_SOUNDS categories, 62 the Auscultation Practice tab, 63 the leftover `s.given.X`/`s.done` tracking bugs). All three closed or made real progress on; items 58-60 (12-lead territory, minigame physiology, other auscultation follow-ups) were not touched — not in the assignment's own described scope, stated honestly rather than silently claimed.
 
 **Item 63 (leftover `s.given.X`/`s.done` tracking bugs) — CLOSED, all three sub-cases fixed for real, no drug/mechanism corners cut.**
@@ -1464,7 +1538,7 @@ live queue numbers. Order is roughly by leverage, not strict priority — use
 judgment, and each item bundles several related requests as sub-bullets so they
 can be tackled together.
 
-1. **ABSOLUTE TOP PRIORITY, STANDING DIRECTIVE: Medical Simulation Mode —
+1. **(Update 2026-09-23: local AI is now ENABLED BY DEFAULT and the Enable/Disable choice persists in `localStorage`; any "opt-in" wording in `dialogueManager.js`/`BootScreen.jsx` comments is stale, see section 3's newest entry.)** **ABSOLUTE TOP PRIORITY, STANDING DIRECTIVE: Medical Simulation Mode —
 Local Browser LLM Dialogue System (operator-supplied spec, verbatim below).
 Placed ahead of a previous item in the queue by explicit operator instruction — work this before
 anything else in this queue.** **RELIABILITY FIX (this session, see

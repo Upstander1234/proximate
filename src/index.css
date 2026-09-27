@@ -1,1 +1,88 @@
 @import "tailwindcss";
+
+/*
+ * Education Mode (src/education/*) is built with Tailwind utility classes on
+ * Tailwind's *default* color scale. The Simulator (src/theme.js) uses its own
+ * hand-picked palette (`C`). This block remaps the Tailwind shades that are
+ * actually doing load-bearing semantic work in Education Mode onto the
+ * Simulator's real palette, by CONFIRMED ROLE (not by matching color names) --
+ * see the exhaustive shade-usage audit that produced this mapping (grep of
+ * every sky-/emerald-/red-/amber-/rose-/slate- class across src/education/*).
+ *
+ * Every shade below is either (a) remapped to a real Proximate color, with
+ * the C.<token> it reuses noted, or (b) explicitly left alone with a reason,
+ * per rule: no shade may be silently left as an unrelated Tailwind default
+ * once a sibling shade in the same family has been remapped.
+ */
+@theme {
+  /* slate = background / surface / border / neutral text (confirmed: by far
+     the most common family, used for every panel/card/border/dim-text role) */
+  --color-slate-950: #0B0F12; /* C.bg -- deepest background (inputs, modals) */
+  --color-slate-900: #141A1F; /* C.panel -- card/panel surface, dominant usage */
+  --color-slate-800: #26343D; /* C.line -- border color, the single most common class in this codebase */
+  --color-slate-500: #5C6E78; /* C.dim -- secondary/de-emphasized text, dominant usage */
+  /* slate-700/600 left alone: low-frequency hover/secondary-border variants
+     with no distinct Proximate role identified; Tailwind's default is
+     already a dark blue-gray close in hue to line/panel, so it doesn't clash. */
+  /* slate-400 left alone DELIBERATELY, not an oversight: it is a lighter,
+     distinct text-emphasis tier from slate-500 in the existing Education
+     Mode hierarchy (e.g. body text vs. caption text). Collapsing it onto the
+     same value as slate-500 would erase a real two-level hierarchy the
+     components already rely on -- exactly the kind of arbitrary-variant
+     mapping this remap is meant to avoid. */
+  /* slate-300/200/100 left alone: near-white emphasis text on dark
+     backgrounds. Already renders as intended; C has no "near white" token
+     to map onto besides C.text/C.bp, and those are reserved for the
+     Simulator's own vitals readouts, not Education Mode chrome. */
+
+  /* sky = primary action / selected / informational (confirmed: active tab
+     highlight, primary buttons, links) */
+  --color-sky-600: #4D7CFF; /* C.blue -- primary action, dominant usage */
+  --color-sky-500: #6B93FF; /* lighter tint of C.blue at the same hue, for hover/secondary-emphasis -- systematically derived, not arbitrary */
+  /* sky-400/300/200 left alone: text-accent uses (links, small labels) that
+     already read clearly against the dark background and don't collide with
+     any other semantic color. */
+  /* sky-700/800/900/950 left alone: tinted background washes (e.g.
+     bg-sky-900/60, bg-sky-950/40 badge backgrounds) -- already render as a
+     dark blue tint, which is the intended effect; no Proximate equivalent
+     needed for a translucent wash. */
+
+  /* emerald = success / correct (confirmed: answer-correct states, approve
+     actions -- no non-correctness use found in the audit) */
+  --color-emerald-500: #46E39B; /* C.hr -- reuses the Simulator's own established "good" green */
+  --color-emerald-600: #34C489; /* deliberate darker tint of C.hr at the same hue, for solid button backgrounds */
+  /* emerald-400/300/200 left alone: lighter text accents. emerald-700/950
+     left alone: background washes. Both already read as "success" without
+     collision. */
+
+  /* red = error / incorrect / destructive (confirmed: answer-incorrect
+     states, reject/delete actions) */
+  --color-red-500: #FF4D5A; /* C.red -- reuses the Simulator's own critical/danger red */
+  --color-red-400: #FF7D87; /* deliberate lighter tint of C.red at the same hue, for text-on-dark accents */
+  /* red-600/700/800/300/200/950 left alone: darker solid/washes and lighter
+     text accents that already read unambiguously as "error" in context. */
+
+  /* amber = warning / WIP / needs-attention (confirmed: WIP badges, report
+     flags, caution banners) */
+  --color-amber-400: #F2A33C; /* C.amber -- reuses the Simulator's own warning color; amber-400 (not 500) is the dominant shade actually used here */
+  --color-amber-300: #F5B968; /* deliberate lighter tint of C.amber at the same hue, for text-on-dark accents */
+  /* amber-500/600/700/800/900/950/200 left alone: less-common solid/washes
+     that already read as "warning" without collision. */
+
+  /* rose is intentionally NOT remapped here: it had exactly one real-world
+     usage in this codebase (the heart/lung category badge in
+     AuscultationPracticeTab.jsx), and that single call site was fixed
+     directly to use violet classes instead of rose ones -- see that file --
+     rather than reserving a whole family remap for one badge, since rose
+     otherwise reads as an error/danger hue next to this app's red=incorrect
+     convention.
+
+     violet = category/taxonomy indicator (confirmed: the one heart-vs-lung
+     badge above is its only usage in Education Mode; C.violet is already
+     reserved in the Simulator palette for informational/category use, so
+     this reuses an existing role rather than introducing a new meaning) */
+  --color-violet-700: #7C5FD9; /* deliberate darker tint of C.violet at the same hue, for the badge border */
+  --color-violet-300: #C9B8F5; /* deliberate lighter tint of C.violet at the same hue, for the badge text */
+  /* violet-950/40 (the badge background wash) left alone: Tailwind's default
+     dark-violet wash already reads as the intended translucent tint. */
+}

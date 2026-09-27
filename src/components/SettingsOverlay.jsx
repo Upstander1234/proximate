@@ -6,7 +6,7 @@ import ScopeEditor from "./ScopeEditor.jsx";
 import { speechRecognitionAvailable } from "../hooks/useVoiceCommands.js";
 import { isTesterUnlocked } from "../testerGate.js";
 import { ASSIST_LEVELS, ASSIST_LABELS } from "../procedureAssist.js";
-import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi, importLocalAiModel } from "../dialogue/dialogueManager.js";
+import { getLocalAiState, subscribeLocalAiProgress, retryLocalAi, preloadLocalAi, importLocalAiModel, saveLocalAiPref, isLocalAiEnabled } from "../dialogue/dialogueManager.js";
 import { MODEL_ZIP_URL } from "../dialogue/modelImport.js";
 import { neuralTts } from "../dialogue/neuralTts.js";
 
@@ -248,7 +248,7 @@ export default function SettingsOverlay({g,setG}){
                   downloads until a dialogue event lazily triggers it (status
                   sits at "not yet downloaded" indefinitely). preload is
                   idempotent, so re-clicking Enable is harmless. */}
-              {[["enable",true],["disable",false]].map(([l,val])=>Chip((g.localAiEnabled??false)===val,()=>{setG(s=>({...s,localAiEnabled:val}));if(val)preloadLocalAi({localAiEnabled:true});},l,l))}
+              {[["enable",true],["disable",false]].map(([l,val])=>Chip(isLocalAiEnabled(g)===val,()=>{saveLocalAiPref(val);setG(s=>({...s,localAiEnabled:val}));if(val)preloadLocalAi({localAiEnabled:true});},l,l))}
               {/* Reliability fix: a real Retry control, only shown once a
                   load has genuinely failed (never decorative — clicking it
                   calls the real dialogueManager.retryLocalAi(), which
@@ -276,7 +276,7 @@ export default function SettingsOverlay({g,setG}){
                         if(!f)return;
                         try{
                           await importLocalAiModel(f,setImportMsg);
-                          setG(s=>({...s,localAiEnabled:true}));
+                          saveLocalAiPref(true);setG(s=>({...s,localAiEnabled:true}));
                           setImportMsg("Imported. Loading the model…");
                         }catch(err){
                           setImportMsg(err?.userFacing?err.message:"Import failed. Try downloading the file again.");
