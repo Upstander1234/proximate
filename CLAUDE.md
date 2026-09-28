@@ -343,6 +343,83 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-09-27 (b) — REAL Tier-3 WebGPU local-LLM generation confirmed working end-to-end for the first time in this project's entire history. Investigation-only, no code changed. This closes the single largest standing open question in queue item 1.
+
+**Why this hadn't been confirmed before.** Every prior session's environment
+was either Windows with an Intel UHD 630 + NVIDIA GTX 1650, where Playwright's
+bundled "Chrome for Testing" v151 never registered `navigator.gpu` as an API
+surface at all (documented in queue item 1's own text), or a sandboxed
+environment with no outbound internet access to huggingface.co to even attempt
+the model download. This session's environment is a Mac (Apple M4 Pro, Metal 3),
+with real Google Chrome installed AND real outbound network access to
+huggingface.co — a genuinely different combination never available before.
+
+**A real bug in the FIRST probe attempt, caught before trusting a false
+negative.** An initial `navigator.gpu` check across six launch configurations
+(bundled/real Chrome, headless/headed, with/without WebGPU flags) came back
+`false` in all six — looking like a repeat of the Windows finding. The actual
+cause: the check ran against a bare `about:blank` page with no navigation,
+and WebGPU requires a secure context. Re-run against the app's real
+`http://localhost:5173` origin, `navigator.gpu` was present with a real
+adapter/device in 3 of 4 configs (only "bundled Chromium headless" failed to
+get an adapter here) — a `chrome://gpu` inspection independently confirmed
+"WebGPU Status: Available" with the Metal backend. Lesson 8 applies exactly:
+verify the harness before trusting a surprising negative result.
+
+**End-to-end confirmation, via real Chrome (`channel:"chrome"`, headed),
+driving the actual app through its real boot flow (not a synthetic
+`navigator.gpu` stub):**
+- The boot screen's AI panel went from a cold "checking for cached model" to
+  a genuine download (0% -> 99%, real percentage climbing, not simulated) to
+  `loading-from-cache` to `status:"ready"` in about 8-18 seconds across
+  several runs — the first real download-progress percentage this project
+  has ever observed climbing, not just the honest "no adapter" failure path
+  every prior session confirmed instead.
+- Clicking "USE LOCAL AI" (not "CONTINUE WITHOUT AI", which is a real,
+  explicit opt-out that sets `localAiEnabled:false` and was the reason a
+  first attempt silently fell back to `tier:"template"` despite AI being
+  ready) enables it for the session, confirmed via `isLocalAiEnabled(s)`
+  returning `true` and `localStorage`'s `proximate.localAiEnabled` reading
+  `"1"`.
+- Calling the real `dialogueManager.generateDialogue(event, s, v)` (the
+  actual production entry point, not a reconstructed call) against a live
+  scene state produced **`tier:"local-llm"`** on every one of four separate
+  calls across three different event types (`pain_unprompted`,
+  `anxious_unprompted`, `treatment_improving`), with real, variable inference
+  latency (120-1980ms, not the near-zero latency a template/deterministic
+  fallback would show) — genuine generated text each time (e.g. "The chest
+  pain started.", "The treatment improved, he said with a satisfied
+  smile."). Output quality is honestly imperfect (occasional third-person
+  drift instead of a first-person patient voice) — expected at this model's
+  documented size and consistent with the WASM tier's own already-recorded
+  quality caveats, not a new problem.
+- Zero console errors across every run.
+
+**What this confirms, precisely.** Real WebGPU adapter/device creation,
+real model download over a real network connection, real cache-then-ready
+transition, and real local-model text generation through the actual
+production `generateDialogue()` call path all work end-to-end on real
+consumer Apple Silicon hardware with real installed Chrome. This is
+DIFFERENT from, not a correction of, the Windows finding — that finding
+(Chrome-for-Testing's `navigator.gpu` gap) is specific to that test-browser
+binary and stands as documented. **What remains genuinely unconfirmed**:
+this was checked via `channel:"chrome"` (a real installed browser, not the
+project's own bundled Playwright Chromium) and headed (not headless) —
+bundled Chromium headless still could not get a WebGPU adapter in this same
+environment, so this project's own standard `tools/browser/` scripts
+(which default to headless bundled Chromium via `driver.mjs`'s `launch()`)
+will continue to correctly report the honest "no adapter" fallback path
+exactly as before; reaching this confirmed-working state from that harness
+would need `driver.mjs`'s `launch()` extended with `channel`/`headless`
+overrides, not attempted this session (a real, separate, scoped follow-up
+if the project wants its own standard verification scripts to exercise this
+path routinely, rather than a one-off manual investigation).
+
+**No code was changed.** This was a pure investigation per direct operator
+request ("can you figure out a way to confirm it here"). All throwaway probe
+scripts and screenshots used to reach this finding were stripped before this
+entry was written (confirmed via `git status`, clean).
+
 ### 2026-09-27 — Three pieces of finished front-end work found sitting uncommitted and undocumented from a prior session; all three verified live this session and committed for the first time. No new work was started on top of them — verifying and documenting what already existed was this session's own contribution.
 
 **Shock-clearing race condition — fixed.** `clearPatientForShock()` (`App.jsx`)
@@ -1821,17 +1898,27 @@ browser + WebGPU adapter — stays `tools/browser/`-only, unconfirmed on
 real hardware same as every prior session), and no non-browser port of the
 boot-sequence/download-state/cached-model-detection LIVE behavior (those
 stay Playwright-covered; porting them would mean faking the DOM/Cache API
-in Node, not attempted this session). **Real generation
-success on an
-actual WebGPU-capable device is honestly STILL UNCONFIRMED** — every
-environment available across both sessions so far (headless Chromium)
-reports `navigator.gpu` present as an API surface but fails the real
-adapter request, which correctly and cleanly exercises the failure/
-fallback path (verified again this session: the boot screen's AI panel
-correctly lands on "UNAVAILABLE — local AI failed to load on this
-device") but has never once exercised a real successful local-model
-generation or a real download-progress percentage climbing — that remains
-the first thing to confirm on real WebGPU-capable hardware. Read section
+in Node, not attempted this session). **UPDATE (2026-09-27, a later session,
+see section 3's newest entry): real generation success on a genuinely
+WebGPU-capable device is now CONFIRMED, for the first time.** A Mac (Apple
+M4 Pro, Metal 3) with real installed Chrome (`channel:"chrome"`, headed) and
+real network access to huggingface.co reached a real download-progress
+percentage climbing 0%->99%, a real `status:"ready"` transition, and real
+`tier:"local-llm"` generated text through the actual production
+`dialogueManager.generateDialogue()` call path on four separate calls across
+three event types — not a stub, not a forced state. This does not
+contradict the paragraphs below (that Windows/headless-Chromium finding is
+real and specific to that test-browser binary) — it is the first
+CONFIRMING result from a different, genuinely capable environment. Still
+open exactly as before: this project's own standard `tools/browser/`
+scripts default to headless bundled Chromium (`driver.mjs`'s `launch()`),
+which still cannot get a WebGPU adapter even in this same capable
+environment — extending that harness with a `channel`/headed override is a
+real, separate, scoped follow-up, not done this session. The paragraphs
+below describe the OLDER, still-accurate finding for the headless-bundled-
+Chromium/Windows environments this project has otherwise been developed in:
+
+Read section
 3's own entries for exactly what was built each slice, including a real,
 reusable testing gotcha found in an earlier session (forcing a seizure
 edge for verification needs BOTH `pat.epilepticDrive=1` and
