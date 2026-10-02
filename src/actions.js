@@ -209,7 +209,20 @@ export const LIB=[
       kind:v.rr<8?"crit":v.rr>24?"warn":"obs",find:`RR ${v.rr}.`,meas:{RR:`${v.rr}`},
       evid:v.rr<8?"RR 8 with decreased LOC — respiratory failure. Positive pressure ventilation is indicated.":null})},
   {id:"palp",region:"abdo",tab:"assess",label:"Palpate four quadrants",gerund:"Palpating abdomen",cost:25,once:1,lvl:1,probe:"abdo",
-    run:()=>({say:"Soft. Non-tender.",find:"Abdomen soft."})},
+    // Hepatic congestion (queue item 1, Phase 3): a real, global-vitals-based
+    // finding, NOT the localized-trauma-pain misattribution this action's own
+    // history already flagged as the reason to leave it scripted (pat.pain is
+    // a single whole-body scalar and stays untouched here — this reads
+    // pat.cvp instead, exactly like the jvd action above, so a right-sided
+    // venous-congestion picture — chronic CHF, tamponade, or this phase's own
+    // pacemaker-syndrome AV dissociation — produces a real RUQ/hepatomegaly
+    // finding rather than "soft, non-tender" regardless of physiology).
+    // Scenario overrides (18 real ones exist) still win, since this only
+    // fires when no probes.abdo override applies.
+    run:(s)=>{const cvp=s.patient?.cvp??4;
+      if(cvp>12) return {say:"Liver edge palpable well below the costal margin, firm, and tender. Positive hepatojugular reflux.",kind:"warn",find:"Hepatomegaly, RUQ tenderness — hepatic congestion."};
+      if(cvp>8) return {say:"Mild fullness and tenderness in the right upper quadrant.",kind:"obs",find:"Mild RUQ tenderness."};
+      return {say:"Soft. Non-tender.",find:"Abdomen soft."};}},
   // Fetal heart tones (queue item V2-28, scoped slice) — a real Doppler
   // finding: reads the live pat.fetalHR obstetric.js now maintains (110-160
   // bpm normal; sustained bradycardia is the standard sign of fetal
@@ -516,13 +529,19 @@ export const PROC_ACTS=[
   // draws showed the same generic site ("IO — humeral head", "IV — 18g
   // antecubital") regardless of which real site was clicked. gerund now
   // matches label at every site.
-  P("iv","armR","iv",{once:1,label:"IV — 18g right antecubital",gerund:"IV — 18g right antecubital"}),
+  // The IV rebuild (4-phase minigame) now lets the player pick the exact
+  // vein (dorsal hand/forearm/antecubital) and catheter gauge INSIDE the
+  // minigame itself, so this menu action can no longer name a specific
+  // site/gauge up front without being wrong the moment the player picks
+  // something else — label/gerund are generic "region" text; the minigame's
+  // own title bar shows the real chosen site and gauge once picked.
+  P("iv","armR","iv",{once:1,label:"IV — right arm",gerund:"IV — right arm"}),
   P("io","armR","iv",{once:1,label:"IO — right humeral head",gerund:"IO — right humeral head"}),
-  P("iv","armL","iv",{once:1,label:"IV — 18g left antecubital",gerund:"IV — 18g left antecubital"}),
+  P("iv","armL","iv",{once:1,label:"IV — left arm",gerund:"IV — left arm"}),
   P("io","armL","iv",{once:1,label:"IO — left humeral head",gerund:"IO — left humeral head"}),
-  P("iv","legR","iv",{once:1,label:"IV — 18g right saphenous",gerund:"IV — 18g right saphenous"}),
+  P("iv","legR","iv",{once:1,label:"IV — right leg",gerund:"IV — right leg"}),
   P("io","legR","iv",{once:1,label:"IO — right tibial",gerund:"IO — right tibial"}),
-  P("iv","legL","iv",{once:1,label:"IV — 18g left saphenous",gerund:"IV — 18g left saphenous"}),
+  P("iv","legL","iv",{once:1,label:"IV — left leg",gerund:"IV — left leg"}),
   P("io","legL","iv",{once:1,label:"IO — left tibial",gerund:"IO — left tibial"}),
   // F6: sternal IO — a real, commonly-taught adult IO site (e.g. the FAST1
   // system), landmarked on the manubrium. Lives under "torso" like the other

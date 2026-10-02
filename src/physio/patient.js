@@ -16,6 +16,7 @@ import { updateRenalEndocrine, updateElectrolytes } from "./renal.js";
 import { updateTemperature } from "./thermo.js";
 import { updateCoagulation } from "./coagulation.js";
 import { updateInflammation } from "./inflammation.js";
+import { updateSensitization } from "./pain.js";
 import { updateOrganInjury, updateCerebral } from "./neuro.js";
 import { updateMortality } from "./mortality.js";
 
@@ -299,6 +300,16 @@ export class Patient {
     // pk.js::updateDrugs for the reseed and conditions.js for a condition
     // that raises it over time (appendicitis, on perforation).
     this.intrinsicPain = b.pain ?? 0;
+    // Pain sensitization cascade (queue item 62, physio/pain.js) — real
+    // peripheral/glial/central plasticity states plus a disinhibition-driven
+    // allodynia term, all relaxing toward a target computed from sustained
+    // pain/injury each tick (see pain.js for the full mechanism and its
+    // literature anchors). All start at 0 (or an explicit override, for a
+    // future chronic-pain condition that presents already sensitized).
+    this.peripheralSensitization = b.peripheralSensitization ?? 0;
+    this.glialActivation = b.glialActivation ?? 0;
+    this.centralSensitization = b.centralSensitization ?? 0;
+    this.allodyniaLevel = b.allodyniaLevel ?? 0;
     this.drugInstances = [];
     this.tvDrugOffset = 0;
     // Device/procedure mechanism state. All are recomputed every step by
@@ -342,6 +353,7 @@ export class Patient {
     this.opioidDesens = 0;
     this.gabaDesens = 0;
     this.beta2Desens = 0;
+    this.opioidDesensResp = 0; // queue item 65: respiratory-pathway opioid tolerance, slower/lower-ceiling than opioidDesens
 
     // Baseline vitals
     const vit = this.ageProfile.baselineVitals();
@@ -586,6 +598,16 @@ export class Patient {
     // resets/recomputes this every tick, but a pre-first-tick read (before
     // updateDrugs has run once) needs a real default, not undefined.
     this.antipsychoticEffect = 0;
+    // NMDA blockade (pk.js, queue item 62's remainder — ketamine's
+    // anti-sensitization mechanism) — same defect class/fix as the fields
+    // above: pk.js resets/recomputes this every tick, but a pre-first-tick
+    // read needs a real default.
+    this.nmdaBlockade = b.nmdaBlockade ?? 0;
+    // Local anesthetic nerve block depth (pk.js, queue item 62's remainder
+    // — hematoma block) — same defect class/fix: pk.js recomputes this
+    // every tick as a relaxation toward a target, but a pre-first-tick read
+    // needs a real default.
+    this.nerveBlockDepth = b.nerveBlockDepth ?? 0;
 
     // Blood gases & acid‑base
     const ab = this.ageProfile.acidBaseBaseline();
@@ -796,6 +818,10 @@ export class Patient {
     this.coronaryFlow = 1;
     this.contractility = 1;
     this.pvcFrequency = 0;
+    // Torsades episodic state (queue item 1, Phase 1): a beat counter scoped
+    // to active torsades episodes only, and the per-episode rate/class drawn
+    // at onset (cardiovascular.js). Reset to 0 between episodes.
+    this.torsadesBeatCount = 0;
     // Progressive myocardial pump-function multiplier (1 = normal). Unlike
     // riskFactors.heartFailure (a fixed 0.7x for chronic disease), this is
     // meant to be nudged down in real time by conditions.js as an infarct
@@ -1188,6 +1214,13 @@ export class Patient {
       // metabolicHeatMultiplier updateTemperature reads below, and the
       // tissue-factor term updateCoagulation reads below.
       updateInflammation(this, step);
+      // Queue item 62 — reads this tick's own intrinsicPain/activeBleedRate/
+      // capillaryLeak/burnTbsaFraction (all already current at this point in
+      // the substep) to advance the sensitization cascade; consumed by
+      // pk.js's pain reseed on the NEXT tick (the same one-tick lag already
+      // established elsewhere in this pipeline, e.g. updateAcidBase's own
+      // comment above).
+      updateSensitization(this, step);
       updateAutonomic(this, step);
       updateVenousReturn(this, step);
       updateCardiovascular(this, step);

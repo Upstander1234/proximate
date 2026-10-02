@@ -1797,9 +1797,9 @@ export const CONDITIONS = {
   // (cardiovascular.js ~line 1950) feeds `eaEff = pat.ea * (1 +
   // aorticStenosisSeverity * 2.5)`, a term ADDED TO effective arterial
   // elastance (Ea) on top of — not blended into — the SVR-derived Ea proper,
-  // and is separately threaded into the RK4 PV-loop solver (solveBeat's own
-  // `aorticStenosisSeverity` param, cardiovascular_ode.js's `stenosisR`) as
-  // a genuine fixed valve-orifice resistance term. Grepped: NO shipped
+  // and is separately threaded into the authoritative full-loop ODE
+  // (cardiovascular_ode_full.js's `stenR()`, applied to `Rao`) as a genuine
+  // fixed valve-orifice resistance term. Grepped: NO shipped
   // condition has ever set `riskFactors.aorticStenosis` (confirmed empty
   // grep across conditions.js before this entry), so the mechanism was
   // fully built, fully live, and never once exercised. This condition does

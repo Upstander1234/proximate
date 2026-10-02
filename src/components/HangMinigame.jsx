@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { C } from "../theme.js";
 import { assistToleranceMult } from "../procedureAssist.js";
+import { gaugeMaxFlowMlMin } from "../access.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 
@@ -84,7 +85,7 @@ function BagScene({ spiked, primed, rate, running, fluidMode, primable, onPrimeD
   );
 }
 
-export default function HangMinigame({ open, kind, drugName, fluidMode, access: accessProp, accessOptions, warnings, pat, assist, interrupted, onResolve }) {
+export default function HangMinigame({ open, kind, drugName, fluidMode, access: accessProp, accessOptions, gauge = 18, warnings, pat, assist, interrupted, onResolve }) {
   const [step, setStep] = useState(0);
   const [picked, setPicked] = useState(null);
   const [spiked, setSpiked] = useState(false);
@@ -122,6 +123,12 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
   const targetMinutes = shock ? 10 : 30; // wide open for shock, controlled otherwise
   const targetGtt = Math.round((volumeML * DROP_FACTOR) / targetMinutes);
   const gttTol = Math.max(6, targetGtt * 0.22) * tol;
+  // Poiseuille's law, expressed as a real ceiling rather than a slider cap
+  // hidden from the player: a smaller catheter simply cannot gravity-feed
+  // as fast as a larger one, no matter how open the roller clamp is (see
+  // gaugeMaxFlowMlMin, access.js). Only meaningful for a peripheral IV —
+  // an IO needle's own bore is a fixed, much wider standard.
+  const gaugeCeilGtt = access === "IV" ? gaugeMaxFlowMlMin(gauge) * DROP_FACTOR : Infinity;
 
   // A drip pressor's real teaching point is "start low, titrate up" — the
   // dial is a normalized 0-100 infusion-rate proxy (this engine doesn't
@@ -133,6 +140,10 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
       if (rate < targetGtt - gttTol) { fail(shock
         ? `Too slow. This patient is hypotensive — run this bag wide open, not a slow drip.`
         : `Too slow to matter at that rate — open it up a bit more.`); return; }
+      if (shock && targetGtt - gttTol > gaugeCeilGtt && rate >= gaugeCeilGtt - 2) {
+        fail(`Clamp's wide open, but a ${gauge}g line can't gravity-feed fast enough for a wide-open rate — this catheter is too small for how fast this patient needs fluid. A bigger-bore line is the real fix.`);
+        return;
+      }
       if (rate > targetGtt + gttTol) { fail(shock
         ? `Faster than it needs to be, but not dangerous for a shocky patient — still, count the drops, don't just crack it wide and walk away.`
         : `Too fast for a stable patient. Running crystalloid in that hard risks fluid overload for no reason here.`); return; }
@@ -172,7 +183,7 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
     </>);
     return (<>
       <Line>4. {fluidMode
-        ? `Count the drops falling in the chamber and adjust the roller clamp: ${rate} gtt/min ${shock ? "(this patient is hypotensive — run it wide open)" : "(a controlled maintenance rate is right here)"}.`
+        ? `Count the drops falling in the chamber and adjust the roller clamp: ${rate} gtt/min ${shock ? "(this patient is hypotensive — run it wide open)" : "(a controlled maintenance rate is right here)"}${access === "IV" ? ` — this ${gauge}g line tops out around ${Math.round(gaugeCeilGtt)} gtt/min` : ""}.`
         : `Set the starting infusion rate: ${rate}. Start low, then titrate up watching the monitor — this is not a dose you push all at once.`}</Line>
       <Slider value={rate} onChange={setRate} max={fluidMode ? 250 : 100} />
       <button style={GO} onClick={confirmRate}>{fluidMode ? "Open the roller clamp" : "Start the infusion"}</button>

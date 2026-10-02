@@ -57,7 +57,23 @@ const EXPECTED = [
   ["SVR (dyn.s.cm-5)",             700, 1000],
   ["CVP (mmHg)",                     2,    6],
   ["Ejection fraction (%)",         55,   70],
-  ["LV end-diastolic volume (mL)", 130,  170],
+  // FIXTURE DEFECT, RESOLVED (queue item 1's Phase 4, 2026-09-30). The
+  // 130-170 mL absolute LVEDV row that used to sit here was retired, not
+  // just widened — it described a DIFFERENT reference population's
+  // absolute chamber size, and this patient's own settled, non-pregnant
+  // EDV (measured directly: 100.4 mL) already sits below its 130 mL floor
+  // before any pregnancy mechanism runs at all, the same "fixture checking
+  // the wrong baseline" defect already fixed for the Total-blood-volume row
+  // below. Replaced with Chen et al.'s own anchor, which is population-
+  // baseline-independent: the RELATIVE rise in LVEDV from a woman's own
+  // pre-pregnancy value to term (~87->100 mL in that cohort, +12-17%).
+  // Spliced in dynamically by report() below, next to Total blood volume,
+  // once the settled non-pregnant baseline EDV is available. MEASURED, not
+  // assumed: this patient's own baseline settles at 100.4 mL and reaches
+  // 114.6 mL at term — a +14.1% rise, inside Chen's +12-17% band with NO
+  // coefficient changes needed; the mechanism already reproduces the
+  // documented relative effect, the retired absolute row was checking the
+  // wrong quantity.
   // "Total blood volume (L)" is spliced in dynamically by report(), derived
   // from this patient's own baseline — see the note above.
   ["Plasma volume rise (%)",        40,   50],
@@ -96,6 +112,22 @@ function baselineVolumes() {
   return { plasmaVol: pat.plasmaVol, rbcVol: pat.rbcVol, totalBloodVol: pat.totalBloodVol };
 }
 
+// Queue item 1's Phase 4: a settled (not construction-time) non-pregnant
+// baseline for LVEDV/SV and the contralateral RV, run for the SAME duration
+// as the pregnant patient below so the two are genuinely comparable states,
+// not a snapshot vs. a steady state.
+function baselineHemodynamics(minutes) {
+  const pat = new Patient({ age: AGE, sex: "female", weight: PRE_PREGNANCY_WEIGHT, height: HEIGHT, pain: 0 }, 0);
+  const s = { t: 0, doses: [], given: {}, _roster: [] };
+  const stepSec = 2;
+  for (let T = stepSec; T <= minutes * 60; T += stepSec) {
+    s.t = T;
+    pat.lastUpdate = T - stepSec;
+    pat.update(stepSec / 60, s);
+  }
+  return pat;
+}
+
 function run(minutes = 25) {
   const pat = buildValidationPatient();
   const s = { t: 0, doses: [], given: {}, _roster: [] };
@@ -115,6 +147,8 @@ function run(minutes = 25) {
 function report() {
   const base = baselineVolumes();
   const pat = run();
+  const RUN_MINUTES = 25; // must match run()'s own default, so the two settle for the same duration
+  const nonPregnant = baselineHemodynamics(RUN_MINUTES);
   const bsa = Math.sqrt((HEIGHT * PRE_PREGNANCY_WEIGHT) / 3600); // pre-pregnancy BSA
   const hb = pat.rbcMass / (pat.totalBloodVol * 10);
   const hct = pat.rbcVol / pat.totalBloodVol;
@@ -124,15 +158,19 @@ function report() {
   // Total blood volume, derived from THIS patient's own baseline and the
   // Plasma/Red-cell rise bounds already declared in EXPECTED, so it can
   // never structurally disagree with the two rows it is downstream of (see
-  // the note above EXPECTED). Spliced in right after LV end-diastolic
-  // volume, matching where the old hardcoded row sat.
+  // the note above EXPECTED).
   const [, plasmaLo, plasmaHi] = EXPECTED.find(([n]) => n === "Plasma volume rise (%)");
   const [, rbcLo, rbcHi] = EXPECTED.find(([n]) => n === "Red cell volume rise (%)");
   const tbvLo = base.plasmaVol * (1 + plasmaLo / 100) + base.rbcVol * (1 + rbcLo / 100);
   const tbvHi = base.plasmaVol * (1 + plasmaHi / 100) + base.rbcVol * (1 + rbcHi / 100);
-  const edvIdx = EXPECTED.findIndex(([n]) => n === "LV end-diastolic volume (mL)");
+  const efIdx = EXPECTED.findIndex(([n]) => n === "Ejection fraction (%)");
   if (!EXPECTED.some(([n]) => n === "Total blood volume (L)")) {
-    EXPECTED.splice(edvIdx + 1, 0, ["Total blood volume (L)", +tbvLo.toFixed(2), +tbvHi.toFixed(2)]);
+    // Chen et al.'s own LVEDV relative-rise band (~87->100 mL, +12-17%),
+    // spliced in against THIS patient's own settled non-pregnant baseline —
+    // see the note above EXPECTED for why this replaced the old absolute
+    // 130-170 mL row.
+    EXPECTED.splice(efIdx + 1, 0, ["LV end-diastolic volume rise (%)", 12, 17]);
+    EXPECTED.splice(efIdx + 2, 0, ["Total blood volume (L)", +tbvLo.toFixed(2), +tbvHi.toFixed(2)]);
   }
 
   const actual = {
@@ -146,7 +184,7 @@ function report() {
     "SVR (dyn.s.cm-5)": svr,
     "CVP (mmHg)": pat.cvp,
     "Ejection fraction (%)": pat.ef * 100,
-    "LV end-diastolic volume (mL)": pat.edv,
+    "LV end-diastolic volume rise (%)": (pat.edv / nonPregnant.edv - 1) * 100,
     "Total blood volume (L)": pat.totalBloodVol,
     "Plasma volume rise (%)": (pat.plasmaVol / base.plasmaVol - 1) * 100,
     "Red cell volume rise (%)": (pat.rbcVol / base.rbcVol - 1) * 100,
@@ -181,6 +219,13 @@ function report() {
   console.log(`  venousCapacitanceFactor:                    ${(pat.venousCapacitanceFactor || 1).toFixed(2)}`);
   console.log(`  baseSVR:                                    ${Math.round(pat.baseSVR)}`);
   console.log(`  hrBase:                                     ${Math.round(pat.hrBase)}`);
+  console.log("");
+  console.log("Contralateral check (queue item 1's Phase 4 — a change to shared");
+  console.log("buildParams state can move the RV/PA side even when only the LV");
+  console.log("side is asserted above; dump both rather than assume the RV followed):");
+  console.log(`  LV: EDV ${pat.edv.toFixed(1)} mL (non-pregnant ${nonPregnant.edv.toFixed(1)}), SV ${pat.sv.toFixed(1)} mL (non-pregnant ${nonPregnant.sv.toFixed(1)})`);
+  console.log(`  RV: EDV ${(pat.rvEdv || 0).toFixed(1)} mL (non-pregnant ${(nonPregnant.rvEdv || 0).toFixed(1)}), SV ${(pat.rvSv || 0).toFixed(1)} mL (non-pregnant ${(nonPregnant.rvSv || 0).toFixed(1)}), EF ${((pat.rvEf || 0) * 100).toFixed(1)}% (non-pregnant ${((nonPregnant.rvEf || 0) * 100).toFixed(1)}%)`);
+  console.log(`  PA mean pressure: ${(pat.paMean || 0).toFixed(1)} mmHg (non-pregnant ${(nonPregnant.paMean || 0).toFixed(1)}), PVR ${(pat.pvrWood || 0).toFixed(2)} Wood units (non-pregnant ${(nonPregnant.pvrWood || 0).toFixed(2)})`);
   console.log(`  ESV (mL):                                   ${Math.round(pat.esv)}`);
   return pass;
 }

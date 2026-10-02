@@ -4,7 +4,7 @@
 // Writes: pat.rr, pat.vt, pat.va, pat.intrinsicPEEP, pat.paco2, pat.sao2, pat.caO2, pat.pao2, pat.svO2, pat.pvO2, pat.cohb
 import { ATM, PH2O, RQ } from "./constants.js";
 
-function oxySat(po2, ph, paco2, temp, dpgFactor = 1) {
+export function oxySat(po2, ph, paco2, temp, dpgFactor = 1) {
   const safePO2 = Math.max(0, po2); // Math.pow(negative, 2.7) is NaN in JS — severe
                                      // hypoventilation can legitimately drive PAO2 below
                                      // zero on room air, and that should read as "no

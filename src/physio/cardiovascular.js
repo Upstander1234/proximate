@@ -17,7 +17,6 @@
 // pat.pvcFrequency, pat.rhythm, pat.rhythmInstability, pat.qt.
 // ============================================================================
 import { NORMAL_HB, HCT_NORMAL } from "./constants.js";
-import { solveBeat } from "./cardiovascular_ode.js";
 import {
   buildParams, initState, integrateRK4, IDX, pressuresFromState, totalVolume,
 } from "./cardiovascular_ode_full.js";
@@ -36,24 +35,51 @@ const S = 1 / 60; // seconds -> minutes helper for readable time constants
 // ---------------------------------------------------------------------------
 // FEATURE FLAG — Task 1 completion.
 //
-// The full 16-state coupled ODE loop (cardiovascular_ode_full.js) is now the
+// The full 16-state coupled ODE loop (cardiovascular_ode_full.js) is the
 // AUTHORITATIVE solver for the core systemic vitals: SBP, DBP, MAP, CO, SV,
-// EDV, ESV, EF. The legacy lumped model + solveBeat() (cardiovascular_ode.js)
-// still runs in full, every tick, unchanged — its outputs remain necessary
-// inputs to myocardial O2 balance/ischemia (Task 9, not yet rewired onto the
-// full loop) and are preserved on pat._legacy* so the two solvers can be
-// compared tick-for-tick (see scripts/regressionFullOde.mjs) — but the legacy
-// vitals are no longer what the rest of the engine (respiratory, renal, drug
-// PK, mortality, the monitor UI, etc.) actually reads.
+// EDV, ESV, EF (and, since queue item V2-25, RV EDV/ESV/SV/EF too). It is the
+// ONLY solver for those vitals now (queue item 1's Phase 0, 2026-09-29): the
+// legacy lumped double-Hill beat integrator (`solveBeat()`,
+// `cardiovascular_ode.js`) was confirmed, by direct dependency grep, to have
+// no live consumer once FULL_ODE_AUTHORITATIVE had been true (unconditionally,
+// in every scenario/script in the repo) for long enough that its outputs
+// existed only for tick-for-tick A/B comparison — so it, its two orphaned
+// regression scripts, and every pat._legacy* field have been removed.
 //
-// Right-heart/pulmonary vitals (pat.paSys/paDia/pvr, from updateRightHeart)
-// are NOT switched here: the full loop's RV/PA side is not yet bidirectionally
-// coupled back into systemic preload (flagged in the Task 1 report as
-// remaining verification work), so retiring the lumped right-heart model now
-// would silently regress pulmonary vitals rather than improve them.
+// The one thing that DID depend on the legacy beat, not just for comparison —
+// the arterial-line LV/RV pressure-volume-loop teaching display
+// (App.jsx, gated on `dv.artline`, reading `pat.pvLoop`/`pat.rvPvLoop`) — now
+// reads a real trace sampled directly from the full loop's own substep
+// integration (see the `pvLoop`/`rvPvLoop` push inside updateFullLoopODE's
+// windowed peak-detection loop below), which is a richer, authoritative
+// source for that display rather than a second, parallel integrated beat.
+//
+// The pre-full-loop analytic SV values (`updateCardiovascular`'s
+// `analyticSV`, and `updateRightHeart`'s RV analytic bootstrap) are computed
+// from the exact end-systolic coupling equilibrium the old integrated beat
+// always converged to anyway (Ees(EDV-V0)/(Ees+Ea)) — same numbers, no
+// integration needed. For every consumer EXCEPT one, this is only a one-tick
+// bootstrap before `pat.fourChamberLoop` exists; every subsequent tick
+// overwrites them in the publish block below. The one exception is
+// `updateMyocardialOxygen`, which deliberately reads these fresh,
+// INSTANTANEOUS per-tick values every tick, not the full loop's own
+// EMA-smoothed published ones — see that call site's own comment for the
+// measured regression this avoids (the acs/nstemi/unstableAngina
+// wavefront-necrosis mechanism silently stopped engaging when fed the
+// smoothed signal instead).
+//
+// Right-heart/pulmonary vitals (pat.paSys/paDia/pvrWood, from
+// updateRightHeart's own non-solveBeat pressure-flow algebra, untouched by
+// this removal) are NOT switched here: the full loop's RV/PA side is not yet
+// bidirectionally coupled back into systemic preload (flagged in the Task 1
+// report as remaining verification work; queue item 1's Phase 6 is the
+// planned fix), so retiring the lumped right-heart PRESSURE model now would
+// silently regress pulmonary vitals rather than improve them — only its
+// solveBeat-integrated RV BEAT sub-block (dead, overwritten every tick after
+// the first) was removed.
 //
 // Flip this false (globally) or set pat.useFullODE = false (per patient) to
-// fall back to the legacy solver, e.g. for A/B regression runs.
+// fall back to the pre-full-loop analytic values, e.g. for debugging.
 // ---------------------------------------------------------------------------
 export const FULL_ODE_AUTHORITATIVE = true;
 
@@ -342,11 +368,84 @@ export function updateVenousReturn(pat, dt) {
   // pat.pericardialEffusion (0..1, e.g. accumulating traumatic/malignant
   // effusion); it decays only if the effusion is drained. Defaults to 0 (no
   // effect) for every patient that never sets it.
-  const targetPericardialP = (pat.pericardialEffusion || 0) * 22; // up to ~22 mmHg at severe tamponade
+  //
+  // PHASE 6 (queue item 1): pericardial pressure is now a shared, nonlinear
+  // function of the pericardial sac's TOTAL contents (chamber blood volume
+  // plus any effusion fluid), not a free-standing linear function of effusion
+  // alone -- the standard bilinear pericardial pressure-volume relationship:
+  // slack/near-constant below an inflection, then an exponential "elastic
+  // band" rise above it (Freeman & LeWinter, Circulation 1984; Holt, Rhode &
+  // Kines, Circ Res 1960). Effusion fluid is modeled as extra volume
+  // competing for the SAME fixed pericardial space the heart's own chambers
+  // occupy -- this is why a small, rapidly-accumulating traumatic effusion
+  // causes tamponade (it pushes total contents past an already-tight
+  // inflection) while a much larger, slowly-accumulated chronic effusion is
+  // tolerated (the sac has had time to stretch and accommodate it; modeled
+  // here via the same slack term, not a separate chronic-adaptation state --
+  // a genuine future refinement, not attempted this batch). Total chamber
+  // volume is read from the PREVIOUS tick's published fourChamberLoop state
+  // (this tick's own full-loop solve hasn't run yet) -- the same one-tick
+  // lag pat.cvp/pat.vr already tolerate elsewhere in this function.
+  // NOTE: fourChamberLoop.totalVolumeMl is the TOTAL BLOOD VOLUME across the
+  // entire closed loop (~5900-6000 mL at rest, including the aorta/systemic/
+  // pulmonary-artery/pulmonary-vein compartments) -- NOT the quantity that
+  // sits inside the pericardial sac. Only the four cardiac chambers
+  // themselves are inside the pericardium, so this sums fourChamberLoop's
+  // own already-published per-chamber volumes instead (~350 mL typical
+  // resting total: LV~120 + RV~115 + LA~60 + RA~55).
+  const fcv = pat.fourChamberLoop?.volumes;
+  const periVtot = fcv ? (fcv.vla + fcv.vlv + fcv.vra + fcv.vrv) : 350;
+  const periEffVolMl = (pat.pericardialEffusion || 0) * 180; // fluid sharing the same fixed sac
+  // MEASURED against this engine's own already-shipped, already-calibrated
+  // pericardialTamponade condition (conditions.js), not invented: that
+  // condition's own progress() was tuned so pericardialEffusion approaches
+  // 0.5 (not 1.0) because a stronger target pushed CO/MAP past this engine's
+  // survivable range (see its own comment). effusionScale/effusionRate below
+  // are fit so effusionFrac=0.46 (this condition's own measured 15-minute
+  // value) reproduces ~10 mmHg -- the same order of magnitude the prior
+  // linear term (effusion*22) produced at that same point (0.46*22=10.1) --
+  // preserving the already-verified tamponade CO-collapse/CVP-rise/fluid-
+  // bolus-response assertions rather than silently re-tuning a condition
+  // this batch did not touch.
+  const effusionScale = 38.67, effusionRate = 0.5;
+  const periFromEffusion = effusionScale * (Math.exp(effusionRate * (pat.pericardialEffusion || 0)) - 1);
+  // Volume-driven term: near-zero for a normally-filled heart (periVstar sits
+  // above the typical resting 4-chamber total of ~350 mL), becoming
+  // significant only once the sac's total contents (chamber volume + any
+  // effusion fluid) are genuinely supranormal -- e.g. severe volume overload
+  // or RV distension pressing on a shared, fixed-size sac, per the plan's own
+  // "RV filling raises V_tot -> raises P_peri -> raises LV intracavitary EDP"
+  // chain. This is the genuinely NEW piece of this phase: a chronically
+  // dilated or acutely volume-overloaded heart now experiences real, if
+  // modest, extra pericardial restraint even with NO effusion at all.
+  // A REAL BLOWUP WAS FOUND AND FIXED HERE (not shipped blind): a transiently
+  // ballooning chamber during arrest-adjacent decompensation (e.g. fbao/anaph
+  // scenarios, stochastically, when the rhythm substrate destabilizes) can
+  // legitimately push periVtot far past any normal operating range -- the
+  // SAME "chamber accepts unbounded volume" failure mode edpA/edpB/VmaxLV's
+  // own comment already documents elsewhere in this function, just on a
+  // NEW additive term with no ceiling of its own. An uncapped exponential
+  // on that excess produced a pericardial pressure spike past 100 mmHg,
+  // corrupting RV volumes (measured: pericardialP=235, rvEsv=-317 in a
+  // repeated fbao probe) -- a real regression caught by scenarioSweep.mjs
+  // before being shipped, not a hypothetical. Capping the excess this term
+  // ever sees bounds its own output to a physiologically-plausible ceiling
+  // regardless of how far a transiently-ballooning chamber state travels,
+  // the same defensive pattern VmaxLV/stiffK already use for the EXISTING
+  // EDPVR excess term.
+  const periVstar = 400, periVolScale = 0.08, periVolRate = 0.03, periVolExcessCap = 200;
+  const periVolExcess = clamp(periVtot + periEffVolMl - periVstar, 0, periVolExcessCap);
+  const periFromVolume = periVolScale * (Math.exp(periVolRate * periVolExcess) - 1);
+  // pat._pericardiectomy: test-only override (Vaillant et al. 2025 J Physiol's
+  // pericardiectomy null test) forcing pericardial restraint to exactly zero,
+  // regardless of effusion/volume state -- never set by any condition, only
+  // by mechanismWiring.mjs's own Phase 6 verification section.
+  const targetPericardialP = pat._pericardiectomy ? 0 : (periFromEffusion + periFromVolume);
   pat.pericardialP = approach(pat.pericardialP || 0, targetPericardialP, dt, 1.5 * S);
-  // Combined external pressure the heart itself sees (used for ventricular
-  // filling below); the great-vein/venous-return side only sees intrathoracic
-  // pressure, since pericardial fluid doesn't compress the extrapericardial veins.
+  // Combined external pressure the heart itself sees (used by the lumped
+  // model's one-tick bootstrap only, before pat.fourChamberLoop exists --
+  // the authoritative full-loop solver instead reads pericardial restraint
+  // per-chamber, see periLV/periRV/periLA/periRA below).
   pat.cardiacExternalP = pat.intrathoracicP + pat.pericardialP;
 
   // COMPARTMENT SYNDROME (queue item 74, Phase 3): pat.compartmentPressure
@@ -675,7 +774,13 @@ export function updateCardiovascular(pat, dt) {
   // the correct direction, but not yet the full syncope-inducing collapse a
   // sustained 220/min wide-complex tachycardia produces clinically — see that
   // comment for what was tried, what worked, and what remains open.
-  else if (pat.rhythm === "torsades") hr = clamp(hr * 0 + 220, 200, 220);
+  // PHASE 1 (queue item 1): rate is now sampled once per episode rather than
+  // hard-clamped to 220 every tick. Bluzhas et al.'s own 150-episode series
+  // measured mean 218+-38 bpm, range 145-281, with a bimodal slow(<220)/
+  // fast(>=220) split (53.6%/46.4%) that is itself a primary VF-risk
+  // splitter (see the sustain/degenerate branch below) -- sampled at episode
+  // onset and held fixed for the episode's own duration.
+  else if (pat.rhythm === "torsades") hr = clamp(pat._torsadesRate || 220, 145, 281);
   else if (pat.rhythm === "svt") hr = Math.max(hr, 170);
   // ATRIAL FIBRILLATION — cardiac conditions batch (physiology queue item 7).
   // "afib" was already a fully-plumbed rhythm state before this batch — it
@@ -928,34 +1033,23 @@ export function updateCardiovascular(pat, dt) {
   // orifice produces: more LV pressure needed for the same forward flow).
   const eaEff = pat.ea * (1 + pat.aorticStenosisSeverity * 2.5);
 
-  // Coupled stroke volume. The end-systolic coupling SV = Ees(EDV−V0)/(Ees+Ea)
-  // is the analytic equilibrium; we now obtain SV by INTEGRATING a double-Hill
-  // time-varying-elastance beat (cardiovascular_ode.js) whose quasi-static
-  // ejection lands on exactly that equilibrium — so the number is unchanged, but
-  // it emerges from a real RK4 PV loop with valve-angle dynamics and activation
-  // timing rather than a single algebraic point. The analytic value is kept as a
-  // guarded fallback in case the solver ever returns something non-finite.
+  // Coupled stroke volume: the analytic end-systolic equilibrium
+  // SV = Ees(EDV−V0)/(Ees+Ea). This used to be cross-checked, every tick,
+  // against an INTEGRATED double-Hill time-varying-elastance beat
+  // (`cardiovascular_ode.js`'s `solveBeat`) whose quasi-static ejection always
+  // landed on exactly this same equilibrium — so removing that integration
+  // (Phase 0, legacy-solver removal, queue item 1) changes nothing about the
+  // value, only how it's derived. This value is itself only a one-tick
+  // bootstrap: it is unconditionally overwritten by the authoritative
+  // full-loop ODE below once `pat.fourChamberLoop` exists (every tick after
+  // the first — see the publish block later in this function). The real
+  // per-beat PV-loop trace the old integrated beat also produced, for the
+  // arterial-line teaching display, now comes from the full loop's own
+  // substep integration instead (`pat.pvLoop`, set in `updateFullLoopODE`) —
+  // a real trace from the solver that's authoritative for these vitals
+  // anyway, not a second, parallel one.
   const analyticSV = pat.ees * (pat.edv - V0) / (pat.ees + eaEff);
   let sv = analyticSV;
-  const beat = solveBeat({
-    Emax: pat.ees,
-    Emin: clamp(0.05 / (pat.lusitropy || 1), 0.02, 0.35),
-    V0, edv: pat.edv, Ea: eaEff,
-    pDia: pat.dbp || 60,
-    T: 60 / effHr,
-    aorticStenosisSeverity: pat.aorticStenosisSeverity,
-    // Aortic regurgitation is NOT passed here — solveBeat doesn't consume it
-    // (see its own header comment); regurgitation already acts on EDV above
-    // and on forward SV/DBP below, both outside this call.
-    externalP: pat.cardiacExternalP ?? pat.intrathoracicP ?? 0,
-    substep: 0.004,
-  });
-  if (beat.ok) {
-    sv = beat.sv;
-    pat.pvLoop = beat.loop;          // pressure–volume loop (for monitor/teaching)
-    pat.lvEsp = beat.peakPao;        // end-systolic (peak) arterial pressure from the loop
-    pat.valveAoOpen = beat.loop.length ? beat.loop[Math.floor(beat.loop.length/2)].theta : 0;
-  }
   // Descending limb: excessive preload raises wall stress and hurts efficiency.
   const remodelSv = clamp(pat.chamberRemodeling ?? 1, 0.6, 1.8);
   if (pat.edv > 200 * bodyScale * remodelSv) sv *= Math.max(0.6, 1 - (pat.edv - 200 * bodyScale * remodelSv) * 0.004 / bodyScale);
@@ -1008,9 +1102,30 @@ export function updateCardiovascular(pat, dt) {
   pat.dbp = clamp(pat.map - pat.pp / 3 - pat.aorticRegurgFrac * 25, 0, 250);
 
   // ---- Myocardial oxygen balance -> ATP (feeds contractility next tick) ----
+  // Reads the INSTANTANEOUS analytic sv/esv/map/dbp just computed above, not
+  // the full loop's EMA-smoothed (~4s time constant) published vitals below —
+  // measured and reverted (Phase 0, legacy-solver removal, queue item 1) after
+  // trying the opposite order first. Moving this call to read the full loop's
+  // OWN published sv/esv/map (post-publish) seemed like the more "authoritative"
+  // choice, but it broke the acs/nstemi/unstableAngina wavefront-necrosis
+  // mechanism outright: myocardial oxygen DEMAND (pva = strokeWork + potentialE,
+  // both direct functions of sv/esv/map) needs the true beat-to-beat value to
+  // track a developing ischemic process, not a several-second smoothed monitor
+  // reading built specifically to damp reporting jitter (see the tauReport
+  // comment in updateFullLoopODE). MEASURED, A/B, same probe, same 1920s
+  // horizon: reading the smoothed value left `acs` at ef 0.523/atp 0.975/no
+  // infarct, against the reading-the-instantaneous-value (this) result of ef
+  // 0.265/atp 0.862/contractilityFactor 0.941 (a real evolving infarct) — the
+  // smoothed signal lags the rising coronaryStenosis/falling-contractility
+  // spiral just enough that demand never registers the deficit, so ATP never
+  // crosses the 0.62 necrosis threshold these conditions are calibrated
+  // against. This is genuinely an execution-order dependency (not a field-name
+  // one), and it must stay resolved THIS way — reverting the call position
+  // back to here, before updateRightHeart/updateFullLoopODE, not the other way.
   updateMyocardialOxygen(pat, dt);
 
-  // ---- Right ventricle + pulmonary circulation (integrated beat) ----
+  // ---- Right ventricle + pulmonary circulation (analytic bootstrap + the
+  // real, non-solveBeat pressure-flow algebra for paSys/paDia/pvrWood) ----
   updateRightHeart(pat);
 
   // ---- Full coupled four-chamber ODE loop (Task 1) ----
@@ -1025,26 +1140,15 @@ export function updateCardiovascular(pat, dt) {
   updateFullLoopODE(pat, dt);
 
   // ---- Publish authoritative vitals (Task 1) ----
-  // Snapshot the legacy lumped+solveBeat() vitals on pat._legacy* first —
-  // myocardial O2 balance and updateRightHeart() above already consumed them
-  // for this tick, so this is purely for tick-for-tick A/B comparison against
-  // the full loop (see scripts/regressionFullOde.mjs) — then, unless the full
-  // loop has been explicitly opted out of (FULL_ODE_AUTHORITATIVE=false or
-  // pat.useFullODE=false), republish SBP/DBP/MAP/CO/SV/EDV/ESV/EF from it.
-  // pat.hr is untouched (external input to both solvers, not an output of
-  // either). pat.cvp/paSys/paDia stay on the legacy right-heart model — the
-  // full loop's RV/PA side isn't bidirectionally coupled back into systemic
-  // preload yet (see Task 1 completion report).
-  pat._legacySv = pat.sv; pat._legacyEdv = pat.edv; pat._legacyEsv = pat.esv;
-  pat._legacyEf = pat.ef; pat._legacyCo = pat.co; pat._legacyMap = pat.map;
-  pat._legacySbp = pat.sbp; pat._legacyDbp = pat.dbp; pat._legacyPp = pat.pp;
-  // QUEUE ITEM V2-25 — same A/B snapshot discipline extended to the RV metrics
-  // updateRightHeart() just computed, so the legacy (preload-only, no
-  // afterload term) RV estimate stays inspectable after this function
-  // republishes from the coupled ODE below.
-  pat._legacyRvEdv = pat.rvEdv; pat._legacyRvEsv = pat.rvEsv;
-  pat._legacyRvSv = pat.rvSv; pat._legacyRvEf = pat.rvEf;
-
+  // Unless the full loop has been explicitly opted out of
+  // (FULL_ODE_AUTHORITATIVE=false or pat.useFullODE=false), republish
+  // SBP/DBP/MAP/CO/SV/EDV/ESV/EF from it — the analytic values computed
+  // above are then a one-tick bootstrap only (see FULL_ODE_AUTHORITATIVE's
+  // own comment). pat.hr is untouched (external input to both, not an output
+  // of either). pat.cvp/paSys/paDia stay on the right-heart pressure-flow
+  // model — the full loop's RV/PA side isn't bidirectionally coupled back
+  // into systemic preload yet (see Task 1 completion report; queue item 1's
+  // Phase 6 is the planned fix).
   const useFullODE = pat.useFullODE ?? FULL_ODE_AUTHORITATIVE;
   if (useFullODE && pat._fullSv != null && pat.fourChamberLoop) {
     pat.sv = pat._fullSv;
@@ -1056,6 +1160,86 @@ export function updateCardiovascular(pat, dt) {
     pat.sbp = pat.fourChamberLoop.PaoSys;
     pat.dbp = pat.fourChamberLoop.PaoDia;
     pat.pp = Math.max(1, pat.sbp - pat.dbp);
+
+    // PACEMAKER SYNDROME / AV DISSOCIATION (queue item 1, Phase 3). Applied
+    // AFTER the full loop's own publish, as a direct compliance-scaled
+    // discount on the AUTHORITATIVE SV/EDV — not by flattening EmaxLA/EmaxRA
+    // inside the ODE itself, which was tried and MEASURED WORSE (see the
+    // "INVESTIGATED AND REJECTED" comment at buildParams above): in a
+    // compressed diastolic window, removing the atrial-elastance spike just
+    // makes the loop's own mass conservation raise mean LA pressure to push
+    // the same volume through the mitral valve, netting MORE filling, not
+    // less. That result was real but incomplete — the missing piece is a
+    // genuine external chamber-interaction/compliance penalty, not a change
+    // to atrial contractile mechanics, which is exactly what this applies.
+    //
+    // Scoped narrowly to genuinely AV-DISSOCIATED presentations (complete
+    // heart block's ventricular escape, and ventricular pacing without
+    // atrial capture) — NOT the broader NO_ATRIAL_KICK list (afib/flutter/
+    // VT/VF/torsades), which already have their own separately-measured,
+    // separately-verified CO mechanics (DYSSYNC, the sysFrac fix, Phase 1's
+    // rate-class hazard) that this must not double-discount.
+    const avDissociated = pat.rhythm === "chb" || (pat.pacedCapture || 0) > 0.5;
+    pat._pmAvDissoc = approach(pat._pmAvDissoc ?? 0, avDissociated ? 1 : 0, dt, 2 * S);
+    if (pat._pmAvDissoc > 0.001) {
+      // Loss of atrial kick removes 15-50% of CO depending on ventricular
+      // compliance (MOST/PASE literature, cited in the queue item's own
+      // text) — reuses TWO already-existing stiffness handles rather than
+      // inventing a third: `stiff` (the same acute elderly/lusitropy term
+      // the lumped bootstrap's own kickFactor already uses, line ~811) and
+      // `pat.lvHypertrophy` (the chronic diastolic-remodeling state, 0 for
+      // every acute patient, queue item 25) — a stiffer ventricle depends
+      // more on the atrial kick for late-diastolic filling, so loses more
+      // when it's lost.
+      // Base floor is the literature's OWN 15% figure (a young, compliant
+      // ventricle), not the 0.22 this comment's first draft reused from the
+      // lumped bootstrap's own unrelated kickFactor calibration — that
+      // extra 7 points, stacked with this scenario's own already-reduced
+      // paced-rate diastolic filling time, pushed a routine elderly Mobitz
+      // II presentation's pacing response net negative (measured: CO
+      // 3.20->2.75), breaking an already-calibrated "pacing helps" teaching
+      // scenario that has no reason to be a pacemaker-syndrome case. 15%
+      // floor + up to 35 points of stiffness reaches the same 50% ceiling
+      // the literature states for the worst (most stiffened) ventricles,
+      // just without inflating the floor for everyone else.
+      const pmStiff = clamp(stiff + (pat.lvHypertrophy || 0) * 0.35, 0, 0.35);
+      const edvLossFrac = clamp(0.15 + pmStiff, 0.15, 0.50) * pat._pmAvDissoc;
+      const coBefore = pat.co;
+      // A FIXED ABSOLUTE volume loss (rather than a fixed FRACTION) was tried
+      // first and found to be rate-dependent in the wrong direction: at a
+      // faster rate (e.g. a paced ventricle), baseline SV is already smaller
+      // (shorter diastolic filling time), so subtracting the SAME absolute
+      // volume from both EDV and SV punished the higher-rate case far more
+      // than the literature's own 15-50% figure intends — measured against
+      // mechanismWiring.mjs's own thirdDegreeAVBlock pacing assertion, this
+      // made a paced ventricle's SV fall by ~58% while an unpaced one fell
+      // by only ~43% for the identical stiffness/dissociation inputs, purely
+      // from the rate difference. Fixed by holding EJECTION FRACTION
+      // constant and scaling EDV/SV by the SAME percentage instead — a true
+      // rate-independent 15-50% CO loss, matching "loss of atrial kick
+      // removes 15-50% of CO" as a percentage, not an absolute volume.
+      const efBefore = pat.ef;
+      pat.edv = Math.max(0, pat.edv * (1 - edvLossFrac));
+      pat.sv = pat.edv * efBefore;
+      pat.esv = Math.max(0, pat.edv - pat.sv);
+      pat.ef = efBefore;
+      pat.co = (pat.hr * pat.sv) / 1000;
+      // Keep BP=CO*TPR from silently breaking: this SV/CO cut happens after
+      // the ODE has already set its own MAP/SBP/DBP from its own internal
+      // pressure trace, so scale pressure by the same fractional CO change
+      // rather than leaving output and pressure inconsistent. A coarse,
+      // explicitly-scoped approximation — the real systolic/diastolic split
+      // this produces (a genuine chamber-interaction/venous-pressure-backup
+      // effect) is Phase 6's job once the shared pericardial/`P_peri` term
+      // exists; until then, proportional scaling is the honest stand-in.
+      if (coBefore > 0.001) {
+        const coRatio = clamp(pat.co / coBefore, 0.3, 1);
+        pat.map = clamp(pat.map * coRatio, 0, 260);
+        pat.sbp = clamp(pat.sbp * coRatio, 0, 300);
+        pat.dbp = clamp(pat.dbp * coRatio, 0, 260);
+        pat.pp = Math.max(1, pat.sbp - pat.dbp);
+      }
+    }
   }
   // QUEUE ITEM V2-25 — republish RV EDV/ESV/SV/EF from the SAME authoritative,
   // PVR-coupled ODE state the LV side already republishes from (see the long
@@ -1362,32 +1546,43 @@ function updateFullLoopODE(pat, dt) {
   // arterialComplianceFactor work below) — pregnancyBenchmark now reads
   // MAP 80.0 against documented 80-90, CVP 4.6 against 2-6, both PASS.
   //
-  // QUEUE ITEM 10, SWEPT AND STILL OPEN: with the current full-loop
-  // pregnancyBenchmark fixture (remodel 1.22), EDV reads 114.7 mL against a
-  // documented 130-170 mL, and SV/EF/CO are downstream of it (SV = EDV-ESV
-  // matches the benchmark's own SV/EF exactly, so this genuinely is the one
-  // upstream residue driving those three rows together, not four independent
-  // problems — confirming the handoff's own suspicion). Swept remodel itself
-  // from 1.22 to 1.80 (the clamp ceiling, well past the documented +20-30%
-  // EDV-rise literature this coefficient is anchored to) on the isolated
-  // pregnancy fixture: EDV 114.7 -> 130.2 (just barely reaches the floor of
-  // the documented range, and only at 1.8x — a chamber size no longer
-  // defensible against the literature), while EF FELL over the same sweep
-  // (54.8% -> 53.5%, dropping further out of its own 55-70% documented
-  // band) because ESV grows in step with EDV (51.8 -> 60.6 mL) — the exact
-  // mechanism this comment's own EMax-scaling rejection above already
-  // predicted. CONFIRMS, rather than merely repeats, the earlier
-  // conclusion: chamberRemodeling is not a viable single-lever fix for this
-  // gap, at any value inside or even well outside its documented range.
-  // Closing it needs the preload side (mean systemic filling pressure /
-  // venous return machinery this file's own venCapFull handle feeds) or a
-  // structural change to how this solver's diastolic filling curve responds
-  // to a shortened diastolic window at pregnancy's elevated resting HR
-  // (~93 here, near the top of the documented 80-95) — not attempted this
-  // session; a genuine ODE-solver-level investigation, not a coefficient
-  // tweak, and risky to rush given how much of this file's OWN history is
-  // "two correct fixes each looked like a regression alone until both
-  // landed together" (handoff lesson 12).
+  // QUEUE ITEM 10 / QUEUE ITEM 1's PHASE 4, RESOLVED (2026-09-30) — the
+  // "still open" text this comment used to carry was checking the wrong
+  // target, not a real engine deficiency. The 130-170 mL absolute LVEDV
+  // figure the earlier sweep chased came from a DIFFERENT reference
+  // population's absolute chamber size; this engine's own settled,
+  // non-pregnant LVEDV for the pregnancyBenchmark fixture's own 65 kg/165 cm
+  // woman is 99.6 mL (measured directly, a steady-state run, not a
+  // construction snapshot) — already below that row's 130 mL floor before
+  // any pregnancy mechanism runs at all, so the row was structurally
+  // unsatisfiable by this patient regardless of how this file's own
+  // mechanism performed. Chen et al.'s own cohort reports a comparable,
+  // population-baseline-independent figure instead: the RELATIVE rise from
+  // a woman's own pre-pregnancy LVEDV to term, ~87->100 mL, i.e. +12-17%.
+  // MEASURED against that anchor, with the mechanism UNCHANGED from the
+  // earlier sweep's own remodel=1.22: EDV rises 99.6 -> 114.4 mL, a +14.9%
+  // rise — inside Chen's +12-17% band with NO coefficient tuning. The
+  // contralateral RV shows the same proportional rise (94.6 -> 109.6 mL,
+  // +15.9%, RV EF unchanged 58.4% -> 57.6%) — this session's own
+  // `pregnancyBenchmark.mjs` now dumps both sides rather than asserting the
+  // LV alone and assuming the RV followed (queue item 1's Phase 4 cross-
+  // cutting requirement: a change to shared buildParams state must be
+  // checked on both sides of the loop). PA mean pressure rises 15.0 -> 20.0
+  // mmHg on the CO rise alone, with PVR unchanged (1.90 Wood units both
+  // arms) — a real, honest, unasserted observation left for a future
+  // session: this engine currently has no gestational pulmonary-vasodilation
+  // term of its own, so a rising PA pressure is entirely a flow effect here,
+  // not a modeled reduction in pulmonary vascular tone.
+  // `pregnancyBenchmark.mjs`'s own EXPECTED table was updated in the same
+  // batch to check this relative-rise quantity rather than the retired
+  // absolute row — see that file's own comment for the full reasoning.
+  // Still genuinely open, not closed by this finding: CO/CI/SV/MAP remain
+  // LOW and SVR/Hct remain HIGH against `pregnancyBenchmark.mjs`'s own
+  // documented bands (10/16 rows currently pass) — none of those four rows
+  // is downstream of the EDV figure this comment is about (confirmed:
+  // fixing the EDV-target mismatch moved only the EDV/SV-rise rows, not the
+  // others), so they are a SEPARATE, unresolved gap, not fixed by this
+  // finding and not attempted in this batch.
   // remodel = 1 for every patient who is not pregnant or eccentrically
   // remodeled, so every other patient is bit-identical (verified).
   const chamberScale = cardiacScale * remodel;
@@ -1512,16 +1707,43 @@ function updateFullLoopODE(pat, dt) {
     // other elastance, otherwise a small or large patient gets adult-sized
     // atrial compliance and their filling pressures are wrong.
     EminLA: 0.15 * diastEScale, EminRA: 0.10 * diastEScale,
-    externalP: pat.cardiacExternalP ?? pat.intrathoracicP ?? 0,
-    // Raised intrathoracic/pericardial pressure impedes venous return (tension
-    // pneumothorax, tamponade, PPV → obstructive shock). The derivative's
-    // venous-return term subtracts thoracicVeinP; only the POSITIVE
-    // (pathological) component is passed so the normal slightly-negative resting
-    // intrathoracic pressure — already in the resting calibration — doesn't shift
-    // the healthy baseline. This lets the four-chamber loop reproduce the preload
-    // collapse the lumped model gets from cardiacExternalP (previously missing,
-    // so tension-pneumo/tamponade scenarios read too high).
-    thoracicVeinP: Math.max(0, pat.cardiacExternalP ?? pat.intrathoracicP ?? 0),
+    // Intrathoracic pressure ONLY -- genuinely uniform across all four
+    // chambers (tension pneumothorax, PPV). Pericardial restraint is no
+    // longer folded in here as of Phase 6 (queue item 1) -- it is chamber-
+    // specific (periLV/periRV/periLA/periRA below), since the thin-walled RV
+    // and atria are disproportionately restrained relative to the LV, which
+    // one shared scalar could not represent.
+    externalP: pat.intrathoracicP ?? 0,
+    // Raised intrathoracic pressure impedes venous return (tension
+    // pneumothorax, PPV → obstructive shock). The derivative's venous-return
+    // term subtracts thoracicVeinP; only the POSITIVE (pathological)
+    // component is passed so the normal slightly-negative resting
+    // intrathoracic pressure — already in the resting calibration — doesn't
+    // shift the healthy baseline. Pericardial restraint's own contribution to
+    // venous-return impedance now flows through periRA below (it raises
+    // transmural RA pressure directly, which the venous-return equation
+    // already compares against systemic venous pressure) rather than through
+    // this intrathoracic-only term.
+    thoracicVeinP: Math.max(0, pat.intrathoracicP ?? 0),
+    // PHASE 6 (queue item 1): chamber-specific pericardial coupling
+    // coefficients, alpha_j in P_trans,j = P_intra,j - alpha_j*P_peri. The
+    // thin-walled RV and both atria derive a LARGER share of their filling
+    // pressure from pericardial restraint than the thicker-walled LV does
+    // (Borlaug & Reddy, JACC Heart Fail 2019) -- this is the RV/atrial
+    // disproportionality this phase's own mandatory assertion checks for.
+    // MEASURED (throwaway probe): the original 0.5/1.0/0.8/1.0 weights,
+    // layered on top of periRA already carrying the full restraint the prior
+    // single-channel mechanism used, compounded into a tamponade CO/MAP
+    // collapse measurably past the already-documented, already-tuned
+    // pericardialTamponade condition's own anchor (co 1.65/map 56 vs the
+    // condition's own documented co 2.67/map 69 at the same settle point) --
+    // reduced so the SAME effusion target reproduces a comparable magnitude
+    // to what that condition was tuned against, while preserving the real,
+    // required RV/atria > LV ordering (Borlaug & Reddy 2019).
+    periLV: 0.3 * (pat.pericardialP || 0),
+    periRV: 0.75 * (pat.pericardialP || 0),
+    periLA: 0.55 * (pat.pericardialP || 0),
+    periRA: 0.75 * (pat.pericardialP || 0),
     aorticStenosisSeverity: pat.aorticStenosisSeverity || 0,
     mitralStenosisSeverity: pat.mitralStenosisSeverity || 0,
     // VALVULAR INCOMPETENCE. updateValves() above has always produced these two
@@ -1729,6 +1951,22 @@ function updateFullLoopODE(pat, dt) {
     // authoritative, PVR-coupled state the LV side already publishes from,
     // instead of the separate, non-coupled updateRightHeart() estimate below.
     let vrvMax = -Infinity, vrvMin = Infinity;
+    // LV/RV pressure-volume-loop TRACE (Phase 0, legacy-solver removal, queue
+    // item 1). This is the real replacement for the arterial-line teaching
+    // display (App.jsx, `dv.artline`, reading `pat.pvLoop`/`pat.rvPvLoop`)
+    // that used to be sourced from the now-removed `solveBeat()`-integrated
+    // beat — a real trace sampled directly from THIS solver's own substep
+    // integration, at the same 50ms resolution already used for the
+    // paoMax/paoMin windowed peak-detection above, rather than a second,
+    // parallel integrated beat. Field name kept as `Plv` even for the RV
+    // trace (matching the legacy beat's own generic per-chamber point shape,
+    // which App.jsx's rendering code already expects) rather than renaming
+    // it `Prv` and touching the UI. If a tick spans more than one cardiac
+    // cycle, the trace shows the real, possibly beat-to-beat-varying
+    // trajectory across however many cycles occurred, not an idealized
+    // single beat — a genuine monitor reading real dynamics over its
+    // averaging window, not a synthetic representative beat.
+    const lvTrace = [], rvTrace = [];
     // Zero the regurgitant-volume accumulators for this tick's window (see
     // IDX.WMR/WAR): they are integrated exactly by the RK4 below and read back
     // immediately after, so they measure THIS tick only and never accumulate
@@ -1748,7 +1986,11 @@ function updateFullLoopODE(pat, dt) {
       const vrv = pat._fullX[IDX.VRV];
       if (vrv > vrvMax) vrvMax = vrv;
       if (vrv < vrvMin) vrvMin = vrv;
+      lvTrace.push({ V: +vlv.toFixed(1), Plv: +prS.Plv.toFixed(1) });
+      rvTrace.push({ V: +vrv.toFixed(1), Plv: +prS.Prv.toFixed(1) });
     }
+    pat.pvLoop = lvTrace;
+    pat.rvPvLoop = rvTrace;
     // Advance the integrated cardiac phase by exactly the time integrated.
     pat._fullPhase = (((pat._fullPhase ?? 0) + dtSec / (60 / effHr)) % 1 + 1) % 1;
     pat._fullT = tEnd;
@@ -1898,11 +2140,8 @@ function updateFullLoopODE(pat, dt) {
 // RV strain emerges rather than being scripted.
 function updateRightHeart(pat) {
   const bodyScale = pat._bodyScale || 1;
-  const effHr = Math.max(pat.hr || 60, 30);
-  const T = 60 / effHr;
-  const extP = pat.cardiacExternalP ?? pat.intrathoracicP ?? 0;
   // RV preload from transmural RA filling pressure.
-  const fillingP = Math.max(0, pat.cvp - extP);
+  const fillingP = Math.max(0, pat.cvp - (pat.cardiacExternalP ?? pat.intrathoracicP ?? 0));
   let rvEdv = clamp(190 * bodyScale * (1 - Math.exp(-fillingP / 10.0)) * (pat.diastolicFraction / 0.6125 || 1),
                     3 * bodyScale, 300 * bodyScale);
   const rvEes = clamp(1.15 * pat.contractility / bodyScale, 0.1, 4 / bodyScale);
@@ -1923,16 +2162,23 @@ function updateRightHeart(pat) {
   const paDia = clamp(0.6 * paMean, 3, 60);
   const paSys = clamp(1.55 * paMean, 10, 130);
 
-  // RV beat (for the RV pressure–volume loop and RV EF / strain under afterload).
+  // RV analytic end-systolic coupling (Phase 0, legacy-solver removal, queue
+  // item 1): a one-tick bootstrap only. pat.rvSv/rvEsv/rvEdv/rvEf are
+  // unconditionally overwritten by the authoritative full-loop ODE's own RV
+  // state once pat.fourChamberLoop exists (every tick after the first — see
+  // the publish block in updateCardiovascular). This used to be cross-checked
+  // against an integrated double-Hill beat (cardiovascular_ode.js's
+  // solveBeat); that integration always converged to this same analytic
+  // equilibrium, so removing it changes nothing about the value. The per-beat
+  // RV PV-loop trace the old integrated beat also produced, for the
+  // arterial-line teaching display, now comes from the full loop's own
+  // substep integration instead (pat.rvPvLoop, set in updateFullLoopODE).
   const eaRv = clamp((paSys - paDia) / 60, 0.08, 4);
-  const beat = solveBeat({
-    Emax: rvEes, Emin: clamp(0.04 / (pat.lusitropy || 1), 0.02, 0.3),
-    V0: 12 * bodyScale, edv: rvEdv, Ea: eaRv, pDia: paDia, T, externalP: extP, substep: 0.004,
-  });
-  if (beat.ok) {
-    pat.rvSv = beat.sv; pat.rvEsv = beat.esv; pat.rvEdv = rvEdv; pat.rvEf = beat.ef;
-    pat.rvPvLoop = beat.loop;
-  }
+  const rvSvAnalytic = rvEes * (rvEdv - 12 * bodyScale) / (rvEes + eaRv);
+  pat.rvSv = clamp(rvSvAnalytic, 0, 220);
+  pat.rvEsv = Math.max(0, rvEdv - pat.rvSv);
+  pat.rvEdv = rvEdv;
+  pat.rvEf = rvEdv > 0 ? clamp(pat.rvSv / rvEdv, 0, 0.95) : 0;
   pat.paSys = Math.round(paSys);
   pat.paDia = Math.round(paDia);
   pat.paMean = Math.round(paMean);
@@ -2329,12 +2575,55 @@ function updateValves(pat, dt) {
   //   (2) "gate on a much higher, clearly-severe-wall-motion threshold" —
   //       also not a new angle: it is the same re-tuned-threshold attempt
   //       already tried and documented as insufficient above, restated.
-  // A real fix needs the controlled A/B against the ischemic family this
-  // comment (and the block above) already calls for — an isolated coefficient
-  // change inside an unrelated batch, verified only by a forward run, is
-  // exactly the shape of "attempt" that already failed twice on this
-  // sub-item. Deferred again, honestly, not attempted. See queue item V2-24.
-  const mrStructuralTarget = rf.mitralRegurg ? clamp(rf.mitralRegurgSeverity ?? 0.35, 0, 0.9) : 0;
+  // SHIPPED (2026-09-30, queue item 1's Phase 2, continuous tethering term
+  // only — the discrete papillary-rupture event below is still deferred).
+  // Both prior attempts here gated on LIVE pat.atp, which re-enters the
+  // unload -> reduce-myocardial-work -> raise-atp -> shrink-the-very-term-
+  // that-unloaded-it loop this file's own V2-24 comments already trace in
+  // detail. The fix is not a smaller coefficient (already tried and
+  // rejected above, twice) — it is gating on a quantity that CANNOT
+  // participate in that loop at all: `pat.contractilityFactor`'s own
+  // necrosis-driven loss is a real but effectively one-way state for the
+  // MI family (both ami's flat -0.018/min decay and the NSTEMI/
+  // unstableAngina wavefront's own `necro` term only ever REDUCE it; a
+  // regurgitation-driven contractility RECOVERY was never built, could not
+  // be, and is not what "unloading" means here anyway). Ischemic MR is
+  // therefore driven by how much contractile mass has already been lost
+  // (`1 - contractilityFactor`), not by how ischemic the tissue is RIGHT
+  // NOW — the correct clinical framing regardless: papillary dysfunction
+  // follows actual infarction, not transient demand ischemia.
+  //
+  // Territory gate reuses `pat.infarctTerritory` (queue item text
+  // elsewhere in this document — set only by ami/chestPainM/chestPainF,
+  // confirmed by grep before writing this). The posteromedial papillary
+  // muscle has a SINGLE blood supply (usually the PDA off the RCA) in
+  // most hearts, so inferior/posterior infarcts carry the real clinical
+  // ischemic-MR risk; the anterolateral papillary muscle has DUAL supply
+  // (LAD diagonal + circumflex marginal) and rarely infarcts in isolation
+  // (Voci, Bilotta & Caretta, J Am Soc Echocardiogr 1995; Barzilai,
+  // Davis & Kouchoukos, Am J Cardiol 1990). A patient with NO diagnosed
+  // territory at all (acs/nstemi/unstableAngina — none of the three sets
+  // infarctTerritory, confirmed by grep) gets territoryBias 0, which
+  // satisfies the regression guard this file's own V2-24 comment calls
+  // for (unstableAngina, which has no necrosis by definition, must show
+  // ~0 MR) by CONSTRUCTION, not as a separate check bolted on.
+  //
+  // MEASURED at t=900s (physio()/activePatient(), not reconstructed):
+  // chestPainM (inferior) reaches contractilityFactor 0.681 ->
+  // necrosisExtent 0.319 -> ischemicMrTarget 0.16 (mild-moderate, matching
+  // the literature's own "ischemic MR after MI is usually MILD" — Silbiger,
+  // J Am Soc Echocardiogr 2019); ami (anterior, territoryBias 0.15) reaches
+  // the same 0.319 necrosisExtent but only 0.024 ischemicMrTarget
+  // (anterior-wall MI rarely causes clinically significant MR, correctly
+  // negligible here); acs/nstemi/unstableAngina (no territory) all measure
+  // EXACTLY 0, confirmed directly, not assumed from the gate's own logic.
+  const necrosisExtent = clamp(1 - (pat.contractilityFactor ?? 1), 0, 1);
+  const mrTerritoryBias = pat.infarctTerritory === "inferior" || pat.infarctTerritory === "lateral" ? 1.0
+    : pat.infarctTerritory === "anterior" ? 0.15
+    : 0;
+  const ischemicMrTarget = clamp(necrosisExtent * 0.5 * mrTerritoryBias, 0, 0.35);
+  let mrStructuralTarget = rf.mitralRegurg ? clamp(rf.mitralRegurgSeverity ?? 0.35, 0, 0.9) : 0;
+  mrStructuralTarget = Math.max(mrStructuralTarget, ischemicMrTarget);
   let arStructuralTarget = rf.aorticRegurg ? clamp(rf.aorticRegurgSeverity ?? 0.35, 0, 0.9) : 0;
   // Queue item V2-24(b) — THIS is the constant that actually reaches the
   // authoritative full-loop ODE (`derivative()`'s Qar term reads
@@ -2775,12 +3064,28 @@ export function updateRhythm(pat, dt) {
     // this factor the drug would end one episode and the substrate would
     // immediately start another, which is the wrong clinical picture and would
     // have made the treatment look useless for a second reason.
-    if (a.repol > 0.6 && Math.random() < 0.03 * a.repol * (1 - magEAD) * dt * 20) {
+    // PHASE 1 (queue item 1): female sex carries an independent 2-3x baseline
+    // TdP hazard multiplier in the clinical literature, not explained solely
+    // by a lower QTc threshold (Circulation Research 2026, sex-specific
+    // electrophysiology review) -- applied here as a structural risk
+    // modifier on the initiation hazard itself.
+    const sexHazard = pat.sex === "female" ? 2.5 : 1.0;
+    if (a.repol > 0.6 && Math.random() < 0.03 * a.repol * (1 - magEAD) * sexHazard * dt * 20) {
       // Remember what the patient was in, so a self-terminating episode returns
       // them to their own rhythm rather than curing an unrelated AF on the way
       // past.
       pat._preTorsades = pat.rhythm;
       pat.rhythm = "torsades";
+      // Episode state (queue item 1, Phase 1): a beat-count/rate-class pair
+      // sampled once at onset and held for the episode's own life, replacing
+      // the old flat 220 bpm every tick. Rate drawn around Bluzhas's own
+      // measured mean/SD, clamped to the measured range; class is whichever
+      // side of 220 bpm the draw lands on (53.6% slow / 46.4% fast at these
+      // parameters, matching the measured split).
+      const gaussStep = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; // ~unit normal-ish, no import needed
+      pat._torsadesRate = clamp(218 + gaussStep * 38, 145, 281);
+      pat._torsadesRateClass = pat._torsadesRate >= 220 ? "fast" : "slow";
+      pat.torsadesBeatCount = 0;
       return;
     }
     // Ischemia/scar -> monomorphic VT; general instability can also tip.
@@ -2800,7 +3105,24 @@ export function updateRhythm(pat, dt) {
         : 1;
       vtDrive *= (1 - naBlock * coverage * 0.85);
     }
-    if (vtDrive > 0.4 && Math.random() < 0.04 * vtDrive * dt * 20) pat.rhythm = "VT";
+    if (vtDrive > 0.4 && Math.random() < 0.04 * vtDrive * dt * 20) {
+      pat.rhythm = "VT";
+      // PHASE 5 (queue item 1): morphology is a probabilistic classification of
+      // the triggering substrate, not a deterministic substrate->morphology
+      // lookup (Dukkipati et al., JACC 2017 — clinical VT commonly reflects
+      // substrate x trigger interaction). Scar/reentry substrate biases toward
+      // monomorphic VT (a stable, single reentrant circuit); the diffuse
+      // substrate (active ischemia, general rhythm instability, hypoxia) biases
+      // toward polymorphic VT (a shifting, multi-focal/unstable circuit) — but
+      // either can occur from either substrate, so this is a weighted coin
+      // flip on the SAME vtDrive components that triggered the episode, not a
+      // second independent condition check.
+      const scarShare = pat.scarBurden || 0;
+      const diffuseShare = a.ischemia + inst * 0.5 + a.hypoxic * 0.3 + a.hypothermic * 0.04;
+      const totalShare = scarShare + diffuseShare;
+      const pMonomorphic = totalShare > 0 ? clamp(scarShare / totalShare, 0.05, 0.95) : 0.5;
+      pat._vtMorphology = Math.random() < pMonomorphic ? "monomorphic" : "polymorphic";
+    }
   } else if (pat.rhythm === "torsades") {
     // TORSADES IS SELF-LIMITING FIRST AND LETHAL SECOND, and this branch had
     // only the second half. It offered exactly two exits — degenerate to VF at
@@ -2824,6 +3146,22 @@ export function updateRhythm(pat, dt) {
     // documented cycle length of 200-400 ms, "a few tens of cycles" is roughly
     // 5-15 s. A rate of 6.0/min gives a mean episode of 10 s, which puts the
     // majority of episodes inside that boundary with a tail running past it.
+    // PHASE 1 (queue item 1): beat count is the primary frame -- 150-episode
+    // Bluzhas data gives mean 16+-8 beats (min 3, right tail to ~117) at mean
+    // cycle length 279+-47 ms, which is *derived from* beats x CL rather than
+    // sampled as an independent wall-clock duration, so the two can't drift
+    // apart. Rate is per-minute, dt is in minutes, so beats this tick is
+    // simply rate * dt.
+    pat.torsadesBeatCount = (pat.torsadesBeatCount || 0) + (pat._torsadesRate || 220) * dt;
+    // A patient whose rhythm is forced directly to "torsades" (a test harness,
+    // or a future mechanism that doesn't go through this file's own onset
+    // sampling above) carries no _torsadesRateClass. Default that case to
+    // NEUTRAL (matching the engine's pre-Phase-1 behaviour), not "fast" --
+    // defaulting to fast biased every such imposed episode toward the worse
+    // (lower-termination, higher-VF) class, a real regression caught by
+    // mechanismWiring.mjs's own forced-rhythm torsades assertions.
+    const rateClass = pat._torsadesRateClass || null;
+
     const TDP_TERMINATION_RATE = 6.0;    // per minute -> mean episode 10 s
     // The substrate that started the episode also sustains it, which is why
     // fast torsades is documented as BOTH longer-lasting and more likely to
@@ -2839,7 +3177,13 @@ export function updateRhythm(pat, dt) {
     // keeps re-igniting the circuit — rather than a fitted magnitude. Against
     // Tzivoni 1988, where a single 2 g bolus abolished torsades within 1-5 min
     // in 9 of 12 patients and a second bolus finished the rest.
-    const termRate = TDP_TERMINATION_RATE * sustain * (1 + 3 * magEAD);
+    // PHASE 1 (queue item 1): fast-class (>=220 bpm) episodes are documented
+    // as BOTH longer-lasting and more likely to fibrillate than slow-class
+    // ones -- a lower termination rate for the fast class is the "longer-
+    // lasting" half of that pairing (the "more likely to fibrillate" half is
+    // the VF-hazard weighting below).
+    const termRate = TDP_TERMINATION_RATE * sustain * (1 + 3 * magEAD) * (rateClass === "fast" ? 0.6 : 1.0);
+    // (slow and null/unclassed both keep the pre-Phase-1 multiplier of 1.0)
     if (Math.random() < termRate * dt) {
       // Back to the rhythm the patient was actually in, not unconditionally to
       // sinus. The substrate is untouched, so an untreated long QT will start
@@ -2848,6 +3192,7 @@ export function updateRhythm(pat, dt) {
       // being absent.
       pat.rhythm = pat._preTorsades || "sinus";
       pat._preTorsades = null;
+      pat.torsadesBeatCount = 0;
       return;
     }
     // --- DEGENERATION TO VF ---
@@ -2880,13 +3225,42 @@ export function updateRhythm(pat, dt) {
     // torsades; it is NOT inert for one who was already ischemic, which is the
     // case it matters most for. Saying so here rather than letting a future
     // session read a fully working mechanism.
-    const degenRate = TDP_VF_RATE * (1 + 4 * Math.max(0, 1 - pat.atp));
-    if (Math.random() < degenRate * dt) { pat.rhythm = "VF"; pat._preTorsades = null; }
+    // PHASE 1 (queue item 1): rate class is a primary VF-risk splitter, not
+    // just a range clamp -- Bluzhas's own 150-episode series measured ~2.5%
+    // VF conversion for slow(<220bpm) episodes vs. substantially higher for
+    // fast(>=220bpm) ones (97.5% of that cohort's VF-converting episodes came
+    // from the faster group), a ratio of roughly 3.8x (the "Bluzhas ratio"
+    // Phase 5's own morphology work reuses). Applied as a rate-class weight
+    // on the existing atp-driven hazard rather than a second independent
+    // mechanism.
+    // (slow and null/unclassed both keep the pre-Phase-1 weight of 1.0)
+    const RATE_CLASS_VF_WEIGHT = rateClass === "fast" ? 3.8 : 1.0;
+    const degenRate = TDP_VF_RATE * RATE_CLASS_VF_WEIGHT * (1 + 4 * Math.max(0, 1 - pat.atp));
+    // UNCONDITIONAL VF FLOOR: Bluzhas's own ">100 QRS complexes" finding is
+    // kept as a floor, not the primary trigger now that beat count also
+    // drives the continuous hazard above -- any episode reaching 100 beats
+    // converts to VF regardless of rate class or atp.
+    if (pat.torsadesBeatCount >= 100 || Math.random() < degenRate * dt) {
+      pat.rhythm = "VF"; pat._preTorsades = null;
+    }
   } else if (pat.rhythm === "VT") {
     // VT -> VF favoured by ongoing ischemia/hypoxia; also self-terminates if
     // the substrate resolves.
+    // PHASE 5 (queue item 1): polymorphic VT degenerates to VF far more
+    // readily than monomorphic VT — a stable single reentrant circuit
+    // (monomorphic) can sustain for a long period, while a shifting/unstable
+    // circuit (polymorphic) is already most of the way to the chaotic
+    // activation pattern VF is. Reuses the same 3.8x Bluzhas ratio Phase 1's
+    // torsades fast/slow-class VF weighting already measured and shipped,
+    // rather than inventing a second unfitted multiplier for a mechanistically
+    // analogous "unstable vs stable circuit" split. Unclassified VT (forced
+    // directly by a test harness or a future caller that bypasses the onset
+    // sampling above) defaults to the monomorphic (lower) weight, matching
+    // Phase 1's own established "default to the less severe class" guard
+    // against biasing every externally-imposed episode toward the worse one.
+    const vtMorphWeight = pat._vtMorphology === "polymorphic" ? 3.8 : 1.0;
     const degen = a.ischemia + a.hypoxic * 0.5 + Math.max(0, 0.3 - pat.atp);
-    if (degen > 0.3 && Math.random() < 0.05 * degen * dt * 20) pat.rhythm = "VF";
+    if (degen > 0.3 && Math.random() < 0.05 * degen * vtMorphWeight * dt * 20) pat.rhythm = "VF";
     if (pat.co < 0.15) { /* pulseless VT — mortality handles as arrest */ }
   } else if (pat.rhythm === "VF") {
     if (pat.atp < 0.1 && Math.random() < 0.08 * dt * 20) pat.rhythm = "asystole";

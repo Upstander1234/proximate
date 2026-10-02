@@ -1,9 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import { C } from "../theme.js";
-import { accessDifficulty, veinVisibility } from "../access.js";
+import { accessDifficulty, veinVisibility, veinPalpability } from "../access.js";
 import { assistToleranceMult } from "../procedureAssist.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
+
+// Real IV cannulation sub-sites within a limb the player has already
+// selected from the main action menu (region stays the outer choice, so
+// g.ivSites/dosing/labels — which key off region, not exact vein — are
+// completely unaffected; this is purely the "give the player several real
+// access points to choose from" layer the operator asked for, contained to
+// this component). x is the horizontal fraction along the forearm SVG below
+// (0 = wrist/hand end, 1 = elbow end); arteryNear gates the arterial-
+// puncture failure mode (the brachial artery runs directly alongside the
+// median cubital vein at the AC — it does not run near the hand or mid
+// forearm superficial veins).
+// Every peripheral vein drains proximally (toward the heart) — so the
+// "correct" direction answer is always proximal, same as real anatomy.
+// A wrong ("distal") guess is a genuine, real mistake, not a coin flip.
+const ARM_SUBSITES = [
+  { id: "hand", label: "dorsal hand", x: 0.12, visMod: -0.05, widthMod: 0.65, arteryNear: false, trueDirection: "proximal" },
+  { id: "forearm", label: "forearm (cephalic)", x: 0.5, visMod: 0, widthMod: 1, arteryNear: false, trueDirection: "proximal" },
+  { id: "ac", label: "antecubital (median cubital)", x: 0.86, visMod: 0.18, widthMod: 1.35, arteryNear: true, trueDirection: "proximal" },
+];
+const LEG_SUBSITES = [
+  { id: "foot", label: "dorsal foot", x: 0.14, visMod: -0.05, widthMod: 0.65, arteryNear: false, trueDirection: "proximal" },
+  { id: "saphenous", label: "saphenous", x: 0.6, visMod: 0.05, widthMod: 1, arteryNear: false, trueDirection: "proximal" },
+];
+const LIMBS_ARM = ["armR", "armL"];
+const IV_SITE_LABEL_PREFIX = { armR: "right ", armL: "left ", legR: "right ", legL: "left " };
+const GAUGES = [14, 16, 18, 20, 22, 24];
+
+// A single generic hold-to-fill helper for the confirmation sequence's own
+// two hold gestures (advance the catheter off the needle; flush the line) —
+// reuses the exact same press-and-hold idiom the insert phase already
+// established rather than inventing a second control scheme.
+function useHoldFill(active, setter) {
+  useEffect(() => {
+    if (!active) return undefined;
+    const iv = setInterval(() => setter(p => Math.min(1, p + 0.03)), 30);
+    return () => clearInterval(iv);
+  }, [active, setter]);
+}
 
 // A real, interactive replacement for the flat "click IV/IO, roll a die"
 // procedures — uncap, position/angle, insert slowly, watch for the real
@@ -25,19 +63,40 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 // CANCELLED. This is the single entry point every mini-game resolves
 // through — there is no separate onCancel prop anymore.
 
-const IV_SITE_LABEL = { armR: "right antecubital", armL: "left antecubital", legR: "right saphenous", legL: "left saphenous" };
 const IO_SITE_LABEL = { armR: "right proximal humerus", armL: "left proximal humerus", legR: "right proximal tibia", legL: "left proximal tibia", torso: "sternal (manubrium)" };
 
 export default function AccessMinigame({ open, kind, site, attempts, pat, assist, interrupted, onResolve, onDialogue }) {
-  const [step, setStep] = useState("uncap");
+  // IV step sequence, matching the real 4-phase skill: "assess" (choose the
+  // exact vein, inspect/palpate it, estimate its direction, pick a gauge) ->
+  // "insert" (angle + lateral deviation + depth + advancement velocity, all
+  // at once) -> a confirmation sequence ("flashCheck" -> "advance" ->
+  // "withdraw" -> "occlude" -> "flush") that surfaces the real, distinct
+  // failure taxonomy (infiltration/arterial puncture/blown vein/failed
+  // attempt) instead of one instantaneous release->flash->done gesture. IO
+  // keeps its original, simpler uncap->position->insert shape (a landmark-
+  // and-drill skill, not a vein-finding one).
+  const [step, setStep] = useState(kind === "io" ? "uncap" : "assess");
+  const [subSite, setSubSite] = useState(null); // IV only: chosen ARM_SUBSITES/LEG_SUBSITES id
+  const [inspected, setInspected] = useState(false);
+  const [palpated, setPalpated] = useState(false);
+  const [palpating, setPalpating] = useState(false);
+  const [directionGuess, setDirectionGuess] = useState(null); // "proximal" | "distal" | null
+  const [gauge, setGauge] = useState(18);
   const [angle, setAngle] = useState(kind === "io" ? 90 : 20);
+  const [lateral, setLateral] = useState(0); // IV insert phase, -1..1
   const [offset, setOffset] = useState(0); // IO landmark position, -1..1
   const [depth, setDepth] = useState(0);
   const [holding, setHolding] = useState(false);
-  const [flash, setFlash] = useState(null); // outcome key | null
+  const [flash, setFlash] = useState(null); // terminal outcome key | null (also used as "the stick landed, evaluating" gate for IV's confirm sequence)
+  const [catheterAdv, setCatheterAdv] = useState(0);
+  const [flushProg, setFlushProg] = useState(0);
+  const [arterialCallout, setArterialCallout] = useState(null); // player's flashCheck judgment, IV only
   const angleRef = useRef(angle);
+  const lateralRef = useRef(lateral);
   const depthRef = useRef(depth);
+  const holdStartRef = useRef(0);
   useEffect(() => { angleRef.current = angle; }, [angle]);
+  useEffect(() => { lateralRef.current = lateral; }, [lateral]);
   useEffect(() => { depthRef.current = depth; }, [depth]);
 
   // IV, reworked per operator instruction: click-and-hold to advance the
@@ -50,6 +109,8 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
     const onKey = (e) => {
       if (e.key === "ArrowLeft") { setAngle(a => Math.max(0, a - 1)); e.preventDefault(); }
       else if (e.key === "ArrowRight") { setAngle(a => Math.min(60, a + 1)); e.preventDefault(); }
+      else if (e.key === "ArrowUp") { setLateral(l => Math.max(-1, l - 0.04)); e.preventDefault(); }
+      else if (e.key === "ArrowDown") { setLateral(l => Math.min(1, l + 0.04)); e.preventDefault(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -61,6 +122,11 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
     return () => clearInterval(iv);
   }, [holding, flash]);
 
+  const [advancing, setAdvancing] = useState(false);
+  const [flushing, setFlushing] = useState(false);
+  useHoldFill(advancing, setCatheterAdv);
+  useHoldFill(flushing, setFlushProg);
+
   if (!open || (kind !== "iv" && kind !== "io")) return null;
 
   const diff = accessDifficulty(kind, pat);
@@ -71,12 +137,31 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
   const assistMult = assistToleranceMult(assist);
 
   if (kind === "iv") {
-    const veinVis = veinVisibility(pat);
-    const angleTol = Math.max(3, 10 - (diff.score - 1) * 5) * assistMult;
+    const subsites = LIMBS_ARM.includes(site) ? ARM_SUBSITES : LEG_SUBSITES;
+    const active = subsites.find(s2 => s2.id === subSite) || subsites[1] || subsites[0];
+    // Gauge is threaded into the difficulty calc for THIS attempt only —
+    // access.js's own bigBoreFactor makes this a no-op at the 18g default.
+    const ivDiff = accessDifficulty("iv", pat, { gauge });
+    const baseVis = veinVisibility(pat) + active.visMod;
+    const basePalp = veinPalpability(pat) + active.visMod * 0.4;
+    const veinVis = Math.max(0.15, Math.min(1, baseVis));
+    const veinPalp = Math.max(0.25, Math.min(1, basePalp));
+    // Palpation reveals a vein inspection alone under-reports (obesity/
+    // dehydration bury it from the eye more than the finger, per access.js's
+    // own veinPalpability comment) — so the RENDERED visibility, once
+    // palpated, is the better of the two signals, not just the visual one.
+    const revealedVis = palpated ? Math.max(veinVis, veinPalp * 0.85) : veinVis;
+    const angleTol = Math.max(3, 10 - (ivDiff.score - 1) * 5) * assistMult;
     const targetAngle = 22; // real peripheral-IV insertion angle, ~15-30 deg
-    const rawVeinTop = 0.34 + (diff.score - 1) * 0.16;
-    const rawVeinWidth = Math.max(0.06, 0.16 - (diff.score - 1) * 0.06);
-    const veinCenter = rawVeinTop + rawVeinWidth / 2;
+    // A correct direction estimate (Phase 2) widens the lateral band — the
+    // player told the engine which way they think the vein runs, and a
+    // right guess means they're genuinely aiming better, not being handed
+    // a free pass; a wrong guess narrows it, the real cost of a bad read.
+    const guessCorrect = directionGuess === active.trueDirection;
+    const baseLateralTol = Math.max(0.12, 0.34 - (ivDiff.score - 1) * 0.12);
+    const lateralTol = baseLateralTol * (directionGuess ? (guessCorrect ? 1.35 : 0.7) : 1) * assistMult;
+    const rawVeinWidth = Math.max(0.06, 0.16 - (ivDiff.score - 1) * 0.06) * active.widthMod;
+    const veinCenter = 0.34 + (ivDiff.score - 1) * 0.16 + rawVeinWidth / 2;
     const veinWidth = Math.min(0.5, rawVeinWidth * assistMult);
     const veinTop = Math.max(0, veinCenter - veinWidth / 2);
     const veinBottom = veinTop + veinWidth;
@@ -84,78 +169,238 @@ export default function AccessMinigame({ open, kind, site, attempts, pat, assist
     const releaseNeedle = () => {
       setHolding(false);
       if (flash) return;
-      // F0 item 23 / F3 spec 2.7: the real needle stick itself, not a
-      // slider tick — same 45% chance the flat busy-timer path already
-      // uses for procedure_discomfort (App.jsx's start()), reused here
-      // rather than a new probability invented for this component. Fires
-      // regardless of whether the stick lands, since a real IV/IO attempt
-      // hurts whether or not it's in the vein.
       if (onDialogue && Math.random() < 0.45) onDialogue("procedure_discomfort");
-      const a = angleRef.current, d = depthRef.current;
-      if (Math.abs(a - targetAngle) > angleTol) { setFlash("angle"); return; }
+      const a = angleRef.current, lat = lateralRef.current, d = depthRef.current;
+      const elapsedS = Math.max(0.15, (performance.now() - holdStartRef.current) / 1000);
+      const velocity = d / elapsedS; // depth-fraction per second — a real "how fast did you push it in"
+
+      if (Math.abs(a - targetAngle) > angleTol) { setFlash("angleMiss"); return; }
+      if (Math.abs(lat) > lateralTol) { setFlash("lateralMiss"); return; }
+      // Too slow on a fragile/hard vein: it rolls out of the way rather
+      // than being pierced — a real, teachable distinct miss from angle.
+      if (velocity < 0.4 && ivDiff.score > 1.3 && d < veinBottom) { setFlash("rolled"); return; }
       if (d < veinTop) { setFlash("shallow"); return; }
-      if (d > veinBottom) { setFlash("blown"); return; }
+      // Too fast blows through the back wall even at an otherwise fine
+      // angle/depth reading — advancement velocity mattering for real,
+      // not just angle+depth in isolation.
+      const overshoot = d > veinBottom || (velocity > 2.2 && d > veinTop + veinWidth * 0.6);
+      if (overshoot) {
+        if (active.arteryNear && (a > targetAngle + 7 || d > veinBottom + 0.06)) { setFlash("artery"); return; }
+        setFlash("blown");
+        return;
+      }
+      // A real placement — but how close to the boundary it landed decides
+      // whether it holds up once flushed (infiltration) or is solid.
+      const margin = Math.min(d - veinTop, veinBottom - d, angleTol - Math.abs(a - targetAngle), lateralTol - Math.abs(lat)) /
+        Math.max(0.001, Math.min(veinWidth, angleTol, lateralTol));
+      setFlash(margin < 0.22 ? "marginal" : "solid");
+    };
+
+    const advanceCatheter = () => { if (catheterAdv < 1) return; setStep("withdraw"); };
+    // The real moment infiltration or an unrecognized arterial puncture
+    // reveals itself — swelling/pulsatile backflow appearing only once
+    // fluid is actually pushed through, not at the initial flash. Computed
+    // once flush completes, then surfaced as an ordinary flash+Continue
+    // result screen (same pattern every other outcome in this component
+    // uses) rather than resolving instantly out from under the player.
+    const finishFlush = () => {
+      setFlushing(false);
+      setStep("done");
+      if (arterialCallout === "arterial" && flash === "artery") { setFlash("arteryCaught"); return; }
+      if (arterialCallout === "arterial" && flash !== "artery") { setFlash("arteryFalseAlarm"); return; }
+      if (flash === "artery") { setFlash("arteryMissed"); return; }
+      if (flash === "marginal") { setFlash("infiltration"); return; }
       setFlash("success");
     };
-    const finish = () => {
-      if (flash === "success") { onResolve(PROCEDURE_OUTCOME.SUCCESS); return; }
+    const finishTerminal = () => {
+      if (flash === "success") { onResolve(PROCEDURE_OUTCOME.SUCCESS, { gauge }); return; }
       onResolve(PROCEDURE_OUTCOME.FAILED, {
-        angle: "Wrong angle. Missed the vein entirely.",
+        angleMiss: "Wrong angle. Missed the vein entirely — no flashback.",
+        lateralMiss: "Off to the side of the vein — no flashback.",
         shallow: "Too shallow, no flash; needle's still subcutaneous.",
         blown: "In too deep; blew through the back wall of the vein.",
+        rolled: "The vein rolled out from under the needle — too tentative an approach on a fragile vein.",
+        arteryCaught: "Recognized the pulsatile, bright flashback as arterial — held pressure, no catheter advanced. Good catch; site is unusable, try elsewhere.",
+        arteryFalseAlarm: "Second-guessed a good venous flash and pulled a working line for nothing.",
+        arteryMissed: "Arterial puncture, missed on the flash — bright, pulsatile return once flushed, and a hematoma is already forming. Hold pressure, try another site.",
+        infiltration: "Infiltration. The catheter tip was just outside the vein — it looked fine until you flushed, and the site is visibly swelling now.",
       }[flash] || "Missed.");
     };
     const cancel = () => onResolve(PROCEDURE_OUTCOME.CANCELLED);
     const abandon = () => onResolve(PROCEDURE_OUTCOME.ABORTED);
+    const terminalMiss = ["angleMiss", "lateralMiss", "shallow", "blown", "rolled", "arteryCaught", "arteryFalseAlarm", "arteryMissed", "infiltration", "success"].includes(flash);
+
+    const RESULT_TEXT = {
+      angleMiss: "Wrong angle, no flashback.", lateralMiss: "Off to the side, no flashback.",
+      shallow: "Too shallow, no flash.", blown: "Blew through the back wall.",
+      rolled: "The vein rolled away.",
+      arteryCaught: "Recognized arterial — pressure held, attempt aborted.",
+      arteryFalseAlarm: "That was actually venous. Line pulled for nothing.",
+      arteryMissed: "Arterial puncture, missed until flush.",
+      infiltration: "Infiltration on flush — the tip wasn't in the lumen.",
+      success: "Catheter secure, line flushes clean. IV established.",
+    };
+
+    const armSvg = (
+      <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12, touchAction: "none",
+          cursor: step === "insert" && !flash ? (holding ? "grabbing" : "grab") : "default" }}
+        onPointerDown={() => { if (step === "insert" && !flash) { setHolding(true); holdStartRef.current = performance.now(); } }}
+        onPointerUp={() => { if (holding) releaseNeedle(); }}
+        onPointerLeave={() => { if (holding) releaseNeedle(); }}>
+        <defs>
+          <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#E3AE87" />
+            <stop offset="55%" stopColor="#CD9068" />
+            <stop offset="100%" stopColor="#B87A54" />
+          </linearGradient>
+          <linearGradient id="veinGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={flash === "artery" ? "#B23A2E" : "#7D3E52"} />
+            <stop offset="100%" stopColor={flash === "artery" ? "#7A2119" : "#4A2436"} />
+          </linearGradient>
+        </defs>
+        {/* forearm: a gently tapered limb, not a flat strip, so this
+            reads as skin rather than an abstract cross-section bar */}
+        <path d="M -10 -6 Q 100 -14 210 -6 L 210 34 Q 100 44 -10 34 Z" fill="url(#skinGrad)" />
+        <path d="M -10 -6 Q 100 -14 210 -6" fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />
+        {/* subtle skin texture / creases */}
+        <path d="M 10 6 Q 100 -2 190 6" fill="none" stroke="#00000022" strokeWidth={1} />
+        <path d="M 10 24 Q 100 32 190 24" fill="none" stroke="#00000022" strokeWidth={1} />
+        {step === "assess" && subsites.map(s2 => (
+          <g key={s2.id} role="button" aria-label={`Choose ${s2.label}`} onClick={() => setSubSite(s2.id)} style={{ cursor: "pointer" }}>
+            <circle cx={s2.x * 200} cy={30} r={subSite === s2.id ? 10 : 7} fill={subSite === s2.id ? (C.amber || "#D9A441") : "#8A6A52"}
+              opacity={subSite === s2.id ? 0.9 : 0.55} stroke="#000" strokeWidth={0.5} />
+          </g>
+        ))}
+        {step !== "assess" && (
+          <>
+            {/* the vein itself, gently curved rather than a straight bar,
+                with a soft glow scaled by how visible/palpated it is */}
+            <path
+              d={`M -5 ${30 + veinTop * 80 + veinWidth * 40} Q 60 ${30 + veinTop * 80 + veinWidth * 40 - 6} 100 ${30 + (veinTop + veinWidth / 2) * 80} T 205 ${30 + veinTop * 80 + veinWidth * 40 + 5}`}
+              fill="none" stroke="url(#veinGrad)" strokeWidth={Math.max(5, veinWidth * 70)} strokeLinecap="round"
+              opacity={0.22 + revealedVis * 0.6} />
+            {active.arteryNear && <path
+              d={`M -5 ${30 + veinTop * 80 + veinWidth * 40 - 14} Q 60 ${30 + veinTop * 80 + veinWidth * 40 - 18} 100 ${30 + (veinTop + veinWidth / 2) * 80 - 14} T 205 ${30 + veinTop * 80 + veinWidth * 40 - 9}`}
+              fill="none" stroke="#8A2A24" strokeWidth={4} strokeLinecap="round" opacity={0.18} />}
+          </>
+        )}
+        <line x1={0} y1={30} x2={200} y2={30} stroke="#A9714E" strokeWidth={1.5} opacity={0.6} style={{ pointerEvents: "none" }} />
+        {(step === "insert" || step === "flashCheck" || step === "advance" || step === "withdraw" || step === "occlude" || step === "flush") &&
+          <NeedleLine angle={angle} depth={depth} pivotY={30} depthScale={80} />}
+        {flash === "solid" && <circle cx={100} cy={30 + (veinTop + veinWidth / 2) * 80} r={5} fill={C.red || "#E33"} />}
+        {flash === "marginal" && <circle cx={100} cy={30 + (veinTop + veinWidth / 2) * 80} r={5} fill="#E3A33A" opacity={0.9} />}
+        {flash === "artery" && <circle cx={100} cy={30 + (veinTop + veinWidth / 2) * 80} r={6} fill="#E33">
+          <animate attributeName="r" values="5;7;5" dur="0.6s" repeatCount="indefinite" /></circle>}
+      </svg>
+    );
 
     return (
-      <MinigameShell title={`IV: ${IV_SITE_LABEL[site] || "the site"}`} attempts={attempts} diff={diff} pat={pat} interrupted={interrupted}
-        diffNote={diff.band !== "routine" ? "vein is smaller/deeper than usual" : ""} onCancel={cancel} onAbandon={abandon} flash={flash} finish={finish}
-        resultText={flash === "success" ? "Flash! You're in the vein." : flash === "angle" ? "Wrong angle, missed the vein." :
-          flash === "shallow" ? "Too shallow, no flash." : flash === "blown" ? "Blew through the back wall." : ""}>
-        <svg viewBox="0 0 200 120" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 12, touchAction: "none",
-            cursor: step === "insert" && !flash ? (holding ? "grabbing" : "grab") : "default" }}
-          onPointerDown={() => { if (step === "insert" && !flash) setHolding(true); }}
-          onPointerUp={() => { if (holding) releaseNeedle(); }}
-          onPointerLeave={() => { if (holding) releaseNeedle(); }}>
-          <defs>
-            <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#E3AE87" />
-              <stop offset="55%" stopColor="#CD9068" />
-              <stop offset="100%" stopColor="#B87A54" />
-            </linearGradient>
-            <linearGradient id="veinGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7D3E52" />
-              <stop offset="100%" stopColor="#4A2436" />
-            </linearGradient>
-          </defs>
-          {/* forearm: a gently tapered limb, not a flat strip, so this
-              reads as skin rather than an abstract cross-section bar */}
-          <path d="M -10 -6 Q 100 -14 210 -6 L 210 34 Q 100 44 -10 34 Z" fill="url(#skinGrad)" />
-          <path d="M -10 -6 Q 100 -14 210 -6" fill="none" stroke="#F3CBA8" strokeWidth={1.5} opacity={0.5} />
-          {/* subtle skin texture / creases */}
-          <path d="M 10 6 Q 100 -2 190 6" fill="none" stroke="#00000022" strokeWidth={1} />
-          <path d="M 10 24 Q 100 32 190 24" fill="none" stroke="#00000022" strokeWidth={1} />
-          {/* the vein itself, gently curved rather than a straight bar,
-              with a soft glow scaled by how visible it is on this patient */}
-          <path
-            d={`M -5 ${30 + veinTop * 80 + veinWidth * 40} Q 60 ${30 + veinTop * 80 + veinWidth * 40 - 6} 100 ${30 + (veinTop + veinWidth / 2) * 80} T 205 ${30 + veinTop * 80 + veinWidth * 40 + 5}`}
-            fill="none" stroke="url(#veinGrad)" strokeWidth={Math.max(5, veinWidth * 70)} strokeLinecap="round"
-            opacity={0.28 + veinVis * 0.55} />
-          <line x1={0} y1={30} x2={200} y2={30} stroke="#A9714E" strokeWidth={1.5} opacity={0.6} />
-          {step !== "uncap" && <NeedleLine angle={angle} depth={depth} pivotY={30} depthScale={80} />}
-          {flash === "success" && <circle cx={100} cy={30 + (veinTop + veinWidth / 2) * 80} r={5} fill={C.red || "#E33"} />}
-        </svg>
-        {step === "uncap" && <StepButton onClick={() => setStep("insert")}>Uncap the needle</StepButton>}
+      <MinigameShell title={`IV: ${subSite ? `${(site && IV_SITE_LABEL_PREFIX[site]) || ""}${active.label}` : "choose a site"}`} attempts={attempts} diff={ivDiff} pat={pat} interrupted={interrupted}
+        diffNote={ivDiff.band !== "routine" ? "vein is smaller/deeper/harder to find than usual" : ""} onCancel={cancel} onAbandon={abandon}
+        flash={terminalMiss ? flash : null} finish={finishTerminal}
+        resultText={RESULT_TEXT[flash] || ""}>
+        {armSvg}
+
+        {step === "assess" && (
+          <>
+            <Hint>{subSite ? `Selected: ${active.label}. ` : "Click a marked point on the arm to pick a vein to attempt."}</Hint>
+            {subSite && (
+              <>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <StepButton onClick={() => setInspected(true)}>{inspected ? `Looks ${veinVis > 0.6 ? "well-filled and easy to see" : veinVis > 0.4 ? "faint but visible" : "barely visible"}` : "Look closer"}</StepButton>
+                </div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <button onPointerDown={() => setPalpating(true)} onPointerUp={() => { setPalpating(false); setPalpated(true); }} onPointerLeave={() => setPalpating(false)}
+                    className="px-3 py-2 rounded" style={{ flex: 1, background: palpating ? (C.amber || "#D9A441") : "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>
+                    {palpated ? `Feels ${veinPalp > 0.55 ? "bouncy and full" : "thready, but there"}` : "Press and hold to palpate"}
+                  </button>
+                </div>
+                <Hint>Which way does this vein drain?</Hint>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <button onClick={() => setDirectionGuess("proximal")} className="px-3 py-2 rounded"
+                    style={{ flex: 1, background: directionGuess === "proximal" ? (C.amber || "#D9A441") : "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Proximal (toward the heart)</button>
+                  <button onClick={() => setDirectionGuess("distal")} className="px-3 py-2 rounded"
+                    style={{ flex: 1, background: directionGuess === "distal" ? (C.amber || "#D9A441") : "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Distal (away from the heart)</button>
+                </div>
+                <Hint>Catheter gauge (smaller number = bigger bore, faster flow, harder to seat):</Hint>
+                <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+                  {GAUGES.map(g => (
+                    <button key={g} onClick={() => setGauge(g)} className="px-2 py-1 rounded"
+                      style={{ flex: 1, minWidth: 44, background: gauge === g ? (C.amber || "#D9A441") : "#1B232B", border: `1px solid ${C.line}`, color: C.text, fontSize: 12 }}>{g}g</button>
+                  ))}
+                </div>
+                <StepButton onClick={() => setStep("insert")}>Uncap the needle and start the stick</StepButton>
+              </>
+            )}
+          </>
+        )}
+
         {step === "insert" && !flash && (
           <>
-            <Hint>Angle {angle.toFixed(0)}° (◀ ▶ below, or arrow keys, to adjust). Press and hold directly on the arm to advance the needle ({(depth * 100).toFixed(0)}%).</Hint>
+            <Hint>Angle {angle.toFixed(0)}° (◀ ▶, or ←/→), lateral {(lateral * 100).toFixed(0)}% (↑/↓). Press and hold directly on the arm to advance the needle ({(depth * 100).toFixed(0)}%) — steady pressure, not a jab.</Hint>
             <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
               <button onClick={() => setAngle(a => Math.max(0, a - 1))} className="px-3 py-2 rounded"
                 style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>◀ Angle</button>
               <button onClick={() => setAngle(a => Math.min(60, a + 1))} className="px-3 py-2 rounded"
                 style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Angle ▶</button>
             </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+              <button onClick={() => setLateral(l => Math.max(-1, l - 0.04))} className="px-3 py-2 rounded"
+                style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>◀ Lateral</button>
+              <button onClick={() => setLateral(l => Math.min(1, l + 0.04))} className="px-3 py-2 rounded"
+                style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Lateral ▶</button>
+            </div>
+          </>
+        )}
+
+        {(flash === "solid" || flash === "marginal" || flash === "artery") && step === "insert" && (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: 13, color: flash === "artery" ? "#E3A33A" : "#7CD68A", marginBottom: 10 }}>
+              {flash === "artery" ? "A flash — bright red, and it pulses with the needle." : "Flash! You're in the vein."}
+            </div>
+            <Hint>Is this venous or arterial?</Hint>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <button onClick={() => { setArterialCallout("venous"); setStep("flashCheck"); }} className="px-3 py-2 rounded"
+                style={{ flex: 1, background: "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>Looks venous — proceed</button>
+              <button onClick={() => { setArterialCallout("arterial"); setStep("flashCheck"); }} className="px-3 py-2 rounded"
+                style={{ flex: 1, background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Arterial — stop, hold pressure</button>
+            </div>
+          </div>
+        )}
+
+        {step === "flashCheck" && arterialCallout === "venous" && (
+          <StepButton onClick={() => setStep("advance")}>Advance the catheter off the needle</StepButton>
+        )}
+        {step === "flashCheck" && arterialCallout === "arterial" && (
+          <StepButton onClick={finishFlush}>Hold pressure and document a failed attempt</StepButton>
+        )}
+
+        {step === "advance" && (
+          <>
+            <Hint>Press and hold to slide the catheter forward off the needle ({(catheterAdv * 100).toFixed(0)}%).</Hint>
+            <div style={{ height: 10, background: "#10151A", border: `1px solid ${C.line}`, borderRadius: 5, marginBottom: 8 }}>
+              <div style={{ width: `${catheterAdv * 100}%`, height: "100%", background: C.hr, borderRadius: 4 }} />
+            </div>
+            <button onPointerDown={() => setAdvancing(true)} onPointerUp={() => setAdvancing(false)} onPointerLeave={() => setAdvancing(false)}
+              className="px-3 py-2 rounded w-full" style={{ background: "#1B232B", border: `1px solid ${C.line}`, color: C.text, marginBottom: 8 }}>
+              Hold to advance
+            </button>
+            <StepButton onClick={advanceCatheter}>{catheterAdv >= 1 ? "Catheter fully advanced" : "Advance fully first"}</StepButton>
+          </>
+        )}
+        {step === "withdraw" && <StepButton onClick={() => setStep("occlude")}>Withdraw the needle</StepButton>}
+        {step === "occlude" && <StepButton onClick={() => setStep("flush")}>Apply occlusive pressure and connect the line</StepButton>}
+        {step === "flush" && (
+          <>
+            <Hint>Press and hold to flush the line ({(flushProg * 100).toFixed(0)}%).</Hint>
+            <div style={{ height: 10, background: "#10151A", border: `1px solid ${C.line}`, borderRadius: 5, marginBottom: 8 }}>
+              <div style={{ width: `${flushProg * 100}%`, height: "100%", background: C.hr, borderRadius: 4 }} />
+            </div>
+            <button onPointerDown={() => setFlushing(true)} onPointerUp={() => setFlushing(false)} onPointerLeave={() => setFlushing(false)}
+              className="px-3 py-2 rounded w-full" style={{ background: "#1B232B", border: `1px solid ${C.line}`, color: C.text, marginBottom: 8 }}>
+              Hold to flush
+            </button>
+            <StepButton onClick={finishFlush}>{flushProg >= 1 ? "Flushed — confirm the line" : "Flush fully first"}</StepButton>
           </>
         )}
       </MinigameShell>
@@ -319,9 +564,22 @@ function NeedleLine({ angle, depth, pivotY, depthScale, xOffset = 0, vertical = 
   const LEAN_MAX = 16;
   const lean = vertical ? 0 : LEAN_MAX * Math.max(0, Math.min(1, 1 - angle / 60)) * depth;
   const tipX = vertical ? cx : cx + lean;
+  const tipYClamped = Math.max(pivotY, tipY);
+  // The hub (the external end of the needle, x1/y1) used to be pinned at a
+  // fixed offset from the entry point regardless of depth, while only the
+  // tip moved — so as depth grew, only one end of the line moved and the
+  // needle visibly kinked/bent instead of sliding forward as one rigid
+  // piece. Translate the WHOLE line by the same (lean, depth) vector the
+  // tip moves by, so hub and tip stay a fixed distance apart along a
+  // constant angle throughout the advance — it now slides straight in,
+  // matching how a real needle only translates along its own axis.
+  const translateX = tipX - cx;
+  const translateY = tipYClamped - pivotY;
+  const hubX = (vertical ? cx : cx - Math.cos(rad) * 40) + translateX;
+  const hubY = (vertical ? pivotY - 20 : pivotY - Math.sin(rad) * 40) + translateY;
   return (
-    <line x1={vertical ? cx : cx - Math.cos(rad) * 40} y1={vertical ? pivotY - 20 : pivotY - Math.sin(rad) * 40}
-      x2={tipX} y2={Math.max(pivotY, tipY)} stroke={C.text || "#DDE"} strokeWidth={2.5} strokeLinecap="round" />
+    <line x1={hubX} y1={hubY}
+      x2={tipX} y2={tipYClamped} stroke={C.text || "#DDE"} strokeWidth={2.5} strokeLinecap="round" />
   );
 }
 

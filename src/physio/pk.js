@@ -39,14 +39,60 @@ import { HCT_NORMAL, NORMAL_HB } from "./constants.js";
 // useless in the arrhythmia it exists to treat. Absent here, 0.1 is still used.
 export const NALOXONE_KI = 0.0005;
 
+// Plain Hill-equation receptor occupancy, 0-1. n=1 (the default everywhere
+// except morphine's analgesic curve, queue item 62's remainder) reduces to
+// the simple hyperbola this codebase used before that item — exported as
+// its own function (not left inline, duplicated at both the analgesic and
+// the separate respiratory-depression call sites) so it is a single,
+// directly testable unit rather than two copies that could drift apart.
+export function hillOcc(C, ec50, n = 1) {
+  if (ec50 <= 0) return C > 0 ? 1 : 0;
+  const cn = Math.pow(Math.max(0, C), n);
+  return cn / (Math.pow(ec50, n) + cn);
+}
+
 export const PK_PARAMS = {
   // FENTANYL — v1 and ec50 identified against published PK/PD, not chosen.
   // Central volume ~13 L (was 2 L, ~6x too small) and EC50 ~1.2 ng/mL = 0.0012
-  // mg/L for analgesia and ventilatory depression (was 0.02 mg/L = 20 ng/mL,
-  // ~17x too high). The two errors partly cancelled, which is why nothing looked
-  // obviously wrong: a standard 50 mcg dose reached only 28% of maximal effect,
-  // giving a peak PaCO2 rise of 0.8 mmHg where roughly 5 is documented.
-  fentanyl:  { kel: 0.01, k12: 0.2, k21: 0.1, v1: 13,  ec50: 0.0012, renalFrac: 0.10, keo: 0.14 },  // t1/2ke0 ~5 min// hepatic CYP3A4; <10% unchanged renal
+  // mg/L for analgesia (was 0.02 mg/L = 20 ng/mL, ~17x too high). The two
+  // errors partly cancelled, which is why nothing looked obviously wrong: a
+  // standard 50 mcg dose reached only 28% of maximal effect, giving a peak
+  // PaCO2 rise of 0.8 mmHg where roughly 5 is documented.
+  // respEc50/respHillN (queue item 62's remainder) — CORRECTS this entry's
+  // own former claim that analgesia and ventilatory depression share one
+  // EC50. van Lemmen et al., Anesthesiology 2025's closed-loop CO2-controller
+  // PK/PD model gives fentanyl a ventilatory C50 of ~2.3 ng/mL (0.0023 mg/L)
+  // — numerically HIGHER (a MODESTLY lower-potency respiratory curve) than
+  // the 1.2 ng/mL analgesic EC50, confirmed by direct measurement against
+  // this file's own hillOcc(), not assumed from the two source papers' raw
+  // numbers alone. Both remain substantial and overlapping at real clinical
+  // concentrations (not a claim of a wide safety margin) — see the full
+  // reasoning at the [Respiratory drive suppression] site below. Matched
+  // to this model class deliberately: this engine's own chemoreceptor term
+  // closes the CO2 loop (respiratory.js's paco2Error-driven drive), and
+  // that same paper's simpler, open-loop model gives a materially
+  // different 7.5 ng/mL — the wrong anchor for a closed-loop
+  // engine. respHillN set explicitly to 1 (fentanyl's ventilatory Hill slope
+  // is modeled near 1 in the source) rather than left to infer from the
+  // default.
+  // koff (queue item 64): the Schild/Gaddum ec50 shift above models naloxone
+  // reversal as an instantaneous re-equilibration at the receptor, which is
+  // the right assumption for most drugs but measurably wrong for
+  // fentanyl-family agonists. Translational carfentanil/fentanyl modeling
+  // found these drugs harder and SLOWER for naloxone to reverse specifically
+  // because of slow receptor dissociation (Koff), independent of plasma
+  // clearance -- a more lipophilic antagonist (diprenorphine) reversed
+  // fentanyl as well as morphine while naloxone did not, isolating the
+  // effect to the agonist's own off-rate rather than naloxone's own PK.
+  // Stated honestly: no published per-minute Koff for human mu-receptor
+  // fentanyl dissociation exists in units this engine's unitless receptor
+  // model can use directly -- 0.25/min (t1/2 ~2.8 min to re-equilibrate
+  // after naloxone's Ki-shift) is picked to produce the right ORDERING
+  // (fentanyl measurably slower to reverse than morphine, which declares no
+  // koff and keeps the prior instantaneous behavior) and a genuine
+  // multi-minute reversal time course, not asserted as a fitted
+  // receptor-binding constant.
+  fentanyl:  { kel: 0.01, k12: 0.2, k21: 0.1, v1: 13,  ec50: 0.0012, renalFrac: 0.10, keo: 0.14, respEc50: 0.0023, respHillN: 1, koff: 0.25 },  // t1/2ke0 ~5 min// hepatic CYP3A4; <10% unchanged renal
   // MORPHINE — v1 and ec50 identified against published PK/PD. The audit
   // measured a peak effect-site concentration 15x the documented 20-80 ng/mL
   // analgesic range, because the central volume was ~7x too small; the EC50 was
@@ -56,8 +102,82 @@ export const PK_PARAMS = {
   // opioid at the receptor, so an opioid concentration 15x too high made
   // reversal far harder to achieve and re-narcotisation far too slow.
   //   v1   18 L      central volume ~0.25 L/kg
-  //   ec50 0.025     25 ng/mL, mid-range for analgesia
-  morphine:  { kel: 0.008, k12: 0.15, k21: 0.1, v1: 18, ec50: 0.025, renalFrac: 0.55, keo: 0.04 },  // t1/2ke0 ~17 min — morphine crosses the blood-brain barrier SLOWLY, which is why its peak effect lags the dose by a quarter of an hour and why re-dosing too early stacks// M6G is RENALLY cleared and active — accumulates in CKD
+  //   ec50 0.025     25 ng/mL, mid-range for analgesia (defensible against the
+  //                  real literature spread, 9-46.9 ng/mL across studies —
+  //                  not re-tuned by queue item 62 below)
+  // hillN/respEc50/respHillN (queue item 62's remainder) — Dahan et al.,
+  // Anesthesiology 2004 (human volunteer PK/PD, analgesia AND respiration
+  // measured simultaneously) found morphine's potency does NOT differ
+  // between the two endpoints (shared C50 ~32 nM/~9 ng/mL) — the real
+  // distinguishing parameter is the Hill slope: gamma=2.4 for analgesia,
+  // gamma=1 for respiration. hillN:2.4 is applied to the shared `intensity`
+  // (the analgesic/general curve); respEc50 is deliberately left EQUAL to
+  // ec50 (no potency difference to encode) with respHillN:1 explicit. The
+  // clinical danger this reproduces: "despite lack of good pain relief,
+  // moderate to severe respiratory depression remains possible" (Dahan
+  // 2004's own words) — the steeper analgesic curve saturates while the
+  // shallower respiratory one keeps climbing. Morphine (full agonist) has
+  // NO true pharmacologic analgesic ceiling per its own label; the plateau
+  // this produces at high concentration is this Hill curve's own saturation
+  // in the tested range, not a claim of a real ceiling.
+  // keo (queue item 63) — INVESTIGATED, NOT CHANGED, but the literature
+  // does NOT cleanly settle this (corrected after a second review found
+  // the first write-up overstated how resolved the question is). Dahan et
+  // al. 2004's own 4.4h t1/2ke0 is real, and is NOT an isolated outlier: a
+  // separate major PK/PD review (Lotsch) independently reports morphine's
+  // own t1/2ke0 at ~2-3h, the same order of magnitude. A third, more recent
+  // human study (Br J Anaesth 2026, 51 volunteers, NONMEM population
+  // modeling of a thermal-pain endpoint) reports a materially FASTER
+  // t1/2ke0 of 0.71h (~43 min) for morphine -- a genuinely different,
+  // still-slow-relative-to-the-engine value from a third, independent,
+  // recent dataset. A rat microdialysis study (Bouw/Gardmark et al.) is
+  // frequently the fastest-looking citation, but precisely BECAUSE it
+  // separates two different measurements that must not be collapsed into
+  // one number: an effect-delay half-life of 32 min against ARTERIAL BLOOD
+  // concentration, vs. only 5 min against BRAIN EXTRACELLULAR FLUID
+  // concentration measured directly -- the 85% of that delay attributable
+  // to blood-brain-barrier transport is exactly why plasma-referenced
+  // human PK/PD models (Dahan, the 2026 study) report a slower apparent
+  // number than a brain-concentration-referenced one does. There is no
+  // single "the" morphine analgesic t1/2ke0 in the literature; the number
+  // depends materially on what is being measured against (arterial
+  // plasma vs. brain tissue vs. a population PK/PD curve fit) and which
+  // endpoint (analgesia vs. miosis vs. thermal pain threshold). Clinical
+  // bedside teaching (~1-2 min initial onset, ~15-20 min peak effect after
+  // IV administration) is a real, separate kind of evidence again, not
+  // automatically reconcilable with any one of the above.
+  //
+  // MEASURED directly against this engine, both ways, as the decisive
+  // input this item's own text asked for (not a literature citation
+  // alone): a single 4mg IV dose at the CURRENT keo=0.04 (t1/2~17 min)
+  // peaks at +13.3 min -- inside the clinical ~15-20 min bedside window.
+  // Patching keo to Dahan's own 4.4h value and re-running the identical
+  // probe shows relief still only 0.80 points at +15 min (vs 3.37 at the
+  // current keo) and still climbing, unpeaked, at +59 min -- transplanting
+  // that figure (or the 2026 study's materially smaller but still slower
+  // 0.71h) would make morphine's modeled analgesic effect measurably
+  // slower than real bedside experience within any realistic call length.
+  //
+  // CONCLUSION, stated at the right epistemic strength: the literature
+  // does not provide a single uncontested value that clearly invalidates
+  // the current model, so there is no literature-mandated reason to
+  // change it. Keeping keo=0.04 is therefore an ENGINEERING/CALIBRATION
+  // judgment (it reproduces the clinically-taught bedside onset window
+  // directly, measured above) -- NOT a claim that 13.3 minutes has been
+  // proven correct by the literature, which a first draft of this comment
+  // overstated. A prior session's own "needs widening" conclusion was
+  // itself also too strong in the other direction (reading one paper in
+  // isolation). If this is revisited, the 2026 study (0.71h, the most
+  // recent, largest, and most directly comparable human dataset) is the
+  // best single anchor to re-measure against, not Dahan's older 4.4h.
+  // Also deferred: morphine is more
+  // potent on hypoxic ventilatory drive (C25 16 nM) than hypercapnic (C25
+  // 28 nM, Romberg et al. 2003) — this engine's chemoreceptor term reads
+  // paco2 only (one unified ventilatory output), so respEc50 above is
+  // anchored on the hypercapnic figure; a hypoxic, hypercapnic-blunted
+  // patient is under-represented for morphine danger here, a documented
+  // limitation, not an oversight.
+  morphine:  { kel: 0.008, k12: 0.15, k21: 0.1, v1: 18, ec50: 0.025, renalFrac: 0.55, keo: 0.04, hillN: 2.4, respEc50: 0.025, respHillN: 1 },  // t1/2ke0 ~17 min — morphine crosses the blood-brain barrier SLOWLY, which is why its peak effect lags the dose by a quarter of an hour and why re-dosing too early stacks// M6G is RENALLY cleared and active — accumulates in CKD
   // MIDAZOLAM — central volume ~15 L (0.2 L/kg), EC50 for sedation ~0.1 mg/L
   // (100 ng/mL). Was v1 1.5 L / ec50 0.05: a 5 mg dose reached Imax 0.956, i.e.
   // the flat top of the curve, so 2 mg and 10 mg were indistinguishable.
@@ -194,6 +314,15 @@ export const PK_PARAMS = {
   // giving Cmax 5.9 mg/L and Imax 0.983 — permanently saturated, therefore
   // permanently unable to express either under-dosing or toxicity.
   lidocaine: { kel: 0.01, k12: 1.0, k21: 0.1, v1: 3,     ec50: 2.5, renalFrac: 0.03, keo: 0.55 },// keo: effect within 1-2 min, as an IV antiarrhythmic bolus must be// FLOW-LIMITED hepatic extraction — toxicity in low cardiac output states
+  // LIDOCAINE BLOCK (queue item 62's remainder, hematoma block) — same
+  // molecule, so the same central-compartment/elimination/EC50 values as
+  // systemic `lidocaine` above, reused verbatim rather than re-derived
+  // (this is what makes the shared `toxicity` thresholds in drugs.js
+  // legitimate to copy, not two independent numbers that happen to match).
+  // Only the ROUTE differs (drugs.js's `route:"IM"`, a real perfusion-
+  // dependent depot absorption), which changes how concentration gets INTO
+  // this same central compartment, not what happens once it's there.
+  lidocaineBlock: { kel: 0.01, k12: 1.0, k21: 0.1, v1: 3, ec50: 2.5, renalFrac: 0.03, keo: 0.55 },
   // ATROPINE — v1 25 L (~0.35 L/kg), EC50 0.005 mg/L for vagolysis. Was v1 0.3 /
   // ec50 0.1, giving a peak concentration 137x the published range.
   atropine:  { kel: 0.05, k12: 0.2, k21: 0.1, v1: 25,    ec50: 0.005, renalFrac: 0.50, keo: 0.5 },// ~50% excreted unchanged in urine
@@ -691,6 +820,10 @@ export function applyProcedures(pat, s) {
     });
 }
 
+// Queue item 62 — see physio/pain.js for the sensitization mechanism itself.
+const PAIN_HYPERALGESIA_GAIN_MAX = 1.5; // up to ~2.5x multiplier at centralSensitization=1
+const PAIN_ALLODYNIA_MAX = 4;           // up to 4/10 pain from innocuous input alone
+
 export function updateDrugs(pat, s, dt) {
     // Reset per‑step accumulators
     pat.drugHr = 0; pat.drugSbp = 0; pat.drugRr = 0; pat.drugFio2 = 0.21;
@@ -715,12 +848,163 @@ export function updateDrugs(pat, s, dt) {
     // physiology. Analgesic drug effects (fx.pain deltas, applied below in
     // the effects loop) are deliberately NOT scaled — they act on this same
     // baseline afterward, unchanged.
-    pat.drugPain = (pat.intrinsicPain || 0) * (pat.painSensitivity ?? 1);
+    // HYPERALGESIA + ALLODYNIA (queue item 62, physio/pain.js) — the
+    // sensitization cascade's two real consumers. centralSensitization
+    // amplifies the SAME noxious-input translation multiplicatively
+    // (hyperalgesia: the same stimulus now hurts more) — HYPERALGESIA_GAIN_MAX
+    // chosen as a moderate, non-saturating magnitude (up to a real ~2.5x
+    // multiplier at centralSensitization=1) pending a future direct
+    // calibration once a clinical severity anchor for this engine's own 0-10
+    // pain scale is identified; not tuned to make any specific assertion
+    // pass. allodyniaLevel is added AFTER the sensitivity scaling, as its own
+    // independent pain source from otherwise-innocuous stimuli (touch,
+    // movement) rather than a scaled noxious-input term — ALLODYNIA_PAIN_MAX
+    // similarly a moderate, defensible magnitude (real allodynic light touch
+    // is clinically significant but rarely the single most severe pain a
+    // patient reports), not an invented number chosen to satisfy a test.
+    // NMDA-antagonist suppression (queue item 62's remainder, ketamine).
+    // pat.nmdaBlockade is set below in the per-drug-instance loop from
+    // ketamine's own effect-site intensity and reset there for the next
+    // tick — read here BEFORE that reset, same one-tick-lag idiom
+    // sedationDepth/centralSensitization already use elsewhere in this
+    // function. Ketamine SUPPRESSES ongoing NMDA-mediated amplification of
+    // the sensitization terms while on board; it does NOT erase the
+    // accumulated centralSensitization/allodyniaLevel state itself (those
+    // keep decaying on their own slow tau in physio/pain.js regardless of
+    // ketamine) — the literature on whether ketamine produces a lasting
+    // reversal is genuinely split (the 2018 ASRA/AAPM/ASA consensus
+    // guideline: QST/conditioned-pain-modulation studies were "for the most
+    // part" negative for a lasting reversal; other reviews describe reversal
+    // via NMDA-receptor downregulation) — modeling reversible suppression
+    // rather than a latched cure is the conservative reading of that split.
+    // Deliberately does NOT touch pat.intrinsicPain itself — ketamine's
+    // ordinary acute analgesia is the existing flat fx.pain:-8 delta
+    // (applied below in the effects loop, unchanged), which acts on this
+    // same baseline afterward; this term only dampens the SENSITIZATION-
+    // driven amplification. The 0.5 ceiling is an explicitly TUNED
+    // parameter, not literature-derived — ketamine's own analgesic dose-
+    // response evidence is inconsistent (some QST/dose-ranging studies show
+    // a relationship, others find no serum-level/pain correlation) and its
+    // overall analgesic effect size is characterized as modest; a higher
+    // ceiling risked near-complete relief of a highly sensitized patient
+    // when combined with the unchanged flat fx.pain term, which the
+    // "modest effect" literature argues against. Also deliberately does NOT
+    // model any opioid-system contribution: ketamine has real, if
+    // secondary, low-affinity MOR agonist activity (naloxone does not
+    // reliably reverse ketamine analgesia, confirming this isn't the
+    // dominant mechanism), and NMDA antagonists are reported to actively
+    // SLOW opioid tolerance/opioid-induced-hyperalgesia accrual, not merely
+    // be inert to it — pat.opioidDesens is untouched here, a real
+    // simplification stated honestly, not a claim that ketamine and opioid
+    // tolerance don't interact in reality.
+    const nmdaSuppression = 1 - 0.5 * (pat.nmdaBlockade || 0);
+    // LOCAL ANESTHETIC NERVE BLOCK (queue item 62's remainder, hematoma
+    // block). pat.nerveBlockDepth is set below in the per-drug-instance
+    // loop from lidocaineBlock's own absorbed concentration and its own
+    // use-dependence/inflammatory-failure modifiers, then reset there for
+    // the next tick -- read here BEFORE that reset, same one-tick-lag
+    // idiom nmdaBlockade/sedationDepth already use above. A genuinely
+    // different SITE of action from ketamine's nmdaSuppression above: a
+    // nerve block silences the nociceptive signal AT THE PERIPHERAL NERVE,
+    // before central processing (hyperalgesiaGain) ever sees it -- so it
+    // reduces pat.intrinsicPain itself, applied BEFORE hyperalgesiaGain's
+    // multiplication, not another multiplier alongside nmdaSuppression.
+    // This lets the two mechanisms compose correctly and non-redundantly:
+    // the block reduces what enters the sensitization pathway; ketamine
+    // reduces how much the cord amplifies whatever gets through.
+    // NERVE_BLOCK_MAX_REDUCTION is explicitly TUNED, anchored against real
+    // trial magnitudes, not literature-derived directly: acute-fracture
+    // nerve-block trials show a pooled mean VAS reduction of roughly
+    // -2.3 to -2.5 (0-10 scale) at 2h, with the single best-case study (a
+    // low-dose ultrasound-guided femoral block from a severe 8/10 baseline)
+    // showing roughly a 4-6 point peak drop -- 5 is a near-complete block's
+    // ceiling at peak nerveBlockDepth from a severe baseline, above the
+    // pooled average but not exceeding the best-case study, matching a
+    // real hematoma block's own more targeted effect versus a diffuse
+    // peripheral nerve block's average.
+    const NERVE_BLOCK_MAX_REDUCTION = 5;
+    const blockedIntrinsicPain = Math.max(0, (pat.intrinsicPain || 0) - NERVE_BLOCK_MAX_REDUCTION * (pat.nerveBlockDepth || 0));
+    const hyperalgesiaGain = 1 + PAIN_HYPERALGESIA_GAIN_MAX * (pat.centralSensitization || 0) * nmdaSuppression;
+    // GATE-CONTROL MODULATION (queue item 62, this batch) — descending
+    // affective drive opens the dorsal-horn gate for light-touch/allodynic
+    // input specifically, not nociceptive pain generally. Anatomically
+    // real, not a metaphor: Abeta low-threshold input and feed-forward
+    // glycinergic/GABAergic (PV+ islet cell) inhibition converge on
+    // PKCgamma+ excitatory neurons in inner lamina II; that inhibition
+    // normally blocks a polysynaptic route from Abeta afferents to lamina I
+    // nociceptive projection neurons, and losing it (via KCC2
+    // downregulation, GABA-A/glycine blockade, or NMDA/alpha2delta-1
+    // disinhibition) is what produces allodynia — exactly what
+    // pat.allodyniaLevel represents, so it is the correct and only site for
+    // this multiplier, not hyperalgesiaGain (Lu et al., J Clin Invest 2013;
+    // Benarroch, Neurology 2016; Huang et al., J Neurosci 2025). Shares its
+    // substrate with the nerve-block mechanism's own "inflammatory block
+    // failure" term above (keyed to pat.peripheralSensitization) — two
+    // different drivers converging on the same disinhibited dorsal horn,
+    // not a coincidence.
+    // Sign/direction: sustained anxiety/distress (not acute fight-or-flight
+    // fear) measurably LOWERS pain threshold via impaired descending
+    // inhibition, in awake, chronic human data (Rhudy & Meagher, Pain 2000;
+    // D'Souza et al., Front Pain Res 2026). The awake, chronic ACC->cord
+    // pathway driving this is real and facilitatory: pregenual ACC
+    // pyramidal neurons project to the spinal cord and cause descending
+    // FACILITATION of noxious responses, and ACC LTP sustains the
+    // affective pain state (Benarroch, Neurology 2020; Zhuo, Trends
+    // Neurosci 2016). (An acute-anxiety rodent tail-flick model,
+    // Falconi-Sobrinho et al., Eur J Pain 2025, found the opposite polarity
+    // — awake anxiogenic ACC-NMDA activation was ANTInociceptive there.
+    // That result measures an acute nociceptive reflex under acute
+    // anxiety, not threshold/allodynic sensitivity under sustained
+    // anxiety, so it does not transfer to the sustained-anxiety,
+    // allodynic-threshold context modeled here and is not used.)
+    // pat.agitation (neuro.js) is a sustained autonomic/agitation-distress
+    // proxy, not an acute-fear one — amplification is therefore the
+    // correct sign. Read here as LAST tick's value, same one-tick-lag
+    // idiom nmdaBlockade/nerveBlockDepth already use above (updateCerebral,
+    // which sets pat.agitation, runs later in the same tick than this
+    // function — patient.js).
+    // Built on the EXISTING pat.agitation composite rather than a new
+    // signed distress state: it already rises with real distress
+    // (agitationBurden, sympathetic drive, hypoxia) and already falls back
+    // to exactly 0 under real sedative/antipsychotic treatment
+    // (sedationDepth/antipsychoticEffect) — so the gate genuinely opens and
+    // closes through mechanisms this engine already ships. This
+    // floor-at-neutral is a deliberate UNDERESTIMATE, not an uncertain
+    // omission: GABA-A potentiation produces frank anti-allodynia BELOW an
+    // undistressed baseline in real pharmacology, independent of sedation
+    // (Knabl et al., Pain 2009; Ralvenius et al., Nat Commun 2015; Witschi
+    // et al., J Neurosci 2011) — deferred, see the queue's own new
+    // below-neutral gate-closing item.
+    // Caveat stated honestly: pat.agitation captures autonomic/agitation
+    // distress only, not the separate catastrophizing/attentional-capture
+    // facilitation pathway — this models one slice of the
+    // affective-cognitive gate, not the whole of it (D'Souza et al. 2026;
+    // Shigetoh et al., Pain Res Manag 2018).
+    // Double-counting risk, worth re-checking if either coefficient is ever
+    // retuned: gate-opening disinhibition and nmdaSuppression act on the
+    // same underlying NMDA/alpha2delta-1 node (Huang et al. 2025) — the
+    // agitated + low-nmdaSuppression corner was checked during calibration
+    // (see section 3) and found not to compound unreasonably at these
+    // magnitudes.
+    // GATE_AFFECTIVE_MAX is TUNED, not literature-derived directly: human
+    // anxiety-on-pain-threshold effect sizes are small-to-moderate
+    // (SMD ~0.3-0.4, Salas-Gonzalez et al. 2025; Scaini et al. 2025) and
+    // concentrated at the threshold/allodynic end rather than
+    // suprathreshold intensity — measured against a real agitated-vs-
+    // sedated pair before being trusted (see section 3).
+    const GATE_AFFECTIVE_MAX = 0.4;
+    const gateOpenFactor = 1 + GATE_AFFECTIVE_MAX * (pat.agitation || 0);
+    pat.drugPain = blockedIntrinsicPain * hyperalgesiaGain * (pat.painSensitivity ?? 1)
+      + PAIN_ALLODYNIA_MAX * (pat.allodyniaLevel || 0) * nmdaSuppression * gateOpenFactor;
     // Accumulated suppression of the medullary respiratory drive (see
     // respiratory.js). Consumes the `respiratoryDepression` property that drugs
     // already declared but which nothing in the engine read — opioid and
     // sedative respiratory failure was previously faked with a fixed rr offset.
     pat.respDriveSuppression = 0;
+    // Reset for this tick's re-accumulation in the per-drug-instance loop
+    // below (the nmdaSuppression read above already consumed the PRIOR
+    // tick's value — same lag idiom as sedationDepth just below).
+    pat.nmdaBlockade = 0;
     // SEDATION DEPTH — real, direct pharmacologic CNS depression, distinct
     // from the engine's existing perfusion/metabolic consciousness
     // pathway (neuro.js). Before this, giving a large dose of midazolam or
@@ -1042,6 +1326,72 @@ export function updateDrugs(pat, s, dt) {
       totalConcByDrug[dr.id] = (totalConcByDrug[dr.id] || 0) + Math.max(0, dr.effectConc || 0);
     }
 
+    // LOCAL ANESTHETIC NERVE BLOCK (queue item 62's remainder, hematoma
+    // block) -- computed ONCE per tick here (not inside the per-instance
+    // loop below), same "aggregate signal, not per-instance" reasoning the
+    // desensitization block's own comment gives just below: this is a
+    // first-order RELAXATION toward a target, and running it once per
+    // active drug instance (up to 2, per lidocaineBlock's own `max`) would
+    // apply the relaxation step multiple times in the same tick.
+    {
+      // Requires a real lidocaineBlock dose currently ABSORBED (a real
+      // concentration above a real occupancy floor), not just ordered --
+      // the block doesn't work until the drug has actually diffused to the
+      // nerve. 0.05 mg/L is a small fraction of this drug's own EC50 (2.5),
+      // matching the same "occupancy, not a flat concentration cutoff"
+      // reasoning the desensitization block above already established.
+      const blockConc = totalConcByDrug["lidocaineBlock"] ?? 0;
+      const blockActive = blockConc > 0.05;
+      const blockTargetBase = blockActive ? 0.9 : 0;
+      // USE-DEPENDENCE / WEDENSKY INHIBITION: local anesthetics bind open/
+      // inactivated Na channels from the intracellular side (Strichartz,
+      // Anesthesiology 1976; kinetic analysis for lidocaine specifically,
+      // Chernoff, Biophys J 1990), so block deepens with higher afferent
+      // firing frequency -- the most active (most painful) fibers are
+      // blocked hardest. This is BOTH high-affinity binding to already-open
+      // channels AND drug-induced slowing of recovery from inactivation, so
+      // rapidly firing nociceptors accumulate block across successive
+      // action potentials (Gawali et al., Mol Pharmacol 2015) -- the same
+      // use-dependence principle already underlying this file's systemic
+      // `lidocaine` antiarrhythmic entry (Fozzard et al., Curr Pharm Des
+      // 2005: affinity is low at slow firing but high when channels open/
+      // inactivate at high frequency, "as they are during pain or during a
+      // cardiac arrhythmia"). pat.intrinsicPain is only a loose PROXY for
+      // real nociceptor firing rate (this engine has no afferent-frequency
+      // state at all) -- the qualitative direction (more active pain =
+      // deeper functional block) is what's real and worth modeling; the
+      // exact scale below is illustrative, not measured.
+      const useDependence = 1 + 0.3 * Math.min(1, (pat.intrinsicPain || 0) / 8);
+      // INFLAMMATORY BLOCK FAILURE, three real, cited mechanisms folded
+      // into one composite multiplier (all three scale with the same
+      // pat.peripheralSensitization substrate, physio/pain.js, documented
+      // separately here even though not separately modeled): (1) tissue
+      // acidosis shifts the anesthetic toward its ionized, membrane-
+      // impermeant form, reducing penetration; (2) persistent nociceptive
+      // input independently alters Na-channel density/gating, reducing
+      // pharmacologic susceptibility regardless of pH (Kanchetty et al.,
+      // Curr Pain Headache Rep 2026); (3) chronic inflammation drives
+      // sprouting of new nociceptor terminals whose sodium channels are
+      // intrinsically less LA-sensitive (Meechan, Periodontology 2000,
+      // 2008) -- not separately modeled since this engine has no
+      // nociceptor-density state to hang it on, folded into the same
+      // composite. All three are real reasons a block placed into
+      // already-inflamed tissue (a late, previously-manipulated fracture)
+      // works less well than a fresh one. Shares its substrate with the
+      // gate-control mechanism's own gateOpenFactor term below in this
+      // file (queue item 62) — two different drivers (local tissue
+      // inflammation here, sustained affective distress there) converging
+      // on the same disinhibited dorsal horn, not a coincidence.
+      const inflammatoryFailure = 1 - 0.5 * (pat.peripheralSensitization || 0);
+      const blockTarget = Math.min(1, blockTargetBase * useDependence * inflammatoryFailure);
+      pat.nerveBlockDepth = pat.nerveBlockDepth ?? 0;
+      // Asymmetric approach -- builds faster than it decays, matching a
+      // real block's onset (minutes) vs. offset (hours) asymmetry, same
+      // approachAsym idiom physio/pain.js's own cascade already uses.
+      const rate = blockTarget > pat.nerveBlockDepth ? 0.15 : 0.05;
+      pat.nerveBlockDepth += (blockTarget - pat.nerveBlockDepth) * rate * dt;
+    }
+
     // RECEPTOR DESENSITIZATION / ACUTE WITHIN-ENCOUNTER TOLERANCE (queue
     // item 45b). Real, sustained/repeated receptor agonism produces
     // measurable tolerance within a single encounter via phosphorylation/
@@ -1072,17 +1422,88 @@ export function updateDrugs(pat, s, dt) {
       gabaDesens: { ceiling: 0.5, rate: 0.05 },     // tau ~20 min
       opioidDesens: { ceiling: 0.3, rate: 0.0222 }, // tau ~45 min
       beta2Desens: { ceiling: 0.35, rate: 0.0333 }, // tau ~30 min
+      // opioidDesensResp (queue item 65): differential opioid tolerance --
+      // analgesic (and euphoric) tolerance develops FASTER and DEEPER than
+      // respiratory-depression tolerance. This is the real mechanism behind
+      // dose-escalation overdose: a chronic user chasing fading analgesia
+      // with a bigger dose outruns the much smaller protection respiratory
+      // tolerance ever bought them. Chronic fentanyl users' own measured
+      // ventilatory C50 shifts only ~4.3x rightward even against the much
+      // larger multiples of dose escalation real chronic use reaches
+      // chasing analgesia -- a materially smaller, slower-building, lower-
+      // ceiling tolerance than opioidDesens above, not a scaled-down copy of
+      // it. Deliberately a SEPARATE accumulator, not opioidDesens itself,
+      // so the two can diverge -- see the respiratory-depression pathway
+      // below for where this is consumed instead of opioidDesens.
+      opioidDesensResp: { ceiling: 0.12, rate: 0.006 }, // tau ~165 min, well behind opioidDesens' ~45
     };
     const desensClassOf = (dd) =>
       dd.class === "opioid" ? "opioidDesens"
       : dd.class === "benzodiazepine" ? "gabaDesens"
-      : (dd.receptors && dd.receptors.beta2) ? "beta2Desens" : null;
-    const desensExposed = { opioidDesens: false, gabaDesens: false, beta2Desens: false };
+      // Queue item 62's remainder: ketamine (class "dissociative") declares
+      // receptors.beta2 only for its indirect-sympathomimetic cardiovascular
+      // mechanism, not because it causes beta2 tachyphylaxis — without this
+      // exclusion it fell into beta2Desens by accident (the same pool
+      // albuterol uses), a real bug found while scoping the NMDA mechanism
+      // above. This exclusion only stops the wrong, borrowed mechanism from
+      // firing, and is correct and permanent regardless of the paragraph
+      // below.
+      //
+      // Queue item 66 (ketamine-specific tachyphylaxis) — INVESTIGATED,
+      // NOT BUILT, but the finding is weaker than a first draft of this
+      // comment claimed (corrected after a second review). The claim
+      // "every documented instance of real ketamine tolerance is across
+      // separate sessions spanning days-to-weeks" does NOT hold up: a
+      // pediatric systematic review of REPEATED, SEPARATE radiotherapy-
+      // sedation sessions (635 sessions, 33 patients) found NO dose
+      // escalation was needed across sessions days apart either -- the
+      // literature does not cleanly show tolerance building reliably even
+      // across separate encounters, let alone within one. Two different,
+      // real phenomena were also at risk of being conflated here, and must
+      // stay separate: (1) ketamine's own analgesic/dissociative effect
+      // possibly fading with repeated dosing (this item, NOT established
+      // at any clean timescale), vs. (2) ketamine SLOWING a DIFFERENT
+      // drug's (an opioid's) own tolerance buildup -- a real, separately
+      // documented phenomenon (NMDA antagonism attenuating opioid acute
+      // tolerance during e.g. an alfentanil infusion) that is queue item
+      // 67, already shipped, and must not be read as evidence for this
+      // item. The in-vitro NMDA-receptor-subunit-upregulation citation
+      // previously used here is a plausible mechanistic ingredient, not a
+      // validated human time-course anchor -- demonstrating a receptor
+      // adaptation in cell culture does not establish the magnitude or
+      // timing of clinically meaningful analgesic tachyphylaxis in humans,
+      // and should not be read as more settled than that.
+      //
+      // The honest conclusion: there is INSUFFICIENT QUANTITATIVE HUMAN
+      // EVIDENCE to responsibly parameterize a within-encounter ketamine
+      // tachyphylaxis coefficient at ANY timescale, short or long -- not
+      // "the real phenomenon is confirmed to only operate on a days-to-
+      // weeks timescale that structurally exceeds this engine's own call
+      // duration" (a first draft's overstated framing). What IS real and
+      // relevant to this engine specifically: clinical continuous-infusion
+      // protocols for pain run up to 4 CONTINUOUS HOURS in a single
+      // session with no documented need for dose escalation, which is
+      // itself a reasonable, if narrower, basis for not building an
+      // acute/within-call coefficient -- the absence of a documented
+      // within-session effect, not a proven multi-day mechanism this
+      // engine's own call duration falls short of. Correctly NOT built.
+      // Revisit if this engine ever models persistent MULTI-CALL/multi-day
+      // state for the same patient, and even then, re-derive the mechanism
+      // and its magnitude from a real quantitative human PK/PD anchor at
+      // that time rather than this comment's own in-vitro citation.
+      : (dd.class !== "dissociative" && dd.receptors && dd.receptors.beta2) ? "beta2Desens" : null;
+    const desensExposed = { opioidDesens: false, gabaDesens: false, beta2Desens: false, opioidDesensResp: false };
     for (const dr of pat.drugInstances) {
       const dd = dr.drugDef;
       if (!dd) continue;
       const cls = desensClassOf(dd);
-      if (!cls || desensExposed[cls]) continue;
+      if (!cls) continue;
+      // opioidDesensResp (queue item 65) shares the exact same exposure
+      // condition as opioidDesens -- any opioid on board builds both
+      // accumulators toward their own, different targets -- so it is
+      // computed in the same pass rather than a second drug-instance loop.
+      const linkedCls = cls === "opioidDesens" ? "opioidDesensResp" : null;
+      if (desensExposed[cls] && (!linkedCls || desensExposed[linkedCls])) continue;
       if (dr.pk) {
         // Exposure must be judged on receptor OCCUPANCY (the same
         // Emax-normalized 0-1 intensity every consumer downstream reads),
@@ -1097,15 +1518,34 @@ export function updateDrugs(pat, s, dt) {
         const totalC = totalConcByDrug[dr.id] ?? 0;
         const ec50 = dr.pk.ec50 ?? 0.1;
         const occ = totalC / (ec50 + totalC);
-        if (occ > 0.05) desensExposed[cls] = true;
+        if (occ > 0.05) {
+          desensExposed[cls] = true;
+          if (linkedCls) desensExposed[linkedCls] = true;
+        }
       } else if (s.t - dr.time < (dd.dur || 600)) {
         desensExposed[cls] = true;
+        if (linkedCls) desensExposed[linkedCls] = true;
       }
     }
     for (const cls of Object.keys(DESENS_PARAMS)) {
       const { ceiling, rate } = DESENS_PARAMS[cls];
       const target = desensExposed[cls] ? ceiling : 0;
-      pat[cls] = (pat[cls] ?? 0) + (target - (pat[cls] ?? 0)) * rate * dt;
+      const current = pat[cls] ?? 0;
+      // Queue item 67: ketamine's NMDA blockade actively SLOWS how fast
+      // opioid tolerance/opioid-induced-hyperalgesia builds under sustained
+      // exposure, not merely being inert to it (see the nmdaSuppression
+      // comment above, where this was first flagged as deliberately NOT
+      // modeled -- now built). Reuses nmdaSuppression's own already-
+      // established 0.5 ceiling and one-tick-lag read (prior tick's
+      // nmdaBlockade, captured before the reset above) rather than a second
+      // coefficient. Only discounts the BUILDING half of the relax -- there
+      // is no literature support for ketamine accelerating tolerance DECAY
+      // once dosing stops, so a patient coming off opioids keeps the same
+      // decay rate regardless of any ketamine on board.
+      const effRate = (cls === "opioidDesens" || cls === "opioidDesensResp") && target > current
+        ? rate * nmdaSuppression
+        : rate;
+      pat[cls] = current + (target - current) * effRate * dt;
     }
 
     const toKeep = [];
@@ -1151,7 +1591,51 @@ export function updateDrugs(pat, s, dt) {
         // rewarded splitting a dose, and a stacked overdose produced an effect
         // that could exceed the drug's own maximum.
         const totalC = totalConcByDrug[dr.id] ?? dr.effectConc;
-        intensity = totalC / (ec50Eff + totalC);
+        // HILL COEFFICIENT (queue item 62's own remainder — see the separate
+        // respiratory-depression pathway below for the paired half of this
+        // change). Defaults to 1 (a plain hyperbola), matching every existing
+        // drug's behavior bit-for-bit unless it declares its own `hillN`.
+        // Morphine sets hillN:2.4 -- Dahan et al., Anesthesiology 2004:
+        // morphine's analgesic concentration-effect curve is measurably
+        // STEEPER than its respiratory one (which keeps the implicit n=1
+        // via the separate pathway below), at essentially the SAME potency
+        // (~32 nM/~9 ng/mL for both, not significantly different) -- the
+        // real mechanism behind "despite lack of good pain relief, moderate
+        // to severe respiratory depression remains possible": the analgesic
+        // curve saturates while the shallower respiratory curve keeps
+        // climbing. This is a genuine full-agonist has-no-ceiling drug
+        // (per morphine's own label) -- the plateau this produces at high
+        // concentration is a Hill-curve saturation artifact of the tested
+        // range, not a claim that real morphine analgesia is pharmacologically
+        // capped.
+        const n = drugDef.hillN ?? 1;
+        intensity = hillOcc(totalC, ec50Eff, n);
+        // RECEPTOR DISSOCIATION KINETICS (Koff) — queue item 64. A per-drug
+        // `dr.pk.koff` (per-minute), present only for drugs with a
+        // documented slow-reversal reputation (fentanyl; see its own PK_PARAMS
+        // comment), lags how fast OCCUPANCY can actually follow naloxone's
+        // Ki-shift of ec50Eff above — the real distinction between "naloxone
+        // doesn't fully reverse this drug" (a Ki/dose problem, already
+        // modeled) and "naloxone takes several minutes to fully reverse this
+        // drug even at an adequate dose" (an off-rate problem, this). The lag
+        // applies ONLY while an antagonist is actively shifting the curve
+        // (ec50Eff !== ec50); with no antagonist present, binding is assumed
+        // fast and intensity tracks concentration directly, matching every
+        // drug's prior (and, for anything without a declared koff, still
+        // current) behavior exactly.
+        const koff = dr.pk.koff;
+        if (koff && ec50Eff !== ec50) {
+          pat._muOcc = pat._muOcc || {};
+          const prevOcc = pat._muOcc[dr.id] ?? intensity;
+          const rate = Math.min(1, koff * dt);
+          intensity = prevOcc + (intensity - prevOcc) * rate;
+          pat._muOcc[dr.id] = intensity;
+        } else if (koff && pat._muOcc) {
+          // Keep the cache current so a LATER naloxone dose starts lagging
+          // from the real present occupancy, not a stale value from the last
+          // time an antagonist was active.
+          pat._muOcc[dr.id] = intensity;
+        }
         // RECEPTOR DESENSITIZATION CONSUMED HERE (queue item 45c/86 fix).
         // The three desensitization accumulators just above (gabaDesens/
         // opioidDesens/beta2Desens) were computed and decayed correctly every
@@ -1177,7 +1661,7 @@ export function updateDrugs(pat, s, dt) {
           // opioid's effect the antagonist is currently removing. Derived, not
           // accumulated — it cannot latch, because it is recomputed from the two
           // concentrations every step.
-          const unblocked = totalC / (ec50 + totalC);
+          const unblocked = hillOcc(totalC, ec50, n);
           if (unblocked > 0) {
             pat.opioidBlockade = Math.max(pat.opioidBlockade, 1 - intensity / unblocked);
           }
@@ -1696,10 +2180,92 @@ export function updateDrugs(pat, s, dt) {
       }
 
       // ----- Respiratory drive suppression (mechanism, not a stat change) -----
+      // QUEUE ITEM 62's remainder — this used to scale by the SAME `intensity`
+      // fx.pain reads, i.e. one receptor-occupancy number driving both
+      // analgesia and respiratory depression identically for every opioid.
+      // Real opioid pharmacology does not separate cleanly that way, and it
+      // separates DIFFERENTLY per drug -- so this pathway now recomputes its
+      // own occupancy from the SAME effect-site concentration (shared PK,
+      // separate PD), rather than reusing `intensity` outright. For any PK
+      // drug that declares no `respEc50`/`respHillN` (every non-opioid PK
+      // drug with a respiratoryDepression coefficient, e.g. midazolam), this
+      // falls back to the drug's own base `ec50`/n=1 -- mathematically
+      // IDENTICAL to the old shared-intensity behavior, confirmed by a
+      // direct before/after bit-comparison probe (see mechanismWiring.mjs's
+      // new [OPIOID DUAL-CURVE...] section).
+      //
+      // FENTANYL (respEc50 0.0023 mg/L / 2.3 ng/mL, respHillN 1): van Lemmen
+      // et al., Anesthesiology 2025's closed-loop CO2-controller PK/PD model
+      // gives a ventilatory C50 of ~2.3 ng/mL (the 7.5 ng/mL figure from
+      // that same paper is from a SIMPLER, open-loop model and is the wrong
+      // anchor for this engine, which genuinely closes the CO2 loop --
+      // respiratory.js's own paco2Error-driven chemoreceptor term, confirmed
+      // by reading it directly). MEASURED directly against this engine's own
+      // exported hillOcc(), not assumed from the two numbers' raw ordering:
+      // 2.3 ng/mL is numerically HIGHER than this drug's own analgesic ec50
+      // (1.2 ng/mL/0.0012 mg/L), so respiratory occupancy is actually
+      // SOMEWHAT LOWER than analgesic occupancy at any given concentration
+      // (e.g. at C=0.005 mg/L: analgesic 0.81, respiratory 0.68) -- both
+      // substantial and overlapping at real clinical concentrations, which
+      // is the real, correct finding (fentanyl does not become respiratory-
+      // safe under this split), but NOT a claim that respiratory depression
+      // is more potent than analgesia here. That is also consistent with,
+      // not contradicted by, classic steady-state infusion data (Hill et
+      // al., Pain 1990) finding opioid side-effect magnitude at
+      // EQUIANALGESIC steady-state concentrations does not differ across
+      // alfentanil/fentanyl/morphine -- this split does NOT encode a
+      // categorically worse margin than morphine's. Fentanyl's real,
+      // well-documented field lethality is largely KINETIC (its fast keo,
+      // already modeled) plus mechanisms this batch deliberately does NOT
+      // build: transient upper-airway/inspiratory rigidity distinct from
+      // central drive suppression, and near-complete abolition of protective
+      // sighs (morphine only reduces them) -- both of which make fentanyl
+      // disproportionately lethal specifically under HYPOXIA. That is also
+      // why this pathway's own single paco2-driven anchor (below) is an
+      // honest simplification, not a complete one.
+      //
+      // MORPHINE (respEc50 == its own analgesic ec50, respHillN 1 explicit):
+      // Dahan et al. found NO significant potency difference between
+      // morphine's analgesic and respiratory endpoints -- the danger is
+      // entirely the Hill-slope divergence handled by `hillN` above, not a
+      // second potency number, so respEc50 is deliberately left equal.
+      //
+      // HYPOXIC VS HYPERCAPNIC DRIVE (a documented, deliberate limitation,
+      // not an oversight): morphine is measurably MORE potent on hypoxic
+      // ventilatory drive (C25 16 nM) than hypercapnic drive (C25 28 nM;
+      // Romberg et al., Anesthesiology 2003) -- but this engine's own
+      // chemoreceptor term reads paco2 only (one unified ventilatory output,
+      // confirmed by reading respiratory.js), so the hypercapnic anchor is
+      // the faithful choice given that structure. This means a hypoxic,
+      // hypercapnic-blunted patient (a COPD retainer, e.g.) is UNDER-
+      // represented for morphine danger here -- exactly the real clinical
+      // scenario where morphine kills. A future item modeling hypoxic drive
+      // as its own signal would need its own respHypoxicEc50, not built here.
       if (drugDef.respiratoryDepression) {
-        // Scale by the drug's current effect intensity, and let naloxone reverse
+        let respIntensity = intensity;
+        if (dr.pk) {
+          const ec50 = dr.pk.ec50 ?? 0.1;
+          const respEc50 = drugDef.respEc50 ?? ec50;
+          const respN = drugDef.respHillN ?? 1;
+          let respEc50Eff = respEc50;
+          if (drugDef.class === "opioid" && pat.opioidAntagonistConc > 0) {
+            respEc50Eff = respEc50 * (1 + pat.opioidAntagonistConc / NALOXONE_KI);
+          }
+          const totalC = totalConcByDrug[dr.id] ?? dr.effectConc;
+          respIntensity = hillOcc(totalC, respEc50Eff, respN);
+          // Queue item 65: the respiratory pathway reads its OWN, slower,
+          // lower-ceiling tolerance accumulator (opioidDesensResp) for an
+          // opioid, not the shared opioidDesens the analgesic/general
+          // intensity above uses -- real differential tolerance, not a
+          // single desensitization shared across both effects. Non-opioid
+          // classes with a declared respiratoryDepression (none currently
+          // exist) would still fall through to the shared desensClassOf.
+          const respDesensCls = drugDef.class === "opioid" ? "opioidDesensResp" : desensClassOf(drugDef);
+          if (respDesensCls) respIntensity *= (1 - (pat[respDesensCls] ?? 0));
+        }
+        // Scale by this pathway's own occupancy, and let naloxone reverse
         // it for opioids exactly as it reverses their other actions.
-        let supp = drugDef.respiratoryDepression * intensity;
+        let supp = drugDef.respiratoryDepression * respIntensity;
         if (drugDef.class === "opioid" && !dr.pk) supp *= (1 - pat.opioidBlockade);
         pat.respDriveSuppression = Math.min(0.95, pat.respDriveSuppression + supp);
       }
@@ -1751,6 +2317,15 @@ export function updateDrugs(pat, s, dt) {
       }
       if (drugDef.sedative) {
         pat.sedationDepth = Math.min(1, pat.sedationDepth + drugDef.sedative * intensity);
+      }
+      // Queue item 62's remainder — NMDA blockade, keyed off drug class
+      // rather than a new per-drug coefficient (ketamine's existing,
+      // already-calibrated Hill-occupancy `intensity` IS the NMDA-receptor
+      // occupancy signal; no second PK path). Max, not additive, across
+      // instances — occupancy doesn't stack past 1, matching the shared
+      // Emax-per-drug-id convention already used elsewhere in this file.
+      if (drugDef.class === "dissociative") {
+        pat.nmdaBlockade = Math.max(pat.nmdaBlockade || 0, intensity);
       }
       // QUEUE ITEM 52. Same idiom as sedative immediately above, a separate
       // accumulator so the two calming pathways compose additively rather

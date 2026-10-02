@@ -146,6 +146,19 @@ export const PROCS={
   // several minutes. Raised to 45s, above splint's 40s, to fix that
   // ordering rather than leaving the more complex skill priced as cheaper.
   traction:{pkModel:"curve",name:"Traction splint",lvl:2,bag:"trauma",cost:45,onset:10,dur:9999,fx:{pain:-4,bleed:-.3}},
+  /* Paramedic (4) */
+  // QUEUE ITEM 62'S REMAINDER — hematoma block. A genuine site-specific
+  // procedure, distinct from the flat, decorative pain offsets `splint`/
+  // `traction` above still carry (a real, separate finding, filed as its
+  // own future queue item rather than fixed here). This procedure itself
+  // does nothing mechanically -- it is a marker action confirming a real
+  // lidocaineBlock dose was given at the fracture site; the actual real,
+  // large, targeted analgesia (pat.nerveBlockDepth, use-dependence,
+  // inflammatory block failure) is computed in pk.js from that drug's own
+  // absorbed concentration, not from this procedure flag directly. Gated
+  // to Paramedic scope, alongside the drug entry itself.
+  hematomaBlock:{pkModel:"curve",name:"Hematoma block (lidocaine, fracture site)",lvl:4,bag:"trauma",cost:60,onset:5,dur:9999,fx:{},
+    note:"Intra-hematoma lidocaine infiltration for fracture reduction. Give lidocaineBlock at the fracture site first -- the analgesia comes from the drug, not this action alone. Can mask the pain of a developing compartment syndrome in the same limb; do not let a dense block substitute for a real distal neurovascular exam."},
   // RESOLVED — physiology queue item 9. Bimanual/fundal massage stimulates
   // myometrial contraction directly (and via reflex endogenous oxytocin
   // release) — the SAME observable oxytocin acts on (see

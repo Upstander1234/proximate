@@ -583,7 +583,6 @@ export function updateRenalEndocrine(pat, dt) {
 }
 
 export function updateElectrolytes(pat, dt) {
-    const pHDrop = 7.4 - (pat.ph || 7.4);
     // Acidaemia drives K+ out of cells. This is a RATE (mEq/L per minute), so it
     // must be scaled by dt like the renal loss below — previously it was added
     // once per sub-step regardless of dt, so any small sustained pH offset
@@ -611,7 +610,107 @@ export function updateElectrolytes(pat, dt) {
     if (Math.abs((pat.k || 4) - pat._kPublished) > 1e-6) pat.kMass = (pat.k || 4) * ecfK;
 
     // Acidaemia drives K+ OUT of cells (H+/K+ exchange): mass enters the ECF.
-    const kShiftConc = pHDrop * (pat.lactate > 2 ? 0.2 : 0.6) * dt;
+    //
+    // QUEUE ITEM 48/76 — RE-ARCHITECTED (this session). The old line here was
+    // `pHDrop * (lactate>2?0.2:0.6) * dt`: a FLUX added every tick for as long
+    // as pH sat away from 7.40, with no equilibration. Real transcellular H+/K+
+    // exchange is not like that — it is a compartment shift toward a new
+    // EQUILIBRIUM offset (Adrogue & Madias, NEJM 1981: roughly +0.6 mEq/L serum
+    // K per -0.1 pH unit for a mineral/inorganic acidosis, and a smaller,
+    // less reliable shift for an organic acidosis such as lactic acidosis or
+    // DKA, because the accompanying organic anion co-transports into the cell
+    // with H+ and reduces the need for K+ to leave — the same clinical
+    // distinction the old coefficient already encoded via the lactate>2
+    // branch). Once pH stabilizes at ANY offset from 7.40, real transcellular
+    // shift STOPS; it does not keep pulling potassium in one direction
+    // forever.
+    //
+    // MEASURED (standalone probe, resting/condition-less `abdPain`, no dose,
+    // no condition) that the old code could not reach that equilibrium at
+    // all: this engine's own true resting fixed point is a mild, stable,
+    // compensated respiratory alkalosis (paco2 ~34.1 mmHg, pH ~7.44, reached
+    // only after ~60-90 minutes of sim time — see queue item 48's own
+    // still-open "resting fixed-point" note for that separate, larger
+    // ventilation/autonomic-timing question). Because pH sits persistently
+    // ABOVE 7.40 even once fully settled, the old unconditional per-tick flux
+    // never went to zero: kMass kept falling in a straight line for the
+    // entire probe, reaching the 2.5 mEq/L mass floor by roughly 5 hours of
+    // sim time with NOTHING else going on — a resting, condition-less,
+    // dose-less patient's own serum potassium had no stable resting value at
+    // all. Fixed by tracking the applied shift as its own relaxing state
+    // (`pat._kAcidBaseShift`, mEq/L, +ve = net K moved OUT of cells) that
+    // approaches a target set by the CURRENT pH offset, with a ~20-minute
+    // time constant (transcellular re-equilibration is a tens-of-minutes
+    // process, not instantaneous) — the flux applied THIS tick is the CHANGE
+    // in that state, which is exactly zero once the target is reached,
+    // however far from 7.40 that target sits.
+    //
+    // THE TARGET IS SPLIT BY DISORDER TYPE, NOT DRIVEN OFF RAW pH.
+    // A first version of this fix gained the target off pHDrop alone
+    // (pH departure from 7.40, whatever the cause), which is the standard
+    // clinical rule-of-thumb magnitude but conflates two very differently-
+    // coupled processes. Metabolic acid-base disorders (low/high HCO3-)
+    // couple tightly to transcellular K+ shift — this is the actual
+    // substrate of the Adrogue & Madias figure below. Respiratory disorders
+    // (low/high PaCO2 at a roughly normal HCO3-) couple much more weakly:
+    // acute respiratory alkalosis in controlled human hyperventilation
+    // studies does not reliably LOWER plasma K+ by shift the way metabolic
+    // alkalosis does — it transiently RAISES it slightly instead (a small,
+    // alpha-adrenergic catecholamine-driven effect, Krapf et al., Kidney Int
+    // 1995), with a hypokalemic OVERSHOOT only after hyperventilation ends.
+    // NOT MODELED HERE — this term is deliberately kept small enough that
+    // its sign error is a minor contributor rather than faked as a
+    // biphasic response, but it is a KNOWN, NAMED failure mode: any
+    // scenario that stresses ACUTE hyperventilation specifically (the
+    // already-shipped `panicAttackHyperventilation`, or early sepsis) will
+    // be directionally wrong here for the first several minutes, where a
+    // real patient would trend slightly HYPERkalemic, not hypokalemic.
+    // SUSTAINED (chronic) hypocapnia's real hypokalemia is NOT primarily
+    // renal wasting either, contrary to what an earlier draft of this
+    // comment claimed — Krapf et al., NEJM 1991's own controlled sustained-
+    // hypocapnia study found urinary K+ EXCRETION FALLS (the kidney
+    // conserves K+) and aldosterone does not rise; the sustained hypokalemia
+    // is itself a redistribution, which is exactly why modeling the
+    // resting respiratory offset as a small bounded TRANSCELLULAR shift
+    // (rather than routing it through the separate `renalLoss` term below)
+    // is the more faithful representation for this specific state. So this
+    // engine's own real resting fixed point — a mild, chronic, purely
+    // RESPIRATORY alkalosis (paco2 ~34, hco3 ~normal, see queue item 48's
+    // own still-open ventilation-timing note) — should drive only a small,
+    // largely negligible shift here, not the same magnitude a metabolic
+    // disorder of the same pH departure would produce.
+    //
+    // hco3Offset (mEq/L from the 24 reference) drives the metabolic
+    // component at the SAME calibrated strength the old pH-based coefficient
+    // used, preserving the organic-acid-shifts-less distinction (lactate>2)
+    // on that component only, since it is a metabolic-acidosis distinction.
+    // paco2Offset (mmHg from the 40 reference) drives a deliberately weak,
+    // separate respiratory component — small enough that this engine's own
+    // real resting hypocapnia (paco2 ~34, offset ~-6) contributes only a
+    // clinically negligible ~-0.1 mEq/L shift target, leaving the resting
+    // K+ level close to normal rather than a further-lowered ~3.6-3.8.
+    //
+    // Coefficients identified by measurement, not invented, with the same
+    // ~12-minute equilibration tau as before: 0.24 mEq/L per mEq/L of
+    // hco3Offset (0.086 for lactate>2, preserving the old 5:14 ≈ 0.086:0.24
+    // ratio) reproduces the same ACUTE secondary hyperkalemia the old
+    // pH-based mechanism already matched against `severeMetabolicAcidosis`
+    // (k reaching ~6.0 by 900s from a starting hco3Offset ~13.7); 0.02
+    // mEq/L per mmHg of paco2Offset keeps the resting respiratory-alkalosis
+    // shift small (target ~-0.12 mEq/L at a resting paco2Offset of -6, vs.
+    // the prior pH-based mechanism's ~-0.5 to -0.6 mEq/L target at the same
+    // resting state).
+    const hco3Offset = 24 - (pat.hco3 ?? 24);       // +ve = metabolic acidosis (low HCO3-)
+    const paco2Offset = (pat.paco2 ?? 40) - 40;     // +ve = respiratory acidosis (high CO2)
+    const kMetabolicPerHco3Unit = pat.lactate > 2 ? 0.086 : 0.24;
+    const kRespPerPaco2Unit = 0.02;
+    const kShiftTarget = hco3Offset * kMetabolicPerHco3Unit + paco2Offset * kRespPerPaco2Unit;
+    if (pat._kAcidBaseShift == null) pat._kAcidBaseShift = kShiftTarget;
+    const kShiftTau = 12; // minutes
+    const kShiftA = 1 - Math.exp(-dt / kShiftTau);
+    const kShiftNext = pat._kAcidBaseShift + (kShiftTarget - pat._kAcidBaseShift) * kShiftA;
+    const kShiftConc = kShiftNext - pat._kAcidBaseShift; // flux THIS tick only
+    pat._kAcidBaseShift = kShiftNext;
 
     // BETA-2 STIMULATION DRIVES K+ INTO CELLS (Na/K-ATPase activation). This is
     // why nebulised albuterol is a first-line temporising treatment for
@@ -629,6 +728,18 @@ export function updateElectrolytes(pat, dt) {
     pat.transcellularKShift -= shiftAmount;
 
     // Renal excretion, driven by the gradient above normal and by aldosterone.
+    //
+    // ACID-BASE BLIND, NOTED HONESTLY (queue item 48/76). This is a real,
+    // genuine restoring force toward 4.0 mEq/L, not a decorative term — but
+    // it is not the real clinical mechanism where ALKALOSIS ITSELF
+    // stimulates renal K+ secretion and ACIDOSIS suppresses it (Gumz et
+    // al., NEJM 2015; Hamm et al., Semin Nephrol 2013), independent of
+    // whatever the current serum K+ happens to be. A patient sitting at a
+    // normal K+ of 4.0 but a metabolic alkalosis should still be
+    // kaliuretic; this term contributes nothing until K+ itself departs
+    // from 4.0. The loop exists (this term, plus the transcellular shift
+    // above) but is acid-base-blind on the renal side — a real, separately-
+    // scoped future refinement, not attempted here.
     const renalLoss = ((pat.k || 4) - 4.0) * pat.kExcretion * 0.01;
     // Queue item 75, ONE of several real contributing bugs found (not the
     // whole fix -- see the honest accounting below). This used to be

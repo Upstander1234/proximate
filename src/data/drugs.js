@@ -594,6 +594,61 @@ export const DRUGS = {
     note: "Cumulative toxicity above ~3 mg/kg — seizures, cardiac depression."
   },
 
+  // QUEUE ITEM 62'S REMAINDER — hematoma block (local anesthetic nerve
+  // block for fracture reduction), a genuinely different SITE of action
+  // from the drug entry above: this is intra-hematoma infiltration, not a
+  // systemic antiarrhythmic bolus. Same molecule, same known systemic
+  // toxicity (the `toxicity` thresholds below are copied verbatim from
+  // `lidocaine` above, not re-derived — it is the same drug), but a
+  // different route with real, MEASURED kinetics behind it, not guessed.
+  //
+  // Real hematoma-block absorption is complete and reliable (the fracture
+  // hematoma is contiguous with the marrow space), but the peak plasma
+  // concentration is modest and DELAYED, not fast-and-dangerous the way an
+  // IV bolus is: Meinig et al., J Orthop Trauma 1989, measured real venous
+  // lidocaine after distal-radius hematoma blocks at 2.2-2.4 mg/kg without
+  // epinephrine and found a peak around 20-30 minutes, an order of
+  // magnitude below toxic concentration. `route:"IM"` is used deliberately
+  // for its MECHANISM (a real perfusion-dependent single-depot absorption,
+  // pk.js's own already-built IM-route physics, ka default 0.09/min — no
+  // `deepDepotFraction` declared, since unlike epinephrine this drug has no
+  // self-limiting local vasoconstriction to trap part of the dose), not
+  // because this is literally an intramuscular injection — `note` states
+  // the real clinical technique. This is a starting anchor: the build
+  // phase should measure the resulting Tmax against Meinig's own ~20-30 min
+  // peak and adjust `imKa` if it lands far outside that window.
+  //
+  // LAST here is real but comes from OVER-dosing, a STACKED repeat dose, or
+  // an inadvertent intravascular injection (the FDA label's own named LAST
+  // risk factors) — not from a normal single dose absorbing unusually fast.
+  // Restricted to PLAIN lidocaine, never a longer-acting agent, for a real
+  // pharmacologic reason: bupivacaine's cardiac sodium-channel kinetics are
+  // "fast-in/slow-out" (rapid binding, slow dissociation during diastole,
+  // so block accumulates beat to beat) versus lidocaine's "fast-in/
+  // fast-out", plus a direct L-type calcium-channel/calcium-dynamics
+  // disruption independent of sodium blockade — isolated-heart data puts
+  // bupivacaine's cardiotoxic potency roughly 10x lidocaine's (Tanz et al.,
+  // Anesth Analg 1984), and real bupivacaine cardiotoxicity can present
+  // with little or no CNS warning. The seizure-before-cardiac ordering this
+  // entry's own toxicity mechanism produces is specific to LIDOCAINE and
+  // must NOT be assumed for a future bupivacaine entry.
+  //
+  // No `antiarrhythmic` block declared — this drug is never given FOR
+  // arrhythmia, so it correctly doesn't contribute to that mechanism
+  // (avoids a nonsensical "hematoma block treats VT" side effect). The
+  // real, large, targeted analgesia is `pat.nerveBlockDepth` (pk.js), not
+  // the small flat `fx.pain` delta below, which is only the same minor
+  // incidental note the systemic `lidocaine` entry above carries.
+  lidocaineBlock: {
+    pkModel: "twoCompartment",
+    name: "Lidocaine (hematoma block)", route: "IM", lvl: 4,
+    onset: 25, dur: 600, max: 2,
+    dose: 120,   // mg, ~1.7 mg/kg for a 70kg adult -- inside the WMS 2024 1.5-2 mg/kg hematoma-block ceiling
+    fx: { pain: -1 },
+    toxicity: { seizureThreshold: 10, cardiacThreshold: 18 },
+    note: "Intra-hematoma infiltration for fracture reduction, plain lidocaine only. Absorption is complete and reliable but ordinarily modest -- LAST here comes from over-dosing or an inadvertent intravascular injection, not normal single-dose technique."
+  },
+
   atropine: {
     pkModel: "twoCompartment",
     name: "Atropine 1 mg", route: "IV/IO", lvl: 4,

@@ -12,12 +12,13 @@
 //
 // Run: node tools/browser/verifyIvAngleTouchControls.mjs   (needs `npm run dev`)
 
-import { launch, clickText, setState, waitForPhase } from "./driver.mjs";
+import { launch, clickText, setState, waitForPhase, toTitleScreen } from "./driver.mjs";
 
 const BASE_URL = process.env.PROXIMATE_URL || "http://localhost:5174";
 
 async function freshCharacter(page) {
   await page.goto(BASE_URL);
+  await toTitleScreen(page);
   await clickText(page, "Go on shift");
   await waitForPhase(page, "disclaimer", 5000);
   await clickText(page, "I understand");
@@ -53,8 +54,15 @@ async function main() {
   });
   await page.waitForTimeout(300);
 
-  // Real click, same event path as a real IV stick, into the "insert" step.
-  await clickText(page, "Uncap the needle");
+  // The rebuilt IV mini-game opens on the "assess" phase (choose a real
+  // vein, then inspect/palpate/guess direction/pick a gauge) before the
+  // insert phase even exists — a real click on one of the site markers,
+  // then through to "Uncap the needle and start the stick", replaces the
+  // single "Uncap the needle" button this script used to click straight
+  // through to reach "insert".
+  await page.locator('[aria-label="Choose forearm (cephalic)"]').click();
+  await page.waitForTimeout(150);
+  await clickText(page, "Uncap the needle and start the stick");
   await page.waitForTimeout(200);
 
   const initial = await angleText(page);

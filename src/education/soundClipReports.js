@@ -7,14 +7,15 @@
 // than overloading questionReports with a differently-shaped document,
 // since a clip has no question text/choices/answerIndex to record.
 //
-// Required Firestore security rules (same convention as reports.js):
+// Firestore security rule (firestore.rules, same isAdmin()-uid-allowlist
+// convention questionReports uses — NOT a request.auth.token.admin custom
+// claim, which this project does not set anywhere):
 //
 //   match /soundClipReports/{id} {
 //     allow create: if request.auth != null
 //       && request.resource.data.status == "pending"
 //       && request.resource.data.reportedBy == request.auth.uid;
-//     allow read: if request.auth != null;
-//     allow update: if request.auth != null && request.auth.token.admin == true;
+//     allow read, update: if isAdmin();
 //   }
 
 import { firebaseConfigured, getFirebaseDb } from "./firebase.js";

@@ -34,6 +34,8 @@ const REQUIRED = [
   // aggregates and handles, the rhythm-instability substrate electricalStorm
   // relies on, and the AICD inappropriate-shock counter.
   "pvcFrequency", "ectopicFocus", "atrialEctopicFocus", "rhythmInstability",
+  // Cardiology hyper-realism Phase 1 (queue item 1): torsades episode state.
+  "torsadesBeatCount",
   "icdShockCount",
   // Neuro/endocrine batch (queue items 7, 21, 23, 24, 27): seizure disorder
   // drive, ICP mass effect, respiratory muscle fatigue (shared with
@@ -86,7 +88,7 @@ const REQUIRED = [
   // Queue item 45b (this session): within-encounter receptor
   // desensitization/tolerance for opioid, benzodiazepine, and beta-2
   // agonist dosing.
-  "opioidDesens", "gabaDesens", "beta2Desens",
+  "opioidDesens", "gabaDesens", "beta2Desens", "opioidDesensResp",
   // Queue item 42, third slice (this session): splanchnic (gut) local
   // oxygen delivery/demand and a genuinely new structural injury field.
   "gutDO2", "gutO2Debt", "gutInjury",
@@ -113,6 +115,14 @@ const REQUIRED = [
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",
+  // Queue item 62's remainder: ketamine's NMDA-blockade occupancy signal,
+  // consumed by pk.js's pain reseed to suppress (not erase) the
+  // sensitization-driven hyperalgesia/allodynia terms while on board.
+  "nmdaBlockade",
+  // Queue item 62's remainder: lidocaineBlock's (hematoma block) own
+  // nerve-block depth, consumed by pk.js's pain reseed as a direct
+  // reduction of pat.intrinsicPain itself, before hyperalgesiaGain.
+  "nerveBlockDepth",
   // lithiumToxicity (queue item 7, Toxicology): serum lithium (mmol/L),
   // a real physical concentration, never negative, patient.js constructor
   // default 0.8 (inside the therapeutic range for a patient with no
@@ -281,6 +291,12 @@ const REQUIRED = [
   // its real consumer pat.arterialComplianceFactor were both already
   // present as live fields but had never been added to this sweep.
   "vascularStiffness", "arterialComplianceFactor",
+  // Queue item 62 (pain sensitization cascade, physio/pain.js): peripheral/
+  // glial/central plasticity states and the disinhibition-driven allodynia
+  // term, patient.js constructor default 0 so every patient reads a real
+  // number from tick zero.
+  "peripheralSensitization", "glialActivation", "centralSensitization",
+  "allodyniaLevel",
 ];
 
 // Fields that may never go negative.
@@ -289,7 +305,7 @@ const NON_NEGATIVE = [
   "sao2", "pao2", "paco2", "glucose", "activeBleedRate", "airwayFluid",
   "tissueLactate", "cpp", "pleuralEffusion", "upperAirwayObstruction",
   "sweatCapacity", "pvcFrequency", "ectopicFocus", "atrialEctopicFocus",
-  "rhythmInstability", "icdShockCount",
+  "rhythmInstability", "icdShockCount", "torsadesBeatCount",
   "epilepticDrive", "icpMassEffect", "respMuscleFatigue",
   "metabolicHeatMultiplier", "metabolicEncephalopathy", "strokeWeakness", "icp",
   "bun", "dpg", "neuromuscularBlock", "ca", "mg", "vasodilation", "intrinsicPain",
@@ -298,7 +314,7 @@ const NON_NEGATIVE = [
   "renalReserve", "pulmonaryReserve",
   "renalDO2", "renalO2Debt", "hepaticDO2", "hepaticO2Debt",
   "hepaticStunning", "gutMucosalStunning",
-  "opioidDesens", "gabaDesens", "beta2Desens",
+  "opioidDesens", "gabaDesens", "beta2Desens", "opioidDesensResp",
   "gutDO2", "gutO2Debt", "gutInjury",
   "skinDO2",
   "svO2Composite",
@@ -310,6 +326,14 @@ const NON_NEGATIVE = [
   // Real direct pharmacologic sedation depth (midazolam/etomidate),
   // distinct from the perfusion-based consciousness pathway.
   "sedationDepth",
+  // Queue item 62's remainder: ketamine's NMDA-blockade occupancy signal,
+  // consumed by pk.js's pain reseed to suppress (not erase) the
+  // sensitization-driven hyperalgesia/allodynia terms while on board.
+  "nmdaBlockade",
+  // Queue item 62's remainder: lidocaineBlock's (hematoma block) own
+  // nerve-block depth, consumed by pk.js's pain reseed as a direct
+  // reduction of pat.intrinsicPain itself, before hyperalgesiaGain.
+  "nerveBlockDepth",
   // lithiumToxicity (queue item 7, Toxicology): serum lithium (mmol/L),
   // a real physical concentration, never negative, patient.js constructor
   // default 0.8 (inside the therapeutic range for a patient with no
@@ -416,6 +440,10 @@ const NON_NEGATIVE = [
   // arterialComplianceFactor is a Math.min-composed ceiling with a real 0.6
   // floor at vascularStiffness=1 -- never negative.
   "vascularStiffness", "arterialComplianceFactor",
+  // Queue item 62: all four are clamped 0-1 relaxation states -- never
+  // negative by construction (approachAsym clamps its own targets).
+  "peripheralSensitization", "glialActivation", "centralSensitization",
+  "allodyniaLevel",
 ];
 
 const results = [];

@@ -16,6 +16,8 @@
 //      newborn onto the session roster (s._spawnQueue). The newborn's initial
 //      vigour ("apgarSeed") is carried through so a distressed pregnancy yields
 //      a depressed newborn that needs resuscitation.
+import { oxySat } from "./respiratory.js";
+
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
 // ---------------------------------------------------------------------------
@@ -319,55 +321,142 @@ export function establishPregnancy(pat, opts = {}) {
     // consumer.
     placentalAbruptionFactor: opts.placentalAbruptionFactor ?? 0,
     fetalHR: opts.fetalHR ?? FHR_BASELINE,
+    // Fetal compartment (queue item 25) — see updateFetalOxygenation() below.
+    // fetalDO2Frac is a normalized (1.0 = healthy-term-resting) oxygen-delivery
+    // index; fetalHypoxicBurden is the accumulated exposure to a meaningfully
+    // hypoxic fetal state, the thing that actually determines newborn condition
+    // at delivery (a brief deceleration and a prolonged one are not the same
+    // insult even if the instantaneous FHR looks similar at any one tick).
+    fetalDO2Frac: 1,
+    fetalHypoxicBurden: 0,
   };
   return pat._pregnancy;
 }
 
 // ---------------------------------------------------------------------------
-// FETAL HEART RATE (queue item V2-28, deliberately scoped slice)
+// FETAL COMPARTMENT (queue item 25/V2-28) — fetal HR, fetal oxygenation,
+// placental/umbilical flow proxy, fetal Hb and fetal O2 delivery, and a
+// hypoxic-exposure accumulator that determines newborn condition at birth.
 //
-// The full "fetal compartment" queue item (V2-28) asks for fetal HR, fetal
-// oxygenation, placental/umbilical flow, fetal Hb and fetal O2 extraction —
-// too large for one batch. This is the single most clinically important,
-// EMS-relevant slice of it: fetal heart rate responding to reduced placental
-// perfusion, the actual Doppler/fetal-monitor finding a paramedic can assess
-// in the field (a handheld Doppler is real EMS equipment for a term OB call).
+// A prior, deliberately scoped slice built ONLY fetal heart rate, driven by a
+// maternal-perfusion proxy (pat.map vs. a reference) — real and still the
+// right first-order signal, but it had a specific, documented gap: it could
+// only see a FLOW problem (hypotension, abruption, caval compression), never
+// an OXYGENATION problem. A mother who is herself hypoxic — anaphylaxis,
+// opioid overdose, severe asthma, a chest injury — could have normal blood
+// pressure and, in that old model, a perfectly healthy fetus, which is
+// physiologically wrong: uteroplacental flow being pressure-passive doesn't
+// help the fetus if what's arriving is normally-pressured but poorly
+// oxygenated blood. This closes that gap by giving the fetus its own real
+// oxygen-delivery chain, and demotes FHR from the primary state to a
+// DOWNSTREAM signal of the fetus's actual oxygen delivery — this is also
+// the source spec's own explicit design target (queue item 25: "placental
+// failure should affect fetal DO2 rather than directly scripting fetal
+// distress").
 //
-// Normal range: 110-160 bpm (ACOG Practice Bulletin No. 106; NICHD 2008
-// three-tier FHR categorization). Sustained fetal bradycardia (<110 bpm) is
-// the standard, literature-anchored sign of fetal distress/hypoxia from
-// reduced uteroplacental perfusion — modeled here as FHR falling once a
-// maternal-derived placental-perfusion proxy drops below a real threshold,
-// and holding at a normal baseline otherwise.
+// THE CHAIN, each link a real, citable, literature-anchored quantity:
 //
-// PLACENTAL PERFUSION PROXY. Real uteroplacental blood flow is essentially
-// PRESSURE-PASSIVE — the spiral arteries lose their smooth muscle in normal
-// placentation and do not autoregulate the way the maternal cerebral/renal
-// circulations do (Cunningham et al., Williams Obstetrics) — so it scales
-// directly with the mother's own perfusion pressure. Rather than build a new,
-// separate placental-flow state, this reuses what is ALREADY computed every
-// tick: pat.map (the authoritative cardiovascular solver's own mean arterial
-// pressure) relative to a normal-pregnancy MAP reference (~85 mmHg — a term
-// pregnant woman's own physiologically LOWERED resting MAP, see the SVR term
-// above), further reduced by any active loss-of-placental-surface mechanism
-// (preg.placentalAbruptionFactor) and by acute aortocaval compression
-// (the `compression` term computed above in updateObstetric, which already
-// throttles maternal venous return — the same event throttles uterine
-// arterial inflow too, since the aorta itself can be compressed by the
-// gravid uterus in the supine position, not just the IVC).
+// 1. PLACENTAL PERFUSION PROXY (unchanged from the prior slice; see its own
+//    citation above updateObstetric) — pressure-passive uteroplacental flow,
+//    reduced by placental surface loss (abruption/preeclampsia) and acute
+//    caval/aortic compression.
 //
-// This is deliberately a PROXY, not a separate placental-flow ODE state —
-// the full V2-28 item's own placental/umbilical-flow slice remains open for
-// a future session; this reuses the mother's own already-authoritative MAP
-// rather than inventing a second, ungrounded pressure signal.
+// 2. TRANSPLACENTAL PO2 GRADIENT. Maternal arterial PO2 (~95-100 mmHg term)
+//    does NOT reach the fetus — the placenta is an imperfect exchanger, and
+//    umbilical VEIN PO2 (the best-oxygenated fetal blood, fresh from the
+//    placenta) is normally only ~30-35 mmHg even in a healthy term pregnancy
+//    (Blackburn, "Maternal, Fetal & Neonatal Physiology", 4th ed., ch. 11 —
+//    the "placental oxygen cliff"). We model this as a fixed fraction of
+//    maternal PaO2, scaled by the same perfusion proxy from (1): less flow
+//    means less absolute O2 delivered to the intervillous space regardless
+//    of maternal saturation.
+//
+// 3. FETAL HEMOGLOBIN. Fetal Hb (HbF) has a LEFT-SHIFTED oxygen dissociation
+//    curve relative to adult HbA — P50 ~19-21 mmHg vs. the adult ~26.6 mmHg
+//    (Bauer et al., 1969's own classic fetal-blood P50 measurement; Delivoria-
+//    Papadopoulos et al., Pediatr Res 1971) — the actual mechanism that lets
+//    the fetus extract oxygen from blood already so PO2-depleted that adult
+//    blood at the same PO2 would barely be saturated. Reuses respiratory.js's
+//    own oxySat() Hill-curve function (rather than a second, duplicate
+//    formula) with a dpgFactor scaled to reproduce the fetal P50: 19/26.6 ≈
+//    0.714. Fetal Hb concentration is higher than the (dilutionally anemic)
+//    pregnant mother's own — ~15 g/dL at term (Nicolaides et al., cordocentesis
+//    reference ranges) vs. a term-pregnant maternal ~11-12 g/dL.
+//
+// 4. FETAL CARDIAC OUTPUT PROXY. Fetal stroke volume is comparatively fixed
+//    across the physiological range (the fetal ventricle operates near the
+//    flat top of its Frank-Starling curve — Anderson et al., Circ Res 1981),
+//    so fetal cardiac output is predominantly RATE-dependent — the actual
+//    reason a sustained fetal bradycardia is dangerous beyond "the number
+//    looks bad": a slower fetal heart really is delivering less output, not
+//    just displaying a number. Modeled as fetalHR relative to its own
+//    baseline.
+//
+// 5. FETAL DO2. Fetal O2 content (from 2+3) times fetal cardiac output proxy
+//    (4), normalized against the healthy-term-resting value so 1.0 means
+//    "normal," not an absolute mL/min figure this engine has no way to
+//    calibrate against a real measured fetal cardiac output.
+//
+// 6. FETAL HEART RATE responds to fetalDO2Frac (not to the maternal perfusion
+//    proxy directly) — late decelerations/bradycardia from uteroplacental
+//    insufficiency are the fetal autonomic nervous system's OWN response to
+//    a real oxygen-delivery shortfall (chemoreceptor-mediated vagal reflex —
+//    Giussani, J Physiol 2016), so this keeps the same clinical finding but
+//    grounds it in the thing that's actually failing.
+//
+// 7. FETAL HYPOXIC BURDEN — a slow accumulator, NOT read every tick by
+//    anything except delivery. Real intrapartum fetal hypoxic injury is a
+//    function of both severity AND duration (a single deep-but-brief
+//    deceleration is not the same insult as sustained utero-placental
+//    insufficiency — ACOG/NICHD's own three-tier FHR system is explicitly
+//    time-windowed for exactly this reason). This replaces the old
+//    apgarSeed heuristic's INSTANTANEOUS snapshot of maternal state at the
+//    moment of delivery (which could not distinguish a mother who had been
+//    hypoxic for 20 minutes of labor from one who desaturated 10 seconds
+//    before crowning) with a real accumulated-exposure state.
 const FHR_BASELINE = 140;          // midpoint of the normal 110-160 bpm range
 const FHR_NORMAL_MAP = 85;         // reference term-pregnant resting MAP, mmHg
-const FHR_PERFUSION_THRESHOLD = 0.72; // proxy value below which distress begins
 const FHR_TAU = 3;                 // minutes — fetal HR responds to acute
                                     // perfusion changes over minutes, not
                                     // instantly, matching how a sustained (not
                                     // momentary) deceleration is what's
                                     // clinically significant (NICHD criteria).
+const FETAL_HB = 15;               // g/dL, term cordocentesis reference (Nicolaides et al.)
+const FETAL_DPG_FACTOR = 19 / 26.6; // reproduces fetal Hb's ~19 mmHg P50 via oxySat()'s
+                                    // existing dpgFactor lever (26.6 * factor = P50)
+const PLACENTAL_PO2_GRADIENT = 0.34; // umbilical-vein PO2 / maternal arterial PaO2 at
+                                     // full perfusion — lands at ~32 mmHg for a maternal
+                                     // PaO2 of 95, inside Blackburn's cited 30-35 range
+const FETAL_O2_DISTRESS = 0.85;    // fetalCaO2Frac (oxygen CONTENT, not delivery — see
+                                     // the control-loop note below) below this drives FHR
+                                     // distress. Set relative to the SAME margin the prior
+                                     // flow-only slice used (threshold 0.72 against a
+                                     // 0-1.3 perfusion proxy whose normal value is 1.0 —
+                                     // i.e. ~28% below normal); the fetal Hb dissociation
+                                     // curve compresses a given perfusion deficit into a
+                                     // smaller percentage change in O2 CONTENT near the
+                                     // normal operating point than the same deficit was in
+                                     // the old, uncompressed flow-only proxy, so an
+                                     // uncorrected 0.72 threshold under-triggered on real,
+                                     // already-verified distress cases (measured: it left
+                                     // placentalAbruption's own already-established
+                                     // fetal-bradycardia finding — <110 bpm — unmet).
+                                     // Chosen so a completely flow/oxygenation-obstructed
+                                     // fetus (caO2Frac=0) still reaches the engine's own
+                                     // 60 bpm severe-bradycardia floor, and a healthy
+                                     // caO2Frac~1 control stays at baseline.
+const FETAL_BURDEN_RATE = 1 / 15;  // per minute at fetalDO2Frac=0 — a fully obstructed
+                                     // placenta accumulates to a maximally depressed
+                                     // newborn (burden=1) over ~15 minutes, matching the
+                                     // real clinical window in which prolonged severe
+                                     // bradycardia progresses to fetal acidemia/injury
+                                     // (Low et al., Am J Obstet Gynecol 1997, on the
+                                     // time-to-injury relationship in intrapartum asphyxia)
+const FETAL_BURDEN_RECOVERY = 1 / 20; // per minute — burden decays once DO2 is restored
+                                     // (e.g. maternal repositioning/oxygen/hemorrhage
+                                     // control), slower than it accumulates: real fetal
+                                     // metabolic recovery lags the resolution of the
+                                     // inciting insult, it doesn't reverse instantly
 
 function updateFetalHeartRate(pat, dt, preg, compression) {
   const map = pat.map || FHR_NORMAL_MAP;
@@ -377,12 +466,64 @@ function updateFetalHeartRate(pat, dt, preg, compression) {
   // real, additional acute throttle on uterine arterial inflow distinct from
   // the mother's own systemic MAP.
   const perfusion = clamp(mapFactor * (1 - abruption) * (1 - compression * 0.6), 0, 1.3);
-  const target = perfusion >= FHR_PERFUSION_THRESHOLD
-    ? FHR_BASELINE
-    : clamp(FHR_BASELINE - (FHR_PERFUSION_THRESHOLD - perfusion) * 260, 60, FHR_BASELINE);
+
+  // --- Transplacental O2 delivery to the fetus (queue item 25) ---
+  // Maternal arterial oxygenation now genuinely matters, not just flow: a
+  // normotensive but hypoxic mother (anaphylaxis, opioid OD, severe asthma)
+  // reduces fetalDO2Frac here even with perfusion near 1.0.
+  const maternalPaO2 = pat.pao2 || 95;
+  const fetalPaO2 = maternalPaO2 * PLACENTAL_PO2_GRADIENT * clamp(perfusion, 0, 1);
+  const fetalSaO2 = oxySat(
+    fetalPaO2,
+    pat.ph ?? 7.4,
+    pat.paco2 ?? 40,
+    pat.coreTemp ?? 37,
+    FETAL_DPG_FACTOR
+  );
+  const fetalCaO2 = 1.34 * FETAL_HB * fetalSaO2 / 100; // dissolved-O2 term negligible here
   const fhr0 = preg.fetalHR ?? FHR_BASELINE;
+  const fetalCOProxy = clamp(fhr0 / FHR_BASELINE, 0.3, 1.15); // fixed-SV, rate-dependent (see header)
+  // Normalizing reference: maternal PaO2=95, perfusion=1 — the healthy-term-
+  // resting fetal oxygen CONTENT this engine's own numbers converge to
+  // absent any condition, giving fetalCaO2Frac=1 there by construction.
+  const REF_SAO2 = oxySat(95 * PLACENTAL_PO2_GRADIENT, 7.4, 40, 37, FETAL_DPG_FACTOR);
+  const refCaO2 = 1.34 * FETAL_HB * REF_SAO2 / 100;
+  const fetalCaO2Frac = clamp(fetalCaO2 / refCaO2, 0, 1.3);
+  // fetalDO2Frac is the real, full oxygen-DELIVERY index (content x flow) —
+  // published for anything that wants the true downstream quantity, but
+  // deliberately NOT what drives the FHR/burden control loop below: doing
+  // that would close a feedback loop through fetalCOProxy (fetalHR ->
+  // fetalCOProxy -> fetalDO2Frac -> FHR target -> fetalHR), which measurably
+  // prevented recovery in testing — once bradycardic, a low CO proxy alone
+  // kept DO2Frac under threshold even after oxygenation was fully restored,
+  // so the fetus could never recover. Real fetal chemoreceptors (aortic and
+  // carotid bodies) sense oxygen TENSION/CONTENT, not a computed delivery
+  // rate — the FHR deceleration is the physiological RESPONSE to a content
+  // deficit, and DO2 falling further is a consequence of that response, not
+  // its own separate trigger (Giussani, J Physiol 2016). Driving control off
+  // fetalCaO2Frac instead keeps that causality the right way around.
+  const fetalDO2Frac = clamp(fetalCaO2Frac * fetalCOProxy, 0, 1.3);
+  preg.fetalDO2Frac = fetalDO2Frac;
+
+  // --- Fetal heart rate responds to fetal oxygen CONTENT (queue item 25) ---
+  const target = fetalCaO2Frac >= FETAL_O2_DISTRESS
+    ? FHR_BASELINE
+    : clamp(FHR_BASELINE - (FETAL_O2_DISTRESS - fetalCaO2Frac) * (260 / FETAL_O2_DISTRESS), 60, FHR_BASELINE);
   preg.fetalHR = clamp(fhr0 + (target - fhr0) * clamp(dt / FHR_TAU, 0, 1), 60, 200);
   pat.fetalHR = preg.fetalHR;
+
+  // --- Fetal hypoxic burden accumulator (queue item 25) ---
+  // Same content-based signal as the FHR control above (not fetalDO2Frac),
+  // for the same feedback-loop reason. Recovers, more slowly, once resolved
+  // — see the header comment for the literature anchor on both rate
+  // constants.
+  const b0 = preg.fetalHypoxicBurden ?? 0;
+  if (fetalCaO2Frac < FETAL_O2_DISTRESS) {
+    const deficit = clamp((FETAL_O2_DISTRESS - fetalCaO2Frac) / FETAL_O2_DISTRESS, 0, 1);
+    preg.fetalHypoxicBurden = clamp(b0 + deficit * FETAL_BURDEN_RATE * dt, 0, 1);
+  } else {
+    preg.fetalHypoxicBurden = clamp(b0 - FETAL_BURDEN_RECOVERY * dt, 0, 1);
+  }
 }
 
 export function updateObstetric(pat, dt, s) {
@@ -464,12 +605,25 @@ export function updateObstetric(pat, dt, s) {
     // Newborn vigour: depends on how the pregnancy went. A mother who was
     // hypoxic/shocked at delivery yields a depressed newborn. apgarSeed lets a
     // scenario force a specific starting state (e.g. "apneic, HR 70").
+    // Vigor at birth (queue item 25): now primarily driven by the REAL,
+    // accumulated fetalHypoxicBurden (see updateFetalHeartRate above) rather
+    // than a snapshot of maternal state at the instant of delivery — a fetus
+    // that spent the last 15 minutes of labor with a compromised placenta
+    // arrives depressed even if the mother's own vitals happen to look fine
+    // in this exact instant, and a fetus that tolerated labor well arrives
+    // vigorous even through a brief, since-resolved maternal deterioration.
+    // The instantaneous maternal-state terms are kept as a smaller ADDITIVE
+    // adjustment for acute, delivery-moment maternal compromise (e.g. the
+    // mother herself arresting during the second stage) that the burden
+    // accumulator — which only samples once per tick over the whole labor —
+    // would otherwise under-weight at the single moment it matters most.
     let vigor = preg.apgarSeed;
     if (vigor == null) {
-      vigor = 0.85;
-      if ((pat.sao2 || 97) < 90) vigor -= 0.35;
-      if (pat.map < 60) vigor -= 0.25;
-      if (pat.consciousness === "unconscious" || pat.consciousness === "coma") vigor -= 0.2;
+      const burden = clamp(preg.fetalHypoxicBurden ?? 0, 0, 1);
+      vigor = 0.92 - burden * 0.75;
+      if ((pat.sao2 || 97) < 90) vigor -= 0.15;
+      if (pat.map < 60) vigor -= 0.1;
+      if (pat.consciousness === "unconscious" || pat.consciousness === "coma") vigor -= 0.1;
       vigor = clamp(vigor, 0.1, 0.95);
     }
 

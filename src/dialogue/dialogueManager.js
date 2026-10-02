@@ -293,6 +293,14 @@ export function checkLocalAiCache() {
 // stands as the final answer, which is exactly item 11's graceful
 // degradation: nothing about the immediate gameplay experience depends on
 // this ever resolving.
+//
+// Now RETURNS the underlying promise (previously purely fire-and-forget,
+// return value undefined) — a purely additive change, since every existing
+// call site already ignores the return value. Added so a caller that
+// genuinely needs to know when a request has SETTLED (success OR failure —
+// e.g. App.jsx's askPatientFreeText, to clear an in-flight "composing a
+// reply" UI state and re-enable input) can attach its own `.finally()`
+// without this function needing to know anything about that caller's UI.
 export function requestLocalUpgrade(event, s, v, onResolved) {
   // F0 item 10's real gate: disabling the settings toggle must stop Tier 3
   // from ever firing, not just hide a UI element. Checked FIRST, before
@@ -304,7 +312,7 @@ export function requestLocalUpgrade(event, s, v, onResolved) {
   if (!provider) return;
   const ctx = buildDialogueContext(s, v);
   if (!ctx) return;
-  provider.generate(event, ctx)
+  return provider.generate(event, ctx)
     .then((line) => { if (line) onResolved(line); })
     .catch(() => { /* silent — the tier-2/1 line already shown is the real answer */ });
 }

@@ -424,22 +424,17 @@ function useReadAloud(log,voice,dispatchCue,volume=1,patientGender=null){
     queueRef.current=[]; speakingRef.current=false;},[voice]);
 }
 
-// Default sim speed is 4x (matching the TIME SCALE picker's own "4×
-// recommended" label), not 1x. A first-time public tester who never
-// notices that picker was otherwise stuck watching real-time countdowns for
-// their entire first call — approach/scene/transport waits are all real
-// minutes at 1x — which is exactly the "dead time" this project's own
-// Medical Simulation priorities call out to avoid. `speed` is a plain UI
-// scalar multiplying the sim clock's dt (App.jsx's tick effect) — it does
-// not change physiology fidelity (the engine's own substep/rollback
-// machinery already handles a larger per-tick dt safely), and it's in
-// CARRY, so a returning player's own choice still persists across calls;
-// this only changes what a BRAND NEW save starts at. Still fully
-// adjustable any time via SettingsOverlay or the TIME SCALE picker itself.
-export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:4,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},practiceScenarios:0,
+// Default sim speed is 1x (real time). `speed` is a plain UI scalar
+// multiplying the sim clock's dt (App.jsx's tick effect) — it does not
+// change physiology fidelity (the engine's own substep/rollback machinery
+// already handles a larger per-tick dt safely), and it's in CARRY, so a
+// returning player's own choice still persists across calls; this only
+// changes what a BRAND NEW save starts at. Still fully adjustable any time
+// via SettingsOverlay or the TIME SCALE picker itself.
+export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:1,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},practiceScenarios:0,
   t:0,onSceneAt:null,pockets:[],bags:[],stretcher:0,
   log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},crew:[],
-  busy:null,cBusy:{},ivSites:[],accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
+  busy:null,cBusy:{},ivSites:[],ivGauge:{},accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
   // F44: a snapshot of outcomeReport(s) — the OBJECTIVE physiological outcome
   // (neuro outcome, ROSC/downtime, irreversible/reversible injury, troponin,
   // lethal-mechanism-treatable) — taken at the same moment g.outcome itself is
@@ -447,6 +442,14 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   // GUARD requires that; by the time phase reads "debrief" it's too late to
   // call fresh). See each debrief-transition site for where this is set.
   physioOutcome:null,muted:0,voice:0,
+  // True only while askPatientFreeText's own open-ended tier-3 request is
+  // genuinely in flight (never set for the deterministic SAMPLE/OPQRST
+  // path, which resolves synchronously) -- guards against the player
+  // stacking several overlapping generations against the same patient
+  // before the first one has even settled, and drives the "composing a
+  // reply" input-disabled state. Cleared on settle (success OR failure) via
+  // requestLocalUpgrade's own returned promise.
+  askPending:false,
   // Real interactive IV mini-game state (uncap/angle/insert), replacing a
   // flat busy-timer dice-roll for this one procedure. {action,site,attempts}
   // while open; null otherwise. accessAttempts tracks per-call, per-site
@@ -1741,7 +1744,11 @@ export default function App({onHome}={}){
   //     pool is the offline fallback.
   const askPatientFreeText=(rawText)=>setG(s=>{
     const text=(rawText||"").trim();
-    if(!text||s.busy||!s.patient) return s;
+    // askPending blocks a second question from stacking a new generation on
+    // top of one that hasn't settled yet -- a real transcript showed several
+    // overlapping asks firing in quick succession, which made it genuinely
+    // hard to tell which patient reply was answering which player line.
+    if(!text||s.busy||!s.patient||s.askPending) return s;
     const v=physio(s);
     const n={...s,log:[...s.log,{t:s.t,kind:"you",text:`YOU: "${text}"`}]};
     if(v._cons!=="awake"){
@@ -1784,12 +1791,20 @@ export default function App({onHome}={}){
           const facts=String(r.say).replace(/^"|"$/g,"").trim();
           const evt={type:key==="opqrst"?"opqrst_history":"sample_history",speaker:"patient",text,facts};
           const entryId=`dlg_ask_${key}_${Math.round(n.t*10)}`;
-          requestLocalUpgrade(evt,n,v,(upgraded)=>{
+          const upgradeP=requestLocalUpgrade(evt,n,v,(upgraded)=>{
             setG(s2=>({...s2,
               log:[...s2.log,{t:n.t,id:entryId,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}],
               dialogueMemory:pushDialogueMemory(s2.dialogueMemory,upgraded.text),
               npcBrains:rememberNpcLine(s2.npcBrains,npcId("patient"),"patient",s2.idKnown?s2.patientName:null,upgraded.text)}));
           });
+          // requestLocalUpgrade() returns undefined synchronously when AI is
+          // disabled/unavailable (see its own header) -- only a genuine,
+          // real async attempt sets askPending, so it never gets stuck true
+          // when there was never going to be a settle event to clear it.
+          if(upgradeP&&typeof upgradeP.finally==="function"){
+            n.askPending=true;
+            upgradeP.finally(()=>setG(s2=>({...s2,askPending:false})));
+          }
         }
       }
       return n;
@@ -1802,10 +1817,14 @@ export default function App({onHome}={}){
       patch={log:[...n.log,{t:n.t,id:entryId,...dialogueLineFor(line.speaker,line.text,null,n.idKnown?n.patientName:null)}],
         dialogueMemory:pushDialogueMemory(n.dialogueMemory,line.text),
         npcBrains:rememberNpcLine(n.npcBrains,npcId("patient"),"patient",n.idKnown?n.patientName:null,line.text)};
-      requestLocalUpgrade(evt,n,v,(upgraded)=>{
+      const upgradeP=requestLocalUpgrade(evt,n,v,(upgraded)=>{
         setG(s2=>({...s2,log:s2.log.map(e=>
           e.id===entryId?{...e,...dialogueLineFor(upgraded.speaker,upgraded.text,null,s2.idKnown?s2.patientName:null)}:e)}));
       });
+      if(upgradeP&&typeof upgradeP.finally==="function"){
+        patch.askPending=true;
+        upgradeP.finally(()=>setG(s2=>({...s2,askPending:false})));
+      }
     }
     return {...n,...patch};
   });
@@ -1959,7 +1978,7 @@ export default function App({onHome}={}){
       tip:"Calcium and bicarbonate precipitate together.",run:(s)=>{s.flushed=1;return {say:"Flushed.",kind:"good"};}}));
     return out;};
 
-  const procActs=()=>PROC_ACTS.map(p=>({...p,lvl:lvlOf(p.id,p.lvl),run:(s,v)=>{const pr=PROCS[p.id];
+  const procActs=()=>PROC_ACTS.map(p=>({...p,lvl:lvlOf(p.id,p.lvl),run:(s,v,a)=>{const pr=PROCS[p.id];
     if(pr.hold){const h=pr.hold(v);if(h)return {say:h,kind:"warn"};}
     if(NOSTACK.includes(p.id)&&doseActive(s,p.id)) return {say:`${pr.name} is already running — it does not need starting twice.`,kind:"warn"};
     {const conflict=exclConflict(s,p.id);
@@ -1969,6 +1988,13 @@ export default function App({onHome}={}){
       // otherwise fall it back to "armR" and silently relocate it.
       const site=p.id==="io"&&p.region==="torso"?"torso":(LIMBS.includes(p.region)?p.region:"armR");
       s.ivSites=[...new Set([...(s.ivSites||[]),site])]; {const t=p.id==="io"?"IO":"IV";const cur=(s.accessTypes||{})[site]||[];s.accessTypes={...(s.accessTypes||{}),[site]:cur.includes(t)?cur:[...cur,t]};} giveDose(s,{id:p.id,at:s.t});
+      // The gauge the player chose in the assess phase of AccessMinigame
+      // rides along on the re-entered action (see resolveAccessMinigame's
+      // gaugeExtra, same pattern as leadsExtra for device-placement quality)
+      // — stored per-site so HangMinigame/GiveMedMinigame can later cap
+      // flow rate for THIS line specifically. Defaults to 18g (today's
+      // unchanged behavior) for an IO or a pre-rebuild save.
+      if(p.id==="iv"&&a?._ivGauge) s.ivGauge={...(s.ivGauge||{}),[site]:a._ivGauge};
       return {say:`${pr.name}. ${site==="torso"?"IO needle seated in the manubrium, aspirate confirms marrow.":"Eighteen's in, flushes clean."} — drugs are live on this ${site==="torso"?"site":"limb"}.`,kind:"good",
         set:{region:site,tab:"meds",panel:"actions"}};}
     if(["opa","npa","sga","bvm","suction","mouthMask"].includes(p.id)&&s.vomited&&!s.rolled){s.aspirated=1;
@@ -3820,7 +3846,8 @@ export default function App({onHome}={}){
       // s.leadsPlacementQuality — the thing the monitor's artifact calc
       // reads (see the Monitor panel below).
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra});
+      const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -4121,7 +4148,14 @@ export default function App({onHome}={}){
       <div>{a.label}{a.drug&&g.given[a.drug]?<span style={{color:C.hr,fontFamily:MONO,fontSize:10}}> ×{g.given[a.drug]}</span>:null}
         {a.prepped&&a.drug?<span style={{color:C.hr,fontFamily:MONO,fontSize:9}}> · PRE-DRAWN ½</span>:null}</div>
       <div style={{fontFamily:MONO,fontSize:10,color:w?C.red:C.dim,marginTop:2}}>
-        {w||(opensMinigame(a)?"":`${Math.round(a.cost)}s`)}{a.lvl>0&&!w?` · ${LNAME(a.lvl)}+`:""}</div>
+        {/* Provider-level suffix removed: any button rendered here has
+            already passed why()'s own a.lvl>L scope gate (line ~4105), so
+            "· EMT+" was purely decorative, not enforcement — and for a
+            minigame action, whose time text collapses to "" above, it left
+            a bare " · LEVEL+" fragment with nothing before the separator
+            (the orphaned-dot bug). The real gate is untouched; this only
+            drops the redundant, buggy re-display of it. */}
+        {w||(opensMinigame(a)?"":`${Math.round(a.cost)}s`)}</div>
     </button>);};
 
   // Voice-activated crew commands AND player self-commands (settings-gated,
@@ -6900,7 +6934,7 @@ export default function App({onHome}={}){
       </div>
       <div className="f2 mt-6 p-3 rounded" style={{background:C.panel,border:`1px solid ${C.line}`}}>
         <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".14em",color:C.dim,marginBottom:8}}>TIME SCALE</div>
-        <div className="flex gap-2">{[[1,"1× real time"],[2,"2×"],[4,"4× recommended"]].map(([v,n])=>(
+        <div className="flex gap-2">{[[1,"1× real time"],[2,"2×"],[4,"4×"]].map(([v,n])=>(
           <button key={v} onClick={()=>setG(s=>({...s,speed:v}))} className="px-3 py-1.5 rounded"
             style={{background:g.speed===v?C.panelHi:"transparent",border:`1px solid ${g.speed===v?C.amber:C.line}`,
               color:g.speed===v?C.amber:C.dim,fontFamily:MONO,fontSize:10}}>{n}</button>))}</div>
@@ -10547,6 +10581,7 @@ export default function App({onHome}={}){
       onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="hang"&&<HangMinigame open kind="hang" warnings={g.accessMinigame.warnings}
       drugName={g.accessMinigame.drugName} fluidMode={g.accessMinigame.fluidMode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
+      gauge={(g.ivGauge||{})[g.accessMinigame.site]||18}
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
@@ -11199,21 +11234,26 @@ export default function App({onHome}={}){
               scenario's own scripted clinical answer; anything else goes to
               the dialogue subsystem for an in-character, open-ended reply.
               Disabled while the player's hands are busy with something
-              else, same gate every other patient-facing action respects. */}
-          {g.patient&&<form onSubmit={(e)=>{e.preventDefault();
-              if(!askInput.trim()||g.busy) return;
+              else (same gate every other patient-facing action respects)
+              OR while askPending -- a prior generation hasn't settled yet,
+              so a second question can't stack another one on top of it and
+              produce the confusing overlapping-replies problem a real
+              transcript surfaced. */}
+          {g.patient&&(()=>{const blocked=!!g.busy||!!g.askPending;
+            return (<form onSubmit={(e)=>{e.preventDefault();
+              if(!askInput.trim()||blocked) return;
               askPatientFreeText(askInput); setAskInput("");}}
             style={{display:"flex",gap:6,marginTop:8,flexShrink:0,borderTop:`1px solid ${C.line}`,paddingTop:8}}>
             <input type="text" value={askInput} onChange={(e)=>setAskInput(e.target.value)}
-              disabled={!!g.busy} maxLength={200}
+              disabled={blocked} maxLength={200}
               aria-label="Talk to the patient"
-              placeholder={g.busy?"Hands busy…":'Ask the patient — "When did this start?"'}
+              placeholder={g.busy?"Hands busy…":g.askPending?"Patient is composing a reply…":'Ask the patient — "When did this start?"'}
               style={{flex:1,minWidth:0,background:C.panelHi,border:`1px solid ${C.line}`,borderRadius:6,
                 color:C.text,fontSize:12.5,padding:"7px 9px"}}/>
-            <button type="submit" disabled={!!g.busy||!askInput.trim()}
-              style={{background:C.panelHi,border:`1px solid ${C.line}`,borderRadius:6,color:g.busy||!askInput.trim()?C.faint:C.text,
-                fontSize:12,padding:"7px 12px",cursor:g.busy||!askInput.trim()?"default":"pointer"}}>Ask</button>
-          </form>}
+            <button type="submit" disabled={blocked||!askInput.trim()}
+              style={{background:C.panelHi,border:`1px solid ${C.line}`,borderRadius:6,color:blocked||!askInput.trim()?C.faint:C.text,
+                fontSize:12,padding:"7px 12px",cursor:blocked||!askInput.trim()?"default":"pointer"}}>Ask</button>
+          </form>);})()}
         </div>
       </div>
     </div>{/* end px-stage */}

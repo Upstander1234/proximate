@@ -123,7 +123,263 @@ observable at the far end of the chain, not the field you just wrote.
 
 ---
 
-## 2. Current state — a real strong-ion-difference acid-base model (a previous item in the queue, CLOSED)
+## 2. Current state — Opioid/sedative PK cluster closed out: items 63 (morphine keo) and 66 (ketamine tachyphylaxis), as numbered when picked up, both INVESTIGATED with no code change, write-up corrected after review
+
+**This session's own work was investigation-only — no functional code
+changed, comment-only.** A literature search (see section 3's newest
+entry) found the literature genuinely does NOT cleanly settle morphine's
+own effect-site equilibration half-life in either direction (three
+independent human studies disagree by nearly an order of magnitude,
+0.71h-4.4h, depending on methodology/endpoint) — the engine's current
+`keo` is kept not because the literature proves it correct, but because
+no literature value clearly invalidates it and the current value
+reproduces the clinically-taught bedside onset window when measured
+directly against the engine. Ketamine-specific tachyphylaxis was found to
+have insufficient quantitative human evidence to responsibly
+parameterize at ANY timescale, short or long (a pediatric study found no
+tolerance even across separate, days-apart sessions) — correctly not
+built, but for a weaker, more honest reason than an earlier draft of this
+write-up claimed. Both items are removed from section 6's queue; no suite
+re-run was needed since no executable code changed (`node --check`/`npx
+eslint src/physio/pk.js`: clean, zero findings) — note that a clean suite
+only confirms existing tests aren't broken, it does not validate either
+unchanged parameter's scientific justification.
+
+---
+
+**Everything below this line is the PRIOR baseline (the opioid/sedative
+PK cluster's own three SHIPPED mechanisms — queue items 64/65/67 as
+numbered at the time: naloxone receptor off-kinetics, differential opioid
+tolerance, ketamine slows opioid tolerance accrual), carried forward for
+its own detail — not the current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue items 64/65/67, CLOSED — three
+related `pk.js` mechanisms shipped as one batch: a per-drug naloxone-
+reversal lag (Koff), a split respiratory-vs-analgesic opioid tolerance
+accumulator, and ketamine's NMDA blockade slowing both; see section 3's
+older entry for the full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **779 passed, 8 failed** | all 8 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, the PACs HR-variance stdev near-miss, a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp drift), confirmed by content — none reads `koff`/`opioidDesensResp`/`nmdaSuppression`. All 5 new assertions pass (`[NALOXONE RECEPTOR OFF-KINETICS (Koff)]` x2, `[DIFFERENTIAL OPIOID TOLERANCE]` x2, `[KETAMINE SLOWS OPIOID TOLERANCE/OIH ACCRUAL]` x1), and the pre-existing naloxone re-narcotization and ketamine no-cross-tolerance/beta2Desens assertions re-verify clean. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,635,604 checks, 935 failed** | failure count byte-identical to the documented baseline (935) — the +168,300 check-count increase is exactly the one new tracked field (`opioidDesensResp`) across 187 scenarios; every sampled failure confirmed to be the same pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect. |
+| `npx eslint src/physio/pk.js src/physio/patient.js src/scripts/mechanismWiring.mjs src/scripts/scenarioSweep.mjs` | clean | zero findings |
+| `npx vite build` | clean (3.41s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+6, pericardial constraint / ventricular interdependence — the Cardiology
+Hyper-Realism workstream's own final phase), carried forward for its own
+detail — not the current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue item 1's Phase 6,
+a shared bilinear pericardial pressure function driven by the four cardiac
+chambers' own summed volume plus effusion fluid, with chamber-specific
+restraint coefficients (RV/atria > LV) added directly into each chamber's
+transmural pressure; CLOSED; see section 3's older entry for the full
+writeup, including a real blowup bug found and fixed mid-session):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **774 passed, 8 failed** | all 8 are pre-existing, already-documented failure/flake classes (the BVM trio, the Tzivoni magnesium/torsades near-miss 6/10, a croup near-miss, a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp drift), confirmed by content — none reads `pericardialP`/`periLV`/`periRV`/`periLA`/`periRA`/`_pericardiectomy`. All 4 new `[PERICARDIAL CONSTRAINT / VENTRICULAR INTERDEPENDENCE]` assertions pass. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | byte-identical to the documented baseline (no new `pat.*` field this phase — `pericardialP` was already tracked from the pre-existing tamponade mechanism; confirmed, after a fix, zero negative/NaN chamber volumes anywhere in the 187-scenario library across the final run). |
+| `npx eslint src/physio/cardiovascular.js src/physio/cardiovascular_ode_full.js src/scripts/mechanismWiring.mjs` | clean | zero findings |
+| `npx vite build` | clean (4.39s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+5, VT/VF morphology), carried forward for its own detail — not the
+current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue item 1's Phase 5,
+VT/VF morphology as a probabilistic classifier: a monomorphic/polymorphic
+morphology sample at VT onset, substrate-biased (scar -> monomorphic,
+diffuse ischemia -> polymorphic), with polymorphic VT degenerating to VF
+at the same 3.8x Bluzhas ratio Phase 1's torsades fast/slow-class weighting
+already uses; CLOSED; see section 3's older entry for the full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **768 passed, 10 failed** | all 10 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, the PACs HR-variance stdev near-miss, a vo2Demand control-match rounding mismatch, the untreated-hyperkalemiaMissedDialysis dangerous-rhythm-by-10-min near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and the accidentalHypothermia rewarming-vs-bradycardia near-miss, already documented elsewhere in this file as pre-existing stochastic flakiness), confirmed by content — none reads `_vtMorphology`/`scarBurden`/`rhythm==="VT"`. All 3 new `[VT/VF MORPHOLOGY]` assertions pass. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | byte-identical to the documented baseline (no new `pat.*` field this phase — `_vtMorphology` is internal scratch state, matching `_torsadesRateClass`'s own precedent, not published/tracked). |
+| `npx eslint src/scripts/mechanismWiring.mjs src/physio/cardiovascular.js` | clean | zero findings |
+| `npx vite build` | clean (3.21s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+2, ischemic mitral regurgitation), carried forward for its own detail —
+not the current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue item 1's Phase 2,
+continuous ischemic-MR tethering term, gated on necrosis-driven
+contractility loss + infarct territory rather than live ischemia, finally
+breaking the documented two-attempt blowup history; PARTIALLY CLOSED, the
+discrete papillary-rupture event remains deferred; see section 3's older
+entry for the full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **766 passed, 9 failed** | all 9 are pre-existing, already-documented failure/flake classes (the BVM trio, the Tzivoni magnesium/torsades near-miss 7/10, a croup paco2 near-miss, the PACs HR-variance stdev near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and the tracheostomy-vs-native-airway razor-thin vt margin), confirmed by content — none reads `mitralRegurgStructural`/`infarctTerritory`/any pregnancy field. All 5 new `[ISCHEMIC MITRAL REGURGITATION]` assertions pass, and the prior session's own 5 `[PREGNANCY GESTATIONAL CONTROLLER]` assertions re-verify clean after a real trait-pinning bug found and fixed this session (see section 3). |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | byte-identical to the documented baseline (no new `pat.*` field this phase — both `mitralRegurgStructural` and `infarctTerritory` were already tracked). |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (4.37s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+4, gestational controller), carried forward for its own detail — not the
+current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue item 1's Phase 4, pregnancy
+gestational-preload/afterload controller confirmed matching Chen et al.'s
+LVEDV relative-rise target, CLOSED; see section 3's older entry for the
+full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **763 passed, 7 failed** | all 7 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and a `hydrocarbonAspiration` compliance-plateau near-miss re-measured standalone as stochastic noise), confirmed by content — none reads any pregnancy field. All 5 new `[PREGNANCY GESTATIONAL CONTROLLER]` assertions pass. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | byte-identical to Phase 1's own documented baseline (no new `pat.*` field this phase) — every failure, confirmed by grep, is the same pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect. |
+| `pregnancyBenchmark.mjs` | **10/16 in range** (up from 9/16) | the retired absolute LVEDV row now checks Chen's relative-rise quantity instead and passes (13.9%, band 12-17%); CO/CI/SV/MAP remain LOW and SVR/Hct remain HIGH, confirmed a separate, unresolved gap independent of this phase's fix. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (4.20s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+3, pacemaker syndrome / AV dissociation), carried forward for its own
+detail — not the current numbers:**
+
+**CURRENT VERIFICATION BASELINE (queue item 1's Phase 3, compliance-scaled
+atrial-kick CO penalty for AV-dissociated/paced rhythms, CLOSED; see
+section 3's older entry for the full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **756 passed, 9 failed** | all 9 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, the PACs HR-variance stdev near-miss, a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and a small unrelated airway-fluid/work-of-breathing near-miss), confirmed by content — none reads `_pmAvDissoc`. Every AV BLOCK/TRANSCUTANEOUS PACING/SECOND-DEGREE AV BLOCK/PERICARDIAL TAMPONADE/SYMPTOMATIC BRADYCARDIA assertion passes, including one assertion recalibrated this session (see section 3). |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | byte-identical to Phase 1's own documented baseline (no new `pat.*` field this phase) — every failure, confirmed by grep, is the same pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect; zero failures mention torsades/chb/pacedCapture. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (4.90s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 1's Phase
+1, torsades episodic state), carried forward for its own detail — not the
+current numbers:**
+
+**CURRENT VERIFICATION BASELINE (this session — queue item 1's Phase 1,
+torsades per-episode rate/class sampling and beat counter, CLOSED; see
+section 3's newest entry for the full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **756 passed, 8 failed** | all 8 are pre-existing, already-documented failure/flake classes (the BVM trio, a k=7.5 wideQRS stochastic near-miss, a thrombolytic near-miss, the PACs HR-variance stdev near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp drift), confirmed by content — none reads `torsadesBeatCount`/`_torsadesRate`/`_torsadesRateClass`. All 5 `[TORSADES DE POINTES]` assertions pass, including the previously-borderline magnesium/Tzivoni one (9/10). |
+| `scenarioSweep.mjs` | **187 scenarios, 22,467,304 checks, 935 failed** | every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; zero failures mention torsades. The +168,300 check-count increase over the prior baseline is exactly `torsadesBeatCount`'s own new presence/non-negative tracking across 187 scenarios. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (4.23s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 62's
+gate-control modulation of pain), carried forward for its own detail — not
+the current numbers:**
+
+**CURRENT VERIFICATION BASELINE (this session — queue item 62's descending
+affective gate on allodynia, CLOSED; see section 3's newest entry for the
+full writeup):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **757 passed, 7 failed** | all 7 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp drift), confirmed by content — none reads `pat.agitation`/`gateOpenFactor`. All 4 new `[GATE-CONTROL MODULATION]` assertions pass, plus the full `[LOCAL ANESTHETIC NERVE BLOCK]`/`[KETAMINE NMDA-ANTAGONIST ANTI-SENSITIZATION]`/`[OPIOID DUAL-CURVE...]` sections confirmed unchanged. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,299,004 checks, 935 failed** | byte-identical to the prior baseline (count AND failure list) — no new top-level patient field was introduced (this mechanism reuses the already-tracked `pat.agitation`), so the sweep needed no list changes and shows zero regression. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (3.31s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 62's
+local anesthetic nerve block/hematoma block mechanism), carried forward
+for its own detail — not the current numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **751 passed, 9 failed** | all 9 are pre-existing, already-documented failure/flake classes (the BVM trio, a croup near-miss, a PACs HR-variance stdev near-miss, a vo2Demand control-match rounding mismatch, a stochastic bagging-delay Bernoulli-trial near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp drift — none is new, all have appeared interchangeably across past baselines), confirmed by content — none reads `nerveBlockDepth`/`lidocaineBlock`. All 6 new `[LOCAL ANESTHETIC NERVE BLOCK]` assertions pass, plus the full `[PAIN SENSITIZATION]`/`[OPIOID DUAL-CURVE...]`/`[KETAMINE NMDA-ANTAGONIST ANTI-SENSITIZATION]` sections confirmed unchanged. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,299,004 checks, 935 failed** | identical failure count to the prior baseline — every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; zero failures mention `nerveBlockDepth`. The +168,300 check-count increase is exactly the new field's own presence/non-negative tracking across 187 scenarios. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (2.62s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 62's
+ketamine NMDA-antagonist anti-sensitization mechanism), carried forward
+for its own detail — not the current numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **747 passed, 7 failed** | all 7 are pre-existing failure classes (the BVM trio, a croup near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and a stochastic bagging-delay Bernoulli-trial near-miss, 5/10 vs needed >=6 — a known-flaky class per lesson 9, unrelated to anything this batch touched), confirmed by content — none reads `nmdaBlockade`. Two previously-documented near-misses (a vo2Demand control-match rounding mismatch, a tracheostomy/UAO borderline assertion) pass clean this run. All 5 new `[KETAMINE NMDA-ANTAGONIST ANTI-SENSITIZATION]` assertions pass, plus the full `[PAIN SENSITIZATION]`/`[OPIOID DUAL-CURVE...]` sections confirmed unchanged. |
+| `scenarioSweep.mjs` | **187 scenarios, 22,130,704 checks, 935 failed** | identical failure count to the prior baseline — every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; zero failures mention `nmdaBlockade`. The +168,300 check-count increase is exactly the new field's own presence/non-negative tracking across 187 scenarios. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (3.26s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 62's
+opioid analgesia/respiratory-depression dual-curve split), carried forward
+for its own detail — not the current numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **741 passed, 8 failed** | all 8 are the exact same pre-existing, already-documented failures as the prior baseline (the BVM trio, a croup near-miss, a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, untreated-neurogenic-shock sbp drift, and a tracheostomy/UAO borderline assertion) — confirmed by content, none reads `hillOcc`/`hillN`/`respEc50`/`respHillN`. All 6 new `[OPIOID DUAL-CURVE...]` assertions pass, plus all 4 pre-existing `[OPIOID / ANTAGONIST]`/`[OPIOID MIOSIS]` assertions confirmed unchanged. |
+| `scenarioSweep.mjs` | **187 scenarios, 21,962,404 checks, 935 failed** | identical count to the prior baseline — every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; this batch introduced no new `pat.*` field (`hillN`/`respEc50`/`respHillN` are drug-definition constants, `respIntensity` is a local per-tick computation). |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (2.95s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 62's
+pain-sensitization/glial-activation/allodynia cascade), carried forward
+for its own detail — not the current numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **736 passed, 7 failed** | all 7 are the exact same pre-existing, already-documented failures as the prior baseline (the BVM trio, the croup compensatory-tachypnea near-miss, the PACs HR-variance stdev near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and the untreated-neurogenic-shock sbp-drift near-miss) — confirmed by content, none reads `peripheralSensitization`/`glialActivation`/`centralSensitization`/`allodyniaLevel`/`pain.js`. All 10 new `[PAIN SENSITIZATION]` assertions pass. |
+| `scenarioSweep.mjs` | **187 scenarios, 21,962,404 checks, 935 failed** | every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; zero failures mention any of the four new fields. |
+| `npx eslint src` | clean | same pre-existing 3-error `react-refresh/only-export-components` baseline in `App.jsx`, zero new findings anywhere else |
+| `npx vite build` | clean (4.24s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (queue item 48/76's
+`kShiftConc` unbounded-flux fix), carried forward for its own detail — not
+the current numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **726 passed, 7 failed** | all 7 are pre-existing, already-documented failures: the BVM trio (`ventUnloadFraction`/`workOfBreathing`/`vtPrev`), the croup compensatory-tachypnea near-miss, a condition-less-control `vo2Demand` rounding mismatch, an untreated-neurogenic-shock sbp-drift near-miss, and the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss itself (k=5.97 vs required >6.0, essentially unchanged from the documented pre-fix 5.94 — the acute teaching point survives the fix to the resting-drift defect). |
+| `scenarioSweep.mjs` | **187 scenarios, 21,289,204 checks, 935 failed** | every failure, confirmed by grep, is the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master. |
+| `npx eslint src/physio/renal.js` | clean | zero findings |
+| `npx vite build` | clean (4.26s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR baseline (the fetal-compartment
+mechanism, queue item 25, CLOSED; see section 3's topmost entry for the
+full writeup), carried forward for its own detail — not the current
+numbers:**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **725 passed, 8 failed** | every new assertion this session added (the six new `[FETAL COMPARTMENT]` checks, plus the pre-existing FHR/abruption assertions) PASSED. All 8 failures are pre-existing, already-documented flaky/borderline assertions unrelated to this session: the BVM trio (`ventUnloadFraction`/`workOfBreathing`/`vtPrev`), the `activeSeizureGTC` stochastic engagement draw, a condition-less-control `vo2Demand`/`agitationBurden` rounding match, a severe-acidemia secondary-hyperkalemia near-miss, an untreated-neurogenic-shock sbp-drift near-miss, and the tracheostomy-vs-native-airway razor-thin `vt` margin. None reads `pat._pregnancy`, `fetalHR`, `fetalDO2Frac`, `fetalHypoxicBurden`, or the newly-exported `oxySat`. |
+| `scenarioSweep.mjs` | **NOT run this session** | stated honestly, not assumed clean — no new per-tick top-level `pat.*` field was added (the new state lives under `pat._pregnancy`, which the sweep does not enumerate, matching `atonyFactor`/`placentalAbruptionFactor`'s own existing precedent), so no sweep-list change was needed, but the full sweep itself was not re-run against this change. A future session touching pregnancy/obstetric code should confirm it clean. |
+| `npx eslint src/physio/obstetric.js src/physio/respiratory.js src/scripts/mechanismWiring.mjs` | clean | zero findings |
+| `npx vite build` | clean (3.83s) | same pre-existing >500kB chunk-size warning |
+
+---
+
+**Everything below this line is the PRIOR wave's own baseline, carried
+forward for its own detail — not the current numbers.**
 
 **CURRENT VERIFICATION BASELINE (this session's multi-agent parallel batch,
 SECOND wave — five more conditions plus a mass-conservation audit tool,
@@ -144,7 +400,7 @@ evidence.
 
 ---
 
-**Everything below this line is the PRIOR wave's own baseline, carried
+**Everything below this line is that wave's own baseline, carried
 forward for its own detail — not the current numbers.** `mechanismWiring.mjs`
 574/1, `scenarioSweep.mjs` 176 scenarios/17,185,698 checks/0 failed, from
 the first wave (blood viscosity, methemoglobinemia, ketamine, thirst,
@@ -342,6 +598,1916 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### 2026-10-01 (e) — Morphine keo recalibration (queue item 63) and ketamine-specific tachyphylaxis (queue item 66, as numbered when picked up): both INVESTIGATED via a real literature search and CLOSED with no code change, then the write-up for BOTH was itself corrected after independent review found it overstated how settled the underlying science is.
+
+**This was investigation-only work, following the explicit instruction to
+search the literature before touching either coefficient. A first pass's
+own write-up was then checked by an independent review of the same
+sources and found to be too confident in several places — real citations,
+overstated conclusions. Both items' own code comments and this entry were
+rewritten to state the correct, weaker epistemic claim: the engineering
+decision (leave both as-is) is still defensible, but the SCIENTIFIC
+justification needed correcting, not the decision itself.**
+
+**Item 63 (morphine `keo`/onset recalibration) — the literature does
+NOT cleanly settle this, in either direction.** A prior session's own
+"needs widening" conclusion read Dahan et al. 2004 (Anesthesiology:
+t1/2ke0 = 4.4h, shared potency 32 nM/9 ng/mL, gamma=2.4 for analgesia vs
+1 for respiration) in isolation. This session's first attempt at a fix
+over-corrected the other way, mischaracterizing Dahan's figure as a
+"contested outlier" — it is not. A separate major PK/PD review (Lotsch)
+independently corroborates the same slow, multi-hour order of magnitude
+(~2-3h), and a third, more recent human study (Br J Anaesth 2026, 51
+volunteers, NONMEM population modeling of a thermal-pain endpoint)
+reports yet another value, 0.71h (~43 min) — a real, different, still-
+slower-than-the-engine result from an independent, recent, larger
+dataset, not a value that confirms either side. The microdialysis study
+(Bouw/Gardmark et al.) initially cited here as giving "morphine's own
+analgesic effect-delay half-life at 10-38 minutes" was itself
+mischaracterized — on direct re-check, that study actually reports TWO
+distinct numbers that must not be collapsed into one range: 32 minutes
+against ARTERIAL BLOOD concentration, and only 5 minutes against BRAIN
+EXTRACELLULAR FLUID concentration measured directly, with ~85% of that
+gap attributed to blood-brain-barrier transport time. This is the real
+reason different studies disagree so widely: the number depends on
+WHAT is being measured against (arterial plasma, brain tissue, or a
+population PK/PD curve fit) and which endpoint (analgesia, miosis,
+thermal pain threshold) — there is no single uncontested "the" t1/2ke0
+for morphine in the literature to transplant from either direction.
+
+**MEASURED directly against the real engine anyway, both ways — this is
+the part that actually settles the engineering question.** A single 4mg
+IV morphine dose at the engine's CURRENT `keo=0.04` (t1/2~17 min) peaks
+at +13.3 minutes, inside the clinically-taught ~15-20 minute bedside
+peak-effect window. Patching `keo` to Dahan's 4.4h figure and re-running
+the identical probe shows relief still only 0.80 points at +15 min (vs
+3.37 at the current `keo`) and still climbing, UNPEAKED, at +59 min —
+transplanting ANY of the slower literature values (4.4h, 2-3h, or even
+the more recent 0.71h) would make the engine's modeled morphine onset
+measurably slower than real bedside experience within any realistic call
+length. **CONCLUSION, stated at the correct strength: `keo` is NOT
+changed, because the literature does not provide a single uncontested
+value that clearly invalidates the current model — not because the
+literature has been shown to prove 13.3 minutes correct.** Leaving it
+unchanged is an engineering/calibration judgment (it reproduces the
+clinically-taught bedside window directly, measured above), not a
+literature-proven calibration. If this is revisited, the 2026 study's
+0.71h is the best single modern anchor to re-measure against next, not
+Dahan's older 4.4h. The full, corrected reasoning is recorded at the
+`morphine` `PK_PARAMS` entry (`pk.js`).
+
+**Item 66 (ketamine-specific tachyphylaxis, as numbered when picked up) —
+the evidence is weaker and more mixed than "confirmed to only operate on
+a days-to-weeks timescale," which this entry's own first draft claimed
+too strongly.** A pediatric systematic review of REPEATED, SEPARATE
+radiotherapy-sedation sessions (635 sessions across 33 patients, days
+apart) found NO dose escalation was needed across sessions EITHER — the
+literature does not cleanly show ketamine tolerance building reliably
+even across separate encounters, which undercuts the first draft's own
+"days-to-weeks" framing as much as it undercuts a within-call one. A
+second, real risk was caught on review: two genuinely different
+phenomena were at risk of being conflated. Ketamine SLOWING a DIFFERENT
+drug's (an opioid's) own tolerance buildup (NMDA antagonism attenuating
+opioid acute tolerance during e.g. an alfentanil infusion) is real,
+separately documented, and is queue item 67 — already shipped — and must
+not be cited as evidence for THIS item, which is about ketamine's own
+analgesic effect potentially fading with repeated ketamine dosing, a
+different question. The in-vitro NMDA-receptor-subunit-upregulation
+citation this entry's first draft leaned on as a mechanism is a
+plausible ingredient, not a validated human time-course anchor — a
+receptor adaptation shown in cell culture does not establish the
+magnitude or timing of clinically meaningful analgesic tachyphylaxis in
+humans, and the first draft stated it with more confidence than that.
+
+**CONCLUSION, stated at the correct strength: there is insufficient
+quantitative human evidence to responsibly parameterize a ketamine-
+specific tachyphylaxis coefficient at ANY timescale right now — not a
+confirmed structural fact about where the real phenomenon's timescale
+sits relative to this engine's own call duration.** The narrower, still-
+real fact that IS directly relevant: clinical continuous-infusion
+protocols for pain run up to 4 continuous hours in a single session with
+no documented need for dose escalation, which is a reasonable basis for
+not building a within-call coefficient specifically — the absence of a
+documented within-session effect, not a proven multi-day mechanism this
+engine structurally falls short of reaching. **Correctly NOT built.**
+Revisit only when a real quantitative human PK/PD anchor exists, and
+re-derive the mechanism and its magnitude from that anchor at that time
+rather than from this comment's own in-vitro citation. The full,
+corrected reasoning is recorded at `pk.js`'s `desensClassOf()`
+ketamine-exclusion comment.
+
+**Both items remain removed from section 6's queue** (CLOSED, not
+deferred — no further action is needed on either without a genuinely new
+anchor, matching section 4's own "remove what's finished" rule,
+generalized here to a finished investigation rather than a finished
+build). The queue remains renumbered sequentially (1-71) with no gaps;
+this correction pass changed no numbering, only the write-up's own
+epistemic claims.
+
+**Verification, complete.** Both changes remain comment-only — zero
+executable code was altered in either case, across both the original
+pass and this correction pass. `node --check`/`npx eslint src/physio/
+pk.js`: clean. No suite re-run needed, correctly: nothing touched by
+either change is reachable by any code path (both are documentation at
+a site that does not execute, not a logic change), so there is nothing
+for `mechanismWiring.mjs`/`scenarioSweep.mjs` to regress — though, as
+flagged explicitly this time, a clean suite run only confirms the
+existing tests aren't broken; it does not and cannot validate the
+scientific claims behind either unchanged parameter. Throwaway probe
+scripts (the current-vs-patched-`keo` sensitivity comparison) were
+confined to `src/scripts/_probe_item63*.mjs` during investigation and
+confirmed stripped before this entry was written.
+
+### 2026-10-01 (d) — Opioid/sedative PK cluster (queue items 64/65/67, CLOSED): naloxone's per-drug receptor off-kinetics (Koff), a split analgesic-vs-respiratory opioid tolerance accumulator, and ketamine's NMDA blockade slowing both.
+
+**Scope and why these three, together.** The queue's own items 63-67 are a
+related opioid/sedative-PK cluster sharing `pk.js`'s drug-intensity hot
+path, scoped out together and worked in dependency order (64 -> 65 -> 67,
+per the scoping note's own suggested sequencing). Items 66 (ketamine-
+specific tachyphylaxis) and 63 (morphine `keo` recalibration) were
+deliberately NOT attempted this session — both are explicitly flagged in
+their own queue text as blocked/high-risk (66 has no published analgesia-
+specific tolerance time-course anchor to identify a coefficient from,
+per section 4's "identify numbers, don't invent them" discipline; 63 needs
+its own dedicated before/after diff of every morphine-dependent assertion
+given its engine-wide blast radius, not a change folded into an unrelated
+batch).
+
+**Item 64 — naloxone receptor off-kinetics (Koff).** The existing
+competitive-antagonism mechanism (`ec50Eff = ec50 * (1 + antagonistConc /
+NALOXONE_KI)`) treats naloxone reversal as an instantaneous
+re-equilibration at the receptor — correct for most drugs, but real
+fentanyl-family agonists are measurably harder and slower for naloxone to
+reverse specifically because of slow receptor DISSOCIATION, independent of
+plasma clearance (translational carfentanil/fentanyl modeling: a more
+lipophilic antagonist, diprenorphine, reversed fentanyl as well as
+morphine while naloxone did not — isolating the effect to the agonist's
+own off-rate, not naloxone's PK). A new per-drug `dr.pk.koff` (fentanyl
+only: 0.25/min, stated honestly as a qualitative estimate picked for the
+right ordering and a multi-minute reversal time course, not a fitted
+receptor-binding constant — no published per-minute mu-receptor
+dissociation rate in this engine's units was found) lags how fast
+occupancy can follow naloxone's Ki-shift, but ONLY while an antagonist is
+actively present — with no antagonist, binding is assumed fast and
+intensity tracks concentration directly, unchanged from every drug's prior
+behavior. Morphine declares no `koff` and keeps its already-verified
+instantaneous reversal.
+
+**A real measurement mistake caught before it shipped a meaningless
+test.** The first probe gave fentanyl and naloxone simultaneously (the
+same idiom the existing `[OPIOID / ANTAGONIST]` assertions use) and found
+the lag had almost no visible effect — both drugs' concentrations ramp up
+together from zero, so the blockade RATIO saturates near 1 within seconds
+regardless of koff, because both the lagged and unblocked quantities are
+tiny from the start. Root-caused by instrumenting the real engine
+(lesson 8), not guessed: Koff only matters for reversing an ALREADY-
+ESTABLISHED occupancy — the real clinical case (treating a patient already
+deep in an overdose). Fixed by measuring fentanyl given alone, settled to
+a steady effect, THEN naloxone given later — the real, clinically relevant
+test. MEASURED: at 30s post-naloxone against an established occupancy,
+fentanyl's blockade (0.312) lags measurably behind morphine's (0.779,
+instantaneous, no koff); by 480s (8 min, several koff half-lives) fentanyl
+mostly catches up (0.812) — the lag delays reversal, it does not cap it,
+matching the Ki mechanism's own ceiling. The existing simultaneous-dose
+assertions (`[OPIOID / ANTAGONIST]`) and the existing re-narcotization
+assertion (checked at 300s/3600s, well past the lag's own transient) both
+re-verify clean, unaffected.
+
+**Item 65 — differential opioid tolerance.** `pk.js`'s single
+`opioidDesens` accumulator previously scaled BOTH the shared analgesic
+`intensity` AND the separate respiratory-depression pathway identically —
+but real chronic-use tolerance is not uniform: analgesic (and euphoric)
+tolerance develops FASTER and DEEPER than respiratory-depression
+tolerance, which is the actual mechanism behind dose-escalation overdose
+(chasing fading analgesia with a bigger dose outruns the much smaller
+protection respiratory tolerance bought — chronic fentanyl users' own
+measured ventilatory C50 shifts only ~4.3x rightward even against far
+larger multiples of dose escalation). A new, separate `opioidDesensResp`
+accumulator (ceiling 0.12, rate 0.006 — tau ~165 min, well behind
+`opioidDesens`'s own ~45 min) shares the exact same exposure-detection
+condition as `opioidDesens` (any opioid on board builds both toward their
+own different targets, computed in one pass rather than a duplicated
+drug-instance loop) but is consumed ONLY by the respiratory-depression
+pathway, replacing the generic `desensClassOf()` lookup there with an
+explicit opioid-specific branch. MEASURED, not assumed: under sustained,
+repeated fentanyl dosing, `opioidDesens` reaches ~0.219 by 3600s while
+`opioidDesensResp` reaches only ~0.036 — a real, correctly-directed ~6x
+divergence (an inverted or symmetric encoding would teach the opposite of
+the real clinical danger). A condition-less, dose-less control confirms
+both accumulators stay at exactly 0.
+
+**Item 67 — ketamine slows opioid tolerance/OIH accrual.** Ketamine's own
+NMDA-antagonist shipped entry explicitly flagged this as deliberately NOT
+modeled ("NMDA antagonists are reported to actively SLOW opioid tolerance/
+opioid-induced-hyperalgesia accrual, not merely be inert to it — a real
+simplification stated honestly"). Now built: the desensitization relax
+loop discounts the BUILDING half (target > current) of both
+`opioidDesens`/`opioidDesensResp`'s rate by `nmdaSuppression`
+(`1 - 0.5*nmdaBlockade`), reusing that term's own already-established 0.5
+ceiling and one-tick-lag read (captured before `pat.nmdaBlockade`'s own
+per-tick reset, the same idiom `sedationDepth`/`nerveBlockDepth` already
+use) rather than inventing a second coefficient. Deliberately does NOT
+discount the decay half of the relax — no literature support was found for
+ketamine accelerating tolerance decay once dosing stops, only for slowing
+its build, so a patient coming off opioids keeps the same decay rate
+regardless of concurrent ketamine. MEASURED: concurrent repeated ketamine
+dosing alongside sustained fentanyl shows both accumulators measurably
+lower at the same elapsed time/dosing schedule (`opioidDesens` 0.219 ->
+0.172, `opioidDesensResp` 0.0357 -> 0.0247) — a real, directionally
+correct ~21% slowdown in analgesic-tolerance buildup, not a token nonzero
+effect.
+
+**New field registration.** `pat.opioidDesensResp` added to `patient.js`'s
+constructor (default 0, matching `opioidDesens`'s own precedent) and to
+`scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification, complete.** `node --check`/`npx eslint src/physio/pk.js
+src/physio/patient.js src/scripts/mechanismWiring.mjs
+src/scripts/scenarioSweep.mjs`: clean. `npx vite build`: clean (3.41s,
+same pre-existing >500kB chunk-size warning). Full `mechanismWiring.mjs`:
+**779 passed, 8 failed** — all 8 are the same pre-existing, already-
+documented failure/flake classes already on record (the BVM trio, a croup
+near-miss, the PACs HR-variance stdev near-miss, a vo2Demand control-match
+rounding mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia
+near-miss, and untreated-neurogenic-shock sbp drift), confirmed by
+content — none reads `koff`/`opioidDesensResp`/`nmdaSuppression`. All 5
+new assertions pass, and the pre-existing naloxone re-narcotization and
+ketamine no-cross-tolerance/`beta2Desens`-fix assertions re-verify clean,
+confirming no regression to either mechanism this batch's changes share
+code with. Full `scenarioSweep.mjs`: **187 scenarios, 22,635,604 checks,
+935 failed** — failure count byte-identical to the documented baseline;
+the +168,300 check-count increase is exactly `opioidDesensResp`'s own new
+presence/non-negative tracking across 187 scenarios; every sampled
+failure confirmed by grep to be the same pre-existing `rvEdv`/`rvEsv`/
+`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect. Throwaway probe scripts
+used to measure the numbers above were confined to `src/scripts/_probe_*`
+during development and confirmed stripped before this entry was written.
+
+**Still open, honestly**: item 66 (ketamine-specific tachyphylaxis) needs
+its own desensitization class and a real analgesia-specific tolerance
+time-course anchor before it can be built without inventing a number;
+item 63 (morphine `keo` recalibration) needs its own full before/after
+diff of every morphine-dependent assertion in the suite given its
+engine-wide blast radius (fx.pain via the shared `intensity`, the separate
+`respIntensity` pathway, and anything else morphine's `fx` declares) —
+neither was attempted here. Naloxone's `koff` lag is fentanyl-specific
+only; no other opioid in the formulary (morphine) has a documented
+slow-reversal reputation, so none was given one.
+
+### 2026-10-01 (c) — Pericardial constraint / ventricular interdependence (queue item 1's Phase 6, CLOSED — the final phase in the Cardiology Hyper-Realism workstream): a shared bilinear pericardial pressure function, chamber-specific restraint coefficients, and a real blowup bug found by scenarioSweep.mjs and fixed before shipping.
+
+**What existed before this session.** `cardiovascular.js` already had a
+linear `pericardialEffusion -> pericardialP` term (`targetPericardialP =
+pericardialEffusion*22`) feeding a single scalar `cardiacExternalP`
+(intrathoracic + pericardial) applied EQUALLY to all four chambers via
+`buildParams`'s `externalP`. Two real limitations, both already flagged
+in-code by earlier phases: (1) `externalP` was added only to the
+EXTERNALLY REPORTED chamber pressures in `pressuresFromState` — the
+internal physics `derivative()` uses for valve gating and AV inflow
+(Plv/Prv/Pla/Pra) never carried it at all, so pericardial pressure could
+shift a DISPLAYED number without ever actually impeding filling; the real
+hemodynamic collapse tamponade already produced came entirely through a
+SEPARATE path, `thoracicVeinP` obstructing venous return into the RA only.
+(2) One shared scalar could not express that the thin-walled RV and both
+atria are disproportionately restrained relative to the LV — the Phase 3
+pacemaker-syndrome entry's own comment explicitly named this as "Phase 6's
+job."
+
+**The fix.** A new shared, nonlinear `P_peri(V_tot)` function (Freeman &
+LeWinter, Circulation 1984; Holt, Rhode & Kines, Circ Res 1960): near-flat
+below an inflection volume, exponential above it. `V_tot` is the SUM OF THE
+FOUR CARDIAC CHAMBERS' OWN VOLUMES (`pat.fourChamberLoop.volumes`, ~350 mL
+typical resting total) — a real, previously-undiscovered unit mismatch was
+caught before this went anywhere: `fourChamberLoop.totalVolumeMl` is the
+TOTAL BLOOD VOLUME across the entire closed loop (~5900-6000 mL at rest,
+every vascular compartment included), not the much smaller quantity that
+actually sits inside the pericardial sac. Effusion fluid is modeled as
+extra volume sharing that SAME fixed sac space (`pericardialEffusion * 180`
+mL), which is why a modest, rapidly-accumulating effusion causes tamponade
+while a larger chronic one is tolerated — the two compete for the same
+tight space. The effusion-driven term's own two constants were fit so this
+condition's already-measured 15-minute operating point (`pericardialEffusion`
+~0.46) reproduces ~10 mmHg, the same order of magnitude the old linear term
+produced at that point (0.46*22=10.1) — preserving the already-verified
+tamponade CO-collapse/CVP-rise/fluid-bolus-response behavior rather than
+silently re-tuning a condition this batch did not otherwise touch. The
+volume-driven term is the genuinely NEW piece: near-zero for a normally
+filled heart, becoming significant only once the sac's total contents are
+genuinely supranormal (severe volume overload or RV distension pressing on
+a shared, fixed-size sac) — a chronically dilated or acutely
+volume-overloaded heart now experiences real, if modest, extra restraint
+even with zero effusion.
+
+**Chamber-specific coupling, and a real hemodynamic effect, not just a
+reported-number shift.** Four new `buildParams` fields (`periLV`/`periRV`/
+`periLA`/`periRA`) are added DIRECTLY into each chamber's TRANSMURAL
+pressure inside `derivative()` — the same quantity that gates mitral/
+aortic/tricuspid/pulmonic valve opening and AV inflow flow — not only into
+the externally-reported pressure, which is what finally gives pericardial
+restraint a genuine filling/output consequence (closing the gap the Phase 3
+comment flagged). RV and both atria carry a larger coefficient than the LV
+(0.75/0.75/0.55/0.3 for RA/RV/LA/LV respectively — MEASURED, not the first
+value tried: an initial 1.0/1.0/0.8/0.5 pass compounded with the
+already-restored RA restraint channel and pushed the already-tuned
+`pericardialTamponade` condition's CO/MAP measurably past its own documented
+anchor, so the weights were reduced until the SAME effusion target
+reproduced a comparable magnitude to what that condition was originally
+tuned against), per Borlaug & Reddy, JACC Heart Fail 2019 and Klein, Wang,
+Cremer et al., JACC Cardiovasc Imaging 2024. `externalP`/`thoracicVeinP` are
+now INTRATHORACIC-PRESSURE-ONLY (uniform across all four chambers, as they
+genuinely are) — pericardial restraint's own contribution to venous-return
+impedance now flows through `periRA` raising transmural RA pressure
+directly, rather than being folded into the same scalar as intrathoracic
+pressure. A new `pat._pericardiectomy` test-only override (never set by any
+condition) forces pericardial restraint to exactly zero, for the Vaillant
+null test below.
+
+**A real blowup bug found by `scenarioSweep.mjs`, not shipped blind.** The
+full suite's first run came back 971 failed against the documented 935
+baseline — a genuine +36 delta, not noise, with new failure signatures
+(`fbao`/`anaph`: `rvEsv negative`, down to -317 in a repeated trial).
+Root-caused directly: a transiently ballooning chamber during
+arrest-adjacent decompensation (stochastic, in these two scenarios'
+rhythm-instability substrate) could legitimately push the new volume-driven
+term's input far past any normal range, and its exponential had no ceiling —
+the SAME "a chamber accepts unbounded volume" failure mode this file's own
+`VmaxLV`/`stiffK`/`edpA` comment already documents for the EXISTING EDPVR
+term, just recurring on a brand-new additive term with no clamp of its own.
+Fixed by capping the excess this term ever sees (200 mL above the
+inflection), the same defensive pattern the existing EDPVR ceiling already
+uses. Re-verified via 20 repeated stochastic trials each across
+`anaph`/`fbao`/`crush`/`od`/`pe`: zero negative volumes, zero NaN, pericardial
+pressure bounded at a sane ~30 mmHg ceiling even in the worst case. The full
+suite was then re-run from scratch and came back byte-identical to the
+documented 935-failure baseline.
+
+**Three mandatory promoted assertions, per the plan's own text, all
+measured directly against the real engine before being added to the suite
+(lesson 8), all passing.** (1) **Vaillant pericardiectomy null test**
+(Vaillant, Abell, Bear et al., J Physiol 2025): forcing
+`pat._pericardiectomy` mid-episode drives `pericardialP` to ~0 (measured
+0.00) and cardiac output substantially recovers toward the matched healthy
+control (co 2.365 -> 5.068, vs. the healthy control's 5.914) — confirming
+the restraint is genuinely pericardium-mediated and removable, not a leak
+elsewhere in the shared solver. (2) **RV disproportionality**: the
+thin-walled RV loses a LARGER fraction of its EDV under the same restraint
+than the LV does — measured RV fraction-loss 0.678 vs. LV's 0.559, the
+concrete form the alpha-coefficient ordering produces. (3) **Refsum-style
+transmural-invariance, simplified** (Refsum, Junemann, Lipton et al.,
+Circulation 1981): the measured rise in reported RA pressure (4.80 mmHg)
+tracks the measured rise in pericardial pressure via `periRA`'s own stated
+0.75 coefficient (predicted 7.48, within the assertion's own generous
+tolerance) — confirming the reported chamber pressure is genuinely derived
+from the shared `P_peri` term via the stated alpha, not a second,
+independently-drifting pathway.
+
+**Verification, complete, across two full runs (the first caught the
+blowup, the second confirms the fix).** `node --check`/`npx eslint
+src/physio/cardiovascular.js src/physio/cardiovascular_ode_full.js
+src/scripts/mechanismWiring.mjs`: clean. `npx vite build`: clean (4.39s,
+same pre-existing >500kB chunk-size warning). Final `mechanismWiring.mjs`:
+**774 passed, 8 failed** — all 8 are pre-existing, already-documented
+failure/flake classes (the BVM trio, the Tzivoni magnesium/torsades
+near-miss 6/10, a croup near-miss, a vo2Demand control-match rounding
+mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss,
+and the untreated-neurogenic-shock sbp-drift near-miss), confirmed by
+content — none reads `pericardialP`/`periLV`/`periRV`/`periLA`/`periRA`/
+`_pericardiectomy`. All 4 new `[PERICARDIAL CONSTRAINT / VENTRICULAR
+INTERDEPENDENCE]` assertions pass. Final `scenarioSweep.mjs`: **187
+scenarios, 22,467,304 checks, 935 failed** — byte-identical to the
+documented baseline (no new `pat.*` field this phase; `pericardialP` was
+already tracked from the pre-existing tamponade mechanism). Throwaway probe
+scripts were confined to `/tmp`/the session scratchpad throughout,
+confirmed stripped before this entry was written.
+
+**Still open, honestly**: the richer Santamore septal force-balance form
+(direct septal transmission as a SEPARATE residual term from the
+pericardial component, with signed sensitivities to LV/septal/RV wall
+stiffness) was not built — the shared `P_peri(V_tot)` form alone was judged
+sufficient for this phase's own mandatory gates, and the Vaillant null
+test's own "pericardial component falls to zero, direct septal transmission
+may remain nonzero at supranormal volumes" framing was simplified to "total
+coupling falls to zero" rather than separately isolating a septal residual,
+since no septal-stiffness state exists anywhere in this engine to compute
+one from. A chronic-adaptation state (the pericardial curve's own
+inflection shifting right and flattening for a slowly-accumulated, tolerated
+chronic effusion, distinct from an acute one of the same final volume) was
+also not built — the shipped mechanism uses the same slack/inflection shape
+for both. This closes the Cardiology Hyper-Realism workstream's documented
+Phase 0 -> 1 -> 3 -> 4 -> 2 -> 5 -> 6 sequencing in full; no further phase
+is queued under queue item 1 itself, though several explicitly-named Domain
+G follow-ups (cardiopulmonary baroreflex, full RAAS as an explicit effector,
+ANP/endothelial NO) remain filed as their own future queue items, separate
+from this workstream's own six phases.
+
+### 2026-10-01 (b) — VT/VF morphology as a probabilistic classifier (queue item 1's Phase 5, CLOSED): a monomorphic/polymorphic sample at VT onset, substrate-biased rather than looked up, with polymorphic VT degenerating to VF at the same hazard ratio Phase 1's torsades fast/slow-class weighting already measured and shipped.
+
+**What existed before this session.** `cardiovascular.js`'s rhythm state
+machine already had a real, substrate-driven VT ONSET trigger
+(`vtDrive = a.ischemia + pat.scarBurden + inst*0.5 + a.hypoxic*0.3 +
+a.hypothermic*0.04`) and a real VT->VF degeneration hazard
+(`degen = a.ischemia + a.hypoxic*0.5 + max(0, 0.3-pat.atp)`) — but every
+VT episode was mechanically identical once triggered: no morphology
+distinction existed anywhere, so a scar-driven stable reentrant circuit
+and a diffuse-ischemia-driven unstable one looked and behaved the same way
+to the engine.
+
+**The fix, per the plan's own explicit instruction not to build a
+deterministic substrate->morphology lookup (Dukkipati et al., JACC 2017:
+clinical ventricular arrhythmias commonly reflect substrate x trigger
+interaction, not a fixed rule).** At VT onset, `pat._vtMorphology` is now
+sampled as a weighted coin flip off the SAME `vtDrive` components that
+triggered the episode: `pMonomorphic = scarShare / (scarShare +
+diffuseShare)`, where `scarShare = pat.scarBurden` and `diffuseShare =
+a.ischemia + inst*0.5 + a.hypoxic*0.3 + a.hypothermic*0.04` — a scar-
+dominant substrate is MORE LIKELY to produce a stable, single reentrant
+circuit (monomorphic), a diffuse-ischemic/unstable substrate is more
+likely to produce a shifting, multi-focal circuit (polymorphic), but
+neither is ever certain, matching the plan's own "probability shifts in
+the correct direction, not a hard classification test" framing. In the
+VT->VF degeneration branch, polymorphic VT now carries the same 3.8x
+weight Phase 1's own torsades fast/slow-class VF-degeneration hazard
+already measured and shipped (the "Bluzhas ratio") — reused deliberately
+rather than inventing a second unfitted multiplier for a mechanistically
+analogous "unstable vs. stable circuit" split, per this project's own
+"prefer the engine's own calibrated numbers to new ones" discipline
+(section 4). An unclassified VT (forced directly by a test harness or any
+future caller that bypasses the onset-sampling branch) defaults to the
+monomorphic (lower) weight — the same "default to the less severe class,
+don't bias every externally-imposed episode toward the worst one" guard
+Phase 1's own `_torsadesRateClass` default already established, and for
+the identical reason (a null/undefined morphology must not silently read
+as the worse case).
+
+**VT's own SV/CO-lower-than-SVT-at-matched-rate signature (the plan's own
+named gate for this phase) was found already structurally true, not
+built this session.** `VT` was already in `NO_ATRIAL_KICK` (losing atrial
+contribution to filling) while `svt` is in `PERFUSING` (keeping it), and
+`diastolicFraction` already falls with HR regardless of rhythm — so a VT
+episode at the same rate as an SVT episode already produces measurably
+lower SV/CO via the existing atrial-kick-loss + diastolic-filling-time
+mechanism, confirmed by reading the code rather than assumed (lesson 16).
+No new mechanism was needed for this half of the phase's gate.
+
+**MEASURED, not assumed (lesson 8) — direct calls to the real, exported
+`updateRhythm` function, driving a freshly constructed, trait-pinned
+patient tick by tick until the substrate-forced VT trigger fires, since
+this mechanism's stochastic onset trigger is not reachable cleanly through
+the suite's usual scenario `probe()` harness within a bounded settle/run
+window.** Scar-dominant substrate (scarBurden=0.8, ischemia=0.05) produces
+monomorphic VT in 85.0% of fired episodes (255/300); ischemia-dominant
+substrate (scarBurden=0.05, ischemia=0.8) produces polymorphic VT in 93.7%
+of fired episodes (281/300) — confirming the weighted draw genuinely
+tracks substrate composition in both directions, not a hardcoded default.
+At matched substrate severity (atp=0.5, ischemia=0.5), polymorphic VT
+degenerates to VF in 98.0% of 2-minute trials vs. monomorphic VT's 61.0% —
+a real, substantial separation in the correct direction.
+
+**Three new two-sided assertions** added to `mechanismWiring.mjs`'s new
+`[VT/VF MORPHOLOGY]` section: scar-dominant substrate biases toward
+monomorphic, ischemia-dominant substrate biases toward polymorphic, and
+polymorphic VT degenerates to VF measurably faster than monomorphic. All 3
+pass. No new patient field was introduced for `scenarioSweep.mjs` to
+track — `pat._vtMorphology` is internal scratch state resampled fresh at
+every VT onset (stale leftover values are harmless, since nothing reads
+it outside the VT branch), matching `_torsadesRateClass`'s own precedent
+of staying off the sweep's tracked-field lists.
+
+**Verification, complete.** `node --check`/`npx eslint src/scripts/
+mechanismWiring.mjs src/physio/cardiovascular.js`: clean. `npx vite
+build`: clean (3.21s, same pre-existing >500kB chunk-size warning). Full
+`mechanismWiring.mjs`: **768 passed, 10 failed** — all 10 are pre-existing,
+already-documented failure/flake classes (the BVM trio, a croup near-miss,
+the PACs HR-variance stdev near-miss, a vo2Demand control-match rounding
+mismatch, the untreated-`hyperkalemiaMissedDialysis` dangerous-rhythm-by-
+10-min near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia
+near-miss, the untreated-neurogenic-shock sbp-drift near-miss, and the
+`accidentalHypothermia` rewarming-vs-bradycardia near-miss — the last of
+these already documented elsewhere in this file, under that condition's
+own section-3 entry, as pre-existing stochastic flakiness re-measured at
+22/30 standalone — confirmed by content, none reads `_vtMorphology`/
+`scarBurden`/`rhythm==="VT"`. All 3 new assertions pass. Full
+`scenarioSweep.mjs`: **187 scenarios, 22,467,304 checks, 935 failed** —
+byte-identical to the documented baseline (no new `pat.*` field this
+phase). Throwaway probe scripts were confined to `/tmp`/the session
+scratchpad throughout, confirmed stripped before this entry was written.
+
+**Still open, honestly**: the discrete morphology sample is a single
+weighted draw at onset, not the richer "classify from simulated
+activation, conduction, and surface morphology" mechanism the plan's own
+fourth-review refinement describes — this engine has no beat-level
+activation/propagation representation to classify FROM, so the draw is
+keyed to the same aggregate substrate signals that already drive VT onset,
+not a genuinely simulated reentry pattern. Per the documented sequencing
+(Phase 0 -> 1 -> 3 -> 4 -> 2 -> 5 -> 6), Phase 6 (pericardial constraint /
+ventricular interdependence) is next and has not been started; it depends
+on Phase 3's atrial-pressure-backup mechanism, already shipped.
+
+### 2026-10-01 — Ischemic mitral regurgitation, continuous tethering term (queue item 1's Phase 2, PARTIALLY CLOSED): the third attempt at this finally breaks the documented two-attempt blowup history, by gating on a one-way necrosis state instead of live ischemia. A real trait-pinning bug in the PRIOR entry's own new assertions was also found and fixed in the course of re-verifying this one.
+
+**What existed before this session.** `cardiovascular.js`'s own V2-24
+comment already documented, in detail, two prior failed attempts at
+wiring ischemic mitral regurgitation into the authoritative full-loop
+solver — both gated on live `pat.atp` (the engine's instantaneous
+ischemia signal), and both hit the SAME real, traced emergent feedback:
+regurgitation unloads the ventricle, which lowers myocardial work, which
+raises ATP, which shrinks the very ischemic term that produced the
+regurgitation in the first place — a single-forward-run identifiability
+problem, not a coefficient-magnitude problem (re-tuning both threshold
+and gain in the second attempt did not resolve it). The comment's own
+conclusion was explicit: "an isolated coefficient change inside an
+unrelated batch, verified only by a forward run, is exactly the shape of
+'attempt' that already failed twice."
+
+**The fix: gate on a quantity that cannot re-enter the loop.**
+`pat.contractilityFactor`'s own necrosis-driven loss is a genuinely
+one-way state for the entire MI family — `ami`'s own `progress()` applies
+a flat, unconditional `-dt*0.018` decay with no recovery term at all, and
+the NSTEMI/unstableAngina wavefront's own `necro` term only ever
+SUBTRACTS from it (`clamp((contractilityFactor ?? 1) - necro, 0.35, 1)`).
+Nothing in this engine lets ventricular unloading raise
+`contractilityFactor` back up, so a term gated on `1 - contractilityFactor`
+cannot participate in the documented loop BY CONSTRUCTION — this is a
+structurally different angle from both prior attempts, not a third try at
+the same lever. Composed with `pat.infarctTerritory` (grep-confirmed, set
+only by `ami`/`chestPainM`/`chestPainF`, never by `acs`/`nstemi`/
+`unstableAngina`): the posteromedial papillary muscle has a SINGLE blood
+supply (usually the PDA) in most hearts, so inferior/lateral infarcts
+carry the real clinical MR risk, while the anterolateral papillary
+muscle's dual supply (LAD diagonal + circumflex marginal) rarely infarcts
+alone (Voci, Bilotta & Caretta, J Am Soc Echocardiogr 1995; Barzilai,
+Davis & Kouchoukos, Am J Cardiol 1990).
+
+**The regression guard holds by construction, not as a bolted-on
+check.** `acs`/`nstemi`/`unstableAngina` never set `infarctTerritory` at
+all, so `mrTerritoryBias` is exactly 0 for all three regardless of how
+much necrosis they accrue — `unstableAngina` (no necrosis by definition)
+and `acs` both measure EXACTLY zero ischemic MR, and `nstemi` (which DOES
+accrue real necrosis via its own wavefront, confirmed `contractilityFactor`
+0.862) ALSO measures exactly zero, confirming the territory gate — not
+the necrosis gate — is what's doing the work, exactly the regression this
+item's own V2-24 comment calls for.
+
+**MEASURED, not assumed.** Inferior MI (`chestPainM`) reaches real,
+mild-moderate ischemic MR (`mitralRegurgStructural` 0.16), matching the
+literature's own "ischemic MR after MI is usually mild" (Silbiger, J Am
+Soc Echocardiogr 2019), with CO falling a modest ~15% (6.19 -> 5.30
+L/min) — NOT the prior attempts' shock-level collapse (the first attempt
+drove `acs` to CO 3.27, EF 0.272; this session's fix leaves `acs` entirely
+untouched, since it has no diagnosed territory). Anterior MI (`ami`) shows
+far less (0.024, correctly negligible — anterior-wall MI rarely causes
+clinically significant MR).
+
+**A real bug found and fixed while re-verifying this entry, in the PRIOR
+session's own new Phase 4 pregnancy assertions, not this session's own
+code.** The full suite run caught a genuine non-monotonic LVEDV trajectory
+across gestational weeks (T1=113.7, T2=114.0, term=112.9 — term LOWER than
+T2) on one run. Root-caused, not patched blind: Phase 4's own `settled()`
+test helper (added in the immediately prior session) constructs a SEPARATE
+`Patient` object per gestational age with no trait pinning, so queue item
+50's own per-patient trait randomization (`baroreflexGain`/`metabolicRate`/
+`painSensitivity`/`vascularReactivity`/`renalReserve`/`pulmonaryReserve`)
+confounded the cross-patient comparison — the exact documented failure
+mode this suite's own `probe()`/`afibRun()` already carry a `pinTraitsNeutral()`
+fix for, just not yet applied to this newer, differently-shaped helper.
+Fixed by calling `pinTraitsNeutral()` immediately after construction in
+`settled()`. Re-verified via 5 standalone repeated trials: byte-identical
+across all 5 (T1=112.6, T2=113.3, term=114.0 every time), confirming the
+fix, not just masking the symptom with a lucky draw. The stale, pre-fix
+full-suite run (which had the buggy code loaded in memory) was killed and
+restarted fresh rather than trusted.
+
+**Still open, deliberately deferred, not attempted in this batch.** The
+discrete papillary-rupture event (a genuinely separate, stochastic
+mechanism — a time-varying regurgitant-orifice growth, a rare per-tick
+trigger calibrated against ~1% MI incidence, and the item's own explicit
+"remove the absolute preserved-EF-cannot-cause-shock rule" requirement)
+was not built — it needs its own careful calibration and its own batch,
+per this project's one-mechanism-per-batch discipline. Annular dilation
+as a separate, additive coaptation-failure term (distinct from papillary
+tethering) was also not split out — the shipped term is one composite
+severity, not sub-mechanism-decomposed.
+
+**Verification, complete.** `node --check`/`npx eslint src/scripts/
+mechanismWiring.mjs src/physio/cardiovascular.js`: clean. `npx vite
+build`: clean (4.37s, same pre-existing >500kB chunk-size warning). Full
+`mechanismWiring.mjs`, re-run fresh after the trait-pinning fix: **766
+passed, 9 failed** — all 9 are pre-existing, already-documented failure/
+flake classes (the BVM trio, the Tzivoni magnesium/torsades near-miss
+7/10, the croup paco2 near-miss, the PACs HR-variance stdev near-miss,
+the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss, the
+untreated-neurogenic-shock sbp-drift near-miss, and the tracheostomy-vs-
+native-airway razor-thin vt margin), confirmed by content — none reads
+`mitralRegurgStructural`/`infarctTerritory`/the pregnancy fields. All 10
+new assertions (5 ischemic-MR, 5 pregnancy, re-verified clean after the
+fix) pass. Full `scenarioSweep.mjs`: **187 scenarios, 22,467,304 checks,
+935 failed** — byte-identical to the documented baseline (no new `pat.*`
+field this phase — `mitralRegurgStructural` and `infarctTerritory` were
+both already tracked). A real gap was also found and fixed in
+`mechanismWiring.mjs`'s own `snapshot()` function: `mitralRegurgStructural`
+had never been captured at all (only `aorticRegurgStructural` was), which
+would have silently broken any future assertion reading it; fixed
+alongside this batch's own need for it. Throwaway probe scripts were
+confined to `/tmp`/the session scratchpad throughout, confirmed stripped
+before this entry was written.
+
+### 2026-09-30 (b) — Pregnancy gestational controller (queue item 1's Phase 4, CLOSED): the existing mechanism already matched Chen et al.'s LVEDV relative-rise target with zero coefficient changes; the real work was correcting a stale fixture that was checking the wrong quantity, plus the contralateral/multi-trimester verification the plan requires.
+
+**What existed before this session.** `applyPregnancyAdaptations`
+(obstetric.js) already scaled `chamberRemodeling`/`venousCapacitanceFactor`/
+`baseSVR`/`hrBase` continuously off `gestationFactor(g)`, a real 0-1 ramp
+over weeks 6-32 — a genuine gestational-age trajectory, not a flat term-
+only step. `cardiovascular.js` carried a "QUEUE ITEM 10, SWEPT AND STILL
+OPEN" comment claiming this mechanism could not close a documented gap
+(measured LVEDV 114.7 mL against a stated 130-170 mL target) at any
+value of `chamberRemodeling` up to its clamp ceiling.
+
+**The finding: the gap was a fixture defect, not an engine deficiency.**
+The 130-170 mL absolute target described a DIFFERENT reference
+population's absolute chamber size. This engine's own settled (steady-
+state, not construction-snapshot) non-pregnant LVEDV for the
+`pregnancyBenchmark.mjs` fixture's own 65 kg/165 cm woman is 99.6-100.9
+mL — already below that row's 130 mL floor before any pregnancy
+mechanism runs at all, so the row was structurally unsatisfiable by this
+patient regardless of mechanism quality (the same "fixture checking a
+population baseline this patient was never built to match" defect class
+this file's own Total-blood-volume row was already fixed for once).
+Chen et al.'s own cohort reports a population-baseline-independent
+quantity instead: the RELATIVE rise from a woman's own pre-pregnancy
+LVEDV to term, ~87->100 mL, i.e. +12-17%. MEASURED against that anchor
+with the mechanism completely UNCHANGED: EDV rises 99.6-100.9 -> 114.0-
+114.9 mL across repeated runs, a +13.5-14.9% rise — comfortably inside
+Chen's band.
+
+**Fixed: two stale artifacts, not the mechanism.**
+`pregnancyBenchmark.mjs`'s EXPECTED table retired the absolute LVEDV row
+and replaced it with the relative-rise quantity, computed against a new
+`baselineHemodynamics()` helper that settles a condition-less, non-
+pregnant patient for the SAME duration as the pregnant fixture (so the
+two are a genuine steady-state comparison, not a snapshot vs. a settled
+state). `cardiovascular.js`'s stale "still open" comment was corrected
+with the measured finding, including an honest statement of what remains
+genuinely unresolved (CO/SV/MAP/SVR/Hct rows — confirmed by direct check
+to be independent of the EDV fix, not silently closed by it).
+
+**Contralateral and multi-trimester checks, per this phase's own cross-
+cutting requirement.** The RV shows the same proportional rise as the LV
+(94.6-95.1 -> 109.6-109.7 mL, +15.0-15.9%, RV EF essentially unchanged),
+confirming a real, symmetric preload effect rather than an LV-only
+artifact. PA mean pressure rises 15.0 -> 20.0 mmHg on the CO rise alone
+with PVR completely unchanged (1.90 Wood units both arms) — reported
+honestly as an unmodeled gap (no gestational pulmonary-vasodilation term
+exists in this engine), not asserted as correct. A weeks 12/24/39 sweep
+confirms the trajectory is genuinely monotonic (112.0-113.3-114.4 mL),
+not a step function. CO rises +38-39% (within the documented +20-50%
+band) and EF is preserved to within 0.6 points, confirming the diastolic-
+only remodel path (`pat.chamberRemodeling`, NOT `pat.lvHypertrophy`/Emax)
+is what's doing the work.
+
+**A real confound found and avoided before it produced a false negative
+(lesson 8).** The new `mechanismWiring.mjs` assertions were first built
+against the suite's usual `scen`/`probe()` scenario harness
+(`abdPain`/appendicitis as the substrate) — measured directly before
+trusting it: stacking pregnancy's own +15bpm HR rise on top of
+appendicitis's own condition-driven tachycardia pushed combined HR high
+enough that diastolic-filling-time loss dominated and INVERTED the
+measured EDV direction (-16% instead of rising). Fixed by constructing
+condition-less `Patient` objects directly, mirroring
+`pregnancyBenchmark.mjs`'s own already-validated harness, isolating the
+gestational mechanism from an unrelated confounding condition.
+
+**Five new two-sided assertions** added to `mechanismWiring.mjs`'s new
+`[PREGNANCY GESTATIONAL CONTROLLER]` section: the Chen-band relative EDV
+rise, the monotonic multi-trimester trajectory, EF preservation, the RV
+contralateral-proportionality check, and the CO-rise band. All 5 pass.
+
+**Verification, complete.** `node --check`/`npx eslint src/scripts/
+mechanismWiring.mjs src/scripts/pregnancyBenchmark.mjs src/physio/
+cardiovascular.js`: clean. `npx vite build`: clean (4.20s, same
+pre-existing >500kB chunk-size warning). Full `mechanismWiring.mjs`:
+**763 passed, 7 failed** — all 7 are pre-existing, already-documented
+failure classes (the BVM trio, the croup compensatory-tachypnea
+near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia
+near-miss, the untreated-neurogenic-shock sbp-drift near-miss, and a
+`hydrocarbonAspiration` compliance-plateau assertion re-measured
+standalone across 5 trials at ±0.0006-0.0007 swings against the
+assertion's own ±0.0005 tolerance — confirmed pre-existing stochastic
+noise, reads no field this phase touches); all 5 new assertions pass.
+Full `scenarioSweep.mjs`: **187 scenarios, 22,467,304 checks, 935
+failed** — byte-identical to Phase 1's own documented baseline (no new
+`pat.*` field this phase); every failure confirmed by grep to be the same
+pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
+defect. `pregnancyBenchmark.mjs`: 10/16 rows in range (up from 9/16), the
+LVEDV row now checking the corrected quantity. Throwaway probe scripts
+were confined to `/tmp`/the session scratchpad throughout, confirmed
+stripped before this entry was written.
+
+**Still open, honestly**: the plan's own transmural-pressure formula
+(`P_trans,j = P_intra,j − α_j·P_peri − P_thorax`), which the plan says
+must be DEFINED starting at this phase, not deferred to Phase 6, was NOT
+implemented — no per-chamber transmural field was added, even as a
+zero-placeholder for `P_peri`. A gestational pulmonary-vasodilation term
+and a separate atrial-elastance/compliance tracked quantity (beyond what
+`chamberRemodeling`'s existing diastolic chamber-size scaling already
+reaches) are also unbuilt. The CO/SV/MAP/SVR/Hct rows
+`pregnancyBenchmark.mjs` still reports out of range are a separate,
+unresolved gap, confirmed independent of the EDV fix. Per the documented
+sequencing (Phase 0 -> 1 -> 3 -> 4 -> 2 -> 5 -> 6), Phase 2 (ischemic MR)
+is next; it has not been started.
+
+### 2026-09-30 — Pacemaker syndrome / AV dissociation (queue item 1's Phase 3, CLOSED): a compliance-scaled atrial-kick CO penalty for AV-dissociated/paced rhythms, JVD/hepatic-congestion findings wired for real, and two real bugs found and fixed during verification.
+
+**What existed before this session.** `NO_ATRIAL_KICK` (cardiovascular.js)
+and a lumped-model `kickFactor` already existed, but only affected the
+LUMPED model's own one-tick-bootstrap EDV — immediately overwritten every
+tick by the authoritative full-loop ODE, which had NO atrial-kick
+attenuation of its own. A prior session's attempt to flatten the ODE's
+own `EmaxLA`/`EmaxRA` atrial elastance for AV-dissociated rhythms was
+tried and reverted (documented in-code): in a compressed diastolic
+window, removing the atrial-elastance spike let the loop's own mass
+conservation raise mean LA pressure to push the same volume through the
+mitral valve over the available window, netting MORE filling, not less —
+a real, traced emergent behavior, not a bug, but the wrong lever.
+
+**Shipped, reframing rather than repeating that attempt.** Per this
+item's own queue text, the missing pieces were a compliance-scaled CO
+penalty and a real venous-pressure consequence — not a change to atrial
+contractile mechanics. Implemented as a direct discount on the
+AUTHORITATIVE published SV/EDV, applied AFTER the full loop's own
+publish block (`cardiovascular.js`, inside `updateCardiovascular`'s
+`useFullODE` branch), narrowly gated on `pat.rhythm === "chb"` OR
+`pat.pacedCapture > 0.5` — deliberately NOT the broader `NO_ATRIAL_KICK`
+list, which also includes afib/flutter/VT/torsades, each with its own
+separately-measured, separately-verified CO mechanics (Phase 1's
+rate-class hazard work in particular) that this must not double-discount.
+A relaxing `pat._pmAvDissoc` state (same `approach()`/`2*S` idiom as the
+existing `pat.atrialKick`) smooths onset/offset. The loss fraction
+(15-50%, literature range from this item's own queue text) scales with
+ventricular compliance via two already-existing handles rather than a
+third invented one: the acute `stiff` term (elderly/lusitropy, already
+computed earlier in the same function for the lumped bootstrap) and the
+chronic `pat.lvHypertrophy` state (queue item 25). EF is held constant
+and EDV/SV scaled by the same percentage (not ESV held fixed with an
+absolute volume subtracted — see the bug below for why), and MAP/SBP/DBP
+are scaled proportionally to the resulting CO change afterward, so
+`BP=CO*TPR` doesn't silently go inconsistent (the ODE's own pressure
+trace was already set before this discount runs). JVD (`actions.js`,
+already reading live `pat.cvp`) and a new hepatic-congestion finding
+(`palp`, gated on the same `pat.cvp`, checked before the existing
+18-scenario `probes.abdo` overrides so real scenario content still wins)
+both now fire for real whenever CVP rises from the resulting CO drop —
+via the engine's own pre-existing RA-volume-balance term
+(`dCvp=(vr-co)*1.2/bodyScale`), not a new proxy. The REJECTED linear
+`pericardialEffusion -> pericardialP` shortcut this item's own queue text
+warned against was correctly not used anywhere.
+
+**Two real bugs found and fixed during verification, not shipped blind
+(lesson 8).**
+
+1. **A rate-dependent magnitude artifact.** The first version held ESV
+   fixed and subtracted a FIXED ABSOLUTE EDV volume from both EDV and SV.
+   Measured directly: this punishes a higher-rate (e.g. paced) ventricle
+   far more than a slower one, because baseline SV is already smaller at
+   a faster rate (shorter diastolic filling time) — subtracting the SAME
+   absolute volume from both the untreated-CHB arm (rate ~33, SV ~59.5
+   pre-discount) and the paced arm (rate ~70, SV ~41.8 pre-discount) cut
+   the paced arm's SV by ~58% against the untreated arm's ~43%, for
+   identical stiffness inputs. This broke the existing
+   `mechanismWiring.mjs` "transcutaneous pacing raises output in CHB"
+   assertion (1.15 -> 1.24 mmHg CO, needed >=1.95). Fixed by holding
+   EJECTION FRACTION constant and scaling EDV/SV by the SAME PERCENTAGE
+   instead — a true rate-independent loss, matching "15-50% of CO" as a
+   percentage rather than an absolute volume. Re-measured: 1.75 -> 2.80,
+   comfortably passing.
+2. **A stale, now-superseded assertion, corrected rather than worked
+   around.** Even after fix 1, one specific scenario
+   (`secondDegreeAVBlockTypeII`, a 74F Mobitz II presentation) showed
+   pacing genuinely fail to improve CO (3.20 -> 3.01) despite correctly
+   capturing and raising HR (+31.5) — a real, literature-consistent
+   pacemaker-syndrome finding for an elderly patient whose real age-driven
+   diastolic stiffness (`pat.ageProfile.isElderly()`) is exactly the
+   population this phenomenon is documented in, and whose underlying rate
+   (38.5) was not dangerously slow to begin with (contrast CHB's own
+   escape rate, where pacing still helps substantially even with the same
+   mechanism). The existing assertion's own ">=0.5 up" threshold was a
+   property of the OLD, incomplete model (pacing could only ever help,
+   by construction, with no atrial-kick mechanism at all) — recalibrating
+   the mechanism to force that stale expectation to keep passing would
+   have meant tuning new, real physiology to match an outdated test
+   (lesson 4). Recalibrated the assertion itself instead, with the full
+   reasoning recorded in its own comment: pacing still reliably captures
+   and controls the rate (still asserted), and CO must not collapse
+   FURTHER (a >-1.0 floor, not a required increase) — the genuinely
+   defensible claim for this patient, not an overstated one. Also
+   lowered the loss-fraction's own base floor from 0.22 to the
+   literature's own stated 15% (the extra 7 points had been carried over
+   unexamined from the lumped bootstrap's unrelated `kickFactor`
+   calibration, inflating every patient's loss, not just stiff ones).
+
+**MEASURED, not assumed, for the shipped mechanism.** Native sinus vs.
+CHB at matched HR (90): CO measurably worse in CHB (confirmed correct
+direction). A stiff ventricle (`lvHypertrophy=1`) loses more CO than a
+compliant one (confirmed correct scaling). VT/torsades/afib/flutter
+confirmed untouched (`_pmAvDissoc` stays exactly 0 — no double-discount
+of Phase 1's own just-verified numbers). Sustained CHB at a slow escape
+rate drives `cvp` to 12-13 mmHg, comfortably crossing both the JVD action's
+own 8/12 mmHg thresholds.
+
+**Verification, complete.** `node --check`/`npx eslint src/physio/
+cardiovascular.js src/actions.js src/scripts/mechanismWiring.mjs`: clean.
+`npx vite build`: clean (4.90s, same pre-existing >500kB chunk-size
+warning). Full `mechanismWiring.mjs`: **756 passed, 9 failed** — all 9 are
+the exact same pre-existing, already-documented failures (the BVM trio, a
+croup near-miss, the PACs HR-variance stdev near-miss, a vo2Demand
+control-match rounding mismatch, the `severeMetabolicAcidosis` secondary-
+hyperkalemia near-miss, the untreated-neurogenic-shock sbp-drift
+near-miss, and a small, unrelated airway-fluid/work-of-breathing near-miss
+0.0096 vs a 0.01 threshold — respiratory.js territory, confirmed unrelated
+to anything this session touched) — confirmed by content; every AV BLOCK/
+TRANSCUTANEOUS PACING/SECOND-DEGREE AV BLOCK/PERICARDIAL TAMPONADE/
+SYMPTOMATIC BRADYCARDIA assertion passes, including the one recalibrated
+assertion above. A separate, unrelated stochastic assertion
+(accidentalHypothermia's rewarming-vs-bradycardia check) showed 5/10 on
+one run; re-run standalone at N=30 measured 22/30 (73.3%), confirming this
+is the assertion's own already-documented pre-existing flakiness, not a
+regression. Full `scenarioSweep.mjs`: **187 scenarios, 22,467,304 checks,
+935 failed** — byte-identical to Phase 1's own documented baseline (no new
+`pat.*` field this phase, so no check-count change either); every failure
+confirmed by grep to be the same pre-existing `rvEdv`/`rvEsv`/`rvSv`/
+`rvEf`/`pvrWood`-undefined-at-t=2s defect; zero mentions of torsades/chb/
+pacedCapture anywhere in the failure log. Throwaway probe scripts used to
+measure the numbers above were confined to `/tmp`/the session scratchpad
+throughout, confirmed stripped before this entry was written.
+
+**Still open, honestly**: Phase 3 as originally specified (true AV-timing/
+cannon-A-wave mechanics, the external-pressure + chamber-interaction term
+pre-staging Phase 6, baroreflex afferent coupling, incidence-probability
+calibration) is NOT complete — this closes a real, verified, useful slice
+of it (a genuine CO penalty plus real JVD/hepatic exam consequences), not
+the whole phase. Per the documented sequencing (Phase 0 -> 1 -> 3 -> 4 ->
+2 -> 5 -> 6), Phase 4 (gestational controller) is next; it has not been
+started.
+
+### 2026-09-29 (d) — Torsades episodic state (queue item 1's Phase 1, CLOSED): a per-episode rate/class sample and beat counter replace the flat 220bpm/">100 beats" gates, plus a real regression found and reverted before shipping.
+
+**What existed before this session.** `updateRhythm` (cardiovascular.js)
+ran torsades on three independent per-tick Bernoulli draws with no
+per-episode state at all: HR was hard-clamped to `220` every tick
+regardless of how long the episode had run, and VF-degeneration used one
+fixed rate (`TDP_VF_RATE=0.7`, modulated only by `pat.atp`) with a flat,
+unconditional ">100 beats" comment that was never actually implemented as
+a beat count anywhere in the code (no beat-counting mechanism existed at
+all). Real torsades has a real bimodal rate distribution and beat-count-
+driven VF risk that this flat model couldn't represent.
+
+**Shipped, scoped down from the full six-phase-plan text (queue item 1,
+section 6) to what could be built and fully verified in one batch.** A
+per-episode rate/class draw at onset (`pat._torsadesRate`/
+`pat._torsadesRateClass`, sampled once when `pat.rhythm` transitions into
+`"torsades"`): mean 218±38bpm, clamped to the measured 145-281 range,
+classified fast (≥220bpm) vs slow (<220bpm) — Bluzhas et al.'s own
+150-episode series, cited already in this item's queue text. `hr` during
+torsades now reads the sampled rate instead of the flat 220 clamp.
+`pat.torsadesBeatCount` (new field, `patient.js`) accumulates
+`rate*dt` each tick while the episode is active, reset to 0 on
+termination. Two rate-class-dependent hazard weights, both applied only
+in the `pat.rhythm === "torsades"` sustain/resolve branch: a termination-
+rate multiplier (fast episodes last longer, 0.6x the slow/neutral rate,
+capturing "fast torsades is documented as both longer-lasting and more
+likely to fibrillate") and a VF-degeneration weight (3.8x for fast vs.
+slow, the measured Bluzhas ratio — 97.5% of that cohort's VF-converting
+episodes came from the faster group). An unconditional VF floor
+(`torsadesBeatCount>=100` forces conversion regardless of the continuous
+hazard, per Bluzhas's own ">100 QRS complexes" predictor). A female-sex
+2.5x multiplier on the initiation hazard itself (`a.repol>0.6` branch) —
+`pat.sex` was already a reachable field (`patient.js`), so no new plumbing
+was needed for this piece, unlike the plan's own flagged "open dependency
+to check."
+
+**A real regression, found by direct measurement before it shipped
+(lesson 8), not after.** The new rate-class weighting defaulted to
+`"fast"` whenever `pat._torsadesRateClass` was unset — which is exactly
+what happens every time torsades is imposed directly rather than reached
+through this session's own new onset-sampling code, including
+`mechanismWiring.mjs`'s own existing `tdpRun()` test harness (which sets
+`activePatient(s).rhythm = "torsades"` by hand, per its own comment: "the
+engine's own initiation limb is effectively unreachable" via that
+harness). Defaulting to the WORST class (lower termination, higher VF)
+biased every externally-imposed episode toward non-termination — measured
+directly: the existing `"torsades -> self-terminates untreated"`
+assertion, previously passing at documented rates around 94%, fell to
+6/10 in a standalone re-run copying the suite's own helpers verbatim
+(lesson 8/17). Root cause confirmed by reading the code, not guessed:
+`rateClass = pat._torsadesRateClass || "fast"` should have defaulted to
+neutral (matching pre-Phase-1 behavior for any caller that doesn't sample
+a class), not to the specific class most likely to fibrillate. Fixed by
+defaulting to `null` and having both hazard-weight lookups treat
+`null`/`"slow"` identically (both keep the exact pre-Phase-1 multiplier of
+1.0) — only an explicit `"fast"` classification (from this session's own
+onset-sampling code) engages the elevated weights. Re-verified via the
+same standalone re-run: 10/10.
+
+**MEASURED, not assumed, for the shipped mechanisms.** Fast-class VF
+conversion 47.0% vs. slow-class 12.5% (N=200 each, forced onset via the
+real `physio()`/`activePatient()` harness) — a ratio of 3.76x, matching
+the intended 3.8x weighting to within sampling noise. The unconditional
+beat-count floor confirmed firing exactly at `torsadesBeatCount≈100`
+(a healthy-ATP patient held in a fast-class episode, forced past the
+floor, converts to VF the instant the counter crosses it). The existing
+Tzivoni magnesium-suppresses-recurrence assertion's own already-documented
+borderline flakiness (threshold picked at 8/10 against a measured true
+rate) was re-confirmed unrelated to this session's changes: a 30-trial
+rerun of the same comparison measured 24/30 (80%), matching the
+pre-existing threshold's own calibration, not a new regression.
+
+**Explicitly NOT built this phase, deferred rather than silently
+dropped** (see the corrected queue item 1 text, section 6, for the full
+list): the formal initiation→maintenance→termination state OBJECT the
+plan describes (still three independent per-tick Bernoulli draws,
+now rate-class-weighted, not a state machine); cycle-length variability
+(VRV) as a distinct self-termination-vs-VF predictor; the exponential
+(rather than this session's flat 2.5x) sex hazard curve and the
+sex-stratified QTc thresholds; the diastolic-filling-time-driven emergent
+CO collapse (HR is now sampled per-episode instead of hardcoded, but the
+mechanical collapse itself is otherwise unchanged from Phase 0); the
+initiating PVC's coupling interval, TDR, TWA pre-storm state, and
+LQT-subtype mechanics.
+
+**Verification, complete.** `node --check`/`npx eslint src/physio/
+cardiovascular.js src/physio/patient.js src/scripts/scenarioSweep.mjs`:
+clean. `npx vite build`: clean (4.23s, same pre-existing >500kB
+chunk-size warning). Full `mechanismWiring.mjs`: **756 passed, 8
+failed** — all 8 are the exact same pre-existing, already-documented
+failures (the BVM trio, a k=7.5 wideQRS stochastic near-miss, a
+thrombolytic near-miss, the PACs HR-variance stdev near-miss, the
+`severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and the
+untreated-neurogenic-shock sbp-drift near-miss), confirmed by content —
+none reads `torsadesBeatCount`/`_torsadesRate`/`_torsadesRateClass`. All 5
+`[TORSADES DE POINTES]` assertions pass, including the previously-
+borderline magnesium/Tzivoni one (9/10 this run). Full `scenarioSweep.mjs`:
+**187 scenarios, 22,467,304 checks, 935 failed** — every failure confirmed
+by grep to be the same pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/
+`pvrWood`-undefined-at-t=2s defect on unmodified master; the +168,300
+check-count increase over Phase 0's own documented baseline is exactly
+`torsadesBeatCount`'s own new presence/non-negative tracking across the
+187-scenario library; zero mentions of torsades anywhere in the failure
+log. Throwaway probe scripts used to measure the numbers above were
+confined to the session scratchpad/`/tmp` throughout, confirmed stripped
+before this entry was written.
+
+**Still open, honestly**: Phase 1 as originally specified (the full
+state-machine/VRV/exponential-QTc/diastolic-filling-time-CO-collapse
+design) is NOT complete — this closes a real, verified, useful slice of
+it, not the whole phase. Phase 3 (pacemaker syndrome) has not been
+started.
+
+### 2026-09-29 (c) — Legacy cardiovascular solver removed (queue item 1's Phase 0, CLOSED): `cardiovascular_ode.js`/`solveBeat` and its two orphaned A/B regression scripts deleted, the arterial-line PV-loop teaching display re-sourced from the authoritative full-loop ODE, and a real regression found and reverted before shipping.
+
+**What existed before this session.** `cardiovascular_ode.js` exported a
+single-beat double-Hill time-varying-elastance integrator (`solveBeat`) that
+`cardiovascular.js` called twice per tick (once for the LV in
+`updateCardiovascular`, once for the RV in `updateRightHeart`) and cross-
+checked, every tick, against the authoritative 16-state full-loop ODE
+(`cardiovascular_ode_full.js`). `FULL_ODE_AUTHORITATIVE` had been
+unconditionally `true` in every scenario/script in the repo for long enough
+that `solveBeat`'s own outputs (`pat._legacySv`/`_legacyEdv`/etc.) existed
+only for tick-for-tick A/B comparison via two standalone scripts
+(`scripts/regressionFullOde.mjs`, `scripts/fullRegress.mjs`).
+
+**What the pre-session dependency map got wrong, found by reading the code
+directly (lesson 16) rather than trusting the earlier inventory.** The
+inventory this session started from claimed "`cardiovascular_ode.js` is
+imported ONLY by `cardiovascular.js`" — false. `cardiovascular_ode_full.js`
+itself imported `activation()` (the double-Hill activation-curve shape)
+from the legacy file — a real, live dependency, not a historical one.
+Fixed by inlining `activation()` (and its `DH`/`dhRaw`/`_dhPeak`
+precompute) directly into `cardiovascular_ode_full.js` before deleting the
+legacy file, rather than deleting a function something still called.
+
+**A second thing the plan hadn't flagged: a real, live UI consumer of the
+legacy beat's own PV-loop output.** `App.jsx`'s arterial-line teaching
+display (gated on `dv.artline`) renders an LV/RV pressure-volume-loop graph
+from `pat.pvLoop`/`pat.rvPvLoop` (via `patient.js`'s `_pvLoop`/`_rvLoop`
+vitals fields) — not dead, not comparison-only. Replaced with a real trace
+sampled directly from the full loop's own substep integration (the same
+50ms-resolution windowed peak-detection loop `updateFullLoopODE` already
+runs for its Pao/VLV/VRV tracking), pushing `{V, Plv}` points for both LV
+and RV every substep — a richer, authoritative source for that display
+rather than a second, parallel integrated beat. Point field kept as `Plv`
+even for the RV series (matching the legacy beat's own generic per-chamber
+shape App.jsx's rendering code already expects) rather than touching the UI.
+
+**Deleted**: `cardiovascular_ode.js`, `scripts/regressionFullOde.mjs`,
+`scripts/fullRegress.mjs`, every `pat._legacy*` field, `pat.lvEsp`/
+`pat.valveAoOpen` (confirmed zero consumers anywhere in `src/`/`tools/`
+before deleting). **Simplified, not deleted**: the LV/RV `solveBeat` calls
+became direct analytic end-systolic-coupling formulas
+(`Ees(EDV-V0)/(Ees+Ea)`) — the same equilibrium the integrated beat always
+converged to anyway, so the values are unchanged; they now serve only as a
+one-tick bootstrap before `pat.fourChamberLoop` exists, exactly as the
+analytic value already did pre-session. **Preserved exactly**:
+`updateRightHeart`'s non-`solveBeat` pressure-flow algebra (`paMean`/
+`paDia`/`paSys`/`pvrWood`), and everything `updateValves`/
+`updateContractility`/the EDV calc produce that the full loop already
+consumes.
+
+**A real regression, found by direct A/B measurement before it shipped, not
+after (lesson 8).** The plan's own Phase 0 spec called for moving
+`updateMyocardialOxygen`'s call site to AFTER the full-loop publish block,
+so its `sv`/`esv`/`map` reads would pick up the "authoritative" full-loop
+values instead of the pre-publish analytic ones — framed as making an
+implicit execution-order dependency explicit. Implemented, then measured
+via `git stash`-isolated A/B against the exact same probe (settle/run
+identical, traits pinned neutral): the `acs` scenario at 32 minutes went
+from a real evolving infarct (contractilityFactor 0.941, atp 0.862, ef
+0.265 — the pre-existing, documented baseline) to NO infarct at all
+(contractilityFactor 1.000, atp 0.975, ef 0.523) — the wavefront-necrosis
+mechanism (`conditions.js`'s ischemia-gated necrosis, gated on
+`pat.atp<0.62`) had silently stopped engaging. Root cause: myocardial
+oxygen DEMAND (`pva = strokeWork + potentialE`, both direct functions of
+`sv`/`esv`/`map`) needs the true beat-to-beat value to track a developing
+ischemic process; the full loop's own published vitals are deliberately
+EMA-smoothed (~4s time constant, `tauReport` in `updateFullLoopODE`) to
+damp MONITOR-DISPLAY jitter — a smoothing built for a different consumer,
+which lags the rising-coronaryStenosis/falling-contractility spiral just
+enough that ATP never crosses the necrosis threshold these ACS/NSTEMI/
+unstable-angina conditions are calibrated against. **Reverted**: the call
+site moved back to its original position (before `updateRightHeart`/
+`updateFullLoopODE`), reading the fresh instantaneous analytic vitals every
+tick — documented in-code at the call site and at `FULL_ODE_AUTHORITATIVE`'s
+own header comment so a future session doesn't retry the "obviously more
+authoritative" reorder blind. Confirmed via a second stash-isolated A/B
+after the revert: `acs` at 32 minutes reads contractilityFactor 0.930/atp
+0.820/ef 0.253 — back in the documented baseline's own ballpark (small
+residual differences are the same run-to-run stochastic variance this
+mechanism's own comments already document, from the engine's
+Math.random()-gated ischemic-ectopy substrate).
+
+**Verification, complete.** `node --check`/`npx eslint src/physio/
+cardiovascular.js src/physio/cardiovascular_ode_full.js src/physio/
+conditions.js`: clean. `npx vite build`: clean (4.2-4.4s, same pre-existing
+>500kB chunk-size warning). Direct-engine A/B probes (stripped before this
+entry was written) confirmed regression-neutrality across healthy/MI/
+torsades-capable/VT/aortic-stenosis/MR scenarios before the full suites
+were run. Full `mechanismWiring.mjs`: **757 passed, 7 failed** — all 7 are
+the exact same pre-existing, already-documented failures (the BVM trio, the
+`agitationBurden=0` vo2Demand near-miss, the bagging-delayed-to-150s
+stochastic near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia
+near-miss, and the untreated-neurogenic-shock sbp-drift near-miss),
+confirmed by content — none reads any field this session's changes touch.
+Full `scenarioSweep.mjs`: **187 scenarios, 22,299,004 checks, 935 failed** —
+every failure confirmed by grep to be the same pre-existing `rvEdv`/
+`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified
+master; zero new failure signatures anywhere in the log.
+
+**Still open, honestly**: the explicit beat-level timing object
+(`{CL, systolicTime, diastolicTime, diastolicFraction, avDelay,
+mitralOpenTime, mitralCloseTime, LVEDV, LVESV}`) this item's own text
+originally specified was NOT built — once the real fix (reverting the
+reorder, not adding a new timing export) was found, it was no longer
+needed for Phase 0's own regression-neutrality gate. Phase 1's diastolic-
+filling-time mechanism may still want an explicit timing export of this
+shape; build it then, against Phase 1's own real requirements, rather than
+speculatively here. Phase 1 (torsades episodic state machine) has not been
+started.
+
+### 2026-09-29 (b) — Gate-control modulation of pain shipped (queue item 62, CLOSED and removed from the numbered queue — the fifth item of the pain-physiology deepening workstream): a real, literature-anchored descending affective gate on `pat.allodyniaLevel` specifically, built on the engine's existing `pat.agitation` composite rather than the dialogue layer's `emotionalState`, after two real architectural/mechanistic obstacles were found and resolved during planning.
+
+**What the item as filed asked for, and the two real obstacles found before
+writing any code (lesson 16).** Queue item 62 asked for (1) gate-control-
+theory attenuation of `allodyniaLevel` via Aβ large-fiber tactile counter-
+stimulation, and (2) a small bidirectional coupling between
+`dialogue/emotionalState.js`'s derived state and pain. Investigation found
+two real problems with building (2) exactly as filed: `emotionalState.js`'s
+own header states dialogue is read-only from physiology and never writes
+back — `deriveEmotionalState()` is a pure function called per dialogue
+request, not per physio tick, from whatever the physio tick already
+published. Making pain depend on it would violate that documented
+invariant, make physio output depend on dialogue-call cadence, and is
+circular (emotionalState is itself partly derived from pain already).
+Resolved by building the coupling as a physio-native mechanism instead
+(user decision during planning), reading an existing physio-side distress
+signal rather than the dialogue layer's derived category. A second problem
+then surfaced: none of the three candidate distress signals
+(`pat.catecholLevel`, `pat.neuralSymp`/`sympathetic`, `pat.agitationBurden`)
+supports genuine below-baseline "calm" — each is hard-floored at its own
+resting value or at 0, and no drug writes any of them down. The one place
+calming drugs actually compose with distress is `neuro.js`'s derived
+`pat.agitation` (a 0-1 composite of `agitationBurden` + sympathetic drive +
+hypoxia, discounted to exactly 0 by real, already-shipped `sedationDepth`/
+`antipsychoticEffect` mechanisms) — real, already treatment-responsive, and
+floored at neutral rather than below it.
+
+**Design: built on `pat.agitation`, acting on the allodynia term only, in
+`pk.js`'s pain reseed.** Anatomically real, not a metaphor: Aβ low-threshold
+input and feed-forward glycinergic/GABAergic (PV+ islet cell) inhibition
+converge on PKCγ+ excitatory neurons in inner lamina II; that inhibition
+normally blocks a polysynaptic route from Aβ afferents to lamina I
+nociceptive projection neurons, and losing it (KCC2 downregulation,
+GABA-A/glycine blockade, NMDA/α2δ-1 disinhibition) is what produces
+allodynia — exactly what `pat.allodyniaLevel` represents, so it is the
+correct and only site for this multiplier, not `hyperalgesiaGain` (Lu et
+al., J Clin Invest 2013; Benarroch, Neurology 2016; Huang et al., J
+Neurosci 2025). This shares its substrate with the already-shipped nerve-
+block mechanism's own "inflammatory block failure" term (keyed to
+`pat.peripheralSensitization`) — two different drivers (local inflammation
+there, sustained affective distress here) converging on the same
+disinhibited dorsal horn, now cross-referenced in-code at both sites.
+
+**Sign/direction, and a real citation-polarity error caught and corrected
+before shipping (lesson 8/16 applied to the literature itself, not just
+code).** Sustained anxiety/distress (not acute fight-or-flight fear)
+measurably lowers pain threshold via impaired descending inhibition, in
+awake, chronic human data (Rhudy & Meagher, Pain 2000; D'Souza et al.,
+Front Pain Res 2026) — the correct direction for `pat.agitation`, a
+sustained autonomic/agitation-distress proxy, not an acute-fear one. The
+awake, chronic ACC→cord pathway driving this is real and facilitatory
+(Benarroch, Neurology 2020; Zhuo, Trends Neurosci 2016). A first draft of
+the in-code comment cited an acute-anxiety rodent tail-flick study
+(Falconi-Sobrinho et al., Eur J Pain 2025) as supporting the amplifying
+sign — checked directly against the paper's own finding before committing
+and found to say the OPPOSITE (awake anxiogenic ACC-NMDA activation was
+ANTInociceptive in that acute reflex model) — corrected in-code to state
+the finding accurately and explain why it doesn't transfer to the
+sustained-anxiety, allodynic-threshold context modeled here, rather than
+silently citing it backwards.
+
+**`GATE_AFFECTIVE_MAX = 0.4` is explicitly TUNED, not literature-derived
+directly**, and stated as landing on the high side of "modest": human
+anxiety-on-pain-threshold effect sizes are small-to-moderate (SMD ~0.3-0.4,
+Salas-González et al. 2025; Scaini et al. 2025) and concentrated at the
+threshold/allodynic end rather than suprathreshold intensity. A real
+double-counting risk was identified and checked, not just noted: gate-
+opening disinhibition and the existing `nmdaSuppression` term (ketamine)
+act on the same underlying NMDA/α2δ-1 node (Huang et al. 2025) — measured
+the agitated + low-`nmdaSuppression` corner directly (`nmdaBlockade=0` vs
+`nmdaBlockade=1` at `agitation=1`: 5.6 vs 2.8, a clean 2x from ketamine's
+own independent 0.5 suppression ceiling, not a compounding blowup) and
+found it does not compound unreasonably at these magnitudes.
+
+**A real, honest limitation stated in-code, not glossed over**:
+`pat.agitation` captures autonomic/agitation distress only, not the
+separate catastrophizing/attentional-capture facilitation pathway (dACC
+salience amplification) — this models one slice of the affective-cognitive
+gate, not the whole of it (D'Souza et al. 2026; Shigetoh et al., Pain Res
+Manag 2018).
+
+**MEASURED, not assumed, at every step (lesson 8) — direct calls to the
+real, shipped `updateDrugs()`, isolating this mechanism from the
+sensitization cascade's own separately-verified kinetics.** Gate opens: at
+matched `allodyniaLevel=1`, `agitation=1` raises `drugPain` from 4.00 to
+5.60 (exactly the designed 1.4x). Gate closes back to neutral, not below:
+an undistressed patient and a fully-sedated-back-to-neutral patient
+(`agitation=0` either way) show byte-identical `drugPain` (4.0000 vs
+4.0000) — confirming the floor-at-neutral design, not a below-baseline
+claim this engine has no producer for. Specificity: with
+`allodyniaLevel=0`, `agitation` moves `drugPain` by exactly 0 (5 vs 5) —
+the gate factor touches only the allodynia term, never
+`hyperalgesiaGain`/`blockedIntrinsicPain`. Regression control: a realistic
+mixed case (`intrinsicPain=4`, `centralSensitization=0.3`,
+`allodyniaLevel=0.6`, the common `agitation=0` baseline) reproduces the
+pre-gate formula's output to floating-point exactness (8.2 == 8.2,
+`gateOpenFactor===1` is a true no-op).
+
+**Four new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[GATE-CONTROL MODULATION]` section**: gate opens, gate closes back to (not
+below) neutral, specificity to the allodynia term, and the agitation=0
+regression control. All 4 pass. No new patient field was introduced
+(`pat.agitation` was already tracked in `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists from an earlier batch), so no sweep-list
+changes were needed.
+
+**Verification, complete.** `node --check`/`npx eslint` clean on both
+touched files (`pk.js`, `mechanismWiring.mjs`). `npx vite build` clean
+(3.31s, same pre-existing >500kB chunk-size warning). Full
+`mechanismWiring.mjs`: **757 passed, 7 failed** — all 7 pre-existing,
+already-documented failure/flake classes (the BVM trio, a croup near-miss,
+a vo2Demand control-match rounding mismatch, the `severeMetabolicAcidosis`
+secondary-hyperkalemia near-miss, and untreated-neurogenic-shock sbp
+drift), confirmed by content — none reads `pat.agitation`/`gateOpenFactor`.
+`scenarioSweep.mjs`: **187 scenarios, 22,299,004 checks, 935 failed** —
+byte-identical count and failure set to the documented baseline, confirming
+zero regression (no new field, so no check-count change either). Throwaway
+probe scripts used to measure the numbers above were confined to the
+session scratchpad throughout, confirmed via `git status --short`.
+
+**Deferred, filed as three new queue items below, not silently dropped**:
+Aβ large-fiber tactile counter-stimulation (mechanism validated by the
+literature — Gautam et al., Nat Commun 2024; Nieda et al., Sci Rep 2026 —
+blocked purely on no producer existing in this engine, e.g. a TENS device
+or a rub/reposition-for-comfort action); a genuine below-neutral
+"calm/reassured" analgesic gate-closing state (a documented pharmacologic
+effect this design deliberately truncates, not an unmeasured one — real
+GABA-A potentiation via dorsal-horn α2-subunit receptors produces frank
+anti-allodynia below an undistressed baseline, Knabl et al., Pain 2009;
+Ralvenius et al., Nat Commun 2015; Witschi et al., J Neurosci 2011; plus a
+distraction/relaxation hypoalgesia route, Ruscheweyh et al., Pain 2011,
+that should split a spinally-acting component from a purely perceptual
+one); and an explicit note that a literal `emotionalState.js`↔physio
+bidirectional link was considered and rejected as an architectural
+invariant, so a future session doesn't re-propose it blind.
+
+### 2026-09-29 — Local anesthetic nerve block (hematoma block) shipped (queue item 62's remainder, CLOSED and removed from the numbered queue — the fourth item of the pain-physiology deepening workstream): a genuinely different SITE of analgesic action from ketamine (peripheral nerve, before central processing, rather than central amplification), with two real, literature-anchored refinements (use-dependence/Wedensky inhibition, inflammatory block failure) and a real LAST-toxicity pathway reusing the existing systemic-lidocaine mechanism unchanged.
+
+**What was missing, confirmed by reading the code first (lesson 16).**
+`drugs.js`'s `lidocaine` entry is a SYSTEMIC IV/IO drug for arrhythmia
+treatment (`antiarrhythmic.sodiumBlock`, real `toxicity` thresholds) with
+only a flat, incidental `fx.pain:-2` — no local/regional/topical route
+exists anywhere in the formulary, and `procedures.js` had no hematoma/
+digital/field-block entry of any kind (confirmed by reading every tier).
+`splint`/`traction` (the natural companion fracture-care procedures) both
+carry their own flat, decorative `fx.pain` offsets with no mechanism
+behind them — a real, separate finding, deliberately NOT fixed in this
+batch (filed as its own deferred item, see below).
+
+**The design's central decision: model the block as acting on
+`pat.intrinsicPain` itself, before central amplification, not as another
+multiplier alongside ketamine's `nmdaSuppression`.** Ketamine (shipped
+earlier this session) suppresses CENTRAL amplification of pain that's
+already reached the cord/brain. A nerve block silences the signal AT THE
+PERIPHERAL NERVE, before central processing ever sees it — so it reduces
+`intrinsicPain` directly, and the two mechanisms compose correctly and
+non-redundantly: the block reduces what enters the sensitization pathway;
+ketamine reduces how much the cord amplifies whatever gets through.
+
+**A new drug entry, `lidocaineBlock`, scoped specifically to a HEMATOMA
+block (not a generic peri-neural field block) — corrected twice by
+literature review during planning, and the second correction reversed the
+first's framing.** The first pass correctly flagged that a hematoma block
+is not the same slow-depot technique as a true peri-neural injection (the
+fracture hematoma is contiguous with the marrow space). The second pass
+added the actual MEASURED data (Meinig et al., J Orthop Trauma 1989: real
+venous lidocaine after distal-radius hematoma blocks at 2.2-2.4 mg/kg,
+peaking modestly around 20-30 minutes, an order of magnitude below toxic
+concentration) — under correct technique, absorption is complete and
+reliable but NOT fast-and-dangerous the way the first draft implied.
+`route:"IM"` is used deliberately for its MECHANISM (pk.js's own already-
+built perfusion-dependent single-depot absorption physics, ka default
+0.09/min, no `deepDepotFraction` declared since this drug has no
+self-limiting local vasoconstriction), not because this is literally an
+intramuscular injection. Dose 120mg (~1.7 mg/kg for a 70kg adult, inside
+the WMS 2024 guideline's 1.5-2 mg/kg hematoma-block ceiling). `toxicity`
+thresholds (seizureThreshold 10, cardiacThreshold 18 mg/L) are copied
+verbatim from systemic `lidocaine` — same drug, same pharmacology, and the
+same `pk.js` mechanism (drugDef.toxicity, unchanged) that already exists
+for it. No `antiarrhythmic` block declared, since this drug is never given
+FOR arrhythmia. Restricted to plain lidocaine, never a longer-acting
+agent, for a real cited reason: bupivacaine's "fast-in/slow-out" cardiac
+sodium-channel kinetics plus an independent L-type calcium-channel
+disruption make it roughly 10x more cardiotoxic than lidocaine in
+isolated-heart data (Tanz et al., Anesth Analg 1984) — the seizure-before-
+cardiac ordering this entry produces is specific to lidocaine and must not
+be assumed for any future bupivacaine entry.
+
+**A new state, `pat.nerveBlockDepth` (0-1), computed once per tick in
+`pk.js`** (not inside the per-drug-instance loop, since it's a relaxation
+toward a target and running it per-instance would double-apply the step) —
+gated on real absorbed `lidocaineBlock` concentration (>0.05 mg/L, an
+occupancy-style floor, not a flat cutoff picked at random), with two real,
+cited refinements composed multiplicatively:
+- **Use-dependence / Wedensky inhibition**: local anesthetics bind open/
+  inactivated Na channels from the intracellular side (Strichartz,
+  Anesthesiology 1976; kinetic analysis for lidocaine specifically,
+  Chernoff, Biophys J 1990) — both high-affinity binding to already-open
+  channels and drug-induced slowing of recovery from inactivation (Gawali
+  et al., Mol Pharmacol 2015), so rapidly firing nociceptors accumulate
+  block across successive action potentials (Fozzard et al., Curr Pharm
+  Des 2005) — the same principle already underlying this file's systemic
+  `lidocaine` antiarrhythmic entry. `pat.intrinsicPain` is stated in-code
+  as only a loose proxy for real nociceptor firing rate (this engine has
+  no afferent-frequency state at all) — the qualitative direction is real,
+  the exact scale is illustrative.
+- **Inflammatory block failure**, three real cited mechanisms folded into
+  one composite (all keyed to `pat.peripheralSensitization`, the shipped
+  cascade): tissue acidosis reducing membrane penetration; persistent
+  nociceptive input altering Na-channel density/gating (Kanchetty et al.,
+  Curr Pain Headache Rep 2026); chronic inflammation driving nociceptor
+  terminal sprouting with intrinsically less LA-sensitive channels
+  (Meechan, Periodontology 2000, 2008) — the third not separately modeled
+  since this engine has no nociceptor-density state, folded into the same
+  composite.
+
+**Consumption in the pain reseed**: `blockedIntrinsicPain =
+max(0, intrinsicPain - NERVE_BLOCK_MAX_REDUCTION * nerveBlockDepth)`,
+applied before `hyperalgesiaGain`. `NERVE_BLOCK_MAX_REDUCTION = 5` is
+explicitly TUNED (stated as such, not literature-derived directly) —
+corrected DOWN from an initial 7 during planning: acute-fracture
+nerve-block trials show a pooled mean VAS reduction of roughly -2.3 to
+-2.5 (0-10 scale) at 2h, with the single best-case study (a low-dose
+ultrasound-guided femoral block from a severe 8/10 baseline) showing
+roughly a 4-6 point peak drop — 7 would have exceeded even that best case;
+5 is a near-complete block's own ceiling at peak depth from a severe
+baseline, still needing measurement against a real trajectory, not
+asserted as final.
+
+**No respiratory-depression consequence** — `lidocaineBlock` declares no
+`respiratoryDepression` coefficient and no opioid `class`, so it
+structurally cannot touch `pat.respDriveSuppression`. This is the real,
+stated clinical selling point over systemic opioids (hip-fracture nerve
+blocks show significantly fewer serious adverse events including
+respiratory depression than conventional opioid analgesia, RR 0.33 —
+Liu et al., JAMA 2025) and needed no code to enforce, only a direct
+assertion to confirm.
+
+**MEASURED, not assumed, at every step (lesson 8) — direct calls to the
+real, shipped `updateDrugs()`/`seedPastDose()`.** A standard dose, once
+absorbed (~20 min), lowers `drugPain` from 8.00 to 6.17 (a real ~1.8-point
+reduction — close to the trial-anchored -2.5 "typical" target, confirming
+`NERVE_BLOCK_MAX_REDUCTION=5` is a reasonable starting point, not wildly
+off) with `nerveBlockDepth=0.261`. Use-dependence direction confirmed
+(hi-pain 0.2609 vs lo-pain 0.2436, same dose/timing). Inflammatory failure
+direction confirmed (`peripheralSensitization=1`: 0.1526 vs
+`peripheralSensitization=0`: 0.2609). LAST toxicity crosses in the real
+clinical ORDER: a moderate overdose (3 stacked 120mg doses, 360mg total)
+crosses `seizureThreshold` (seizureDrive=0.076) while `cardiacThreshold`
+stays completely untouched (avSlowingDrug=0.000); a severe overdose (6
+stacked doses, 720mg) crosses BOTH (seizureDrive=1.000, avSlowingDrug=
+0.133) — matching the AHA's own reported 77-89% CNS vs. 32-55%
+cardiovascular incidence in real LAST (neurologic signs typically precede
+cardiovascular collapse). A regression control (ordinary systemic
+`lidocaine`, not `lidocaineBlock`) confirms `nerveBlockDepth` stays exactly
+0 — the new mechanism doesn't accidentally fire for the arrhythmia-
+treatment drug.
+
+**A new procedure, `hematomaBlock`** (`procedures.js`, Paramedic tier,
+alongside `splint`/`traction`) — a marker action representing the real
+field technique/time cost; it declares no `fx` of its own, since the real
+analgesia is entirely `pat.nerveBlockDepth`, computed from the drug's own
+absorbed concentration. Its `note` states the real clinical caution
+(compartment syndrome masking) narratively, since this engine has no
+compartment-pressure state to model a real mechanism against.
+
+**Six new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[LOCAL ANESTHETIC NERVE BLOCK]` section**: presence, no-respiratory-
+depression, use-dependence, inflammatory block failure, LAST toxicity's
+typical clinical ordering (moderate vs. severe overdose), and a regression
+control against systemic lidocaine. All 6 pass. `pat.nerveBlockDepth`
+added to `patient.js`'s constructor (default 0, matching `nmdaBlockade`'s
+own precedent) and to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE`
+lists. A new `PK_PARAMS.lidocaineBlock` entry (pk.js) reuses systemic
+lidocaine's own central-compartment/elimination/EC50 values verbatim —
+same molecule, only the absorption ROUTE differs.
+
+**Verification, complete.** `node --check`/`npx eslint` clean on all six
+touched files (`drugs.js`, `procedures.js`, `pk.js`, `patient.js`,
+`mechanismWiring.mjs`, `scenarioSweep.mjs`). `npx vite build` clean
+(2.62s, same pre-existing >500kB chunk-size warning). Full
+`mechanismWiring.mjs`: **751 passed, 9 failed** — all 9 pre-existing,
+already-documented failure/flake classes (the BVM trio, a croup near-miss,
+a PACs HR-variance stdev near-miss, a vo2Demand control-match rounding
+mismatch, a stochastic bagging-delay Bernoulli-trial near-miss, the
+`severeMetabolicAcidosis` secondary-hyperkalemia near-miss, and untreated-
+neurogenic-shock sbp drift — none new, all have appeared interchangeably
+across past baselines), confirmed by content — none reads
+`nerveBlockDepth`/`lidocaineBlock`. `scenarioSweep.mjs`: **187 scenarios,
+22,299,004 checks, 935 failed** — identical failure count to the
+documented baseline, every failure confirmed by grep to be the same
+pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
+defect on unmodified master; zero failures mention `nerveBlockDepth`. The
+check-count increase (+168,300) is exactly the new field's own
+presence/non-negative tracking across the 187-scenario library. Throwaway
+probe scripts used to measure the numbers above were confined to the
+session scratchpad throughout, never under `src/scripts/` — confirmed via
+`git status --short`.
+
+**Deferred, filed as six new queue items below, not silently dropped**:
+a peri-neural/field-block drug variant (genuinely slower depot-style
+uptake, the mechanism this batch deliberately did NOT use for the
+hematoma block); rebound pain on block offset (a real, well-quantified
+hyperalgesia phenomenon, 35-62% incidence, with real numbers already in
+hand); compartment syndrome masking, if ever built (the literature
+actually contradicts the naive "blocks always mask ACS" assumption —
+breakthrough pain usually defeats the block; masking is density-dependent,
+not a given); `splint`/`traction`'s own decorative flat `fx.pain` offsets
+(found while scoping this item, real but out of scope); an IVRA (Bier
+block) drug entry, the lowest-systemic-exposure of the three local-
+anesthetic techniques, with its own distinct tourniquet-deflation LAST
+risk; and the standing per-region/per-limb pain-model simplification every
+pain-mechanism item in this workstream now inherits.
+
+### 2026-09-28 (d) — Ketamine's dissociative analgesia shipped (queue item 62's remainder, CLOSED and removed from the numbered queue — the third item of the pain-physiology deepening workstream): ketamine given a mechanistically distinct NMDA-antagonist anti-sensitization route, plus a real, previously-undiscovered desensitization-class bug found and fixed while scoping it.
+
+**What was missing, confirmed by reading the code first (lesson 16).**
+`ketamine`'s own `drugs.js` entry did real cardiovascular work (indirect
+sympathomimetic + `myocardialDepression`) but its analgesia was a flat,
+static `fx.pain: -8` — applied through the exact same generic additive
+pathway every other analgesic uses, no different from fentanyl/morphine/
+ketorolac, and with zero interaction with the sensitization cascade
+(`physio/pain.js`, shipped earlier this session). Real ketamine
+pharmacology — NMDA-receptor antagonism blocking spinal wind-up/central
+sensitization, ketamine's actual clinical niche in refractory and
+opioid-tolerant pain — was completely unmodeled.
+
+**A real, incidental bug found in the same investigation, fixed as a
+targeted exclusion rather than left in place.** `desensClassOf()` (pk.js)
+mapped any drug with `receptors.beta2` set to `beta2Desens` as a fallback
+rule. Ketamine's `receptors.beta2: 0.1` exists only for its indirect-
+sympathomimetic cardiovascular mechanism, not because ketamine causes
+clinically meaningful beta2 tachyphylaxis — the fallback rule caught it by
+accident, so repeated ketamine dosing was silently accruing the SAME
+desensitization pool albuterol uses, physiologically wrong. Fixed by
+excluding `class === "dissociative"` from that fallback. Real ketamine
+tolerance (anesthetic/psychotomimetic/ataxic/antidepressant tachyphylaxis
+is well documented across preclinical and human data, including rapid
+tolerance at sub-anesthetic doses) is NOT modeled by this fix — the fix
+only stops the wrong, borrowed mechanism from firing; a correct
+ketamine-specific tachyphylaxis mechanism is deliberately deferred (an
+analgesia-specific time course is not well characterized in the
+literature, unlike the general tolerance phenomenon itself).
+
+**The mechanism, built by reusing ketamine's already-calibrated PK, not a
+second path.** A new `pat.nmdaBlockade` (0-1) is set each tick from
+ketamine's own already-existing two-compartment Hill-occupancy `intensity`
+(`class === "dissociative"`, `Math.max` across instances, same
+per-drug-id-Emax convention as every other shared-intensity drug) —
+no change to ketamine's `keo`/`ec50`. Consumed in pk.js's pain reseed as a
+suppressive multiplier on the SENSITIZATION-DRIVEN terms only —
+`hyperalgesiaGain` and the allodynia contribution — never on
+`pat.intrinsicPain` itself:
+```
+const nmdaSuppression = 1 - 0.5 * (pat.nmdaBlockade || 0);
+const hyperalgesiaGain = 1 + PAIN_HYPERALGESIA_GAIN_MAX * (pat.centralSensitization || 0) * nmdaSuppression;
+pat.drugPain = (pat.intrinsicPain || 0) * hyperalgesiaGain * (pat.painSensitivity ?? 1)
+  + PAIN_ALLODYNIA_MAX * (pat.allodyniaLevel || 0) * nmdaSuppression;
+```
+Ketamine SUPPRESSES ongoing NMDA-mediated amplification while on board; it
+does NOT erase the accumulated `centralSensitization`/`glialActivation`/
+`allodyniaLevel` state itself (those keep decaying on their own slow tau
+regardless of ketamine, matching the cascade's own already-shipped
+reversibility-guard design) — the conservative reading of a genuinely
+split literature (the 2018 ASRA/AAPM/ASA consensus guideline: QST/
+conditioned-pain-modulation studies were "for the most part" negative for
+a lasting reversal; other reviews describe reversal via NMDA-receptor
+downregulation). Ketamine's existing flat `fx.pain: -8` is untouched and
+orthogonal — the ordinary acute analgesic effect on `intrinsicPain`,
+unrelated to the new anti-sensitization multiplier.
+
+**The 0.5 suppression ceiling is explicitly TUNED, not literature-derived
+— stated as such, not dressed up as measured**, per section 4's own
+"identify numbers, do not tune them" discipline treated as an honest
+exception here. Ketamine's own analgesic dose-response evidence is
+inconsistent (some QST/dose-ranging studies show a relationship, others
+find no serum-level/pain correlation) and its overall analgesic effect
+size is characterized in reviews as modest; a higher ceiling risked
+producing near-complete relief of a highly sensitized patient when
+combined with the unchanged flat `fx.pain` term, which the "modest
+effect" literature argues against.
+
+**Deliberately NOT built, and why, stated precisely rather than
+loosely.** No opioid-system contribution to ketamine's analgesia:
+ketamine has real, secondary, low-affinity MOR agonist activity (naloxone
+does not reliably reverse ketamine analgesia, confirming this isn't the
+dominant mechanism), and the literature's real point about the opioid
+interaction is directional, not merely absent cross-tolerance — NMDA
+antagonists are reported to actively SLOW opioid tolerance/opioid-induced-
+hyperalgesia accrual, not just be inert to it. `pat.opioidDesens` is
+completely untouched by ketamine today (verified below), which is a real
+simplification honestly stated, not a claim that ketamine and opioid
+tolerance don't interact in reality. No cross-tolerance with the opioid
+mu-occupancy state is, however, structurally guaranteed for free — ketamine
+declares no opioid receptor class and never touches `NALOXONE_KI`/
+`hillOcc`.
+
+**MEASURED, not assumed, at every step (lesson 8) — direct calls to the
+real, shipped `updateDrugs()`/`seedPastDose()`, isolating the pain-reseed
+mechanism from the sensitization cascade's own separately-verified
+build/decay kinetics and from ketamine's unrelated cardiovascular
+effects.** At forced `centralSensitization=1`/`allodyniaLevel=1`: drugPain
+falls from 24.16 (no ketamine) to 17.62 (standard dose on board,
+nmdaBlockade=0.409) — and isolating the suppression multiplier itself
+(re-running one tick with `nmdaBlockade` forced back to 0 while keeping
+the same flat-delta trajectory) shows 20.86, confirming the drop is
+genuinely the new multiplier, not just "ketamine lowers pain via its
+ordinary fx.pain, unsurprisingly." `centralSensitization`/`allodyniaLevel`
+themselves are confirmed unchanged (still exactly 1 each) after this —
+suppression of expression, not erasure of state. A no-sensitization
+control (`centralSensitization=0`, `allodyniaLevel=0`, `painSensitivity`
+pinned to 1 per queue item 50's own trait-pinning discipline) shows
+`drugPain` exactly equal to `intrinsicPain` whether or not ketamine's new
+multiplier is active — the ordinary, already-verified pain case is
+unperturbed. `opioidDesens` stays exactly 0 through ketamine dosing.
+Repeated ketamine dosing (3 doses) now shows `beta2Desens` staying exactly
+0 (the bug fix), while a matched repeated-albuterol control still shows
+real accrual (0.0171) — confirming the fix is a targeted exclusion, not a
+broken `desensClassOf()` for every drug.
+
+**Five new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[KETAMINE NMDA-ANTAGONIST ANTI-SENSITIZATION]` section**: presence
+(suppression measurably lowers sensitization-driven pain beyond the flat
+delta), no-erasure (underlying state unchanged), regression-safety
+(baseline pain case unperturbed), no-cross-tolerance (`opioidDesens`
+untouched), and the `beta2Desens` fix (ketamine excluded, albuterol's real
+mechanism confirmed intact). All 5 pass. `pat.nmdaBlockade` added to
+`patient.js`'s constructor (default 0, matching `sedationDepth`'s own
+precedent) and to `scenarioSweep.mjs`'s `REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification, complete.** `node --check`/`npx eslint` clean on all four
+touched files (`pk.js`, `patient.js`, `mechanismWiring.mjs`,
+`scenarioSweep.mjs`). `npx vite build` clean (3.26s, same pre-existing
+>500kB chunk-size warning). Full `mechanismWiring.mjs`: **747 passed, 7
+failed** — all 7 pre-existing failure classes (the BVM trio, a croup
+near-miss, the `severeMetabolicAcidosis` secondary-hyperkalemia
+near-miss, untreated-neurogenic-shock sbp drift, and a stochastic
+bagging-delay Bernoulli-trial near-miss at 5/10 vs. needed >=6 — a
+known-flaky class per lesson 9, in BVM/respiratory-arrhythmia code this
+batch never touched), confirmed by content — none reads `nmdaBlockade`.
+Two previously-documented near-misses (a vo2Demand control-match rounding
+mismatch, a tracheostomy/UAO borderline assertion) pass clean this run,
+not caused by this batch. `scenarioSweep.mjs`: **187 scenarios,
+22,130,704 checks, 935 failed** — identical failure count to the
+documented baseline, every failure confirmed by grep to be the same
+pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
+defect on unmodified master; zero failures mention `nmdaBlockade`. The
+check-count increase (+168,300) is exactly the new field's own
+presence/non-negative tracking across the 187-scenario library. Throwaway
+probe scripts used to measure the numbers above were confined to the
+session scratchpad throughout, never under `src/scripts/` — confirmed via
+`git status --short`.
+
+**Deferred, filed as new queue items, not silently dropped**: a real
+ketamine-tachyphylaxis mechanism (tolerance is well documented for the
+drug generally; an analgesia-specific time course is not — the
+`beta2Desens` fix above only removes the wrong, borrowed mechanism, it
+does not replace it); a real ketamine-slows-opioid-tolerance interaction
+(if `opioidDesens` accrual is ever modeled as something a co-administered
+drug can influence, the honest emergent behavior is ketamine actively
+slowing it, not merely being inert); and the 0.5 suppression-ceiling
+coefficient itself remains open for a future direct calibration against a
+real clinical severity anchor, same standing caveat already on record for
+`PAIN_HYPERALGESIA_GAIN_MAX`/`PAIN_ALLODYNIA_MAX`.
+
+### 2026-09-28 (c) — Opioid analgesia/respiratory-depression dual-curve split shipped (queue item 62 as originally filed, CLOSED and removed from the numbered queue — the second item of the pain-physiology deepening workstream): fentanyl and morphine each fail to separate analgesia from respiratory depression in a genuinely different way, now modeled as two different mechanisms rather than one shared "intensity" driving both effects identically.
+
+**What was missing, confirmed by reading the code first (lesson 16), and a
+real correction to the item's own filed premise.** As queued, this item
+assumed two refinements were both still needed: drug-specific `keo` (NOT
+true — every PK drug already has its own `keo`, confirmed by reading
+`pk.js` directly before touching anything) and splitting the shared
+receptor-occupancy signal into two separate curves for analgesia vs.
+respiratory depression (TRUE — `intensity` was computed once per drug and
+reused unchanged for both `fx.pain` and `drugDef.respiratoryDepression`).
+The item's own queue text is corrected in the same session it's picked up,
+not silently worked around.
+
+**The real mechanism differs by drug, not one template applied twice —
+this is the single most important design finding of the batch.** A
+literature-grounded design pass (real published human-volunteer PK/PD
+data, not guessed coefficients) found:
+- **Morphine**: potency does NOT differ between analgesia and respiratory
+  depression (Dahan et al., Anesthesiology 2004: shared C50 ~32 nM/~9
+  ng/mL for both endpoints, measured simultaneously in the same subjects) —
+  the real distinguishing parameter is the Hill coefficient (gamma=2.4
+  analgesia vs gamma=1 respiratory). This is what reproduces the paper's
+  own explicit clinical warning: "despite lack of good pain relief,
+  moderate to severe respiratory depression remains possible."
+- **Fentanyl**: a genuine EC50 divergence, anchored on van Lemmen et al.,
+  Anesthesiology 2025's closed-loop CO2-controller PK/PD model (2.3 ng/mL
+  ventilatory C50) — deliberately NOT the same paper's simpler open-loop
+  model figure (7.5 ng/mL), matched to this engine's own confirmed
+  closed-loop chemoreceptor term (`respiratory.js`'s real `paco2Error`-
+  driven feedback, verified by reading it directly, not assumed).
+
+**A real self-correction caught before it shipped, not after.** The first
+drafted code comment claimed fentanyl's respiratory curve was "modestly
+MORE potent" than its analgesic one — but 2.3 ng/mL is numerically HIGHER
+than the engine's own analgesic EC50 (1.2 ng/mL), meaning respiratory
+occupancy is actually somewhat LOWER at a given concentration, the
+opposite direction from what was first written. Caught by measuring
+directly against the real, newly-exported `hillOcc()` function (not
+trusting the two source papers' raw numbers' relative ordering blind) —
+fixed in both code comments before the entry was written here. The real,
+correct finding survives: both curves are substantial and overlapping at
+real clinical concentrations (analgesic 0.81, respiratory 0.68 at a
+representative dose) — fentanyl does not become respiratory-safe under
+this split, it just isn't encoded as having a *worse* margin than
+morphine, consistent with classic steady-state infusion data (Hill et
+al., Pain 1990) finding side-effect magnitude at equianalgesic
+concentrations doesn't differ across opioids.
+
+**Implementation.** `pk.js` gained an exported `hillOcc(C, ec50, n=1)`
+helper (de-duplicating what had been about to become three separate
+inline copies of the same Hill-equation formula) — n defaults to 1,
+reducing to the exact pre-existing hyperbola for every drug that doesn't
+declare its own coefficient (confirmed bit-identical, not just
+approximately equal). `morphine.hillN = 2.4` applies to the shared
+`intensity` (analgesia and everything else morphine's `fx` declares).
+A new, decoupled respiratory-depression pathway (`drugs.js`'s
+`respEc50`/`respHillN`, falling back to the drug's own base `ec50`/1 when
+undeclared) recomputes its own occupancy from the same effect-site
+concentration with its own EC50/Hill exponent and its own naloxone
+competitive-antagonism shift — `fentanyl.respEc50 = 0.0023`,
+`morphine.respEc50` left equal to its own analgesic `ec50` (Dahan found no
+potency difference; only the Hill slope differs, already handled by
+`hillN`).
+
+**MEASURED, not assumed, at every step (lesson 8).** Direct calls to the
+real `hillOcc()` at concentrations spanning below and above morphine's
+shared EC50 confirm the two-sided divergence: sub-EC50, respiratory
+occupancy (0.333) exceeds analgesic (0.159) — the "poor pain relief,
+respiratory depression already present" danger zone; supra-EC50, analgesic
+(0.965) overtakes and nears its own ceiling while respiratory (0.800)
+lags — "analgesia plateaus, respiratory depression keeps climbing."
+A real full-engine run confirms a standard single fentanyl dose still
+produces both real analgesia (pain 7.00->2.43) and real, substantial
+respiratory suppression (0.146) — neither broken by the split. A
+sustained-agonist/single-antagonist-dose re-narcotization test (the
+actually dangerous, teachable naloxone failure mode, not just clean
+one-shot reversal) shows `opioidBlockade` fading (0.892->0.308) while
+`respDriveSuppression` climbs back (0.016->0.166) as the antagonist
+clears faster than the sustained agonist — confirmed via the real engine,
+not scripted.
+
+**Verification, complete.** `node --check`/`npx eslint src` clean (same
+pre-existing 3-error `react-refresh/only-export-components` baseline,
+zero new findings anywhere touched). `npx vite build` clean (2.95s, same
+pre-existing >500kB chunk-size warning). Full `mechanismWiring.mjs`:
+**741 passed, 8 failed** — all 8 the same pre-existing, already-documented
+failures (BVM trio, a croup near-miss, a vo2Demand control-match rounding
+mismatch, the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss,
+untreated-neurogenic-shock sbp drift, and a tracheostomy/UAO borderline
+assertion), confirmed by content — none reads `hillOcc`/`hillN`/
+`respEc50`/`respHillN`. All 6 new `[OPIOID DUAL-CURVE...]` assertions pass,
+plus the 4 pre-existing `[OPIOID / ANTAGONIST]`/`[OPIOID MIOSIS]`
+assertions confirmed unchanged. `scenarioSweep.mjs`: no new `pat.*` field
+was introduced (`hillN`/`respEc50`/`respHillN` are drug-definition
+constants; `respIntensity` is a local per-tick computation, not published
+patient state) — confirmed during implementation, not assumed; full run
+still executed and diffed against the documented baseline. Four throwaway
+probe scripts used to measure the numbers above were stripped before this
+entry was written, confirmed via a directory listing showing none remain
+under `src/scripts/`.
+
+**Deferred, filed as new queue items 65-67, not silently dropped**:
+morphine's `keo` (0.04, ~17 min) likely under-calibrates onset broadly —
+Dahan's own ~4.4h t1/2ke0 applies to analgesia as much as respiration, not
+respiration alone, so a future recalibration's blast radius includes every
+morphine effect (item 65); naloxone's reversal-difficulty asymmetry across
+opioids is a receptor-off-kinetics (Koff) question, not a per-drug-Ki one
+— scoped correctly so a future session doesn't mistake the two (item 66);
+differential opioid tolerance (analgesic tolerance develops faster than
+respiratory-depression tolerance) needs its own item with the direction
+locked in now so it isn't built backwards (item 67). Also documented
+in-code, not filed as a queue item: the hypoxic-vs-hypercapnic ventilatory
+drive distinction (morphine is more potent on hypoxic drive) is
+unrepresented since this engine's chemoreceptor term reads `paco2` only —
+a real, stated limitation, not an oversight.
+
+### 2026-09-28 (b) — Pain sensitization cascade shipped (queue item 62 as originally filed, CLOSED and removed from the numbered queue — the first item of the pain-physiology deepening workstream, section 6 items 62-65 remaining and renumbered down by one): real peripheral/glial/central plasticity plus a disinhibition-driven allodynia term, replacing part of the old memoryless flat-scalar pain model.
+
+**What was missing, confirmed by reading the code first (lesson 16).**
+`pat.drugPain` (the published `v.pain` vital) was a single flat scalar,
+reseeded every tick from `pat.intrinsicPain * pat.painSensitivity` (pk.js)
+plus additive flat drug `fx.pain` deltas — memoryless: the same stimulus
+produced the same pain regardless of duration or treatment history, and
+every drug's pain effect (fentanyl, morphine, ketamine, ketorolac,
+lidocaine) used the identical disconnected mechanism. No sensitization,
+allodynia, or chronic-vs-acute distinction existed anywhere in the tree
+(confirmed by grep for "sensitiz"/"allodynia"/"hyperalgesia" before writing
+anything). This is exactly section 1's "stat write, not mechanism" defect,
+spanning a whole subsystem rather than one condition.
+
+**The mechanism, built in a new `src/physio/pain.js`** (queue item 62's own
+CLAUDE.md queue text carries the full literature anchors and calibration
+targets verbatim — not re-derived here): four relaxing states with
+independent build/decay time constants (`approachAsym()`, cardiovascular.js's
+own `approach()` extended to asymmetric rise/fall, since every state here
+rises far faster than it falls):
+- `pat.peripheralSensitization` — fast (2h build/6h peak, carrageenan-model
+  time course), driven by sustained `pat.intrinsicPain` above a real
+  engagement threshold OR-composed with existing injury markers
+  (`activeBleedRate`/`capillaryLeak`/`burnTbsaFraction`). Fully decays
+  within ~24h of the driver resolving.
+- `pat.glialActivation` — slower (2-day build, 7-day sustained decay,
+  microglia-then-astrocyte time course), gated on SUSTAINED peripheral
+  sensitization. Feeds TWO downstream consumers, not one generic gain:
+  `centralSensitization`'s build target, AND `allodyniaLevel` directly —
+  the literature separates a multiplicative-gain consequence from a
+  qualitatively-new-pain-source consequence of the same glial substrate.
+- `pat.centralSensitization` — the later, glial/NMDA-LTP-dependent,
+  input-independent state (4-day build, 14-day decay — reused from
+  cardiovascular.js's own `lvHypertrophy`/`vascularStiffness` order of
+  magnitude for the same "gradual, not a switch, but not permanent"
+  reason). Amplifies `intrinsicPain * painSensitivity` MULTIPLICATIVELY
+  (hyperalgesia) in pk.js's pain reseed.
+- `pat.allodyniaLevel` — driven by `glialActivation` directly (disinhibition:
+  loss of GABA/glycinergic inhibition), NOT by `centralSensitization`.
+  Adds an independent, additive pain contribution in pk.js — a real new
+  pain source from otherwise-innocuous stimuli even with `intrinsicPain`
+  unchanged, not a noxious-input-gated term.
+
+**The mandatory reversibility guard (explicitly required by the queue
+text before building) was verified, not assumed.** `centralSensitization`
+must decay far more slowly than it builds but must NEVER latch
+permanently — real spinal LTP persists >35 days but remains reversible
+plasticity. MEASURED via direct calls to the real, shipped
+`updateSensitization()` (large-dt jumps, not a reconstruction — lesson 8):
+after 20 days of sustained severe pain (central=0.983) and the driver
+resolving, central falls to 0.062 by +42 days and 0.003 by +84 days —
+genuinely trending toward 0, not stalled at a floor.
+
+**A real full-engine multi-day run was attempted first and found
+genuinely infeasible, not just slow — a concrete new data point for a
+documented class of limitation.** `patient.update()`'s own internal
+`MAX_TICK=1` (minute) clamp means a full `physio()` tick-by-tick run
+cannot be accelerated by taking bigger `s.t` jumps (the excess is silently
+discarded, not integrated faster) — a real 20+60-day multi-arm probe
+consumed over 45 real minutes and only reached 3 of 20 simulated days
+before this session's background-task time limit cut it off. Switched to
+direct-call verification of the real `updateSensitization()` function for
+the multi-day/week timescales (milliseconds instead of tens of minutes),
+cross-checked against the full-engine numbers at every timescale the
+full-engine run DID reach (2h/6h/24h/72h matched to 3 decimal places)
+before being trusted for the untested multi-week horizon.
+
+**A real probe-harness bug was found and fixed before it produced a false
+failure, not after (lesson 8: verify the harness before trusting a
+surprising result).** `abdPain` is appendicitis, with a real, scripted
+~7-8/10 presenting pain (its own `opqrst` probe text) — NOT a pain-free
+scenario. A first version of the engagement-vs-control assertion used an
+unmutated `abdPain` as the "pain-free control" and failed, because the
+control itself measurably engaged (0.094) — a real, correct finding about
+appendicitis's own genuine pain, not a mechanism bug, but the wrong
+comparison. Fixed by explicitly forcing `intrinsicPain`/injury markers to 0
+in the control's own `mutate`. A second, smaller finding in the same pass:
+even a genuinely zeroed control shows a tiny residual (~0.006), traced to
+`probe()`'s own `mutate` only applying AFTER the settle phase — appendicitis's
+real pain is live for the 60s settle window before being zeroed. A
+harmless, understood probe-harness artifact, not a mechanism defect;
+the assertion threshold (`<0.01`) accounts for it honestly rather than
+demanding an unrealistic exact 0 from this specific harness.
+
+**Ten new two-sided assertions added to `mechanismWiring.mjs`'s new
+`[PAIN SENSITIZATION]` section**: real-engine directional engagement
+(peripheral sensitization under sustained pain vs. a genuinely clean
+control, and monotonic 300s-vs-900s growth) and the real pk.js CONSEQUENCE
+(forcing `centralSensitization=1`/`allodyniaLevel=1` via the same `mutate`
+idiom cardiovascular.js's own LVH/vascular-stiffness assertions established,
+isolating consequence from onset kinetics) are tested through the real
+engine; the full cascade build/decay/reversibility/ordering timescale is
+tested via fast direct calls to the real `updateSensitization()`. All 10
+pass. Four new fields (`peripheralSensitization`, `glialActivation`,
+`centralSensitization`, `allodyniaLevel`) added to `scenarioSweep.mjs`'s
+`REQUIRED`/`NON_NEGATIVE` lists.
+
+**Verification, complete.** `node --check`/`npx eslint src` clean (same
+pre-existing 3-error `react-refresh/only-export-components` baseline in
+`App.jsx`, zero new findings in any touched file). `npx vite build` clean
+(4.24s, same pre-existing >500kB chunk-size warning). Full
+`mechanismWiring.mjs`: **736 passed, 7 failed** — all 7 the exact same
+pre-existing, already-documented failures (BVM trio, croup near-miss, PACs
+stdev, `severeMetabolicAcidosis` secondary-hyperkalemia near-miss,
+untreated-neurogenic-shock sbp drift), confirmed by content, none reading
+any pain-sensitization field. Full `scenarioSweep.mjs`: **187 scenarios,
+21,962,404 checks, 935 failed** — every failure confirmed by grep to be the
+same pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s
+defect on unmodified master, zero mentioning the four new fields. Four
+throwaway probe scripts used to measure the numbers above were stripped
+before this entry was written, confirmed via a directory listing showing
+none remain under `src/scripts/`.
+
+**Still open, honestly**: items 63-66 (opioid receptor-occupancy analgesia,
+ketamine dissociative analgesia, local anesthetic nerve block, gate-control
+modulation) remain queued and undesigned at the code level, per their own
+"depends on measurements taken while building the item before it" text —
+not attempted this session. The `PAIN_HYPERALGESIA_GAIN_MAX`/
+`PAIN_ALLODYNIA_MAX` coefficients in pk.js are moderate, defensible
+magnitudes chosen pending a future direct calibration against a real
+clinical severity anchor for this engine's own pain scale — stated
+in-code as such, not asserted as a final calibration.
+
+### 2026-09-28 — Fetal compartment shipped (queue item 25, CLOSED): a real fetal oxygen-delivery chain (maternal PaO2 -> transplacental gradient -> fetal Hb dissociation curve -> fetal O2 content -> FHR), replacing the old flow-only proxy, plus a real fetal hypoxic-burden accumulator that now drives newborn vigor at delivery. A genuine feedback-loop bug was found and fixed mid-verification, not shipped blind.
+
+**What was missing, confirmed by reading the code first (lesson 16).**
+`obstetric.js` already had a real, working fetal heart rate mechanism
+(a prior, deliberately scoped slice) driven entirely by a maternal-perfusion
+PROXY — `pat.map` relative to a reference, reduced by placental-abruption
+surface loss and aortocaval compression. That proxy could only ever see a
+FLOW problem. A mother who was herself hypoxic (anaphylaxis, opioid
+overdose, severe asthma, a chest injury) but hemodynamically normal showed
+zero fetal effect, which is physiologically wrong — pressure-passive
+uteroplacental flow being normal doesn't help the fetus if what's arriving
+is normally-pressured but poorly oxygenated blood. This is exactly the
+source spec's own named design target for this item: "placental failure
+should affect fetal DO2 rather than directly scripting fetal distress."
+
+**The chain built, each link real and cited, reusing engine machinery
+rather than inventing parallel formulas.** `respiratory.js`'s own `oxySat()`
+Hill-curve function (previously private) is now exported and reused
+directly rather than duplicated. Maternal PaO2 crosses a real transplacental
+PO2 gradient (umbilical-vein PO2 ~30-35 mmHg at a normal maternal PaO2,
+Blackburn's "Maternal, Fetal & Neonatal Physiology", 4th ed. — modeled as a
+fixed fraction of maternal PaO2, scaled by the SAME placental-perfusion
+proxy the prior slice already computed) to give a real fetal PaO2. That
+feeds `oxySat()` with a `dpgFactor` scaled to reproduce fetal Hb's real,
+left-shifted P50 (~19 mmHg vs. the adult ~26.6 mmHg — Bauer et al. 1969;
+Delivoria-Papadopoulos et al., Pediatr Res 1971) and a real fetal Hb
+concentration (15 g/dL, Nicolaides et al.'s cordocentesis reference range),
+giving genuine fetal oxygen CONTENT. Fetal cardiac output is modeled as
+predominantly rate-dependent (fetal stroke volume is comparatively fixed —
+Anderson et al., Circ Res 1981), so fetal HR now responds to a real oxygen-
+content deficit (the actual chemoreceptor-mediated vagal mechanism behind
+late decelerations — Giussani, J Physiol 2016) rather than to the maternal
+proxy directly.
+
+**A genuine feedback-loop bug, found via direct engine probing before it
+ever reached the test suite (lesson 8).** The first version drove FHR and
+the burden accumulator off the FULL fetal DO2 metric (content x fetal-
+cardiac-output-proxy). Standalone probing (not the suite — a throwaway
+script replicating the real engine call path) showed a maternal-hypoxia
+arm's burden INCREASING after oxygenation was fully restored, not decaying:
+once fetalHR was bradycardic, the low cardiac-output proxy alone kept the
+DO2 metric under the distress threshold even with content back to normal,
+so the fetus could never recover — a closed loop (fetalHR -> CO proxy ->
+DO2 -> FHR target -> fetalHR) with no way out. Fixed by driving the control
+law (both the FHR target and the burden accumulator) off fetal oxygen
+CONTENT alone, matching real physiology (chemoreceptors sense content/
+tension, not a computed delivery rate; the FHR deceleration is the
+response, and DO2 falling further is a consequence of that response, not
+its own separate trigger). The full content x flow DO2 index is still
+computed and published (`pat._pregnancy.fetalDO2Frac`) as the real,
+informational downstream quantity — it is just no longer what drives
+control.
+
+**The distress threshold was measured, not guessed at, after an initial
+guess under-triggered on an already-verified finding.** A first threshold
+(0.65 on the content fraction) left the already-shipped, already-verified
+`placentalAbruption` scenario's own fetal-bradycardia finding (<110 bpm)
+unmet — measured at fhr=114-115 at 900s, a real regression against
+existing, already-committed behavior. Traced to the fetal Hb dissociation
+curve compressing a given perfusion deficit into a smaller percentage
+change in oxygen content near the normal operating point than the same
+deficit was in the old, uncompressed flow-only proxy. Recalibrated to 0.85
+— the same RELATIVE margin the prior slice's own flow-only threshold used
+(0.72 against a 0-1.3 proxy whose normal value is 1.0, ~28% below normal) —
+and re-measured: abruption now reads fhr=68.6-69.2 at 900s, comfortably
+below the required <110 and well below the matched healthy control's 140.
+
+**Newborn vigor at delivery now reads real accumulated exposure, not an
+instantaneous snapshot.** The old `vigor` calculation at delivery read only
+the mother's OWN vitals at the exact instant of birth (sao2/map/
+consciousness) — it could not distinguish a fetus that had tolerated 20
+minutes of compromised placental flow from one that desaturated 10 seconds
+before crowning. `preg.fetalHypoxicBurden` now accumulates over the real
+exposure (rate identified from Low et al., Am J Obstet Gynecol 1997's own
+time-to-injury relationship for intrapartum asphyxia: ~15 minutes of fully
+obstructed placenta to reach maximal burden) and decays more slowly once
+resolved (real fetal metabolic recovery lags the resolution of the
+inciting insult). Vigor is now PRIMARILY driven by this accumulated burden,
+with the old instantaneous maternal-state terms kept as a smaller additive
+adjustment for genuine delivery-moment maternal compromise.
+
+**MEASURED against the real engine throughout (lesson 8), not
+reconstructed.** A maternal-hypoxia arm (pao2 forced to 45 mmHg every tick,
+normal BP/flow, isolating the new pathway from the already-covered flow
+pathway): fetalDO2Frac collapses to 0.208 against a matched healthy
+control's 1.029; the hypoxia arm's own MAP is confirmed NOT reduced
+(96.9 vs. 83.0 — a real hypoxic sympathetic pressor response, Marshall, J
+Physiol 1994 — proving the old flow-only proxy would have read this mother
+as having normal-or-better placental flow and missed the fetal compromise
+entirely); fetal HR falls to 60.7 vs. the control's 140; hypoxic burden
+accumulates to 0.42 over 900s against the control's exact 0; and, in a
+two-phase run (hypoxic for the first 600s, resolved for the remaining
+540s), burden falls all the way back to 0, confirming real recovery rather
+than a one-way ratchet.
+
+**Six new two-sided assertions added to `mechanismWiring.mjs`'s existing
+`[FETAL HEART RATE]` section**, all measured against the real engine before
+being added to the suite (lesson 8/17): maternal hypoxemia at normal BP
+collapses fetal DO2; the hypoxia arm's MAP is confirmed elevated/unchanged,
+not reduced (isolating the new pathway); maternal hypoxemia drives real
+fetal bradycardia via the DO2 chain; sustained hypoxia accumulates real
+burden against a zero-burden healthy control; and burden genuinely decays
+once the insult resolves. All six pass in the full suite run below, not
+just the standalone probe.
+
+**Verification, complete.** `node --check`/`npx eslint` clean on all three
+touched files (`obstetric.js`, `respiratory.js`, `mechanismWiring.mjs`).
+`npx vite build` clean (3.83s, same pre-existing >500kB chunk-size
+warning). Full `mechanismWiring.mjs` run to completion: **725 passed, 8
+failed** — all 8 are the pre-existing, already-documented flaky/borderline
+assertions (the BVM trio, the `activeSeizureGTC` stochastic draw, a
+condition-less-control `vo2Demand` rounding match, a severe-acidemia
+secondary-hyperkalemia near-miss, an untreated-neurogenic-shock sbp-drift
+near-miss, and the tracheostomy-vs-native-airway razor-thin `vt` margin),
+confirmed by content — none reads `_pregnancy`, `fetalHR`, `fetalDO2Frac`,
+`fetalHypoxicBurden`, or `oxySat`. `scenarioSweep.mjs` was **not** re-run
+this session — stated honestly; no new top-level `pat.*` field was added
+(the new state lives under `pat._pregnancy`, matching
+`atonyFactor`/`placentalAbruptionFactor`'s own existing precedent, so no
+sweep-list change was needed), but the sweep itself should be confirmed
+clean by a future session touching pregnancy code. All throwaway probe
+scripts used to measure the numbers above were stripped before this entry
+was written, confirmed via a directory listing showing none remain under
+`src/scripts/`.
+
+**Still open, honestly**: fetal oxygen EXTRACTION (umbilical arterial
+return / fetal VO2) and a true fetal cardiac-output model (beyond the
+rate-only proxy used here) remain unmodeled — this closes the item's own
+named "fetal HR, fetal oxygenation, placental/umbilical flow, fetal Hb"
+scope, not a full fetal cardiovascular system. Deliberately not attempted
+as a further extension in the same session, per section 4's own "verify at
+a boundary" discipline.
 
 ### 2026-09-27 (b) — REAL Tier-3 WebGPU local-LLM generation confirmed working end-to-end for the first time in this project's entire history. Investigation-only, no code changed. This closes the single largest standing open question in queue item 1.
 
@@ -3586,106 +5752,7 @@ future event can opt in the same way). Still open:
   reputation a consumer; build the exam/promotion flow first and wire
   reputation into it then.
 
-12. **CLOSED for its own scoped gap (this session) — the dynamic-P50 half
-   was already real; the caO2 dual-writer fragility a first audit only
-   documented has now actually been fixed and fully verified by a
-   follow-up pass in the same session.** Read `respiratory.js` directly
-   before assuming a gap (lesson 16): `oxySat(po2, ph, paco2, temp, dpgFactor)` (respiratory.js:7-19)
-   already implements a real, literature-anchored Bohr/Haldane-shifted
-   Hb-O2 dissociation curve — `p50 = 26.6 * dpgFactor * 10^(-0.48*ΔpH +
-   0.024*ΔT + 0.06*log10(paco2/40))` — driven by live pH, PaCO2, core
-   temperature, AND a real, once-per-patient `pat.dpg` (2,3-DPG) term set
-   from the patient's own chronic Hb deficit/COPD status (respiratory.js:
-   43-63, the a previous item in the queue's own fix). This is not the "fixed P50" this
-   item's own text assumed might still be missing; it is a real, dynamic,
-   four-input curve already wired at both real call sites (`updateVentilation`
-   line 769 and `updateGasExchange` line 802).
-
-   MEASURED, not assumed (via `physio()`, the real scenario harness, not a
-   reconstruction — lesson 8): `carbonMonoxidePoisoning` at t=600s reads
-   `sao2=98.5%` (pulse-ox blind, exactly the intended CO/pulse-oximetry
-   teaching point) while `caO2` correctly collapses to 14.05 (vs a matched
-   condition-less control's 20.33) and `do2` collapses to 727.0 (vs 1215.8)
-   — confirming the CaO2/DO2 chain genuinely reflects the true oxygen-carrying
-   deficit even while the naive saturation reading does not, and that this
-   downstream consequence survives to `physio()`'s own published state, not
-   just an isolated formula.
-
-   **A real, previously-undocumented FRAGILITY was found while tracing this
-   (not a live bug, confirmed by the measurement above, but worth recording
-   so a future consolidation pass starts from the right diagnosis):**
-   `pat.caO2` currently has TWO independent writers with two DIFFERENT
-   formulas — `respiratory.js`:771 (`1.34*hb*sao2/100 + 0.003*pao2`, no
-   COHb/metHb term) inside `updateGasExchange`, and `metabolic.js`:274
-   (`1.34*hb*(1-cohbFrac-metHbFrac)*sao2/100 + 0.003*pao2`, the correct,
-   dyshemoglobin-aware one) inside `updateMetabolism`. `patient.js`'s real
-   tick order (`update()`, lines ~1194-1197) calls `updateGasExchange` BEFORE
-   `updateMetabolism`, so the correct, dyshemoglobin-aware write happens
-   LAST and wins for the tick — which is why the CO-poisoning measurement
-   above comes out correct. But this is order-dependent, not structurally
-   guaranteed: swapping those two calls, or any future module inserted
-   between them that reads `pat.caO2` expecting the dyshemoglobin-aware
-   value, would silently regress the exact pulse-ox-blind-spot mechanism
-   `acquiredMethemoglobinemia`/`carbonMonoxidePoisoning` were built for.
-   `CvO2`/`DO2`/`VO2`/`SvO2` remain genuinely scattered as this item's own
-   text originally said: `pat.do2` (metabolic.js:283), `pat.actualVO2`
-   (metabolic.js:360, already correctly composing `pat.cytochromeBlock` for
-   cyanide's utilization-vs-delivery split per this item's own prior text),
-   `pat.svO2`/`pat.pvO2` (respiratory.js:775-776, a global mixed-venous
-   estimate), and `pat.svO2Composite` (neuro.js:461, a SEPARATE, real,
-   flow-weighted per-organ composite built for a previous item in the queue) are four
-   genuinely different modules each owning one piece, with no single
-   `pat.oxygen`-shaped object consolidating them.
-
-   **FIXED in a same-session follow-up, not left as a future TODO.** The
-   respiratory.js writer wasn't actually dead code to delete — it's a real,
-   live LOCAL consumer: `respiratory.js`'s own `updateGasExchange` uses its
-   uncorrected intermediate `pat.caO2` immediately, within the same
-   function, to compute `do2`/`er`/`svO2`/`pvO2` — and `pat.pvO2` feeds
-   straight back into `pat.pao2` via the venous-admixture/shunt equation a
-   few lines later in that SAME function, before `metabolic.js`'s later,
-   correct write ever runs. So the final PUBLISHED `pat.caO2` was always
-   correct (as the measurement above showed), but respiratory.js's own
-   intra-tick venous-saturation/shunt math was silently running on an
-   artificially high oxygen-carrying-capacity number for any COHb- or
-   metHb-affected patient. Fixed by reusing the exact same `cohbFrac`/
-   `metHbFrac` clamp-and-subtract terms `metabolic.js` already computes and
-   cites, rather than a second, independently-derived formula that could
-   drift from the authoritative one — both writers now express identical
-   physiology, differing only in WHEN in the tick they run.
-
-   **MEASURED before and after**, on the real, already-shipped
-   `carbonMonoxidePoisoning` scenario at 600s (cohb settled ~0.313, hb
-   15.15): naive (uncorrected) caO2 20.31 mL/dL vs metabolic.js's corrected
-   14.06 mL/dL — a real 31% overstatement of O2 content feeding
-   respiratory.js's own `svO2` calc. Before the fix, respiratory.js's
-   intra-tick `pat.svO2` read 73.6% (using the naive value); after, it reads
-   64.9% — a genuine 8.7-point correction, matching a hand-computed expected
-   value (64.8%). A condition-less healthy control (`abdPain`, cohb=metHb=0)
-   is confirmed bit-for-bit unaffected before and after (caO2 20.333, svO2
-   75.79%).
-
-   **Verification, complete.** `node --check`/`npx eslint
-   src/physio/respiratory.js`: clean. `npx vite build`: clean (2.49s, same
-   pre-existing >500kB chunk-size warning). Since this touches
-   `respiratory.js`'s shared per-tick gas-exchange hot path, `mechanismWiring.mjs`
-   was run twice to distinguish a real regression from this engine's own
-   already-documented stochastic noise: run 1 came back 707 passed/7
-   failed; run 2 (identical code) came back 705 passed/9 failed, with a
-   DIFFERENT failure membership between runs — proving those are the
-   suite's own pre-existing stochastic/borderline assertions, not a
-   regression this fix introduced (none of the non-BVM failures in either
-   run read `caO2`/`svO2`/`pao2`/`do2`, and none of their scenarios set
-   `pat.cohb`/`pat.metHb`). `scenarioSweep.mjs`: 184 scenarios, 20,947,666
-   checks, 920 failed — every failure is the exact same pre-existing,
-   already-documented `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-
-   t=2s defect on unmodified master. `CvO2`/`DO2`/`VO2`/`SvO2` remain
-   genuinely scattered across `metabolic.js`/`respiratory.js`/`neuro.js` as
-   this item's own text originally noted — a refactor-for-clarity
-   consolidation, not new mechanism, and still correctly left for a future
-   session given how many independently-verified fields it would touch.
-
-13. **Microcirculation as its own layer, between macro-circulation and
+12. **Microcirculation as its own layer, between macro-circulation and
    organ metabolism.** Today organ flow is `deltaP/Resistance`-style,
    computed inline per organ. A dedicated `physio/microcirculation.js`
    (per the source doc's own suggested module list) would centralize
@@ -3695,7 +5762,7 @@ future event can opt in the same way). Still open:
    about whether that logic should be extracted into its own module as
    organ perfusion work continues to grow, not new physiology per se.
 
-14. **Endothelial physiology as an explicit state.** `pat.capillaryLeak`
+13. **Endothelial physiology as an explicit state.** `pat.capillaryLeak`
    is real and has a real resolution mechanism (a previous item in the queue's endothelial-
    repair decay). What's NOT explicit: endothelial `integrity`/`activation`/
    `permeability`/nitric-oxide/endothelin/tissue-factor as SEPARATE tracked
@@ -3705,7 +5772,7 @@ future event can opt in the same way). Still open:
    state is a natural next step of that same work, not a new one from
    scratch.
 
-15. **PARTIALLY DONE (this session, scoped slice) — see section 3's newest
+14. **PARTIALLY DONE (this session, scoped slice) — see section 3's newest
    entry.** The full V/Q-compartment-population rewrite remains explicitly
    out of scope for one batch (still true, see below), but a real, useful
    scoped slice shipped: `respiratory.js`'s existing shunt equation already
@@ -3721,7 +5788,7 @@ future event can opt in the same way). Still open:
    mechanism, not the population-based V/Q-compartment model itself, which
    remains large, high-blast-radius work needing its own dedicated batch.
 
-16. **Respiratory muscle mechanics and fatigue, plus dynamic
+15. **Respiratory muscle mechanics and fatigue, plus dynamic
    hyperinflation/intrinsic PEEP.** `pat.respMuscleFatigue` already exists
    and already drives real deterioration (see a previous item in the queue's body-size-
    reference fix above). Intrinsic PEEP was investigated in depth (a previous item in the queue, RE-INVESTIGATED entry) and found structurally capped by
@@ -3733,7 +5800,7 @@ future event can opt in the same way). Still open:
    already identifies the specific mechanism (delivery-factor derating) any
    new work here would need to address, not just re-discover.
 
-17. **RAAS, generalized and made explicit.** Angiotensin II/aldosterone/
+16. **RAAS, generalized and made explicit.** Angiotensin II/aldosterone/
    renin already exist and already drive real SVR/aldosterone/renal-Na
    effects (see a previous item in the queue's earlier RAAS fix, referenced by a previous item in the queue). This
    item is auditing whether `pat.renal = {gfr,rpf,renin,angiotensinII,
@@ -3743,7 +5810,7 @@ future event can opt in the same way). Still open:
    done carefully to preserve every existing consumer (single-writer
    discipline, section 5's own "identify authoritative owner" rule).
 
-18. **PARTIALLY DONE (this session, scoped slice) — see section 3's
+17. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    newest entry. Explicitly NOT the full proposal.** A real two-segment
    model (proximal, SGLT/glucose-sensitive; distal, aldosterone-driven)
    composing into `pat.segmentReabsorptionEff` now exists, built as an
@@ -3763,7 +5830,7 @@ future event can opt in the same way). Still open:
    (a real prerequisite gap for a loop-diuretic mechanism), and no real
    prerenal/intrinsic/postrenal AKI distinction was attempted.
 
-19. **AUDITED (2026-09-05), still genuinely OPEN — not attempted, with an
+18. **AUDITED (2026-09-05), still genuinely OPEN — not attempted, with an
    honest reason.** `pat.atp`/`pat.energyFailure`/`pat.cytochromeBlock`
    really do exist and are real, verified, well-consumed mechanisms
    (metabolic.js, plus cyanidePoisoning's utilization-block work) — but read
@@ -3788,7 +5855,7 @@ future event can opt in the same way). Still open:
    exists — but the literal structured-object shape the source spec asks
    for is not the right next step for it. No code changed.
 
-20. **PARTIALLY DONE — the portal-pressure/portal-flow half (a prior,
+19. **PARTIALLY DONE — the portal-pressure/portal-flow half (a prior,
    undocumented session) and this session's own new hepatic-coagulopathy
    half are both real and verified; the rest remains open.** `organ
    ClearanceFactor()` (pk.js) and a previous item in the queue's `hepaticDO2`/`hepaticO2Debt`/
@@ -3845,7 +5912,7 @@ future event can opt in the same way). Still open:
    itself can cause; glycogen/gluconeogenesis (hepatic hypoglycemia risk in
    liver failure) is entirely unbuilt.
 
-21. **Multi-timescale physiology — largely already true by
+20. **Multi-timescale physiology — largely already true by
    construction** (renal/RAAS/inflammation already relax on genuinely
    different, real time constants — see a previous item in the queue's 90-minute cytokine tau,
    a previous item in the queue's 36-hour endothelial-repair tau). This item is about making the
@@ -3854,7 +5921,7 @@ future event can opt in the same way). Still open:
    task, worth doing once several of the above are further along, not
    before.
 
-22. **PARTIALLY DONE — sub-item (b) CLOSED (2026-09-10), see section
+21. **PARTIALLY DONE — sub-item (b) CLOSED (2026-09-10), see section
    3's newest entry.** a previous item in the queue already closed valvular regurgitation in
    the authoritative full-loop solver and left three explicit sub-items
    open: (a) ischemic-MR consumption by the solver, (b) a shipped scenario
@@ -3873,7 +5940,7 @@ future event can opt in the same way). Still open:
    lever (attenuating atrial kick for AV-dissociated rhythms) already on
    record as tried and MEASURED WORSE — do not retry it blind. Read a previous item in the queue's own entry in full before attempting either.
 
-23. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed;
+22. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed;
    re-audited this session — the remaining receptor classes are genuinely
    BLOCKED on a missing producer, not simply unbuilt.** Ketamine's
    cardiovascular mechanism is a real dual NMDA-antagonist effect
@@ -3914,7 +5981,7 @@ future event can opt in the same way). Still open:
    own batch is the natural place to add its receptor class alongside it.
    No code changed this session; this is an audit-only finding.
 
-24. **PARTIALLY DONE (this session, scoped slice) — see section 3's
+23. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    newest entry.** A real, first slow-timescale state variable now exists:
    `pat.lvHypertrophy`, relaxing toward a target driven by sustained
    elevated `pat.svr` on a cited ~14-day time constant (`approach()`, the
@@ -3953,56 +6020,7 @@ future event can opt in the same way). Still open:
    multi-week saturation rather than short-window direction, for either
    this or `lvHypertrophy`.
 
-25. **Pregnancy and fetal integration.** `updateObstetric` already
-   models real gestational blood-volume/CO/SVR/aortocaval-compression
-   changes (Supine Hypotensive Syndrome, a previous item in the queue's postpartum-hemorrhage
-   work). A genuine FETAL compartment (fetal HR, fetal oxygenation,
-   placental/umbilical flow, fetal Hb) does not yet exist as tracked state
-   — real, citable, moderately large new mechanism work; the source doc's
-   own explicit ask that placental failure should affect fetal DO2 rather
-   than directly scripting fetal distress is the correct design target once
-   this is attempted.
-
-26. **CLOSED (re-audited this session, lesson 16) — this item's own
-   "confirmed NOT modeled" claim was itself stale.** Re-read
-   `cardiovascular.js`'s full-loop CPR block (`mechAct = 0.17 * cpr`) AND
-   `pk.js`'s `"cpr"` dose handler directly before touching anything, per
-   this document's own standing discipline: a real depth/rate quality
-   consumer already exists and was simply undocumented here.
-   `CprMinigame.jsx` computes a genuine `depthScore * rateScore` composite
-   (adult target 5-6cm depth, 100-120/min rate, both drawn from the AHA
-   guideline bands) into `pat.cprQuality` (0-1) from the player's actual
-   compressions; `pk.js`'s `"cpr"` dose handler already multiplies this
-   directly into `pat.cprActive` itself — `pat.cprActive = Math.max(
-   pat.cprActive, intensity * freshness * cq)`, where `cq` IS
-   `pat.cprQuality` (expiring 30s after the last scored compression, so
-   crew/unscored CPR correctly defaults to `cq=1`) and `freshness` is a
-   real ~12s-tau decay from the last CPR dose (Berg et al., Circulation
-   2001; Kern et al., Circulation 2002 — real coronary/cerebral perfusion
-   pressure collapses within seconds of compressions stopping and takes
-   several compressions to rebuild, the evidence base behind AHA's
-   "minimize interruptions"/compression-fraction teaching). Since
-   `cardiovascular.js`'s `mechAct = 0.17 * cpr` floor reads this SAME
-   `pat.cprActive`, degraded depth/rate technique already produces a
-   genuinely smaller mechanical floor and therefore genuinely lower
-   CO/DO2/EtCO2 through the shared circulation — technically poor and
-   textbook-perfect CPR are NOT indistinguishable to the engine today, as
-   this item's own text previously (and, per its own dated header,
-   apparently already incorrectly) claimed. A duplicate second consumer
-   was investigated and deliberately NOT added at `cardiovascular.js`'s own
-   floor line (would double-count the identical `cq` signal already
-   folded into `cprActive` upstream) — a documenting comment was added at
-   that site instead, cross-referencing the real mechanism's actual
-   location. Compression RATE specifically has no SEPARATE timing
-   consumer (`compressionRate = 110` stays fixed for EtCO2 cycle timing) —
-   its contribution is already folded into the one composite `cprQuality`
-   score, and splitting it into a second live variable would need its own
-   real justification (e.g. modeling compression-rate-driven EtCO2 cadence
-   independent of depth), not attempted here. `node --check`/`npx eslint`
-   clean on the one touched file (`cardiovascular.js`, comment-only). No
-   suite re-run needed (no functional change).
-
-27. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
+24. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
    Investigated first: CO poisoning's pulse-ox blind spot (`pat.cohb`) and
    ETCO2 as a real quantity distinct from PaCO2 (with a real, already-
    PE-vs-hypoventilation-distinguishing gradient) were both confirmed
@@ -4014,7 +6032,7 @@ future event can opt in the same way). Still open:
    structure was deliberately NOT built — no real per-field consumer was
    identified, and building it would have been decorative (section 1).
 
-28. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
+25. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
    `duodote`'s dead `fx:{hr:20}`, `catecholamineReserve`, and
    `baroreflexHistory` are already fixed/removed. Still open:
 
@@ -4143,7 +6161,7 @@ future event can opt in the same way). Still open:
    mechanism for "is this drug on board." See section 3 for the full
    measurement.
 
-29. **STANDING WORKSTREAM: build out the condition library, and deepen the
+26. **STANDING WORKSTREAM: build out the condition library, and deepen the
    conditions that already exist.** This is the standing priority between
    one-off fixes. It is not a bug fix — it is the work that decides whether the
    simulator is worth using.
@@ -4260,7 +6278,7 @@ future event can opt in the same way). Still open:
    more than five conditions with three fields each — and five thin conditions is
    how a physiology engine quietly turns back into a branching script.
 
-30. **PARTIALLY RESOLVED — the pregnancyBenchmark near-misses.** The "Total
+27. **PARTIALLY RESOLVED — the pregnancyBenchmark near-misses.** The "Total
     blood volume 6.2-7.0 L" row's internal inconsistency was a genuine
     fixture defect and is fixed (now derived from the patient's own
     baseline, 9/16 in range). The harder EDV/SV/EF/CO/SVR/Hct cluster
@@ -4269,7 +6287,7 @@ future event can opt in the same way). Still open:
     section 3's newest entry and the measurement now sitting in
     `cardiovascular.js`.
 
-31. **RE-INVESTIGATED (this session) — the prior "device rates too safe to
+28. **RE-INVESTIGATED (this session) — the prior "device rates too safe to
     reach the dangerous regime" explanation was incomplete, and the real
     structural cause is different and more specific: `deliveryFactor`
     itself caps achievable intrinsic PEEP, independent of bagging rate.**
@@ -4314,7 +6332,7 @@ future event can opt in the same way). Still open:
     design question, not a coefficient to tune, so left open rather than
     forced. See section 3's newest entry for the full measurement.
 
-32. **INVESTIGATED, CONFIRMED STRUCTURAL, still open — widen the
+29. **INVESTIGATED, CONFIRMED STRUCTURAL, still open — widen the
     survivable-ischemia band for a genuinely regional NSTEMI.** The
     `acs` condition maps the spectrum onto the engine's existing narrow
     survivable zone (subtotal lesion = stable NSTE-ACS; completed occlusion
@@ -4329,7 +6347,7 @@ future event can opt in the same way). Still open:
     attempted — this needs its own dedicated, carefully-scoped batch, not a
     coefficient tweak inside a larger one. Documented at the site.
 
-33. **The physiology half is DONE (later session): `toxicInhalationChlorine`
+30. **The physiology half is DONE (later session): `toxicInhalationChlorine`
     (RESP-037) shipped, reusing `asthma`'s bronchospasm-climb term and
     `pat.capillaryLeak`. The front-end hazmat-scene mechanic is STILL OPEN —
     this item stays open until that half lands too.** The original request:
@@ -4383,7 +6401,7 @@ future event can opt in the same way). Still open:
       attach to, so building this half no longer risks the "infrastructure
       with no real patient" mistake this item's own text used to flag.
 
-34. **Breath odor has no real physiology backing except one case, now
+31. **Breath odor has no real physiology backing except one case, now
     wired — found and partially resolved while adding the new `breathingCheck`
     head action (a previous item in the queue, section 6).** `probe:"breathOdor"` has
     existed since an earlier session as a scenario opt-in hook, but grep
@@ -4423,7 +6441,7 @@ future event can opt in the same way). Still open:
     still declare its own `probes.breathOdor` for a specific narrative case
     in the meantime, which wins over both real cases above.
 
-35. **`opioidOD` cannot reach genuine near-apnea severity through a fentanyl
+32. **`opioidOD` cannot reach genuine near-apnea severity through a fentanyl
     `DrugInstance` alone — a real architectural ceiling found while finishing
     a previous item in the queue's calibration (section 3), filed rather than worked around.**
     `pk.js` deliberately computes Emax intensity ONCE PER DRUG ID from
@@ -4451,7 +6469,7 @@ future event can opt in the same way). Still open:
     defect a previous item in the queue fixed (naloxone would once again do nothing, since a
     scripted `rrBase` doesn't route through `respDriveSuppression` at all).
 
-36. **STANDING WORKSTREAM, filed per explicit operator instruction: build an
+33. **STANDING WORKSTREAM, filed per explicit operator instruction: build an
     overdose condition for every existing player-administerable drug, by
     seeding a supratherapeutic dose of THAT SAME drug via `seedPastDose` —
     reusing the exact pattern a previous item in the queue validated for `opioidOD`, rather than
@@ -4620,7 +6638,7 @@ future event can opt in the same way). Still open:
     drugs whose receptor/PK model this project has already built and
     verified.
 
-37. **Beat-level cardiac cycle — PARTIALLY CLOSED. The original premise was
+34. **Beat-level cardiac cycle — PARTIALLY CLOSED. The original premise was
     FALSE and has been corrected; valvular REGURGITATION now works in the
     authoritative solver. Three concrete pieces remain open, each scoped
     below.** See section 3's topmost entry for the full measurement detail.
@@ -4688,7 +6706,7 @@ future event can opt in the same way). Still open:
     is already on record in `updateFullLoopODE` as tried and MEASURED WORSE —
     do not retry it blind.
 
-38. **Nephron abstraction — the osmotic-diuresis slice is DONE (this
+35. **Nephron abstraction — the osmotic-diuresis slice is DONE (this
     session), built WITHOUT the full segment chain; the rest remains
     open.** `renal.js` already treats na/k/bun as real mass/
     concentration pools with GFR-driven clearance, ADH/aldosterone
@@ -4766,7 +6784,7 @@ future event can opt in the same way). Still open:
     unattempted and still large — this session only proves one of its
     three named payoffs was separable and worth building on its own.
 
-39. **Consciousness as a continuous arousal score — the full refactor is
+36. **Consciousness as a continuous arousal score — the full refactor is
     NOT attempted (still correctly flagged as risky), but "sedative
     burden" — this item's own text already assumed was an existing input —
     is now REAL for real (this session).** Today consciousness is derived
@@ -4813,138 +6831,7 @@ future event can opt in the same way). Still open:
     larger piece** — this session only closed the one concrete input gap
     its own text had assumed was already real.
 
-40. **CLOSED (re-verified this session) — every part of this item, including
-    the "much larger finding" below, is now resolved in the tree; this was
-    confirmed by reading the code directly (lesson 16), not assumed from the
-    text below, which had gone stale.** Three things were checked and all
-    three are real:
-    - **`outcomeReport()` now HAS a caller.** `grep outcomeReport src/App.jsx`
-      shows it wired at every debrief-producing transition (`physioOutcome:
-      outcomeReport(s)`, tagged "F44" in-code), and the debrief screen
-      renders a real, distinct "THE CHART" panel (`App.jsx`, ~line 7513) off
-      `g.physioOutcome` — arrest timing/ROSC/downtime, neurological outcome,
-      irreversible/reversible injuries, troponin, and death-mechanism
-      treatability all render from the real physiology-layer object, not the
-      old ad-hoc `g.outcome` literal (which still exists alongside it for the
-      player's own self-graded call summary — the two are complementary, not
-      duplicates). This closes what this item's own text flagged as the
-      single largest open finding.
-    - **The liver/gut "still open" extension is also done.** `physiology.js`'s
-      `outcomeReport()` (~line 326-338) now composes `pat.hepaticStunning`/
-      `pat.gutMucosalStunning` into `reversibleFindings` the same way
-      `pat.atnProgression` already did for kidney — the exact "still open —
-      the general per-organ pattern beyond kidney" gap this item's own text
-      named is closed.
-    - **Brain has its own version too**, found in the same read: a resolved
-      TIA (`pat.strokeWeakness` back near 0 after having peaked >0.3 via
-      `pat._maxStrokeWeakness`) reports as a real reversible finding
-      distinct from a structural stroke, reusing the already-shipped `tia`
-      condition rather than inventing a second brain-injury accumulator.
-    - **A further, previously-undocumented addition found in the same
-      function**: a real global oxygen-extraction-reserve report
-      (`svO2Composite`, `organsAtExtractionLimit`), citing Rivers et al.,
-      NEJM 2001 for the 60% mixed-venous-saturation threshold (adjusted down
-      from the cited 70% central-venous target, since mixed venous runs a
-      few points lower under the same physiology) — a genuinely new
-      prognostic signal beyond what this item itself asked for.
-
-    None of this was built by this session — it was found, already shipped
-    and committed (`git log -S physioOutcome` shows it landed in a checkpoint
-    commit ahead of this session's own work, evidently from concurrent
-    work), while re-verifying this item's own claims against the tree per
-    the standing lesson-16 discipline. `npx eslint src/App.jsx` (3
-    pre-existing `react-refresh/only-export-components` errors, unchanged
-    baseline) and `npx vite build` (clean, same pre-existing >500kB
-    chunk-size warning) both re-confirmed clean against the current tree.
-    Nothing is left open under this item's own name.
-
-    Original filing, kept for its own now-superseded detail below — do not
-    treat any "still open" language in it as current; the paragraphs above
-    are what's current.
-
-    ~~Separate structural damage from functional dysfunction, generally —
-    the kidney slice is DONE (this session), and it surfaced a much larger,
-    previously-undocumented finding: the debrief function this data feeds
-    has NO CALLER anywhere in the codebase.~~ `pat.kidneyInjury` and
-    `pat.brainInjury` already are real, distinct structural-damage fields
-    separate from momentary function (confirmed: `chronicKidneyDisease`
-    pins `kidneyInjury` while GFR/excretion still compute dynamically off
-    it; `brainInjury` is distinct from momentary consciousness state).
-
-    **The reversibility distinction this item asked for turned out to be
-    ALREADY BUILT, just unread.** `renal.js`'s `pat.atnProgression` is a
-    real, separate accumulator from `pat.kidneyInjury` — confirmed by
-    reading the code rather than assumed (lesson 16): it rises only while
-    `renalPerf<0.5` and decays fully back toward zero (0.005/min) once
-    perfusion recovers, i.e. it already models transient, RECOVERABLE
-    tubular dysfunction as a genuinely different state from the slower,
-    durable `kidneyInjury` structural accumulator — exactly the
-    reversible-vs-structural distinction this item asks for. Its only
-    reader before this session was its own contribution to the GFR
-    calculation; nothing exposed the distinction itself. Wired a real
-    consumer: `physiology.js`'s `outcomeReport()` gains a new
-    `reversibleFindings` array alongside the existing (and, per the finding
-    below, honestly mislabeled) `irreversibleInjuries` list — a kidney
-    with `kidneyInjury<0.5` but meaningful `atnProgression` now reports
-    "acute tubular dysfunction from transient renal hypoperfusion (likely
-    reversible with supportive care)," a real, distinct prognostic claim
-    from the existing list's flat injury-magnitude threshold. MEASURED
-    against the real engine (not assumed): a healthy control and a
-    real moderate-trauma scenario both hold `atnProgression` at an exact
-    0.000 (a genuine deadband, not noise), while the same near-terminal AAA
-    scenario used to calibrate the gut/skin slices reaches 0.133 at 30
-    minutes with `kidneyInjury` still under the 0.5 structural threshold —
-    confirmed via a direct call to `outcomeReport()` that this real case
-    produces the new finding while `irreversibleInjuries` correctly stays
-    empty.
-
-    **A much bigger, genuinely new discovery while wiring this: `outcomeReport()`
-    — and therefore its `irreversibleInjuries`/`troponin`/`neuroOutcome`/
-    `roscOccurred`/`downtimeMin`/`deathStory`/`lethalMechanismTreatable`
-    fields, none of them new to this session — has NO CALLER ANYWHERE IN
-    THE CODEBASE.** Grepped `App.jsx` and every script directly: zero
-    matches. The debrief screen (`App.jsx`, `g.phase==="debrief"`) renders
-    from a completely separate object, `g.outcome`, built ad hoc via
-    scattered `{...base,...}` literals through `App.jsx`'s own call-outcome
-    logic — it never calls the physiology-layer `outcomeReport()` at all.
-    This predates this session entirely (troponin/queue-a previous item in the queue's own and the
-    post-death-gaps/queue-a previous item in the queue's own comments inside the function are both
-    old) and is a real, previously-undocumented "written, read by nothing"
-    defect at the scale of a whole function, not one field — but wiring an
-    entire debrief-screen redesign (neurological outcome, ROSC timing,
-    downtime, irreversible/reversible injuries, troponin) is real,
-    separately-scoped FRONT-END work, not a physiology-engine mechanism,
-    and correctly not attempted blind inside this batch. The new
-    `reversibleFindings` field is real, correct, and verified at the data
-    layer regardless (`outcomeReport()` is deliberately UI-agnostic per its
-    own header comment — "if a number is wanted here that the engine does
-    not track, it belongs in the module that owns the mechanism," which is
-    exactly where reversibility data belongs even before a screen renders
-    it) — but this is flagged as a genuinely open, separate front-end
-    queue item, not silently absorbed into this one.
-
-    **Still open — the general per-organ pattern beyond kidney.** Liver/
-    gut don't have an equivalent transient-vs-structural pair the way
-    kidney's `atnProgression`/`kidneyInjury` do; building one for either
-    would mean inventing a genuinely new mechanism (not just wiring a
-    reader to something that already exists), correctly out of scope for
-    this narrow slice per the item's own "start with kidney, not a
-    speculative scalar on every organ" framing.
-
-    **Verification, complete.** `node --check`/`npx eslint` clean on the
-    one touched file (`physiology.js`). `mechanismWiring.mjs`: **356
-    passed, 2 failed** — both the same already-documented, pre-existing
-    flaky stochastic assertions already seen twice this session (PAC
-    HR-variance, rocuronium BVM-timing), neither reading `outcomeReport`,
-    `atnProgression`, or `kidneyInjury`. `scenarioSweep.mjs`: **156
-    scenarios, 9,195,578 checks, 0 failed** — unchanged count, correctly,
-    since this change adds no new per-tick patient field for the sweep to
-    track (the data already existed; only a debrief-layer reader was
-    added). `npx vite build`: clean (1.61s, same pre-existing >500kB
-    chunk-size warning). The throwaway probe script was stripped before
-    this entry was written.
-
-41. **Per-patient baseline variability — SIX of eight traits now DONE
+37. **Per-patient baseline variability — SIX of eight traits now DONE
     (renal/pulmonary reserve added this session, see section 3's newest
     entry); cardiac reserve and circadian state remain open, same pattern,
     future work.** `renalReserve` (`patient.js`) scales `this.baseGfr`
@@ -5031,39 +6918,7 @@ Also open, lower priority: ketamine's `myocardialDepression` coefficient is
 asserted rather than identified; the antiarrhythmic blockade coefficients are
 plausible but not fitted to trial data.
 
-42. **CLOSED (re-verified this session, lesson 16) — this item's own
-    "RESOLVED" opening line was itself stale.** It used to read "no isolated
-    pruritus/hives signal exists," but a real `pat.urticaria` mechanism (0-1
-    histamine-driven cutaneous finding, distinct from `edema`/`bronch`) is
-    now live: `patient.js` declares it, `allergicReactionMild`
-    (conditions.js, its own dedicated scenario) drives it, `actions.js`'s
-    skin exam reads it for a real graded finding (hives alone vs. hives +
-    angioedema), `diphen`'s real `fx:{urticaria:-0.5}` treats it, and both
-    `laCounty.js` and `national.js` gate their own `anaphDiphen` rule on
-    `ctx.v.urticaria` — confirmed by direct grep across all of `src/`, not
-    assumed from the comment. `mechanismWiring.mjs` already carries two-sided
-    assertions for it (fires in `allergicReactionMild`, absent in a matched
-    healthy control, measurably reduced by diphenhydramine). Nothing left
-    open under this item's own name; no code changed this session.
-
-    Original filing, kept for its own now-superseded detail — found while
-    implementing TP 1219/1219-P (Allergy), step 10's diphenhydramine
-    indication:
-    `pat.edema`/`bronch` are real fields for angioedema/bronchospasm, but
-    nothing represents cutaneous urticaria/itching in isolation (a patient
-    with hives and no other finding). `laCounty.js`'s `anaphDiphen` rule
-    works around this by gating on epinephrine already having been given
-    (diphenhydramine as a late adjunct to confirmed anaphylaxis, matching
-    footnote ❹'s "once other treatments are complete") rather than firing
-    for isolated skin symptoms, which this engine currently has no way to
-    detect at all. A real fix would need a new field with a real,
-    if modest, physiologic consequence (histamine-driven vasodilation is
-    already how `pat.vasodilation`-driven distributive mechanisms work
-    elsewhere in this engine — reusing that at a much smaller magnitude for
-    isolated urticaria, rather than inventing an inert cosmetic field, is
-    the honest way to build this if it's ever wanted).
-
-43. **RESOLVED (this session, pulmonary limb only) — see section 3's newest
+38. **RESOLVED (this session, pulmonary limb only) — see section 3's newest
     entry.** `decompressionIllness` (conditions.js) reuses `pe`'s existing
     `shuntFraction`/`pulmResistFactor` mechanism (mechanically the same
     lesion), with real high-flow-O2 denitrogenation treatment. Arterial gas
@@ -5087,7 +6942,7 @@ plausible but not fitted to trial data.
     correctly lower priority than a previous item in the queue above unless a dive-specific
     scenario is specifically wanted.
 
-44. **STILL BLOCKED on the SBP-tiered-escalation half; the crew-hold gap this
+39. **STILL BLOCKED on the SBP-tiered-escalation half; the crew-hold gap this
     item flagged is CLOSED (re-verified this session, lesson 16 — the fix
     predates this session, found already committed).** `App.jsx`'s `crewFn`
     now runs a real `dHold=DRUGS[t.dose]; if(dHold&&dHold.hold){...return}`
@@ -5169,7 +7024,7 @@ plausible but not fitted to trial data.
     everywhere else, then decide whether `nitro` itself needs
     recalibrating before `nitro2`/`nitro3` are built on top of it.
 
-45. **PARTIALLY RESOLVED (a prior session) — see section 3's own entry for
+40. **PARTIALLY RESOLVED (a prior session) — see section 3's own entry for
     the epinephrine half; the saline/IV-fluid half remains open.**
     `neonatalTransition` (conditions.js) now models the real NRP
     epinephrine indication: a newborn with critically low reserve (<0.2)
@@ -5223,38 +7078,7 @@ plausible but not fitted to trial data.
     worth more — this is very likely not the last pediatric-weight-based
     dose this project's protocol library will need.
 
-46. **RESOLVED (this session) — see section 3's newest entry.**
-    `organophosphatePoisoning` (conditions.js) is a real muscarinic-excess
-    condition (bradycardia via a new `pat.cholinergicVagalTone` accumulator,
-    genuinely atropine-responsive through the existing `vagalBlock`
-    mechanism; bronchorrhea/bronchospasm via the shared `pat.broncho`
-    handle; narrative-only miosis), plus a new scenario
-    (`organophosphatePoisoning`, TOX-009). Nicotinic effects and
-    pralidoxime deliberately deferred, stated honestly in section 3.
-    Original filing, kept for context:
-
-    No cholinergic-toxidrome signal (miosis, rhinorrhea, salivation) —
-    found while implementing TP 1240/1240-P (HAZMAT)'s nerve-agent
-    exposure algorithm.** The SEVERE tier (apnea, seizure, spo2<90) has
-    real, already-available signals and a real automatic rule
-    (`hazmatDuodoteSevere`), but the protocol's own MILD/MODERATE tiers are
-    defined entirely by pupil size and secretions — miosis, rhinorrhea,
-    increased salivation — none of which this engine tracks in any form
-    (no pupil-diameter mechanism at all, a standing limitation already on
-    record for AAA's pulsatile mass and TP 1234's mydriasis/miosis gap;
-    no airway-secretion-volume field distinct from the already-used
-    `airwayFluid`, which represents something mechanically different —
-    aspirated/edema fluid, not glandular hypersecretion). `duodoteTask`
-    stays available for manual crew ordering at these tiers. A real fix
-    needs a genuine cholinergic-toxidrome mechanism — muscarinic receptor
-    stimulation driving secretions/miosis/bradycardia together as one real
-    physiologic state, the same "mechanism, not a stat write" standard
-    this project holds every other condition to — not a scenario-local flag
-    the way `s.vomited` stands in for nausea, since this toxidrome has
-    real, graded severity levels the protocol itself distinguishes,
-    unlike a boolean "did they vomit."
-
-47. **A real, previously-masked treatment-responsiveness question in the
+41. **A real, previously-masked treatment-responsiveness question in the
     `[HYPERKALEMIA FROM MISSED DIALYSIS]` rhythm mechanism — found while
     closing a previous item in the queue (this session), filed rather than patched blind.**
     a previous item in the queue's own bicarb magnitude fix (below) surfaced a second, deeper
@@ -5315,7 +7139,7 @@ plausible but not fitted to trial data.
     own dedicated batch touching shared rhythm code, not a bolt-on). No
     code changed this session.
 
-48. **PARTIALLY FIXED (2026-09-05) — one real contributing bug closed, the
+42. **PARTIALLY FIXED (2026-09-05) — one real contributing bug closed, the
     dominant driver root-caused and re-filed as a previous item in the queue below; still open.**
     Original filing (2026-09-01): a real, measured, unexplained drift in
     "conserved" quantities for a completely resting, condition-less,
@@ -5361,7 +7185,158 @@ plausible but not fitted to trial data.
     larger, cross-module (respiratory/cardiovascular-autonomic/metabolic)
     physiology-engine work, not a renal-module bug fix.
 
-49. **NEW, filed 2026-09-05 — a resting, condition-less patient's own
+43. **PARTIALLY RESOLVED (2026-09-28) — the `kShiftConc` unbounded-flux bug
+    this item's own text names as "the dominant remaining contributor" is
+    now fixed; the underlying paco2/pH resting-transient timing question
+    below is UNCHANGED and still open.**
+
+    Re-measured this item's own claim before touching anything (lesson 16):
+    confirmed real, but the original text understated it — `pat.paco2`
+    does eventually reach a fixed point (a standalone tick-by-tick probe
+    against a resting, condition-less `abdPain` patient out to 18000s/5h
+    showed paco2 settling at ~34.1-34.7 mmHg and pH at ~7.44-7.46 by
+    roughly t=3600-5400s, not never), but that window (60-90 minutes) is
+    still many multiples of any real call length, so within a normal
+    15-30 minute call `paco2`/`ph` never stop drifting — the item's
+    practical conclusion holds even though "never reaches a fixed point"
+    was not literally true.
+
+    **The real, separate, and worse finding**: `pat.kMass`/`pat.k` do NOT
+    converge even once paco2/pH themselves settle. Extending the same probe
+    to 18000-72000s (5-20 hours) showed serum K falling in an unbroken line
+    the entire time, reaching the engine's own 2.5 mEq/L mass floor by
+    roughly 5 hours of sim time — for a resting, condition-less, dose-less
+    patient with nothing else happening. Root-caused directly: `renal.js`'s
+    `kShiftConc` term (`pHDrop * coefficient * dt`) was a FLUX added every
+    tick for as long as pH sat away from exactly 7.40, with no
+    equilibration — real transcellular H+/K+ exchange shifts potassium
+    toward a new bounded equilibrium offset (Adrogue & Madias, NEJM 1981:
+    ~+0.6 mEq/L per -0.1 pH unit for a mineral/inorganic acidosis, smaller
+    for an organic one), it does not keep moving potassium in one direction
+    forever once pH stops changing. Because this engine's own true resting
+    fixed point sits persistently ABOVE 7.40 (a mild, real, stable
+    compensated respiratory alkalosis, not itself fixed by this session —
+    see below), the old code's flux never went to zero even at full
+    settling, so a healthy, resting patient had NO stable serum potassium
+    value at all on any long enough timescale.
+
+    **Fixed** (`renal.js`, `updateElectrolytes`): `kShiftConc` is now the
+    per-tick CHANGE in a new relaxing state, `pat._kAcidBaseShift`, which
+    approaches a target on a 12-minute time constant (mechanically identical
+    to every other relaxation state in this engine — `approach()`'s idiom,
+    reimplemented inline since `renal.js` doesn't import it). The flux is
+    exactly zero once the target is reached, however far from 7.40 the
+    disturbance sits, closing the "no stable K" defect regardless of the
+    exact resting pH calibration.
+
+    **The target is split by disorder type, not driven off raw pH — a
+    refinement made after an initial pH-only version drew a fair
+    literature-grounded critique.** A first draft gained the target off
+    `pHDrop` alone (pH departure from 7.40, whatever the cause) — the
+    standard clinical rule-of-thumb magnitude, but one that conflates two
+    differently-coupled processes: metabolic acid-base disorders couple
+    tightly to transcellular K+ shift (Adrogue & Madias, NEJM 1981; Gumz et
+    al., NEJM 2015), respiratory disorders couple much more weakly and, for
+    ACUTE respiratory alkalosis specifically, can even shift K+ the OPPOSITE
+    direction transiently via an alpha-adrenergic catecholamine effect
+    (Krapf et al., Kidney Int 1995) before any hypokalemia appears. Since
+    this engine's own real resting fixed point is itself a mild, CHRONIC,
+    purely respiratory alkalosis (hco3 stays essentially normal, ~23.8-23.9;
+    only paco2 is low), gaining the resting shift off raw pH overstated it
+    exactly in the case this fix was built to correct.
+
+    Fixed by driving two separate components: `hco3Offset` (24 minus
+    `pat.hco3`, the metabolic driver) at the full calibrated strength
+    (0.24 mEq/L per mEq/L of offset, 0.086 for `lactate>2`, preserving the
+    old code's 3:1 organic-acid-shifts-less ratio), and `paco2Offset`
+    (`pat.paco2` minus 40, the respiratory driver) at a deliberately weak
+    0.02 mEq/L per mmHg — an order of magnitude weaker, directly encoding
+    the asymmetry the literature describes. The acute catecholamine-driven
+    sign reversal was deliberately NOT modeled (it would need its own
+    catecholamine-coupled mechanism); instead the respiratory term is kept
+    small enough that its sign error is a minor contributor, and the
+    limitation is named explicitly in-code as a KNOWN failure mode: any
+    scenario stressing ACUTE hyperventilation specifically (the already-
+    shipped `panicAttackHyperventilation`, or early sepsis) will be
+    directionally wrong for the first several minutes (real: transient mild
+    HYPERkalemia; modeled: none). A companion correction was also made to
+    the in-code reasoning itself: an earlier draft of the comment claimed
+    chronic hypocapnia's hypokalemia is "mainly renal wasting" — Krapf et
+    al., NEJM 1991's own controlled sustained-hypocapnia study found the
+    opposite (urinary K+ excretion FALLS, aldosterone does not rise; the
+    hypokalemia is itself a redistribution) — corrected to say so, which
+    also confirms modeling the resting respiratory offset as a small bounded
+    transcellular shift (rather than routing it through the separate,
+    acid-base-blind `renalLoss` term) is the more faithful representation
+    for this specific state.
+
+    **The existing `renalLoss` term (queue item 75's own fix) was also
+    audited and found real but incomplete, noted honestly rather than
+    overclaimed as closing the loop**: it is a genuine restoring force
+    toward 4.0 mEq/L, but it is ACID-BASE-BLIND — it contributes nothing
+    until K+ itself departs from 4.0, so it does not reproduce the real
+    mechanism where alkalosis itself stimulates renal K+ secretion and
+    acidosis suppresses it independent of the current K+ value (Gumz et al.,
+    NEJM 2015; Hamm et al., Semin Nephrol 2013). Flagged in-code as a real,
+    separately-scoped future refinement.
+
+    **MEASURED, coefficients identified against the engine's own existing
+    near-miss, not invented**: a resting `abdPain` control now plateaus at
+    k~3.75-3.94 mEq/L by 12h/43200s (better than an earlier pH-only draft's
+    ~3.6-3.8, since the disorder-split correctly recognizes this baseline as
+    purely respiratory) — still below the true 4.0, and correctly so: the
+    resting hco3/paco2 baseline itself remains slightly alkalotic per the
+    still-open transient-timing question below, so this target is
+    legitimately calibrated against an artifact and should be re-checked
+    once that baseline is corrected (the residual offset should shrink
+    toward zero and K+ should converge on ~4.0 largely on its own — a good
+    built-in validation check for that future fix). The existing
+    `severeMetabolicAcidosis` `mechanismWiring.mjs` assertion (already
+    documented elsewhere in this file as a near-miss, k=5.94 vs the required
+    >6.0-or-peakedT) was re-measured at k=5.97 with the new, disorder-split
+    mechanism — the acute secondary-hyperkalemia teaching point this
+    scenario exists to show is preserved at essentially the same
+    (already-borderline) magnitude, not weakened by fixing the
+    resting-drift defect.
+
+    **Still open, unchanged**: WHY the resting fixed point itself is a mild
+    respiratory alkalosis (paco2 ~34, pH ~7.44) rather than 7.40/40, and why
+    it takes 60-90 minutes of sim time to get there, is the genuinely
+    separate, larger, cross-module question the rest of this item's own
+    original text describes (the `neuralSymp`/`vo2Demand`/`va` relaxation-
+    rate mismatch) — NOT attempted this session, and NOT needed to close
+    the kShiftConc defect, since the new mechanism is correct for ANY
+    resting pH the engine eventually settles at. See the original filing
+    below for the still-current candidate fixes and their own scope.
+
+    **Verification, complete, against the FINAL disorder-split code (the
+    first suite run was against an intermediate pH-only draft and was
+    discarded, not trusted).** `node --check`/`npx eslint src/physio/
+    renal.js`: clean. Since this touches `renal.js`'s shared per-tick
+    electrolyte hot path, the full suites were re-run to completion:
+    `mechanismWiring.mjs` **726 passed, 7 failed** — all 7 are the
+    pre-existing, already-documented failures (the BVM trio, the croup
+    compensatory-tachypnea near-miss, the condition-less-control vo2Demand
+    rounding mismatch, the untreated-neurogenic-shock sbp-drift near-miss,
+    and the `severeMetabolicAcidosis` secondary-hyperkalemia near-miss
+    itself — k=5.97 vs the required >6.0, essentially unchanged from the
+    documented pre-fix 5.94, confirming the acute teaching point survives).
+    `scenarioSweep.mjs` **187 scenarios, 21,289,204 checks, 935 failed** —
+    every single failure, confirmed by grepping the full failure list, is
+    the same pre-existing, already-documented `rvEdv`/`rvEsv`/`rvSv`/
+    `rvEf`/`pvrWood`-undefined-at-t=2s defect on unmodified master; nothing
+    else. `npx vite build`: clean (same pre-existing >500kB chunk-size
+    warning). No new patient field was added for `scenarioSweep.mjs` to
+    track (`pat._kAcidBaseShift` is an internal relaxation state, not a
+    published vital, matching the existing `pat._chemoPao2`/
+    `pat._chemoPaco2` convention). Throwaway probe scripts were stripped
+    from `src/scripts/` before this entry was written (they lived only in
+    the scratch directory throughout).
+
+    Original filing (2026-09-05), kept for the still-open transient-timing
+    question:
+
+    **NEW, filed 2026-09-05 — a resting, condition-less patient's own
     `pat.paco2`/`pat.ph` never reach a fixed point within any realistic
     call-length window, found while root-causing a previous item in the queue's kMass drift.**
     Measured directly (standalone tick-by-tick probe against `abdPain`, no
@@ -5403,7 +7378,7 @@ plausible but not fitted to trial data.
     OWN baseline vitals at t=0 (a change here moves the resting point every
     scenario in the game launches from).
 
-50. **NEW, filed 2026-09-13 — a real, measured drift between midazolam's
+44. **NEW, filed 2026-09-13 — a real, measured drift between midazolam's
     (and possibly morphine's) own documented calibration comment and its
     CURRENT engine behavior, found by running `physiologyValidation.mjs`
     to completion for the first time in many sessions.** `drugs.js`'s
@@ -5447,31 +7422,7 @@ plausible but not fitted to trial data.
     formula regression) or isolated to these two (per-drug coefficient
     drift), before touching any code.
 
-51. **RESOLVED (this session) — a real thermometer device/task now exists.**
-    `devices.js` gained a `thermometer` entry (region `head`, `bag:"monitor"`,
-    `lvl:1`, `wave:null`, `reads:(v)=>{"Temp":...}` reusing `v.temp`, the same
-    field the hyper/hypothermia and heat-stroke rules already read — those
-    rules never needed a device to fire, since `ctx.v` is live physiology
-    regardless of what's attached, but nothing ever prompted the crew or the
-    player to actually go take a temperature or see one on the monitor).
-    `gear.js` gained `attachThermo` (mirrors `attachCapno` exactly), and
-    `national.js` gained a `thermometer` monitoring rule alongside `pulseOx`/
-    `bpCuff` (Universal Care, p.14's baseline full set of vital signs).
-    `deviceActs()`/the Monitor-tab readout panel are both fully generic over
-    `DEVICES`, so no `App.jsx` change was needed for either the player-facing
-    attach/remove action or the live readout. `node --check`/`npx eslint`
-    clean on all three touched files; `npx vite build` clean (same
-    pre-existing >500kB chunk-size warning). Sepsis rules reading temp were
-    not added — this engine's `pneumoniaSepsis`/`septicShock`/`toxicShockSyndrome`
-    conditions drive fever through `pat.metabolicHeatMultiplier`, and no
-    National guideline names a temperature-gated sepsis treatment step
-    distinct from what `CRITICAL`/`SHOCK` already cover, so no new rule was
-    invented for it. **Still open**: EtCO2-driven rules (CPR quality
-    <10 mmHg, p.6230; post-ROSC target 35-45, p.6551) — the capno reading
-    was already live before this session, this is a separate, unbuilt
-    treatment-rule gap, not a device gap.
-
-52. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
+45. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
     ipratropium, dexamethasone, diltiazem, metoprolol, morphine, ketorolac,
     IV acetaminophen, nitrous oxide, ketamine (agitation step after
     midazolam), norepinephrine (replaces `pushEpi` as the shock pressor;
@@ -5490,13 +7441,13 @@ plausible but not fitted to trial data.
     vasopressin/phenylephrine exist but this guideline names no step for
     them; (d) unverified in a live call, mock-`ctx` evaluation only.
 
-53. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
+46. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
     fixed-dose `national.js` rule is gated `ADULT`, so pediatric patients
     get no auto-suggested drugs. Needs weight-scaled task variants (or a
     dose multiplier on the task) for adenosine, atropine, naloxone, epi,
     saline, midazolam, dextrose etc., then removal of the gate per rule.
 
-54. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
+47. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
     (pulse ox, BP cuff, 12-lead, pads, serial vitals, drug-reassessment
     vitals, IV access, glucose recheck, tourniquet) were added to
     `national.js` only.** Not yet ported to `laCounty.js` or
@@ -5504,7 +7455,7 @@ plausible but not fitted to trial data.
     arrest/shock and `vitals` only once. Port using their own protocol
     citations, not National page numbers.
 
-55. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
+48. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
     in a live call and use coarse triggers.** Only a mock-`ctx` evaluation
     and eslint were run. Still to do: (a) play a call and confirm the
     "directs <hand>: <task>" log lines appear; (b) `tourniquet` fires on
@@ -5519,7 +7470,7 @@ plausible but not fitted to trial data.
     every guideline's own monitoring/access/reassessment steps against
     the rules is still owed.
 
-56. **PARTIALLY DONE (this session) — two of the named-missing drivers are
+49. **PARTIALLY DONE (this session) — two of the named-missing drivers are
     now real, with real `mechanismWiring.mjs` assertions; the deeper
     stored-diameter/latency refactor remains open.** Read `pupils.js`
     directly before touching anything (lesson 16): the file's own header
@@ -5592,7 +7543,7 @@ plausible but not fitted to trial data.
     overrides still beat the live state (see a previous item in the queue's
     own frozen-text audit for the general pattern).
 
-57. **PARTIALLY DONE (this session) — point (a) is now real for the three
+50. **PARTIALLY DONE (this session) — point (a) is now real for the three
     scenarios that reach the `stemi` ecg kind; the rest is unchanged.**
     `src/twelveLead.js` draws all 12 leads from the live snapshot (rhythm
     kind, hr, `qrsWidth`, `prInterval`, `infarctTerritory`); the Monitor
@@ -5648,7 +7599,7 @@ plausible but not fitted to trial data.
     scope check, and printing is not yet tied to the `ecgAcquire` action or
     base transmission.
 
-58. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
+51. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
     physiology.** `GiveMedMinigame`, `DrawUpMinigame`, `PupilMinigame`,
     `GlucometerMinigame`, `DeviceMinigame`, `CprMinigame` and
     `ProcMinigame` (tourniquet, needle decompression, chest seal, BVM,
@@ -5673,7 +7624,7 @@ plausible but not fitted to trial data.
     minigames has a browser test yet (see `tools/browser/verifyMinigame*.mjs`);
     (h) pediatric CPR depth/rate and pad sizes are not scaled.
 
-59. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
+52. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
     Shipped: `AuscultationMinigame` is a free-placement exam on a drawn bare
     torso (`ChestBody.jsx`, front and back, no labels) — hover, click to place,
     hold and drag to slide; `physio/auscultation.js`'s `chestSpec()` mixes the
@@ -5747,7 +7698,7 @@ plausible but not fitted to trial data.
     the 258 clip IDs in the regenerated manifest still resolves to a real file
     on disk.
 
-60. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
+53. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
     clips are now wired and measured; Early/Late Systolic Murmur remain
     genuinely open.** See section 3's newest entry for the full writeup: a
     direct envelope/peak-timing inspection of the 3 real source WAVs
@@ -5771,7 +7722,7 @@ plausible but not fitted to trial data.
     or would misuse an existing, mechanistically-different finding — real,
     still-open physiology-engine work, not attempted here.
 
-61. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
+54. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
     Education Mode, quizzing every one of the 647 heart/lung clips with a
     real per-clip report mechanism; a second, focused pneumothorax-recording
     search came back empty for a real, structural reason.**
@@ -5857,6 +7808,203 @@ plausible but not fitted to trial data.
     session's "didn't find one" — a future session re-attempting this
     should expect the same structural answer, not assume a dataset was
     simply missed.
+
+55. **NEW, filed 2026-09-28 — the biphasic catecholamine-driven potassium
+    response to ACUTE hyperventilation is a known, named, unmodeled gap in
+    item 48/76's own new `kShiftConc` mechanism (`renal.js`).** Real acute
+    respiratory alkalosis transiently RAISES plasma K+ via an alpha-
+    adrenergic catecholamine effect (Krapf et al., Kidney Int 1995), with a
+    hypokalemic overshoot only AFTER hyperventilation ends — the opposite
+    direction, for the first several minutes, from what the current
+    mechanism produces (a small, monotonic shift toward hypokalemia from the
+    moment paco2 falls). Deliberately not modeled in item 48/76's own fix —
+    it would need a real catecholamine-coupled state, not a coefficient — and
+    kept bounded by making the respiratory-driven term weak (0.02 mEq/L per
+    mmHg of paco2 offset) so the sign error is a minor contributor rather
+    than a dominant one. This is a real, honest, currently-wrong prediction
+    for any scenario that stresses ACUTE hyperventilation specifically —
+    the already-shipped `panicAttackHyperventilation` scenario is the
+    natural first target, and early sepsis (tachypnea-driven hypocapnia) is
+    a second. A real fix would track a fast-onset, fast-decaying
+    catecholamine-linked K+ EFFLUX component (opposing the existing shift)
+    that engages only while paco2 is actively FALLING (not merely low), and
+    decays into the existing hypokalemic mechanism once the rate of change
+    settles — genuinely separate mechanism work, not a coefficient tweak,
+    and not attempted here.
+
+56. **Peri-neural/field-block drug variant. Depends on the shipped
+    `lidocaineBlock`/`pat.nerveBlockDepth` mechanism (queue item 62's
+    remainder, this session) — a distinct entry, not a modification of it.**
+    `lidocaineBlock` was deliberately scoped to the HEMATOMA block technique
+    specifically (fast-onset, complete/reliable absorption, per Meinig et
+    al. 1989's own measured data) — a true peri-neural field block (a nerve
+    sheath injection away from a marrow-contiguous hematoma) is a genuinely
+    slower, depot-style absorption technique, closer to `epiIM`'s two-stage
+    depot mechanism (`deepDepotFraction`/`deepDepotRelease`) than
+    `lidocaineBlock`'s own ordinary IM-route kinetics. Build as its own new
+    drug entry (e.g. `lidocainePeriNeural`) reusing the SAME
+    `pat.nerveBlockDepth`/use-dependence/inflammatory-failure consumer
+    mechanism in `pk.js` (gate on the new drug's own id, not a duplicate
+    mechanism) — only the absorption-INTO-circulation kinetics differ, not
+    what happens once the drug is on board.
+
+57. **Rebound pain on nerve-block offset. Depends on the shipped
+    `pat.nerveBlockDepth` mechanism (queue item 62's remainder).** Real
+    nerve blocks show a genuine hyperalgesia phenomenon as they wear off,
+    NOT merely a return to baseline pain — incidence 35-62% after
+    single-injection peripheral nerve block, often reaching severe levels
+    (Yin et al., Drugs 2025). Acute-fracture-specific data (Sort et al.,
+    Acta Anaesthesiol Scand 2019, ankle fracture under popliteal/saphenous
+    block): 6 of 9 patients aged 20-60 reached SEVERE pain at block
+    cessation, blunted in patients over 60 — a real, age-modulated effect.
+    The natural modeling hook is a transient OVERSHOOT above pre-block
+    `intrinsicPain` during `nerveBlockDepth`'s own DECAY phase, not a plain
+    monotonic return to baseline — build it as a rate-dependent bump keyed
+    to how fast `nerveBlockDepth` is currently falling, not a fixed timer.
+    A real future attenuation lever, if this engine ever adds a steroid
+    adjuvant: perineural/IV dexamethasone measurably reduces rebound
+    incidence (IV odds ratio 0.13, Yang et al., J Clin Anesth 2024).
+
+58. **Compartment syndrome masking by a dense nerve block, if ever built —
+    direction locked against the naive assumption, which the literature
+    contradicts.** Depends on the shipped `pat.nerveBlockDepth` mechanism.
+    The intuitive assumption (a dense block silences ischemic pain,
+    delaying ACS diagnosis) is only weakly supported: a systematic review
+    of ACS in long-bone fractures under regional block found severe
+    ischemic pain BROKE THROUGH the block and remained the presenting
+    symptom in most reported cases, with timely fasciotomy (Tran et al.,
+    Eur J Trauma Emerg Surg 2020); a second review of case reports found
+    breakthrough pain was a reliable ACS indicator in 5 of 6 cases (Hilber
+    et al., J Clin Med 2024). The real determinant is block DENSITY, not
+    presence — a dense, high-concentration motor-sensory block is the real
+    masking risk; a dilute/sensory-sparing block or fascial-plane technique
+    is low-risk. A future mechanism should be DEPTH-dependent (high
+    `nerveBlockDepth` partially suppressing an ischemia-pain signal, never
+    silencing it outright), not the flat "blocks mask compartment syndrome"
+    assumption this workstream's own original text implied. No RCT exists
+    on this, only case-level evidence — preserve that uncertainty explicitly
+    rather than asserting a confident mechanism the literature doesn't
+    support. Until this is built, `hematomaBlock`'s own procedure text
+    states the caution narratively only, correctly not claiming a mechanism
+    this engine doesn't have.
+
+59. **`splint`/`traction`'s own decorative flat `fx.pain` offsets. Found
+    while scoping queue item 62's remainder (local anesthetic nerve block),
+    not built there — a real, separate, smaller-scope finding.** Both
+    procedures (`procedures.js`) currently carry a flat, unmechanized
+    `fx.pain` delta with no receptor/state behind it — the same class of
+    defect this project's own discipline has fixed elsewhere (duodote,
+    adenosine, etc.), just not yet here. Real immobilization/splinting
+    analgesia is a genuine but MODEST adjunct within multimodal trauma pain
+    management (ACS trauma guideline) — categorically smaller than a
+    targeted nerve block's effect. If built: a small, shallow mechanism
+    (e.g. a modest reduction in the injury-driven `intrinsicPain` reseed
+    reflecting reduced fracture-fragment motion), explicitly capped well
+    below `NERVE_BLOCK_MAX_REDUCTION` (pk.js) — not a second large
+    analgesic pathway, and not folded into the nerve-block mechanism itself.
+
+60. **IVRA (Bier block) drug entry. Depends on nothing structurally, but
+    should reuse `pat.nerveBlockDepth`'s consumer mechanism (queue item 62's
+    remainder) once built, the same way item 68's peri-neural variant
+    would.** Intravenous regional anesthesia — lidocaine or prilocaine
+    injected into an exsanguinated limb behind an inflated pneumatic
+    tourniquet — is genuinely the LOWEST-systemic-exposure technique of the
+    three local-anesthetic approaches this workstream now covers or defers
+    (hematoma block, peri-neural field block, IVRA), since the drug is
+    sequestered behind the cuff rather than diffusing into open tissue. Its
+    own distinct LAST risk is a TOURNIQUET-DEFLATION/FAILURE event — a
+    completely different kinetic trigger from the hematoma block's marrow-
+    contiguous absorption or a field block's depot release — not modeled by
+    either existing/deferred entry. Explicitly NOT the same procedure as
+    melphalan isolated-limb-perfusion oncologic chemotherapy (a real naming
+    confusion worth heading off in this item's own text): IVRA is an
+    anesthetic technique using amide local anesthetics, never melphalan.
+
+61. **Per-region/per-limb pain model. The standing simplification every
+    item in this local-anesthetic workstream inherits (items 67-69 above,
+    plus the already-shipped nerve-block mechanism itself) — filed once
+    here rather than re-noted piecemeal in each.**
+    A real nerve block should only numb ONE limb; today it reduces the same
+    whole-body `pat.intrinsicPain` scalar every other analgesic reduces,
+    since no per-region/per-limb pain or injury model exists anywhere in
+    this engine (`patient.js`'s `intrinsicPain` is a single scalar). This is
+    a large, separately-scoped anatomical refactor — touching every
+    consumer of `intrinsicPain`/`drugPain`, every scenario's own presenting
+    pain, and likely the exam/probe system's own region-aware findings — not
+    a quick add alongside any single future analgesic item. Worth doing
+    once enough region-specific mechanisms (this workstream's own nerve
+    blocks, a future per-limb injury/ischemia model, etc.) have accumulated
+    real demand for it, not built speculatively ahead of that demand.
+
+62. **Aβ large-fiber tactile counter-stimulation (rubbing/TENS/positioning)
+    gate-closing — mechanism validated by the literature, blocked purely on
+    a missing producer, not on mechanistic uncertainty. Depends on the
+    shipped gate-control mechanism (item 62 as originally filed, closed —
+    section 3's newest entry) — this is its deferred tactile half.**
+    Rubbing/massage, TENS, and spinal cord stimulation genuinely work by
+    driving Aβ low-threshold mechanoreceptors that activate the same PV+
+    GABAergic dorsal-horn interneurons the shipped gate mechanism's own
+    substrate depends on — the most directly experimentally confirmed
+    prediction of gate-control theory (Gautam et al., Nat Commun 2024;
+    Nieda et al., Sci Rep 2026). But no producer exists anywhere in this
+    engine for a tactile counter-stimulation event — no TENS device, no
+    "rub/reposition for comfort" action, nothing a player or crew can do
+    that the engine could read as "large-fiber input just occurred."
+    Building the consumer without a producer would be exactly the
+    decorative-field pattern section 1 forbids. Needs its own procedure/
+    device (or a real hook onto an existing one, e.g. splinting/
+    positioning) before this half can be built — likely the same
+    procedure/device work item 70 (`splint`/`traction`'s own decorative
+    `fx.pain` offsets) would want anyway, worth scoping together.
+
+63. **A genuine below-neutral "calm/reassured" analgesic gate-closing
+    state — a documented pharmacologic effect the shipped gate mechanism
+    deliberately truncates, not an unmeasured or speculative one. Depends
+    on the shipped gate-control mechanism (item 62 as originally filed,
+    closed).** Every existing calming pathway (`sedationDepth`,
+    `antipsychoticEffect`) is wired as a floor-at-0 discount on the derived
+    `pat.agitation` composite, not a signed term that can go negative —
+    but real GABA-A potentiation produces frank anti-allodynia below an
+    undistressed baseline, independent of sedation: systemic diazepam's
+    antihyperalgesia in point-mutant mice is dominated by alpha2-subunit
+    (with smaller alpha3/alpha5) dorsal-horn GABA-A receptors, including a
+    presynaptic alpha2 component directly on primary nociceptor terminals
+    (Knabl et al., Pain 2009; Ralvenius et al., Nat Commun 2015; Witschi et
+    al., J Neurosci 2011) — and non-sedating alpha2/alpha3-selective
+    agonists (L-838,417, TPA023B) reproduce the analgesia without the
+    sedation, confirming the effect is biologically separable from
+    `sedationDepth`, not a byproduct of it. Dexmedetomidine independently
+    couples anxiolysis with allodynia reduction via lateral-septum GABA
+    circuits (Fan et al., Nat Commun 2026). Distraction/relaxation
+    hypoalgesia is a second, partly distinct route worth noting for
+    whoever specs this: Ruscheweyh et al. (Pain 2011) found only
+    tactile-brush distraction reduced the spinal RIII nociceptive flexor
+    reflex (true descending spinal inhibition), while mental imagery/music
+    reduced perceived pain without touching spinal nociception — so a
+    future signed state should likely split a spinally-acting component
+    (naturally routed onto the same allodynia gate item 62 already built)
+    from a purely perceptual/supraspinal one, and should expect to
+    interact with the engine's existing opioid mechanisms (distraction
+    analgesia is opioid-system-linked). Needs a new signed physio state,
+    to avoid guessing at the split under time pressure — not attempted in
+    the same batch as the shipped floor-at-neutral mechanism.
+
+64. **A literal `emotionalState.js`↔physio bidirectional link — considered
+    and rejected during item 62's planning, filed here so a future session
+    doesn't re-propose it blind.** `dialogue/emotionalState.js` is
+    documented as strictly one-way (physio→dialogue, read-only) —
+    `deriveEmotionalState()` is a pure function called per dialogue
+    request, not per physio tick. Making physio-engine pain output depend
+    on `emotionalState`'s derived category would violate that documented
+    invariant, make pain output depend on dialogue-call cadence (a real
+    regression risk this project's mechanism-over-UI-cadence discipline
+    argues against), and is circular (emotionalState is itself partly
+    derived from pain already). The shipped gate-control mechanism (item
+    62 as originally filed) achieves the same real biopsychosocial
+    coupling the queue text originally asked for by reading the
+    physio-native `pat.agitation` composite instead — if a future session
+    still wants dialogue's derived category to feed something, it should
+    read that physio-native state, not the other way around.
 
 ---
 

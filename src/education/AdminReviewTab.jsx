@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchPendingQuestions, reviewQuestion, exportApprovedAsCode } from "./crowdsource.js";
 import { fetchPendingReports, resolveReport } from "./reports.js";
 import { fetchPendingClipReports, resolveClipReport } from "./soundClipReports.js";
@@ -7,9 +7,11 @@ import MedicdleReviewPanel from "./MedicdleReviewPanel.jsx";
 import { QUESTIONS } from "./questions.js";
 import { fetchAllItemStats, pctCorrect, difficultyBand, MIN_RESPONSES_FOR_DISPLAY } from "./itemStats.js";
 import { difficultyFromStats } from "./adaptiveEngine.js";
+import { AUDIT_FLAGS } from "../data/auscultationAuditFlags.js";
+import { AUSC_BASE } from "../data/auscultationSounds.js";
 
 export default function AdminReviewTab({ user }) {
-  const [tab, setTab] = useState("submissions"); // submissions | reports | medicdles | difficulty
+  const [tab, setTab] = useState("submissions"); // submissions | reports | medicdles | difficulty | clipReports | clipAudit
 
   return (
     <div className="space-y-6">
@@ -55,6 +57,14 @@ export default function AdminReviewTab({ user }) {
         >
           Sound Clip Reports
         </button>
+        <button
+          onClick={() => setTab("clipAudit")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+            tab === "clipAudit" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          Clip Audit
+        </button>
       </nav>
 
       {tab === "submissions" && <SubmissionsReview user={user} />}
@@ -62,6 +72,7 @@ export default function AdminReviewTab({ user }) {
       {tab === "medicdles" && <MedicdleReviewPanel user={user} />}
       {tab === "difficulty" && <DifficultyRatings />}
       {tab === "clipReports" && <ClipReportsReview user={user} />}
+      {tab === "clipAudit" && <ClipAuditReview />}
     </div>
   );
 }
@@ -450,6 +461,117 @@ function ClipReportsReview({ user }) {
           </div>
         ))
       )}
+    </div>
+  );
+}
+
+// Every recording, sorted by an acoustic "suspicion score" (see
+// genAusculAuditFlags.mjs) — a triage order for a human ear, not a verdict.
+// Positive score means the clip's spectral/periodicity profile resembles
+// the OTHER instrument's clips more than its own category's, which is worth
+// listening to but is routinely true of legitimate broadband lung sounds
+// (rhonchi, crackles, wheeze) too.
+function ClipAuditReview() {
+  const [filter, setFilter] = useState("");
+  const [kindFilter, setKindFilter] = useState("all"); // all | heart | lung
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [reportedIds, setReportedIds] = useState(null);
+
+  useEffect(() => {
+    fetchPendingClipReports().then((rows) => setReportedIds(new Set(rows.map((r) => r.clipId))));
+  }, []);
+
+  const rows = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return AUDIT_FLAGS.filter((c) => {
+      if (kindFilter !== "all" && c.kind !== kindFilter) return false;
+      if (flaggedOnly && c.susScore <= 0) return false;
+      if (!q) return true;
+      return (
+        c.category.toLowerCase().includes(q) ||
+        c.id.toLowerCase().includes(q) ||
+        (c.src || "").toLowerCase().includes(q) ||
+        (c.loc || "").toLowerCase().includes(q)
+      );
+    });
+  }, [filter, kindFilter, flaggedOnly]);
+
+  const flaggedTotal = useMemo(() => AUDIT_FLAGS.filter((c) => c.susScore > 0).length, []);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400 space-y-1">
+        <div>
+          Every heart and lung recording ({AUDIT_FLAGS.length} clips), sorted by how much its spectral/timing
+          profile resembles the OTHER instrument's clips rather than its own category's ({flaggedTotal} score
+          above zero). This is a triage order, not a verdict — listen and judge for yourself.
+        </div>
+        <div>Already-reported clips (open player reports) are marked so you don't duplicate that work.</div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter by category, id, source, location…"
+          className="flex-1 min-w-[220px] rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm"
+        />
+        <div className="flex gap-1.5">
+          {["all", "heart", "lung"].map((k) => (
+            <button
+              key={k}
+              onClick={() => setKindFilter(k)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                kindFilter === k ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              {k === "all" ? "All" : k[0].toUpperCase() + k.slice(1)}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setFlaggedOnly((v) => !v)}
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
+            flaggedOnly ? "bg-amber-700 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          Flagged only
+        </button>
+        <span className="text-xs text-slate-500">{rows.length} shown</span>
+      </div>
+
+      <div className="rounded-xl border border-slate-800 divide-y divide-slate-800 max-h-[70vh] overflow-y-auto">
+        {rows.map((c) => (
+          <div key={`${c.kind}:${c.id}`} className="p-3 flex items-center gap-3 flex-wrap">
+            <span
+              className={`text-xs px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                c.kind === "heart" ? "bg-rose-950/60 text-rose-300 border border-rose-800" : "bg-sky-950/60 text-sky-300 border border-sky-800"
+              }`}
+            >
+              {c.kind}
+            </span>
+            <span className="text-sm font-medium w-48 shrink-0 truncate">{c.category}</span>
+            <audio controls src={`${AUSC_BASE}/${c.dir}/${c.id}.wav`} className="h-8 flex-1 min-w-[220px]" />
+            <span
+              className={`text-xs w-16 shrink-0 text-right font-mono ${c.susScore > 0 ? "text-amber-400" : "text-slate-600"}`}
+              title="Suspicion score — margin toward the other instrument's acoustic profile"
+            >
+              {c.susScore > 0 ? "+" : ""}
+              {c.susScore}
+            </span>
+            <span className="text-xs text-slate-500 w-28 shrink-0">{c.src}</span>
+            <span className="text-xs text-slate-600 w-16 shrink-0">{c.loc !== "any" ? c.loc : ""}</span>
+            <span className="text-xs text-slate-700 font-mono w-40 shrink-0 truncate" title={c.id}>
+              {c.id}
+            </span>
+            {reportedIds?.has(c.id) && (
+              <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-300 shrink-0">
+                reported
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

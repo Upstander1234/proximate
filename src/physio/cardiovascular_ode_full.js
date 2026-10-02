@@ -36,16 +36,40 @@
 //   • Two integrators are available: fixed-step classic RK4, and an adaptive
 //     embedded Dormand–Prince RK45 (Task 1's "adaptive solver" requirement).
 //
-// solveBeat() in cardiovascular_ode.js is left untouched and remains the
-// fast/guarded default the rest of the engine calls; this module is the new,
-// higher-fidelity solver additive tasks 2/3/5/9 should build on. Wiring it in
-// as the live default is a separate, follow-up integration step once it has
-// been run against real patient parameter ranges — see NOTES at the bottom.
+// solveBeat() in cardiovascular_ode.js WAS the fast/guarded default the rest
+// of the engine called, from this module's introduction until queue item 1's
+// Phase 0 (legacy-solver removal, 2026-09-29): confirmed by then that
+// FULL_ODE_AUTHORITATIVE had been true, unconditionally, in every scenario
+// and script in the repo for long enough that solveBeat()'s own outputs
+// existed only for tick-for-tick A/B comparison against THIS solver — so it,
+// its two orphaned regression scripts, and cardiovascular.js's pat._legacy*
+// snapshot were all removed. This module is now the ONLY beat-mechanics
+// solver in the engine. The one piece of cardiovascular_ode.js this module
+// genuinely depended on (not just historically built on) — the double-Hill
+// activation curve `activation()` below — is inlined here rather than left
+// as a single-function import from an otherwise-deleted file.
 // ---------------------------------------------------------------------------
 
-import { activation } from "./cardiovascular_ode.js";
-
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+// ---------------------------------------------------------------------------
+// Double-Hill activation e(t) ∈ [0,1], peak normalized to 1. tn is the cycle
+// phase in [0,1). Parameters after Stergiopulos/Mynard, giving a fast
+// upstroke and a slightly delayed, sharper relaxation. (Moved here from the
+// now-deleted cardiovascular_ode.js, queue item 1's Phase 0 — unchanged.)
+// ---------------------------------------------------------------------------
+const DH = { a1: 0.269, a2: 0.452, m1: 1.32, m2: 21.9 };
+function dhRaw(tn) {
+  const g1 = Math.pow(tn / DH.a1, DH.m1);
+  const g2 = Math.pow(tn / DH.a2, DH.m2);
+  return (g1 / (1 + g1)) * (1 / (1 + g2));
+}
+let _dhPeak = 0;
+for (let i = 0; i <= 1000; i++) { const r = dhRaw(i / 1000); if (r > _dhPeak) _dhPeak = r; }
+function activation(tn) {
+  if (tn <= 0 || tn >= 1) return 0;
+  return clamp(dhRaw(tn) / _dhPeak, 0, 1);
+}
 
 // Index map, kept as named constants so the rest of the file (and any caller)
 // never hardcodes magic numbers.
@@ -271,8 +295,21 @@ export function buildParams(overrides = {}) {
     mitralRegurgFrac: 0, aorticRegurgFrac: 0,
 
     // Extrinsic pressures.
-    externalP: 0,          // pericardial+intrathoracic, acts on all 4 chambers
+    externalP: 0,          // intrathoracic pressure ONLY -- uniform across all 4 chambers
     thoracicVeinP: 0,       // acts only on the venous return path (Task 10 scope)
+    // PHASE 6 (queue item 1): chamber-specific pericardial restraint,
+    // P_trans,j = P_intra,j - alpha_j*P_peri. Unlike externalP (intrathoracic
+    // pressure, genuinely uniform across all four chambers), pericardial
+    // restraint is NOT uniform -- the thin-walled RV and both atria derive a
+    // larger share of their filling pressure from pericardial constraint than
+    // the thicker-walled LV does (Borlaug & Reddy, JACC Heart Fail 2019; Klein,
+    // Wang, Cremer et al., JACC Cardiovasc Imaging 2024). Each is added directly
+    // into that chamber's TRANSMURAL pressure (used by valve gating and AV
+    // inflow physics below), not only into the externally-reported pressure --
+    // this is what gives the restraint a genuine filling/output consequence
+    // rather than only shifting a displayed number (the gap the Phase 3
+    // pacemaker-syndrome comment flagged as "Phase 6's job").
+    periLV: 0, periRV: 0, periLA: 0, periRA: 0,
 
     // Nonlinear diastolic stiffening (pericardial / EDPVR constraint). The
     // linear Emin term alone makes a chamber accept unbounded volume at low
@@ -355,10 +392,14 @@ export function derivative(x, t, p) {
   // (→ LA/pulmonary congestion) and limits further dilation in low-output /
   // high-filling states (cardiogenic shock) without touching normal filling.
   const edpExcess = (u) => (u > p.edpU0 ? p.edpA * (Math.exp(p.edpB * (u - p.edpU0)) - 1) : 0);
-  const Plv = eLV * (x[IDX.VLV] - p.V0LV) + edpExcess(x[IDX.VLV] - p.V0LV) + stiff(x[IDX.VLV], p.VmaxLV, p.stiffK);
-  const Prv = eRV * (x[IDX.VRV] - p.V0RV) + edpExcess(x[IDX.VRV] - p.V0RV) + stiff(x[IDX.VRV], p.VmaxRV, p.stiffK);
-  const Pla = eLA * (x[IDX.VLA] - p.V0LA) + stiff(x[IDX.VLA], p.VmaxLA, p.stiffK);
-  const Pra = eRA * (x[IDX.VRA] - p.V0RA) + stiff(x[IDX.VRA], p.VmaxRA, p.stiffK);
+  // Pericardial restraint (p.peri{LV,RV,LA,RA}) is added directly into the
+  // TRANSMURAL pressure used by valve gating (dMV/dAV/dTV/dPV below) and AV
+  // inflow physics -- a real filling consequence, not just a reported-number
+  // shift. See the periLV/periRV/periLA/periRA comment at defaultParams.
+  const Plv = eLV * (x[IDX.VLV] - p.V0LV) + edpExcess(x[IDX.VLV] - p.V0LV) + stiff(x[IDX.VLV], p.VmaxLV, p.stiffK) + (p.periLV || 0);
+  const Prv = eRV * (x[IDX.VRV] - p.V0RV) + edpExcess(x[IDX.VRV] - p.V0RV) + stiff(x[IDX.VRV], p.VmaxRV, p.stiffK) + (p.periRV || 0);
+  const Pla = eLA * (x[IDX.VLA] - p.V0LA) + stiff(x[IDX.VLA], p.VmaxLA, p.stiffK) + (p.periLA || 0);
+  const Pra = eRA * (x[IDX.VRA] - p.V0RA) + stiff(x[IDX.VRA], p.VmaxRA, p.stiffK) + (p.periRA || 0);
 
   // --- vascular compartment pressures (linear compliance) ----------------
   const Pao = (x[IDX.VAo] - p.VuAo) / p.Cao;
@@ -511,10 +552,10 @@ export function pressuresFromState(x, t, p) {
   const stiff = (V, Vmax, k) => (V > Vmax ? k * (V - Vmax) * (V - Vmax) : 0);
   const edpExcess = (u) => (u > p.edpU0 ? p.edpA * (Math.exp(p.edpB * (u - p.edpU0)) - 1) : 0);
   return {
-    Plv: eLV * (x[IDX.VLV] - p.V0LV) + edpExcess(x[IDX.VLV] - p.V0LV) + stiff(x[IDX.VLV], p.VmaxLV, p.stiffK) + p.externalP,
-    Prv: eRV * (x[IDX.VRV] - p.V0RV) + edpExcess(x[IDX.VRV] - p.V0RV) + stiff(x[IDX.VRV], p.VmaxRV, p.stiffK) + p.externalP,
-    Pla: eLA * (x[IDX.VLA] - p.V0LA) + stiff(x[IDX.VLA], p.VmaxLA, p.stiffK) + p.externalP,
-    Pra: eRA * (x[IDX.VRA] - p.V0RA) + stiff(x[IDX.VRA], p.VmaxRA, p.stiffK) + p.externalP,
+    Plv: eLV * (x[IDX.VLV] - p.V0LV) + edpExcess(x[IDX.VLV] - p.V0LV) + stiff(x[IDX.VLV], p.VmaxLV, p.stiffK) + p.externalP + (p.periLV || 0),
+    Prv: eRV * (x[IDX.VRV] - p.V0RV) + edpExcess(x[IDX.VRV] - p.V0RV) + stiff(x[IDX.VRV], p.VmaxRV, p.stiffK) + p.externalP + (p.periRV || 0),
+    Pla: eLA * (x[IDX.VLA] - p.V0LA) + stiff(x[IDX.VLA], p.VmaxLA, p.stiffK) + p.externalP + (p.periLA || 0),
+    Pra: eRA * (x[IDX.VRA] - p.V0RA) + stiff(x[IDX.VRA], p.VmaxRA, p.stiffK) + p.externalP + (p.periRA || 0),
     Pao: (x[IDX.VAo] - p.VuAo) / p.Cao,
     Psys: Math.max(0, (x[IDX.VSys] - p.VuSys) / p.Csys),
     Ppa: (x[IDX.VPA] - p.VuPA) / p.Cpa,
