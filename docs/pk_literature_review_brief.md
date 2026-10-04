@@ -438,3 +438,35 @@ Interaction with size scaling: Lin et al. found size-adjusted etomidate clearanc
 Etomidate extraction ratio resolved (Valk and Struys 2021): ER 0.5 to 0.9, CL 9.9 to 25.0 mL/min/kg, t1/2 2.9 to 5.5 h, about 75% protein bound. Intermediate-to-high extraction, so partly hepatic-blood-flow dependent. Clearance term blends CES maturation, allometric size, and partial flow sensitivity. Still open: a true adult population PK model.
 
 Next anchors offered: ke0 and EC50 (BIS/EEG) for the sedative-hypnotics.
+
+## 15. Seventh literature pass: sedative-hypnotic effect-site anchors (ke0, EC50)
+
+Etomidate (Kaneda 2011, n=18 volunteers, BIS and OAA/S, brief infusions):
+- EC50 0.526 ug/mL (BIS), 0.554 (OAA/S); gamma 2.25 (BIS), 6.24 (OAA/S); t1/2ke0 1.55 min (ke0 about 0.447/min).
+- Disposition: Vc 4.45 L TOTAL, Vp 74.9 L, CL 0.63 L/min, Q 3.16 L/min.
+- Correction: the earlier "adult Vc 4.5 L/kg" was a mis-transcription of 4.45 L total (about 0.06 L/kg). The engine's v1 of 8 L is about 1.8x HIGH, not low.
+- Caveat: values come from brief infusions. Do not mix with ABP-700 analog figures (EC50 1014 ng/mL, ke0 0.844/min).
+
+Ketamine:
+- BIS is the wrong PD endpoint. Ketamine raises BIS (0.5 mg/kg raised it from 40 to 63; Linassi 2024 shows paradoxical peak at CeK 0.2 to 0.5 ug/mL).
+- Use EEG slow-wave (Sleigh 2019): hypnotic Ce50 about 1.64 ug/mL (recovery 1.06); equilibration half-time about 23 s (theta about 47 s).
+- Engine ec50 1 mg/L and fast keo are consistent. Little PD rework needed.
+
+Midazolam:
+- Greenblatt EEG beta-band: EC50 31 ng/mL, Emax 16.3% over baseline; ke0 very rapid in the pooled fit but real counterclockwise hysteresis at 1-min infusion, so keep a finite keo.
+- FDA label sedation band: at least 100 ng/mL gives at least 50% sedation probability; 200 ng/mL asleep. Engine ec50 0.1 mg/L matches the sedation endpoint; EEG endpoint is lower. Document which endpoint is scored.
+- Pediatric (Flores-Perez, ages 2 to 17, BIS): clockwise hysteresis (time-dependent protein binding), so a plain effect compartment will not capture it; half the usual dose was adequate.
+
+Fentanyl respiratory C50 is model-dependent and should be kept as documented disagreement:
+- 2.3 ng/mL physiological CO2/controller model (van Lemmen 2025); 7.5 ng/mL simpler VE/end-tidal models; 0.42 ng/mL biophase Emax opioid-naive vs 1.82 ng/mL chronic users, a 4.3x tolerance shift (Algera 2021).
+- Engine respEc50 2.3 ng/mL matches the physiological model. The 4.3x shift is usable for the respiratory tolerance layer.
+- Pediatric fentanyl analgesia template (Cruzat 2024): allometric effect-compartment keo and Ce50; the numeric Ce50 was not retrieved.
+- MacKenzie 2016: fentanyl effect-delay estimates are stable across the literature.
+
+Rocuronium Ce50 is U-shaped by age (Saldien 2003, Wierda 1997):
+- Ce50 ng/mL: infants 652 (Saldien) or 1200 (Wierda); children 1200; adults 954. Ce90: infants 1705, children 2035, adults 2230.
+- Hill slope 5.7 infants vs 3.9 children. Vss 231 vs 165 mL/kg, CL 4.2 vs 6.7 mL/min/kg; time course after equipotent doses did not differ.
+- Engine ec50 1.5 mg/L is within adult/child range; an age-dependent Ce50 (lower in infants) would fix infant potency.
+- Label bedside check: neonatal T3 reappearance about 114 min at 0.6 mg/kg vs about 53 min in children.
+
+Still open: pediatric fentanyl Ce50 numeric value; midazolam maturation Hill exponent. Next offered: effect-site PD anchors for the cardiovascular drugs (epinephrine, norepinephrine, atropine, antiarrhythmics).
