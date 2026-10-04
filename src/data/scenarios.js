@@ -6616,6 +6616,11 @@ hydrocarbonAspiration: {cat: "medical", id: "TOX-012", pronouns: "he", title: "M
       evid: "A witnessed hydrocarbon ingestion with immediate coughing/gagging is the classic setup for aspiration — the coughing itself is often how a low-viscosity hydrocarbon like lighter fluid gets into the airway in the first place, not from the swallow.", find: "SAMPLE: lighter-fluid ingestion approximately 15 minutes ago with immediate coughing, no prior medical history."}),
     opqrst: () => ({say: "He keeps coughing in short bursts and won't stop fussing.", kind: "pt",
       evid: "Persistent coughing this soon after a witnessed hydrocarbon aspiration is the expected early airway-irritant response, before the real chemical pneumonitis has had time to fully develop.", find: "OPQRST: persistent coughing since the ingestion, no other complaint (limited by patient's age)."}),
+    // Hydrocarbon breath odor: the ingestion itself is the odor source (no
+    // physiology field backs it, so it is scenario-scripted, which wins over
+    // breathingCheck's anion-gap/BUN cases).
+    breathOdor: () => ({say: "Breathing, coughing between breaths. A strong petroleum, lighter-fluid smell on his breath.", kind: "warn",
+      evid: "A petroleum or solvent odor on the breath after a witnessed ingestion confirms a hydrocarbon exposure and raises concern for aspiration.", find: "Breathing present. Hydrocarbon (lighter fluid) odor on the breath."}),
     // Reads pat.compliance live — the real, worsening chemical pneumonitis
     // this condition's own conditions.js progress() derives directly, over
     // hours-scale onset rather than an instant step.

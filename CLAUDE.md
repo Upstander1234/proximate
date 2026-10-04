@@ -599,6 +599,10 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-04 — Queue audit and cleanup: six finished or non-task items removed, hydrocarbon breath odor wired, three dead fields removed. The queue now holds 58 open items.
+
+Removed from section 6 as done or not actionable: the pupil/auscultation-practice items already shipped, the `pat.monitoring` and `pat.cellular` structure items (both decided against, reasoning moved to section 5), the pipeline-ordering documentation item (now a section 5 bullet), the decompression-illness remainder, and the rejected `emotionalState`/physio link (now a section 5 rule). Added a standing rule in section 4 not to refer to queue items by number. `hydrocarbonAspiration` gained a scripted `probes.breathOdor` (petroleum smell). A script sweep of `patient.js` constructor fields removed `endExpiratoryVolume`, `qtInterval`, and `venousCompliance` (never read). Verification: `eslint` clean on touched files, `vite build` clean. `mechanismWiring.mjs`/`scenarioSweep.mjs` were NOT re-run; the removed fields have no readers anywhere in `src/` (grep), but a future session should confirm the sweep still reports its documented baseline.
+
 ### 2026-10-01 (e) — Morphine keo recalibration (queue item 63) and ketamine-specific tachyphylaxis (queue item 66, as numbered when picked up): both INVESTIGATED via a real literature search and CLOSED with no code change, then the write-up for BOTH was itself corrected after independent review found it overstated how settled the underlying science is.
 
 **This was investigation-only work, following the explicit instruction to
@@ -3602,6 +3606,15 @@ Whenever you happen to notice an em dash in public-facing text while working
 on something else, replace it on the spot rather than leaving it for later.
 
 
+**DO NOT REFER TO QUEUE ITEMS BY NUMBER.** Section 6's numbers shift every time
+an item ships or the list is reordered, so a number written into a comment,
+changelog entry, or another queue item is wrong within a session or two (the
+tree is full of stale "queue item 62"-style references for exactly this
+reason). Refer to an item by its subject instead ("the nerve-block rebound
+pain item", "the splint/traction pain item"). Existing numeric references in
+older entries and code comments are historical labels; do not trust them and
+do not mass-rewrite them, but fix one when you touch it anyway.
+
 **THE CONTAINER HAS ONE CORE.** Run suites **sequentially**, chained in a single
 background script. Running four concurrently starves them and makes the suite
 look several times slower than it is.
@@ -3728,6 +3741,26 @@ These govern every front-end/gameplay batch, on top of everything above:
 - **`pat.energyFailure` is the engine's single ischemia measure.** Published by
   `metabolic.js` as the fraction of oxidative demand delivery cannot meet, 0
   perfused / 1 no-flow. Prefer it to inventing another ischemia proxy.
+- **Per-substep update order** (`Patient.update` in `patient.js`, after
+  `applyProcedures` and `updateDrugs`): hemorrhage, hemolysis, fluid shifts,
+  then `hb`/`hct` recomputed in place, inflammation, pain sensitization,
+  autonomic, venous return, cardiovascular, ventilation, gas exchange,
+  metabolism, renal/endocrine, electrolytes, acid-base, temperature,
+  coagulation, organ injury, cerebral, rhythm, mortality. Anything reading a
+  value produced later in this list sees the previous substep's value (a
+  one-tick lag, already relied on in places such as the acid-base/Winter's
+  formula read). A non-finite result anywhere rolls the substep back.
+- **`pat.atp` and `pat.energyFailure` are two different quantities**, not
+  one field split across files: `pat.atp` is myocardium-specific (QRS width,
+  AV block, contractility, arrhythmia risk), `pat.energyFailure` is the
+  whole-body oxidative deficit. Do not fold them into one `pat.cellular`
+  object; that would conflate a cardiac signal with a systemic one.
+- **Dialogue is strictly one-way from physiology.** `emotionalState.js` is a
+  pure function called per dialogue request, never per physio tick. Physiology
+  must never read it (it would tie physio output to dialogue-call cadence and
+  is circular, since it is derived partly from pain). If dialogue state ever
+  needs to influence physiology, read the physio-native `pat.agitation`
+  composite instead.
 - **Mortality is a pure observer.** Nothing in `physio/` gates on `deathCause`,
   and nothing should. Organ systems evolve because perfusion, oxygen delivery,
   ATP, temperature and cellular integrity are changing — not because a patient is
@@ -3757,7 +3790,7 @@ renumbered sequentially from 1 as a single, unified queue (front-end/gameplay
 and physiology-engine work interleaved, not split into separate tracks) each
 time it's reordered.
 
-**The queue is a single, numbered, priority-ordered list — front-end/gameplay work
+**Never cite an item here by number from anywhere else (see section 4); the numbers below are only a live count of open work.** **The queue is a single, numbered, priority-ordered list — front-end/gameplay work
 and physiology-engine work are interleaved in it, not split into separate tracks.**
 Items near the top tend to be front-end/gameplay work (React front end,
 `src/App.jsx` and friends, scenario/content data, the game loop), simply because
@@ -5830,32 +5863,7 @@ future event can opt in the same way). Still open:
    (a real prerequisite gap for a loop-diuretic mechanism), and no real
    prerenal/intrinsic/postrenal AKI distinction was attempted.
 
-18. **AUDITED (2026-09-05), still genuinely OPEN — not attempted, with an
-   honest reason.** `pat.atp`/`pat.energyFailure`/`pat.cytochromeBlock`
-   really do exist and are real, verified, well-consumed mechanisms
-   (metabolic.js, plus cyanidePoisoning's utilization-block work) — but read
-   directly before assuming a literal `pat.cellular={atp,adp,...}` object is
-   a clean consolidation: `pat.atp` (cardiovascular.js) is a MYOCARDIUM-
-   SPECIFIC ischemia signal (consumed by QRS widening, AV block,
-   contractility, arrhythmia risk — a dozen-plus real call sites), while
-   `pat.energyFailure` (metabolic.js) is the genuinely whole-body oxidative-
-   deficit signal (its own real consumer: renal.js's Na/K-ATPase pump-
-   failure term). These are two DIFFERENT quantities that happen to share
-   the source spec's word "atp," not one field split across two files.
-   Folding them into a single `pat.cellular.atp` would either conflate a
-   cardiac-specific signal with a whole-body one (physiologically wrong) or
-   require renaming `pat.atp`'s ~15 existing call sites for zero mechanism
-   gain. The spec's other named sub-fields — `adp`, `oxidativeCapacity`,
-   `oxygenUtilization`, `metabolicStress` — have no existing engine quantity
-   behind them at all; inventing them with no distinct real consumer beyond
-   what `energyFailure`/`cytochromeBlock` already provide would be exactly
-   the decorative-field pattern this document's own discipline forbids.
-   Left open rather than closed, since the underlying ask (a real, coherent
-   whole-body cellular-energetics view) is not literally satisfied by what
-   exists — but the literal structured-object shape the source spec asks
-   for is not the right next step for it. No code changed.
-
-19. **PARTIALLY DONE — the portal-pressure/portal-flow half (a prior,
+18. **PARTIALLY DONE — the portal-pressure/portal-flow half (a prior,
    undocumented session) and this session's own new hepatic-coagulopathy
    half are both real and verified; the rest remains open.** `organ
    ClearanceFactor()` (pk.js) and a previous item in the queue's `hepaticDO2`/`hepaticO2Debt`/
@@ -5912,16 +5920,7 @@ future event can opt in the same way). Still open:
    itself can cause; glycogen/gluconeogenesis (hepatic hypoglycemia risk in
    liver failure) is entirely unbuilt.
 
-20. **Multi-timescale physiology — largely already true by
-   construction** (renal/RAAS/inflammation already relax on genuinely
-   different, real time constants — see a previous item in the queue's 90-minute cytokine tau,
-   a previous item in the queue's 36-hour endothelial-repair tau). This item is about making the
-   update PIPELINE's ordering explicit (see the source doc's 23-step
-   pipeline) rather than new physiology — a documentation/architecture
-   task, worth doing once several of the above are further along, not
-   before.
-
-21. **PARTIALLY DONE — sub-item (b) CLOSED (2026-09-10), see section
+19. **PARTIALLY DONE — sub-item (b) CLOSED (2026-09-10), see section
    3's newest entry.** a previous item in the queue already closed valvular regurgitation in
    the authoritative full-loop solver and left three explicit sub-items
    open: (a) ischemic-MR consumption by the solver, (b) a shipped scenario
@@ -5940,7 +5939,7 @@ future event can opt in the same way). Still open:
    lever (attenuating atrial kick for AV-dissociated rhythms) already on
    record as tried and MEASURED WORSE — do not retry it blind. Read a previous item in the queue's own entry in full before attempting either.
 
-22. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed;
+20. **PARTIALLY DONE (2026-09-01) — the ketamine sub-piece is closed;
    re-audited this session — the remaining receptor classes are genuinely
    BLOCKED on a missing producer, not simply unbuilt.** Ketamine's
    cardiovascular mechanism is a real dual NMDA-antagonist effect
@@ -5981,7 +5980,7 @@ future event can opt in the same way). Still open:
    own batch is the natural place to add its receptor class alongside it.
    No code changed this session; this is an audit-only finding.
 
-23. **PARTIALLY DONE (this session, scoped slice) — see section 3's
+21. **PARTIALLY DONE (this session, scoped slice) — see section 3's
    newest entry.** A real, first slow-timescale state variable now exists:
    `pat.lvHypertrophy`, relaxing toward a target driven by sustained
    elevated `pat.svr` on a cited ~14-day time constant (`approach()`, the
@@ -6020,19 +6019,7 @@ future event can opt in the same way). Still open:
    multi-week saturation rather than short-window direction, for either
    this or `lvHypertrophy`.
 
-24. **PARTIALLY DONE (2026-09-01) — see section 3's newest entry.**
-   Investigated first: CO poisoning's pulse-ox blind spot (`pat.cohb`) and
-   ETCO2 as a real quantity distinct from PaCO2 (with a real, already-
-   PE-vs-hypoventilation-distinguishing gradient) were both confirmed
-   ALREADY REAL — not built this pass. The one genuine gap found and
-   filled: methemoglobinemia's classic pulse-ox floor artifact (new
-   `pat.metHb`, a new `acquiredMethemoglobinemia` condition and
-   `methemoglobinemia` scenario). A general `pat.monitoring =
-   {pulseOxAccuracy, pulseOxBias, cooximetryAvailable, abgAvailable}`
-   structure was deliberately NOT built — no real per-field consumer was
-   identified, and building it would have been decorative (section 1).
-
-25. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
+22. **A dead-code sweep is overdue, and it is cheap — STANDING, open.**
    `duodote`'s dead `fx:{hr:20}`, `catecholamineReserve`, and
    `baroreflexHistory` are already fixed/removed. Still open:
 
@@ -6161,7 +6148,9 @@ future event can opt in the same way). Still open:
    mechanism for "is this drug on board." See section 3 for the full
    measurement.
 
-26. **STANDING WORKSTREAM: build out the condition library, and deepen the
+    **Swept again (most recent session), by script:** every field assigned in `patient.js`'s constructor was checked for any read anywhere outside `src/scripts/`. Three dead fields were removed (`endExpiratoryVolume`, `qtInterval`, `venousCompliance`, the last one also written in `cardiovascular.js`); `intracellularVol` has no engine reader but `renalValidation.mjs` uses it for a mass-conservation sum, so it stays. No other constructor field is fully unread. The sweep does not catch fields written by conditions/drugs that nothing reads, only constructor fields.
+
+23. **STANDING WORKSTREAM: build out the condition library, and deepen the
    conditions that already exist.** This is the standing priority between
    one-off fixes. It is not a bug fix — it is the work that decides whether the
    simulator is worth using.
@@ -6278,7 +6267,7 @@ future event can opt in the same way). Still open:
    more than five conditions with three fields each — and five thin conditions is
    how a physiology engine quietly turns back into a branching script.
 
-27. **PARTIALLY RESOLVED — the pregnancyBenchmark near-misses.** The "Total
+24. **PARTIALLY RESOLVED — the pregnancyBenchmark near-misses.** The "Total
     blood volume 6.2-7.0 L" row's internal inconsistency was a genuine
     fixture defect and is fixed (now derived from the patient's own
     baseline, 9/16 in range). The harder EDV/SV/EF/CO/SVR/Hct cluster
@@ -6287,7 +6276,7 @@ future event can opt in the same way). Still open:
     section 3's newest entry and the measurement now sitting in
     `cardiovascular.js`.
 
-28. **RE-INVESTIGATED (this session) — the prior "device rates too safe to
+25. **RE-INVESTIGATED (this session) — the prior "device rates too safe to
     reach the dangerous regime" explanation was incomplete, and the real
     structural cause is different and more specific: `deliveryFactor`
     itself caps achievable intrinsic PEEP, independent of bagging rate.**
@@ -6332,7 +6321,7 @@ future event can opt in the same way). Still open:
     design question, not a coefficient to tune, so left open rather than
     forced. See section 3's newest entry for the full measurement.
 
-29. **INVESTIGATED, CONFIRMED STRUCTURAL, still open — widen the
+26. **INVESTIGATED, CONFIRMED STRUCTURAL, still open — widen the
     survivable-ischemia band for a genuinely regional NSTEMI.** The
     `acs` condition maps the spectrum onto the engine's existing narrow
     survivable zone (subtotal lesion = stable NSTE-ACS; completed occlusion
@@ -6347,7 +6336,7 @@ future event can opt in the same way). Still open:
     attempted — this needs its own dedicated, carefully-scoped batch, not a
     coefficient tweak inside a larger one. Documented at the site.
 
-30. **The physiology half is DONE (later session): `toxicInhalationChlorine`
+27. **The physiology half is DONE (later session): `toxicInhalationChlorine`
     (RESP-037) shipped, reusing `asthma`'s bronchospasm-climb term and
     `pat.capillaryLeak`. The front-end hazmat-scene mechanic is STILL OPEN —
     this item stays open until that half lands too.** The original request:
@@ -6401,7 +6390,7 @@ future event can opt in the same way). Still open:
       attach to, so building this half no longer risks the "infrastructure
       with no real patient" mistake this item's own text used to flag.
 
-31. **Breath odor has no real physiology backing except one case, now
+28. **Breath odor has no real physiology backing except one case, now
     wired — found and partially resolved while adding the new `breathingCheck`
     head action (a previous item in the queue, section 6).** `probe:"breathOdor"` has
     existed since an earlier session as a scenario opt-in hook, but grep
@@ -6433,7 +6422,7 @@ future event can opt in the same way). Still open:
     MEASURED against the real scenario harness (not assumed): bun reaches
     101.8 mg/dL by 900s (well above the 60 threshold), a condition-less
     control scenario stays flat at 12.0 the whole call (no spurious
-    crossing). **Still open**: alcohol and hydrocarbon breath odors have no
+    crossing). **Hydrocarbon breath odor is now wired** (scenario-scripted `probes.breathOdor` on `hydrocarbonAspiration`, since the ingestion itself is the source and no physiology field backs it). **Still open**: alcohol breath odor has no
     backing state at all. Alcohol Intoxication and Hydrocarbon Aspiration
     are both still-unbuilt conditions (section 8 Toxicology backlog) with no
     blood-alcohol or exposure field to read — building either needs the same
@@ -6441,7 +6430,7 @@ future event can opt in the same way). Still open:
     still declare its own `probes.breathOdor` for a specific narrative case
     in the meantime, which wins over both real cases above.
 
-32. **`opioidOD` cannot reach genuine near-apnea severity through a fentanyl
+29. **`opioidOD` cannot reach genuine near-apnea severity through a fentanyl
     `DrugInstance` alone — a real architectural ceiling found while finishing
     a previous item in the queue's calibration (section 3), filed rather than worked around.**
     `pk.js` deliberately computes Emax intensity ONCE PER DRUG ID from
@@ -6469,7 +6458,7 @@ future event can opt in the same way). Still open:
     defect a previous item in the queue fixed (naloxone would once again do nothing, since a
     scripted `rrBase` doesn't route through `respDriveSuppression` at all).
 
-33. **STANDING WORKSTREAM, filed per explicit operator instruction: build an
+30. **STANDING WORKSTREAM, filed per explicit operator instruction: build an
     overdose condition for every existing player-administerable drug, by
     seeding a supratherapeutic dose of THAT SAME drug via `seedPastDose` —
     reusing the exact pattern a previous item in the queue validated for `opioidOD`, rather than
@@ -6638,7 +6627,7 @@ future event can opt in the same way). Still open:
     drugs whose receptor/PK model this project has already built and
     verified.
 
-34. **Beat-level cardiac cycle — PARTIALLY CLOSED. The original premise was
+31. **Beat-level cardiac cycle — PARTIALLY CLOSED. The original premise was
     FALSE and has been corrected; valvular REGURGITATION now works in the
     authoritative solver. Three concrete pieces remain open, each scoped
     below.** See section 3's topmost entry for the full measurement detail.
@@ -6706,7 +6695,7 @@ future event can opt in the same way). Still open:
     is already on record in `updateFullLoopODE` as tried and MEASURED WORSE —
     do not retry it blind.
 
-35. **Nephron abstraction — the osmotic-diuresis slice is DONE (this
+32. **Nephron abstraction — the osmotic-diuresis slice is DONE (this
     session), built WITHOUT the full segment chain; the rest remains
     open.** `renal.js` already treats na/k/bun as real mass/
     concentration pools with GFR-driven clearance, ADH/aldosterone
@@ -6784,7 +6773,7 @@ future event can opt in the same way). Still open:
     unattempted and still large — this session only proves one of its
     three named payoffs was separable and worth building on its own.
 
-36. **Consciousness as a continuous arousal score — the full refactor is
+33. **Consciousness as a continuous arousal score — the full refactor is
     NOT attempted (still correctly flagged as risky), but "sedative
     burden" — this item's own text already assumed was an existing input —
     is now REAL for real (this session).** Today consciousness is derived
@@ -6831,7 +6820,7 @@ future event can opt in the same way). Still open:
     larger piece** — this session only closed the one concrete input gap
     its own text had assumed was already real.
 
-37. **Per-patient baseline variability — SIX of eight traits now DONE
+34. **Per-patient baseline variability — SIX of eight traits now DONE
     (renal/pulmonary reserve added this session, see section 3's newest
     entry); cardiac reserve and circadian state remain open, same pattern,
     future work.** `renalReserve` (`patient.js`) scales `this.baseGfr`
@@ -6918,31 +6907,7 @@ Also open, lower priority: ketamine's `myocardialDepression` coefficient is
 asserted rather than identified; the antiarrhythmic blockade coefficients are
 plausible but not fitted to trial data.
 
-38. **RESOLVED (this session, pulmonary limb only) — see section 3's newest
-    entry.** `decompressionIllness` (conditions.js) reuses `pe`'s existing
-    `shuntFraction`/`pulmResistFactor` mechanism (mechanically the same
-    lesion), with real high-flow-O2 denitrogenation treatment. Arterial gas
-    embolism and spinal-cord DCS remain unmodeled — mechanistically
-    separate lesions with no comparable existing handle. No narrative dive
-    scenario authored. Original filing, kept for context:
-
-    No decompression-illness signal exists — found while implementing TP
-    1225/1225-P (Submersion), step 3/11's decompression-illness-specific
-    branches.** Arterial gas embolism and decompression sickness are real,
-    distinct pathophysiology (dissolved nitrogen coming out of solution in
-    tissue/blood on ascent) that this engine has no representation for at
-    all — no dive-depth/dive-duration state, no bubble/embolism mechanism.
-    `laCounty.js`'s TP 1225 section reuses only the generic arrest/
-    hypothermia/poor-perfusion baseline; the protocol's own decompression-
-    specific steps (high-flow O2 specifically FOR decompression illness,
-    mandatory base contact, hyperbaric-treatment routing) aren't
-    represented. Building this would mean a new condition with a real,
-    literature-anchored embolism/bubble mechanism — a genuinely obscure
-    prehospital presentation relative to the size of the work, so
-    correctly lower priority than a previous item in the queue above unless a dive-specific
-    scenario is specifically wanted.
-
-39. **STILL BLOCKED on the SBP-tiered-escalation half; the crew-hold gap this
+35. **STILL BLOCKED on the SBP-tiered-escalation half; the crew-hold gap this
     item flagged is CLOSED (re-verified this session, lesson 16 — the fix
     predates this session, found already committed).** `App.jsx`'s `crewFn`
     now runs a real `dHold=DRUGS[t.dose]; if(dHold&&dHold.hold){...return}`
@@ -7024,7 +6989,7 @@ plausible but not fitted to trial data.
     everywhere else, then decide whether `nitro` itself needs
     recalibrating before `nitro2`/`nitro3` are built on top of it.
 
-40. **PARTIALLY RESOLVED (a prior session) — see section 3's own entry for
+36. **PARTIALLY RESOLVED (a prior session) — see section 3's own entry for
     the epinephrine half; the saline/IV-fluid half remains open.**
     `neonatalTransition` (conditions.js) now models the real NRP
     epinephrine indication: a newborn with critically low reserve (<0.2)
@@ -7078,7 +7043,7 @@ plausible but not fitted to trial data.
     worth more — this is very likely not the last pediatric-weight-based
     dose this project's protocol library will need.
 
-41. **A real, previously-masked treatment-responsiveness question in the
+37. **A real, previously-masked treatment-responsiveness question in the
     `[HYPERKALEMIA FROM MISSED DIALYSIS]` rhythm mechanism — found while
     closing a previous item in the queue (this session), filed rather than patched blind.**
     a previous item in the queue's own bicarb magnitude fix (below) surfaced a second, deeper
@@ -7139,7 +7104,7 @@ plausible but not fitted to trial data.
     own dedicated batch touching shared rhythm code, not a bolt-on). No
     code changed this session.
 
-42. **PARTIALLY FIXED (2026-09-05) — one real contributing bug closed, the
+38. **PARTIALLY FIXED (2026-09-05) — one real contributing bug closed, the
     dominant driver root-caused and re-filed as a previous item in the queue below; still open.**
     Original filing (2026-09-01): a real, measured, unexplained drift in
     "conserved" quantities for a completely resting, condition-less,
@@ -7185,7 +7150,7 @@ plausible but not fitted to trial data.
     larger, cross-module (respiratory/cardiovascular-autonomic/metabolic)
     physiology-engine work, not a renal-module bug fix.
 
-43. **PARTIALLY RESOLVED (2026-09-28) — the `kShiftConc` unbounded-flux bug
+39. **PARTIALLY RESOLVED (2026-09-28) — the `kShiftConc` unbounded-flux bug
     this item's own text names as "the dominant remaining contributor" is
     now fixed; the underlying paco2/pH resting-transient timing question
     below is UNCHANGED and still open.**
@@ -7378,7 +7343,7 @@ plausible but not fitted to trial data.
     OWN baseline vitals at t=0 (a change here moves the resting point every
     scenario in the game launches from).
 
-44. **NEW, filed 2026-09-13 — a real, measured drift between midazolam's
+40. **NEW, filed 2026-09-13 — a real, measured drift between midazolam's
     (and possibly morphine's) own documented calibration comment and its
     CURRENT engine behavior, found by running `physiologyValidation.mjs`
     to completion for the first time in many sessions.** `drugs.js`'s
@@ -7422,7 +7387,7 @@ plausible but not fitted to trial data.
     formula regression) or isolated to these two (per-drug coefficient
     drift), before touching any code.
 
-45. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
+41. **PARTIALLY DONE (2026-09-21) — drugs `national.js` names.** DONE:
     ipratropium, dexamethasone, diltiazem, metoprolol, morphine, ketorolac,
     IV acetaminophen, nitrous oxide, ketamine (agitation step after
     midazolam), norepinephrine (replaces `pushEpi` as the shock pressor;
@@ -7441,13 +7406,13 @@ plausible but not fitted to trial data.
     vasopressin/phenylephrine exist but this guideline names no step for
     them; (d) unverified in a live call, mock-`ctx` evaluation only.
 
-46. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
+42. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
     fixed-dose `national.js` rule is gated `ADULT`, so pediatric patients
     get no auto-suggested drugs. Needs weight-scaled task variants (or a
     dose multiplier on the task) for adenosine, atropine, naloxone, epi,
     saline, midazolam, dextrose etc., then removal of the gate per rule.
 
-47. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
+43. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
     (pulse ox, BP cuff, 12-lead, pads, serial vitals, drug-reassessment
     vitals, IV access, glucose recheck, tourniquet) were added to
     `national.js` only.** Not yet ported to `laCounty.js` or
@@ -7455,7 +7420,7 @@ plausible but not fitted to trial data.
     arrest/shock and `vitals` only once. Port using their own protocol
     citations, not National page numbers.
 
-48. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
+44. **NEW, filed 2026-09-21 — `national.js` baseline rules are unverified
     in a live call and use coarse triggers.** Only a mock-`ctx` evaluation
     and eslint were run. Still to do: (a) play a call and confirm the
     "directs <hand>: <task>" log lines appear; (b) `tourniquet` fires on
@@ -7470,7 +7435,7 @@ plausible but not fitted to trial data.
     every guideline's own monitoring/access/reassessment steps against
     the rules is still owed.
 
-49. **PARTIALLY DONE (this session) — two of the named-missing drivers are
+45. **PARTIALLY DONE (this session) — two of the named-missing drivers are
     now real, with real `mechanismWiring.mjs` assertions; the deeper
     stored-diameter/latency refactor remains open.** Read `pupils.js`
     directly before touching anything (lesson 16): the file's own header
@@ -7543,7 +7508,7 @@ plausible but not fitted to trial data.
     overrides still beat the live state (see a previous item in the queue's
     own frozen-text audit for the general pattern).
 
-50. **PARTIALLY DONE (this session) — point (a) is now real for the three
+46. **PARTIALLY DONE (this session) — point (a) is now real for the three
     scenarios that reach the `stemi` ecg kind; the rest is unchanged.**
     `src/twelveLead.js` draws all 12 leads from the live snapshot (rhythm
     kind, hr, `qrsWidth`, `prInterval`, `infarctTerritory`); the Monitor
@@ -7599,7 +7564,7 @@ plausible but not fitted to trial data.
     scope check, and printing is not yet tied to the `ecgAcquire` action or
     base transmission.
 
-51. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
+47. **NEW, filed 2026-09-21 — procedure minigames are mostly feel, not
     physiology.** `GiveMedMinigame`, `DrawUpMinigame`, `PupilMinigame`,
     `GlucometerMinigame`, `DeviceMinigame`, `CprMinigame` and
     `ProcMinigame` (tourniquet, needle decompression, chest seal, BVM,
@@ -7624,7 +7589,7 @@ plausible but not fitted to trial data.
     minigames has a browser test yet (see `tools/browser/verifyMinigame*.mjs`);
     (h) pediatric CPR depth/rate and pad sizes are not scaled.
 
-52. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
+48. **NEW, filed 2026-09-21 — auscultation (stethoscope exam) follow-ups.**
     Shipped: `AuscultationMinigame` is a free-placement exam on a drawn bare
     torso (`ChestBody.jsx`, front and back, no labels) — hover, click to place,
     hold and drag to slide; `physio/auscultation.js`'s `chestSpec()` mixes the
@@ -7698,7 +7663,7 @@ plausible but not fitted to trial data.
     the 258 clip IDs in the regenerated manifest still resolves to a real file
     on disk.
 
-53. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
+49. **PARTIALLY RESOLVED (2026-09-22, same day) — the Atrial Fibrillation
     clips are now wired and measured; Early/Late Systolic Murmur remain
     genuinely open.** See section 3's newest entry for the full writeup: a
     direct envelope/peak-timing inspection of the 3 real source WAVs
@@ -7722,94 +7687,7 @@ plausible but not fitted to trial data.
     or would misuse an existing, mechanistically-different finding — real,
     still-open physiology-engine work, not attempted here.
 
-54. **NEW, filed 2026-09-22 — a real "Auscultation Practice" tab now exists in
-    Education Mode, quizzing every one of the 647 heart/lung clips with a
-    real per-clip report mechanism; a second, focused pneumothorax-recording
-    search came back empty for a real, structural reason.**
-
-    **Shipped.** `src/education/AuscultationPracticeTab.jsx` (new), wired
-    into `EducationApp.jsx`'s tab bar. Builds its clip list directly from
-    `HEART_SOUNDS`/`LUNG_SOUNDS`/`AUSC_BASE` (`data/auscultationSounds.js`)
-    — the SAME manifest the real in-game stethoscope exam reads, so a
-    future `genAusculManifest.mjs` regeneration (new clips added, existing
-    ones renamed/removed) is automatically reflected here with zero
-    separate bookkeeping. Two modes: **Quiz** draws from a shuffled,
-    no-repeats-until-exhausted order covering every one of the 647 clips
-    (reshuffles and starts a new "pass" once a pass completes, so a session
-    is unbounded rather than a fixed-length quiz) — 4-choice MCQ, the real
-    category plus 3 distractors drawn from the SAME instrument (heart vs.
-    lung, never mixed) so the choices are never a trivial giveaway. Verified
-    directly (a standalone script replicating the component's own pure
-    choice-building logic, not assumed): all 647 clips produce a valid,
-    duplicate-free 4-choice set that always includes the true category, and
-    all 647 clip URLs resolve to a real file on disk. **Browse** is the
-    literal "every single file linked to there" requirement satisfied
-    beyond the quiz's random draw — a filterable table of all 647 clips,
-    each with its own inline `<audio controls>` player, so any specific
-    clip can be reached directly without waiting on a random draw to
-    surface it.
-
-    **Reporting**, mirroring `reports.js`'s existing question-report
-    pattern exactly rather than inventing a second shape: new
-    `src/education/soundClipReports.js` (`submitClipReport`/
-    `fetchPendingClipReports`/`resolveClipReport`, a `soundClipReports`
-    Firestore collection, the same create/read/admin-update security-rule
-    shape `reports.js`'s own header already documents — copy it verbatim
-    into the real Firestore rules when this ships). A "Report this clip"
-    control appears in both Quiz (after answering) and Browse (per row),
-    gated on `reportingEnabled` (`firebaseConfigured`) exactly like the
-    existing question-report button — confirmed this degrades correctly
-    with Firebase unconfigured (`reportingEnabled` reads `false` in this
-    dev environment, so the button simply doesn't render, matching the
-    existing convention rather than crashing). `AdminReviewTab.jsx` gained
-    a new "Sound Clip Reports" sub-tab (`ClipReportsReview`, a direct
-    structural copy of the existing `ReportsReview`, swapping the
-    question-choices preview for an inline audio player) so a real admin
-    review/resolve workflow exists, not just a write-only report box.
-
-    **Verification.** `npx eslint` clean on all four touched/new files
-    (`AuscultationPracticeTab.jsx`, `soundClipReports.js`,
-    `AdminReviewTab.jsx`, `EducationApp.jsx`). `npx vite build` clean, same
-    pre-existing >500kB chunk-size warning. A direct probe (not just eslint)
-    confirmed: 647 total clips match `HEART_SOUNDS`/`LUNG_SOUNDS`'s own
-    combined count exactly; every choice set is valid; every clip URL
-    exists on disk. **RESOLVED (2026-09-22, same day, see section 3's newest
-    entry) — the real dev-server click-through this paragraph flagged as
-    still owed is now done.** New `tools/browser/
-    verifyAuscultationPracticeTab.mjs`, run twice against a real `npm run
-    dev` server: real click Education -> Auscultation Practice -> a real
-    playable `<audio>` element and 4 real choice buttons in Quiz mode,
-    answering reveals correct/incorrect and updates the score, Next draws a
-    genuinely fresh clip, Browse mode renders a real inline player for every
-    one of the >100 clips checked with a working text filter, zero console
-    errors both runs (including confirming "Report this clip" correctly
-    renders nothing at all with Firebase unconfigured, rather than
-    crashing). **12 passed, 0 failed, both runs.** Submitting an actual
-    report with Firebase configured remains untested (no configured
-    Firebase project in this environment) — the gate itself (button absent
-    when `reportingEnabled` is false) is now live-confirmed, not the
-    write path beyond that gate.
-
-    **The pneumothorax-recording search, re-attempted from a different
-    angle, came back empty again — for a real, now-confirmed structural
-    reason, not just bad luck.** Searched specifically for diagnosis-driven
-    (not just acoustic-category) datasets, and read HF_Lung_V1's own README
-    directly rather than trusting a search snippet: its label taxonomy is
-    inhalation/exhalation/wheeze/stridor/rhonchi/crackle only, with NO
-    diagnosis metadata at all (unlike KAUH, which does carry a diagnosis
-    per patient) — so it cannot have a pneumothorax label by construction,
-    not merely because it was never mined. The underlying reason no dataset
-    anywhere seems to have this: a pneumothorax's own auscultation finding
-    is an ABSENCE (silence/near-silence from air or fluid physically
-    blocking sound transmission), not a distinct positive sound the way a
-    wheeze or crackle is — there is no natural "this clip sounds like
-    pneumothorax" acoustic category for an annotator to label in the first
-    place. This is a stronger, more specific conclusion than the earlier
-    session's "didn't find one" — a future session re-attempting this
-    should expect the same structural answer, not assume a dataset was
-    simply missed.
-
-55. **NEW, filed 2026-09-28 — the biphasic catecholamine-driven potassium
+50. **NEW, filed 2026-09-28 — the biphasic catecholamine-driven potassium
     response to ACUTE hyperventilation is a known, named, unmodeled gap in
     item 48/76's own new `kShiftConc` mechanism (`renal.js`).** Real acute
     respiratory alkalosis transiently RAISES plasma K+ via an alpha-
@@ -7832,7 +7710,7 @@ plausible but not fitted to trial data.
     settles — genuinely separate mechanism work, not a coefficient tweak,
     and not attempted here.
 
-56. **Peri-neural/field-block drug variant. Depends on the shipped
+51. **Peri-neural/field-block drug variant. Depends on the shipped
     `lidocaineBlock`/`pat.nerveBlockDepth` mechanism (queue item 62's
     remainder, this session) — a distinct entry, not a modification of it.**
     `lidocaineBlock` was deliberately scoped to the HEMATOMA block technique
@@ -7848,7 +7726,7 @@ plausible but not fitted to trial data.
     mechanism) — only the absorption-INTO-circulation kinetics differ, not
     what happens once the drug is on board.
 
-57. **Rebound pain on nerve-block offset. Depends on the shipped
+52. **Rebound pain on nerve-block offset. Depends on the shipped
     `pat.nerveBlockDepth` mechanism (queue item 62's remainder).** Real
     nerve blocks show a genuine hyperalgesia phenomenon as they wear off,
     NOT merely a return to baseline pain — incidence 35-62% after
@@ -7865,7 +7743,7 @@ plausible but not fitted to trial data.
     adjuvant: perineural/IV dexamethasone measurably reduces rebound
     incidence (IV odds ratio 0.13, Yang et al., J Clin Anesth 2024).
 
-58. **Compartment syndrome masking by a dense nerve block, if ever built —
+53. **Compartment syndrome masking by a dense nerve block, if ever built —
     direction locked against the naive assumption, which the literature
     contradicts.** Depends on the shipped `pat.nerveBlockDepth` mechanism.
     The intuitive assumption (a dense block silences ischemic pain,
@@ -7888,7 +7766,7 @@ plausible but not fitted to trial data.
     states the caution narratively only, correctly not claiming a mechanism
     this engine doesn't have.
 
-59. **`splint`/`traction`'s own decorative flat `fx.pain` offsets. Found
+54. **`splint`/`traction`'s own decorative flat `fx.pain` offsets. Found
     while scoping queue item 62's remainder (local anesthetic nerve block),
     not built there — a real, separate, smaller-scope finding.** Both
     procedures (`procedures.js`) currently carry a flat, unmechanized
@@ -7903,7 +7781,7 @@ plausible but not fitted to trial data.
     below `NERVE_BLOCK_MAX_REDUCTION` (pk.js) — not a second large
     analgesic pathway, and not folded into the nerve-block mechanism itself.
 
-60. **IVRA (Bier block) drug entry. Depends on nothing structurally, but
+55. **IVRA (Bier block) drug entry. Depends on nothing structurally, but
     should reuse `pat.nerveBlockDepth`'s consumer mechanism (queue item 62's
     remainder) once built, the same way item 68's peri-neural variant
     would.** Intravenous regional anesthesia — lidocaine or prilocaine
@@ -7920,7 +7798,7 @@ plausible but not fitted to trial data.
     confusion worth heading off in this item's own text): IVRA is an
     anesthetic technique using amide local anesthetics, never melphalan.
 
-61. **Per-region/per-limb pain model. The standing simplification every
+56. **Per-region/per-limb pain model. The standing simplification every
     item in this local-anesthetic workstream inherits (items 67-69 above,
     plus the already-shipped nerve-block mechanism itself) — filed once
     here rather than re-noted piecemeal in each.**
@@ -7936,7 +7814,7 @@ plausible but not fitted to trial data.
     blocks, a future per-limb injury/ischemia model, etc.) have accumulated
     real demand for it, not built speculatively ahead of that demand.
 
-62. **Aβ large-fiber tactile counter-stimulation (rubbing/TENS/positioning)
+57. **Aβ large-fiber tactile counter-stimulation (rubbing/TENS/positioning)
     gate-closing — mechanism validated by the literature, blocked purely on
     a missing producer, not on mechanistic uncertainty. Depends on the
     shipped gate-control mechanism (item 62 as originally filed, closed —
@@ -7957,7 +7835,7 @@ plausible but not fitted to trial data.
     procedure/device work item 70 (`splint`/`traction`'s own decorative
     `fx.pain` offsets) would want anyway, worth scoping together.
 
-63. **A genuine below-neutral "calm/reassured" analgesic gate-closing
+58. **A genuine below-neutral "calm/reassured" analgesic gate-closing
     state — a documented pharmacologic effect the shipped gate mechanism
     deliberately truncates, not an unmeasured or speculative one. Depends
     on the shipped gate-control mechanism (item 62 as originally filed,
@@ -7988,25 +7866,6 @@ plausible but not fitted to trial data.
     analgesia is opioid-system-linked). Needs a new signed physio state,
     to avoid guessing at the split under time pressure — not attempted in
     the same batch as the shipped floor-at-neutral mechanism.
-
-64. **A literal `emotionalState.js`↔physio bidirectional link — considered
-    and rejected during item 62's planning, filed here so a future session
-    doesn't re-propose it blind.** `dialogue/emotionalState.js` is
-    documented as strictly one-way (physio→dialogue, read-only) —
-    `deriveEmotionalState()` is a pure function called per dialogue
-    request, not per physio tick. Making physio-engine pain output depend
-    on `emotionalState`'s derived category would violate that documented
-    invariant, make pain output depend on dialogue-call cadence (a real
-    regression risk this project's mechanism-over-UI-cadence discipline
-    argues against), and is circular (emotionalState is itself partly
-    derived from pain already). The shipped gate-control mechanism (item
-    62 as originally filed) achieves the same real biopsychosocial
-    coupling the queue text originally asked for by reading the
-    physio-native `pat.agitation` composite instead — if a future session
-    still wants dialogue's derived category to feed something, it should
-    read that physio-native state, not the other way around.
-
----
 
 ## 7. Hard-won lessons
 

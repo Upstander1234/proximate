@@ -265,7 +265,6 @@ export class Patient {
     // be independently growing/shrinking the whole-body total.
     this.woundBleedByLocation = b.woundBleedByLocation ?? {};
     this.splenicRBC = 0.2;
-    this.venousCompliance = 2.0;
     this.venousResistance = 0.1;
 
     // Metabolic
@@ -575,7 +574,6 @@ export class Patient {
     if (this.edema > 0.5) this.dlco *= 0.5;
     if (this.riskFactors.fibrosis) this.dlco *= 0.4;
     this.intrinsicPEEP = 0;
-    this.endExpiratoryVolume = this.frc;
     // Respiratory muscle fatigue (respiratory.js, pre-existing) — never had
     // a constructor default, only ever set inside updateVentilation's own
     // computation, so it read `undefined` on the very first tick before
@@ -999,7 +997,6 @@ export class Patient {
     // Rhythm
     this.rhythm = b.rhythm ?? "sinus";
     this.rhythmInstability = 0;
-    this.qtInterval = 0.4;
     // ICD magnet suppression (aicdMalfunction, queue item 7) — a persistent
     // boolean flag, same idiom as chestSealApplied/inShade: once a magnet is
     // placed over an implanted device it stays suppressed without needing

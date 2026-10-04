@@ -525,7 +525,6 @@ export function updateVenousReturn(pat, dt) {
   pat._bodyScale = bodyScale;
   cv *= bodyScale;
   cv = Math.max(0.003, cv);
-  pat.venousCompliance = cv;
 
   // Stressed volume (drives mean systemic filling pressure). venousToneModifier
   // (nitroglycerin) shifts blood into unstressed capacitance.
