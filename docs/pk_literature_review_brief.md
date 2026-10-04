@@ -307,3 +307,58 @@ Observations (confirm before relying on them):
 ### 11.5 Next literature request
 
 Hepatic blood flow in neonates and infants as a function of age and weight, and well-stirred model parameters (extraction ratio, unbound fraction, intrinsic clearance) for fentanyl, ketamine, lidocaine and morphine. Also resolve the CYP3A4 neonatal discrepancy in 11.1 and extract midazolam and rocuronium Vc.
+
+## 12. Fourth OpenEvidence pass (2026-10-04): hepatic blood flow, well-stirred parameters, CYP3A4 discrepancy, midazolam and rocuronium volumes
+
+Same caveat as before: secondary summaries. The pasted rocuronium paragraph was cut off mid-sentence, so rocuronium still needs the label table pulled directly. Primary sources named: Chang 2021 (pediatric organ weights and blood flows), Wynne 1989 and Soejima 2022 (liver blood flow and age), Walther 1985 (neonatal cardiac output), Mahdy 2025 (neonatal fentanyl PBPK), Bjorkman 2000 (clearance versus hepatic blood flow), Bullingham 1984 (morphine extraction), Pang 2019 and 2024 and Dong 2018 (hepatic clearance models), de Wildt 1999 and Zane 2018 (CYP3A ontogeny), Kos 2020 (midazolam maturation), FDA midazolam and rocuronium labels.
+
+### 12.1 Hepatic blood flow (the missing input for flow-limited clearance)
+
+- **Source to adopt:** Chang 2021 supplies continuous equations for organ weight and organ blood flow from 0 to 20 years, sex specific, validated against Simcyp and PK-Sim. Use it as the age and weight backbone for hepatic blood flow `Q_H`.
+- **Adult anchor:** about 0.8 to 1.2 L/min (about 20 mL/min/kg at 70 kg), roughly 25% of cardiac output, one third hepatic artery and two thirds portal vein.
+- **Elderly:** apparent liver blood flow and liver volume fall with age (about 0.3 to 1.5% per year after 40; the 91-year value is about half the 24-year value).
+- **Neonates:** term cardiac output is about 240 to 250 mL/min/kg (limits about 200 to 325). The hepatic arterial fraction rises about 18-fold at birth as the ductus venosus closes and the portal contribution goes from about 20 to 25% to about 75%. The neonatal liver is perfused differently for the first days.
+- **Engine fit:** the engine already tracks `co / _restCo`. A well-stirred term would use `Q_H = fraction_of_CO(age) * CO`, so shock lowers clearance through `Q_H` and not through a crude min() scaler.
+
+### 12.2 Well-stirred inputs for the four high-extraction drugs
+
+Well-stirred form: `CL_h = Q_H * fu * CLint / (Q_H + fu * CLint)`.
+
+| drug | extraction ratio | unbound fraction | binding | note |
+|---|---|---|---|---|
+| fentanyl | about 0.8 to 1.0 | about 0.16 | AAG and albumin | CYP3A4, 3A5, 3A7 |
+| ketamine | about 0.9 | the pasted value is ambiguous (about 0.5, with "10 to 30% bound in some refs"); resolve in the primary paper | albumin | CL about equals hepatic blood flow, some extrahepatic clearance |
+| lidocaine | above 0.7 | 0.2 to 0.4 (60 to 80% bound at 1 to 4 mg/L) | AAG, concentration dependent | CYP1A2 and CYP3A4 |
+| morphine | rises with portal concentration, from about 0 toward a plateau | about 0.65 to 0.80 | albumin | not a fixed-ER drug; the flow-limited assumption is weakest here |
+
+Cautions:
+- The well-stirred model systematically under-predicts clearance for high-extraction drugs, and 2024 analyses recommend parallel-tube or dispersion models above ER 0.7. For a real-time simulator the well-stirred form is still the pragmatic choice (closed form, cheap), but `CLint` must be an empirical scale-up fitted to observed CL, not an in-vitro value.
+- The lidocaine data behind the classic well-stirred fit have been re-analyzed and challenged (Dong 2018).
+- Morphine's extraction ratio is not constant, so a fixed-ER term misbehaves at the low concentrations where morphine acts. Treat morphine as a documented exception, probably with a simpler linear clearance.
+- **Update to my earlier lead on fentanyl clearance:** the pasted table gives "79 to 87" (units presumably L/h, about 1.3 to 1.45 L/min) next to "liver blood flow". That is shared with ketamine in the source text, so I cannot tell which drug it belongs to. If it is fentanyl's, the engine's 0.13 L/min is about 10x low, not 4 to 8x. Confirm per drug in the primary papers.
+
+### 12.3 The CYP3A4 neonatal discrepancy, resolved
+
+The two numbers measure different things.
+- **Salem, about 3% of adult at one month:** an in-vivo, CYP3A4-specific activity sigmoid (PMA50 108 weeks, Hill 3.9). de Wildt 1999 agrees CYP3A4 itself is very low before birth and reaches about 50% of adult only between 6 and 12 months.
+- **AHA/PACES, 30 to 40% of adult by one month:** total CYP3A, dominated in the neonate by the fetal isoform CYP3A7 (most abundant CYP at birth, peaks in week 1, then declines). CYP3A7 has more than 10-fold lower catalytic rate than CYP3A4 for most substrates, so it adds protein but modest function (Zane 2018 documents the 3A7 to 3A4 switch and notes functional activity above what protein alone predicts).
+- **Drug-specific in-vivo maturation is better for the engine.** Kos 2020 (critically ill children 0 to 130 weeks PMA) found midazolam clearance reaches 50% of adult at PMA 45.9 weeks, more than twice as fast as the generic 108-week CYP3A4 sigmoid. Use drug-specific values where a pediatric population model exists and the generic sigmoid only as a fallback. Hill exponent for the midazolam function was not reported in the pasted text.
+
+### 12.4 Midazolam and rocuronium
+
+- **Midazolam (Kos 2020, two-compartment, scaled to 70 kg):** central volume 5.71 L, peripheral 39.8 L, CL 8.52 L/h (0.142 L/min), intercompartmental CL 25.5 L/h. Engine now: v1 15 L, CL 0.30 L/min, so the engine's central volume is about 2.6x larger and its CL about 2x larger than Kos.
+  - Caveats: the Kos population is critically ill children with bronchiolitis, so its CL is probably lower than a healthy adult's (adult label and other adult studies report a higher CL). Treat Kos as the maturation anchor and take adult CL from an adult source.
+  - Total Vd: adult 1.0 to 3.1 L/kg (higher in females, elderly, obesity); children 6 months to 16 years 1.24 to 2.02 L/kg; children about 1.7 L/kg; preterm about 1.1 L/kg. Vd per kg is higher in children than adults, so do not scale the adult per-kg volume down for infants. A PBPK model that fixed Vd at 0.88 L/kg under-predicted pediatric exposure. 97% protein bound (albumin) over 1 year of age.
+- **Rocuronium:** the label gives age-banded Vd and CL; the first values quoted are Vd 0.42 L/kg in neonates (consistent with section 11.3). Pull the full band table directly (cut off in the paste). Keep the maturation term on volume only.
+
+### 12.5 Engineering consequences
+
+1. Put hepatic blood flow `Q_H` on the patient (from Chang 2021 equations, as a fraction of cardiac output) and compute clearance for fentanyl, ketamine and lidocaine through a well-stirred term with an empirical `CLint`. Check against the adult `CL ~ Q_H` identity at 70 kg and normal cardiac output.
+2. Morphine stays on a simpler clearance. Its extraction is concentration dependent.
+3. Midazolam, fentanyl, diltiazem and amiodarone: use a drug-specific maturation function where one exists (midazolam PMA50 45.9 weeks) and the generic CYP3A4 sigmoid otherwise. Fentanyl needs postnatal age plus body weight (section 11.3).
+4. Adult normalization still applies to every maturation term (section 11.1).
+5. Every one of these values must be confirmed in primary papers before it enters `PK_PARAMS`.
+
+### 12.6 Next literature request (the one offered)
+
+Neonatal and infant population PK for ketamine and etomidate, to check whether their clearance tracks hepatic blood flow at the youngest ages. Also: the full rocuronium age-band table from the label, the Hill exponent for the Kos midazolam maturation function, and the adult fentanyl CL and extraction ratio from a primary adult paper.
