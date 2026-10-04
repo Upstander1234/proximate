@@ -787,6 +787,8 @@ Single doses, single runs, one scenario each, neutral traits, pain confound in `
 Current state (read from the tree): the player path always delivers `drugDef.dose`. `giveDose(s, {id, at, route})` carries no amount; `pk.js` already honors an optional `d.amount` (`const dose = d.amount ?? drugDef.dose ?? 1`) but only scenario-seeded doses use it. `DrawUpMinigame` is a pass/fail check (random order, pick the right vial, pull to a gameplay-only volume; its own comment says drugs.js has no concentration), and a success only sets `prepped`. The `max` cap counts doses, not mg.
 
 What a variable dose needs:
+**DECIDED (user): the drawn amount is always authoritative; the ordered amount is used only for scoring the player.**
+
 1. **Amount flows end to end:** draw-up (concentration x volume drawn, or a pump rate x time for drips) writes `amount` into `giveDose`, then `DrugInstance`. The drawn amount, not the ordered amount, must be authoritative so errors have consequences. The order/target is scoring only.
 2. **Real units per drug.** Drug definitions need vial concentration and unit (mg, mcg, U, mEq). Audit every `dose` first: norepinephrine's `dose:1` is an undefined "unit" and the PK parameters (v1 in L, ec50 in mg/L) imply mg for the two-compartment drugs. Vasopressin and insulin are units, not mg.
 3. **Per-drug rule for curve drugs.** They have no concentration; decide per drug whether `amount` scales the effect (and how) or only the label and max-dose check (brief section 5 and plan phase 3).
