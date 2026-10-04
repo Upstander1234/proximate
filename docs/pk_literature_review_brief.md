@@ -159,3 +159,68 @@ Source quality: OpenEvidence summaries of reviews and FDA labels, not primary-pa
 ### 9.5 Suggested next literature request
 
 Run the same extraction for lidocaine, diltiazem, metoprolol and amiodarone, then fentanyl, ketamine, midazolam and rocuronium with a request for primary-paper Vc, Vss, three-compartment parameters, CL, and the maturation function used in each pediatric model.
+
+## 10. Second OpenEvidence pass (2026-10-04): lidocaine, diltiazem, metoprolol, amiodarone
+
+Same caveat as section 9: secondary summaries of primary papers and labels, to be confirmed in the sources before values enter `PK_PARAMS`. Sources cited by OpenEvidence: Foong 2024 (lidocaine adult population PK systematic review), Finholt 1986 (lidocaine children vs adults), FDA labels (diltiazem, metoprolol), Lehnert 2022 and Dallefeld 2018 (amiodarone pediatric population PK), Batra 2024 (AHA/PACES neonatal arrhythmia statement).
+
+### 10.1 Engine versus literature (70 kg adult; my arithmetic from the quoted per-kg figures)
+
+| drug | engine now | literature | factor |
+|---|---|---|---|
+| lidocaine v1 | 3 L | V1 0.16 L/kg adults (Finholt, about 11 L); 0.33 to 1.15 L/kg across adult population studies (Foong, about 23 to 80 L) | about 4 to 25x too small |
+| lidocaine CL | 0.03 L/min | 9.8 mL/kg/min (Finholt, about 0.69 L/min); 0.45 to 1.18 L/h/kg (Foong, about 0.5 to 1.4 L/min) | about 17 to 46x too small |
+| diltiazem Vd | 5 L (v1) | 305 to 391 L (label) | about 60 to 80x |
+| diltiazem CL | 0.25 L/min | about 65 L/h, 1.08 L/min (label); falls to 48 L/h at higher infusion rates | about 4x |
+| metoprolol Vd | 4 L (v1) | 3.2 to 5.6 L/kg, about 224 to 392 L | about 55 to 100x |
+| metoprolol t1/2 | 141 min terminal | 3 to 4 h; 7 to 9 h in CYP2D6 poor metabolizers | close |
+| amiodarone CL | 0.05 L/min (3 L/h) | 6.32 L/h (Lehnert, 70 kg scaled) | about 2x |
+| amiodarone V | 10 L central | V 167 L central, 3930 L peripheral (Lehnert) | about 17x central, huge peripheral |
+
+An important consequence for lidocaine: with the engine's 3 L central volume, a 100 mg IV bolus peaks near 33 mg/L, which is already above the seizure threshold the engine uses (10 mg/L). The `lidocaineOverdose` and `lidocaineBlock` calibrations were tuned on top of that small volume. Changing `v1` changes where every lidocaine toxicity threshold lands, so those conditions and their assertions must be re-fit together with the PK change.
+
+### 10.2 Lidocaine
+
+- Two-compartment, adult (Finholt): t1/2 alpha 3.6 min, t1/2 beta 43 min, V1 0.16 L/kg, Vd area 0.71 L/kg, CL 9.8 mL/kg/min. Children 0.5 to 3 years: t1/2 alpha 3.2 min, t1/2 beta 58 min, V1 0.22 L/kg, Vd area 1.1 L/kg, CL 11.1 mL/kg/min. No significant difference between children older than 6 months and adults, so size scaling is enough above about 6 months (maturation term only needed below that).
+- Caveats: Finholt studied patients under general anesthesia in 1986, small groups; Foong's adult ranges are wider than Finholt's point values. Pick the model structure by checking the primary paper.
+- Flow-limited (hepatic extraction above 0.7): clearance should depend on hepatic blood flow, so it falls in low cardiac output and heart failure. This supports replacing the crude flow factor with a well-stirred model for lidocaine.
+- Binding to alpha-1 acid glycoprotein (60 to 80%), which rises in acute MI and lowers free fraction effects on Vd and CL. Infusions over 24 h lower CL through MEGX competition. MEGX is active.
+- Not retrieved: therapeutic and toxic plasma ranges (needed to anchor the engine's 10 and 18 mg/L thresholds), IM absorption kinetics for the hematoma block.
+
+### 10.3 Diltiazem
+
+- Label: Vd about 305 to 391 L, CL about 65 L/h, t1/2 about 3.4 h. Clearance is nonlinear (64 to 48 L/h as infusion rate rises).
+- A usable PD anchor (sigmoidal Emax for rate control): about 80 ng/mL for a 20% heart rate decrease, 130 ng/mL for 30%, 300 ng/mL for 40%. PR prolongation also follows a sigmoidal Emax. BP and HR in normal volunteers did not correlate with concentration.
+- Binding about 70 to 80% (AAG about 40%, albumin about 30%). Renal failure does not change disposition. Cirrhosis lowers CL and prolongs t1/2. CYP3A4.
+- Gap: no pediatric or neonatal population model retrieved.
+- Engine note: `ec50` is 0.1 mg/L (100 ng/mL). That sits inside the label's 80 to 130 ng/mL band for a 20 to 30% rate effect, so `ec50` may already be roughly right even though `v1` and CL are not.
+
+### 10.4 Metoprolol
+
+- Labels: Vd 3.2 to 5.6 L/kg, t1/2 3 to 4 h (7 to 9 h in CYP2D6 poor metabolizers), about 10% renal unchanged after IV, essentially hepatic (CYP2D6).
+- Pediatric (120 hypertensive children 6 to 17 years): PK similar to adults, apparent oral clearance rose linearly with body weight, no effect of age, sex, race or ideal body weight. Not studied below 6 years, so there is no anchor for infants or neonates.
+- CYP2D6 phenotype is the dominant covariate (poor metabolizers about 8% of Caucasians, about 2% of others, several-fold higher levels). Optional: model as a patient trait the way `baroreflexGain` and similar traits are done.
+- No compartmental model was retrieved, only label values.
+
+### 10.5 Amiodarone
+
+- Lehnert 2022 (pediatric, two-compartment, scaled to 70 kg): CL 6.32 L/h, Q 7.14 L/h, V 167 L, V peripheral 3930 L, oral F 0.362, terminal t1/2 34 days (parent) and 14.5 days (desethylamiodarone, DEA).
+- Infants (Dallefeld 2018 and the AHA/PACES statement): CL 0.25 L/kg/h, Vss 93 L/kg, terminal t1/2 266 h, versus adults CL 0.06 to 0.22 L/kg/h, Vss 10 to 87 L/kg, t1/2 50 to 60 days.
+- Like fentanyl, amiodarone clears faster per kg in infants and has a larger weight-normalized Vss, which breaks the simple "neonates clear slower" rule. Clinically visible time course in a 15 to 30 minute call is dominated by the acute redistribution phase, not the terminal phase, so the three-compartment alpha behavior matters more than the weeks-long half-life.
+- DEA metabolite has its own kinetics. A gradual 30 to 60 minute load is advised in neonates (hypotension risk).
+- Engine note: the engine's `k21` of 0.01 with `k12` 2 already encodes a huge peripheral volume (V2 = v1 * k12 / k21 = 2000 L), so its Vss is of the right order but the central volume and CL are low.
+
+### 10.6 Scaling equation confirmed (four sources agree)
+
+`CL_i = CL_STD * (WT_i/70)^0.75 * PMA^Hill / (PMA50^Hill + PMA^Hill)`, volumes at exponent 1.0, PMA in weeks. Fixing the exponent at 0.75 is advocated especially when the weight range is narrow. Germovsek 2019 found no published size or age model fit better than this standard form. Above about 2 years the maturation term is near 1. Per-drug PMA50 and Hill values were NOT retrieved for these four.
+
+### 10.7 What this means for the rework
+
+1. These four need a re-fit of `ec50` and `keo` along with `v1` and CL so the bedside time course survives. Lidocaine in particular must be re-fit together with its overdose condition and the hematoma-block calibration.
+2. Diltiazem and lidocaine justify the first two nonlinear or flow-limited clearance experiments (diltiazem nonlinear CL, lidocaine well-stirred hepatic extraction). Both stay optional: a linear CL at a documented typical value is an acceptable first step.
+3. Maturation must be per pathway and per total clearance, not a global factor. Amiodarone and fentanyl are explicit counterexamples to a "neonates clear slower" rule.
+4. Metoprolol has no data below 6 years. For younger children the rework must either extrapolate with the standard equation and say so, or block weight-scaled dosing for that group.
+
+### 10.8 Next literature request
+
+Pathway-specific PMA50 and Hill values for CYP1A2 and CYP3A4 (lidocaine, diltiazem, amiodarone, midazolam, fentanyl), CYP2D6 (metoprolol), UGT glucuronidation (morphine, naloxone), and GFR maturation (atropine, renally cleared fractions). Also still outstanding from section 9.4: primary-paper Vc, Vss, CL and maturation for fentanyl, ketamine, midazolam, rocuronium, etomidate, plus lidocaine therapeutic and toxic plasma ranges.
