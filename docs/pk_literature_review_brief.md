@@ -479,3 +479,31 @@ No published CES1/CES2 PMA50 + Hill exists, so we must design one ourselves (nee
 - Must be flagged in code as engine-fitted, not literature-reported, with the fit data and residuals in the comment.
 - Must be combined with allometric size scaling and partial hepatic-flow sensitivity (ER 0.5 to 0.9), and pass the test that neonates never clear faster than adults in the first months.
 - Decide: smooth sigmoid fit to Boberg points versus the simple piecewise bands. Record the choice and the measured fit.
+
+## 16. Eighth literature pass: cardiovascular and antiarrhythmic PD anchors
+
+Design finding: unlike the sedative-hypnotics, most of this group has no published effect-site ke0/EC50 Emax model. Endpoints are plasma thresholds (catecholamines), use-dependent or time-delayed tissue effects (amiodarone, atropine), or a flat concentration band (lidocaine). Only diltiazem and metoprolol have clean sigmoidal Emax models.
+
+Diltiazem (Dias 1992 in AF/flutter; FDA label in volunteers):
+- Sigmoidal Emax for HR reduction: EC50 110 +/- 84 ng/mL, Emax 52 +/- 17%. 20% reduction at 79-80 ng/mL, 30% at 130-172, 40% at 294-300.
+- Engine ec50 0.1 mg/L (100 ng/mL) matches. No change needed to ec50; volume (Vd about 305-411 L) and CL (about 65 L/h) still need correction.
+- HR and BP do not correlate with concentration in normal subjects (only in AF for rate, hypertensives for MAP); PR prolongation is also sigmoidal. Model rate control against the AF/tachycardia state. Peak hemodynamic effect 2 to 5 min.
+
+Metoprolol (Abrahamsson 1990, pooled Emax for beta-1 blockade of exercise tachycardia):
+- Emax 28% (95% CI 25-31), C50 105 nmol/L (CI 74-135) = about 28 ng/mL = 0.028 mg/L at MW about 267.
+- Engine ec50 0.1 mg/L is about 3.5x too high; lower to about 0.03 mg/L.
+- Label: 30-80% of maximal blockade at 30-540 nmol/L, log-linear; beta-1 selectivity lost above 300 nmol/L. Effect lags plasma: peak block about 20 min after a 10-min IV infusion; IV:oral potency about 1:2.5, so keep a keo. Pediatric blockade data floor is age 6 years.
+
+Epinephrine (Oualha 2014, post-cardiac-surgery children): one compartment, allometric scaling (0.75 on CL and on endogenous production q0), explicit endogenous baseline, two linked Emax models (HR; SV x SVR to MAP). No ke0 (effect tracks plasma; label effective half-life is very short). Adult thresholds (Clutter 1980): 50-100 pg/mL HR, 75-125 SBP, 150-200 DBP; epinephrine about 10x more potent than norepinephrine. Clearance higher in older adults (144.8 vs 78 mL/kg/min).
+
+Norepinephrine: no effect-site model. Opposite chronotropic sign (baroreflex lowers HR in healthy volunteers; no sustained HR rise in cardiogenic shock). About 0.6 ug/kg/min to MAP 70 vs about 0.7 for epinephrine. Use the 10:1 potency ratio.
+
+Atropine: HR effect delayed 7-8 min after IV and non-linearly related to peripheral compartment; PK is not the rate-limiting step, so keep a keo anchored to effect. Pediatric dose-response (Palmisano 1991): ED50 9 ug/kg, ED90 26 ug/kg for HR. No effect in denervated transplanted hearts. The historical 0.1 mg minimum dose is not supported by recent pediatric data. No numeric ke0 published.
+
+Amiodarone: model acute IV as AV-nodal slowing, sinus bradycardia and noncompetitive beta/Ca blockade only. Class III/QT prolongation takes days to weeks (ventricular effects about 10 weeks, Mitchell 1989; QT from day 3, max day 14, Zhao 2018) and tracks desethylamiodarone. No ke0/EC50 retrieved. Do not model QT prolongation on the sim timescale.
+
+Lidocaine: flat band, no antiarrhythmic Emax. Therapeutic 1.5-6 ug/mL; adverse above 6; CNS symptoms/convulsions about 15 ug/mL; first cardiotoxicity above 21 ug/mL. Minimal hemodynamic effect, little effect on normal AV node. Hepatic ER about 70%, about 90% hepatic metabolism, flow-limited; t1/2 1.5-2 h. Supports re-anchoring the engine's too-small v1 and CL.
+
+Engine consequences: diltiazem ec50 confirmed; metoprolol ec50 down about 3.5x with a keo giving about 20 min peak; amiodarone acute effect restricted; lidocaine toxicity breakpoints re-anchored together with the v1/CL fix (note this shifts every lidocaine toxicity calibration and the hematoma block thresholds).
+
+Still open: numeric ke0 for atropine; adult epinephrine/norepinephrine effect-site equilibration constants. Next offered: adrenergic receptor affinity and relative potency for vasopressors (alpha1/beta1/beta2 coefficients).
