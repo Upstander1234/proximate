@@ -656,3 +656,33 @@ Our claim that an effect "near the top of a sigmoid" drops visibly sooner after 
 
 ### 21f. Offered next
 Structure of the single MAP-driven baroreflex term so it lowers HR for alpha agonists but still lets beta-active drugs raise it.
+
+## 22. Baroreflex term design (fourteenth pass)
+
+Source: OpenEvidence pass pasted by the user. Design intent only; nothing built. Marked-as-ours notes are our own checks.
+
+### 22a. Structure
+- One negative-feedback loop sensing MAP error, driving two efferent limbs, with the output applied to the same HR variable the drugs' direct chronotropic terms write to. The sign for each drug then emerges from competition at that variable: alpha agonists have only the reflex (HR falls); beta-active drugs have a direct SA-node term that outweighs it (HR rises). No drug-specific sign rule (Marey's law). This is also a clean unit test: epinephrine vs norepinephrine HR divergence should come only from the beta term (atrial beta-2 about 30% of cardiac beta receptors), proving the reflex and direct drive are summed, not double-counted.
+- Cardiovagal limb to HR: fast (onset 100 to 475 ms, under one beat), abolished by muscarinic blockade. A phenylephrine bolus probes this limb selectively.
+- Sympathetic limb to SVR and, more slowly, HR: beta-sympathetic HR control begins about 2.5 s and completes about 10 s; alpha-sympathetic resistance control starts about 5 s and takes up to about 20 s. With an infusion both limbs engage, so phenylephrine's HR fall is part vagal, part sympathoinhibition.
+- The sympathoinhibitory limb must buffer SVR, not only slow HR. Without it every pressor overshoots its MAP target and the near-linear norepinephrine dose to MAP gain (section 21) reads too steep. Closed-loop vasopressor models (Kao 2023, Sharifi 2022 PyMyoVent) close the loop on both chronotropism and vascular tone. The buffered steady state is the target.
+
+### 22b. Gain anchor
+- Human BRS: about 15.7 ms/mmHg (modified Oxford, phenylephrine), about 19.4 ms/mmHg (spontaneous transfer function) (Bonyhay 2013).
+- Our conversion check: dHR = -(60000/RR^2) x dRR; at RR 1000 ms and 15.7 ms/mmHg that is about 0.94 bpm per mmHg, consistent with the pass's 0.9 to 1.2 bpm per mmHg. Use as the calibration target for `baroGain`.
+- Map inter-patient variability onto the existing `baroreflexGain` trait. BRS is depressed in shock, after MI, in the elderly and in heart failure (Goldberger 2019); a low-BRS patient shows a blunted reflex HR response.
+
+### 22c. Refinements
+- Build in: sigmoid MAP-error to reflex-output relation saturating at both ends (BRS is linear only mid-range), to prevent implausible bradycardia at very high induced pressures.
+- Build in, simply: setpoint fixed or very slowly drifting over a 15 to 30 min call, so a sustained pressor infusion holds a sustained reflex bradycardia.
+- Defer unless the minigame needs beat-level fidelity: separate 2.5 to 20 s limb lags. For titrated infusions, one fast HR lag plus one slower SVR lag captures the visible behavior.
+
+### 22d. Validation targets (infusion of each drug)
+Norepinephrine: MAP up, net HR down. Epinephrine: HR up; at low doses MAP/diastolic may fall via beta-2 vasodilation, which should add reflex tachycardia. Phenylephrine: MAP up with reflex bradycardia. Sources: Tulen 1993 (volunteers), Levy 2018 (cardiogenic shock).
+
+### 22e. Our cautions
+- The cited BRS values are from specific healthy or lab populations and mixed methods; the 100 to 475 ms and 2.5 to 20 s latencies come from a validation-dataset paper, not shock patients. Treat as healthy anchors.
+- First measure what the existing engine baroreflex already does for norepinephrine and phenylephrine; the term may exist and only need re-gain and an SVR limb.
+
+### 22f. Offered next
+How to adjust baroreflex setpoint and gain for a shock state so the healthy-volunteer norepinephrine dose to MAP slope is not over-applied.
