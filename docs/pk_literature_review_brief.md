@@ -686,3 +686,34 @@ Norepinephrine: MAP up, net HR down. Epinephrine: HR up; at low doses MAP/diasto
 
 ### 22f. Offered next
 How to adjust baroreflex setpoint and gain for a shock state so the healthy-volunteer norepinephrine dose to MAP slope is not over-applied.
+
+## 23. Shock adjustment of baroreflex gain, setpoint and pressor gain (fifteenth pass)
+
+Source: OpenEvidence pass pasted by the user. Design intent only; nothing built. The user also noted that the read-only engine probe is a measurement task no search can replace; it is still pending.
+
+### 23a. Three independent axes (not one "shock multiplier")
+1. **Baroreflex gain depressed, and not auto-recovering.** BRS falls in septic and hemorrhagic shock and stays depressed after MAP is restored to 65 mmHg or more with fluids and norepinephrine (Carrara 2022 swine 5-day sepsis; Carrara 2018 hemorrhage; Carrara 2020). Causes: reduced arterial compliance lowers baroreceptor stretch sensitivity; adrenergic over-stimulation and parasympathetic suppression blunt the heart's response. Make the blunting a property of the shock state, not a function of current pressure.
+2. **Setpoint shifts, acutely, partially, reversibly.** Within 20 min of a sustained pressure change the baroreflex curve resets rightward/upward with steep-portion sensitivity relatively preserved (Salman 2016). Resetting moves where the curve sits; gain change alters its steepness; encode separately. Holding the setpoint fixed over a 15 to 30 min call remains a defensible simplification; the literature supports a slowly drifting setpoint so a prolonged pressor settles into a new operating point. Chronic resetting (weeks) is out of scope.
+3. **Drug-side dose to MAP gain attenuated in sepsis, a different mechanism from the baroreflex.** Alpha-receptor downregulation, increased Vd from permeability, fluid dilution. Nishikimi 2026: a starting dose of 0.1 ug/kg/min raised MAP only about 12 mmHg in critically ill patients; 0.025 to 0.05 ug/kg/min often failed to reach MAP 65 within 60 min when baseline MAP was severely low. Surviving Sepsis 2021 frames the same point. So the norepinephrine gain needs its own shock/sepsis attenuation factor distinct from `baroreflexGain`.
+
+### 23b. The SVR buffer pulls the other way
+In sepsis the sympathetic SVR-buffering limb is weakened too (suppressed LF power of diastolic pressure, reduced HR contribution to resistance control; Carrara 2018, 2020), so a given alpha-1 drive reaches SVR with less reflex opposition. That steepens the dose to MAP slope while receptor desensitization and higher Vd flatten it; the data show the latter dominating at low doses. This is why they must be separate terms, so a scenario can dial each.
+
+### 23c. Template
+Kao 2023 vasoplegic-shock model keeps the direct drug effect (phenomenological dose-response) and the baroreflex modulation as separate interacting blocks and reproduced phenylephrine effects on MAP, CO and SVR including secondary baroreflex effects; the same architecture as the plan. Jentzer/Hollenberg 2021 supplies the sign logic: a vasoconstrictor MAP rise causes sympathetic withdrawal that attenuates the rise and lowers HR and inotropy; in shock that loop is weakened.
+
+### 23d. Calibration table
+| Parameter | Healthy anchor | Shock adjustment |
+|---|---|---|
+| `baroreflexGain` | about 0.9 to 1.2 bpm/mmHg | depressed; does not recover on reaching target |
+| Setpoint | fixed over call | optional acute partial rightward reset over about 20 min |
+| NE dose to MAP gain | about 12 mmHg per 0.1 ug/kg/min (clinical) | attenuated in sepsis at low doses |
+| SVR buffer strength | full | weakened (partially offsets the above) |
+
+### 23e. Cautions
+- Most quantitative BRS data are from swine models and small ICU cohorts: direction of each change is well supported, magnitudes are scenario-tuning choices, not constants.
+- The Nishikimi figures are observational clinical associations, not a controlled dose-response; do not treat 12 mmHg per 0.1 as a population parameter.
+- Section 21's healthy slope (about 103 mmHg per ug/kg/min) and this clinical 12 mmHg per 0.1 ug/kg/min (about 120 per ug/kg/min) are the same order; do not read the difference as healthy vs shock since the contexts differ.
+
+### 23f. Offered next
+Progressive catecholamine resistance and the switch to a multimodal vasopressor strategy at high norepinephrine doses.
