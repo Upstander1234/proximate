@@ -717,3 +717,37 @@ Kao 2023 vasoplegic-shock model keeps the direct drug effect (phenomenological d
 
 ### 23f. Offered next
 Progressive catecholamine resistance and the switch to a multimodal vasopressor strategy at high norepinephrine doses.
+
+## 24. Catecholamine resistance and the escalation ladder (sixteenth pass)
+
+Source: OpenEvidence pass pasted by the user. Design intent only; nothing built. The pass's escalation table row for step 2 was garbled in transit; the trigger text below is reconstructed from the prose (vasopressin added on escalating norepinephrine, about 0.25 to 0.5 ug/kg/min in SSC 2021) and should be re-checked.
+
+### 24a. Structure
+- Resistance is a time-dependent, receptor-class-specific decay of the ALPHA-adrenergic dose-to-effect gain during sustained exposure. Do not fold it into the static sepsis drug-gain factor of section 23; that one is static, this one is progressive.
+- Non-adrenergic vasopressors (vasopressin V1a, angiotensin II AT1) read a separate efficacy channel the adrenergic decay does not touch. Mechanism: homologous desensitization first (response to vasopressin and angiotensin II intact early), heterologous only later. This is the license for the rescue channel.
+- Mechanisms: (1) alpha desensitization/downregulation via GRK, beta-arrestin, internalization (infusion cut alpha-1 receptor number about 50%, receptor-loss t1/2 about 12 h, maximal by about 2 days; rat data, Snavely 1985, Tsujimoto 1987); (2) superoxide inactivation of catecholamines in sepsis (Macarthur 2000), a faster route to the same observable, so one combined decay term suffices unless methylene-blue/antioxidant teaching is wanted; (3) beta downregulation and sepsis cardiomyopathy (Hollenberg 2021), a separate decay on the beta to contractility gain if inotropy is modeled.
+
+### 24b. Escalation ladder (SSC 2026 sequence), gated on the norepinephrine-equivalent dose
+1. Norepinephrine, alpha-1 to SVR with decaying gain.
+2. Add vasopressin on escalating norepinephrine (SSC 2021 about 0.25 to 0.5 ug/kg/min or equivalent).
+3. Add epinephrine if MAP still inadequate on norepinephrine plus vasopressin; shares the decaying adrenergic channel.
+4. Refractory: angiotensin II 20 up to 80 ng/kg/min (100 after 3 h; maintenance 2.5 to 20), with or without hydrocortisone; AT1 to SVR, resistance-independent.
+
+### 24c. Unit test
+Raising norepinephrine past saturation/downregulation gives diminishing MAP return; switching to vasopressin or angiotensin II restores it; epinephrine does not (same receptors, SSC rationale). If vasopressin and angiotensin II write to a channel immune to the adrenergic decay, this emerges automatically.
+
+### 24d. Hydrocortisone as a resistance REVERSAL lever
+Model it as a partial reversal of the alpha-gain decay (raises the ceiling, re-sensitizes the channel), not as a pressor input. Timing anchor: steroids at norepinephrine 0.25 ug/kg/min or more, at least 4 h after norepinephrine start (SSC; Wang 2026). Time course and dose thresholds not yet researched.
+
+### 24e. Dosing anchors for the pump layer
+- Vasopressin: fixed, non-titrated 0.01 to 0.03 U/min (TRICYCLE starts 0.015, caps 0.03 IU/min). Dosed in units per minute, not per kg, so the pump state must support a non-per-kg unit.
+- Angiotensin II: ng/kg/min as above.
+- The norepinephrine-equivalent scale (section 17) is the single decision variable for each step.
+
+### 24f. Cautions
+- Mortality evidence for adding vasopressin is moderate and modest (RR 0.89, 95% CI 0.79 to 1.01); angiotensin II signal low and indirect. The ladder is a realism and teaching structure, not a survival claim.
+- Pure vasoconstrictors (vasopressin, angiotensin II, phenylephrine) can lower CO via afterload and sympathetic withdrawal; angiotensin II is contraindicated in low-output states. The non-adrenergic channel must carry an afterload/CO penalty or it teaches the wrong lesson in mixed cardiogenic-vasodilatory shock (Jentzer 2025).
+- **Timescale mismatch (our flag, important):** the receptor downregulation numbers are rat data on an hours-to-days scale (t1/2 about 12 h). On a 15 to 30 min call a receptor-downregulation decay would barely move. Call-timescale refractoriness is better represented as (a) a scenario-initial state (the patient arrives already refractory after hours of shock or prior infusions), plus (b) fast contributors (superoxide inactivation, acidosis, hypovolemia). Do not decay the gain by a literature t1/2 inside a single call and call it realistic. Scenario time compression, if any, is a separate design decision.
+
+### 24g. Offered next
+Hydrocortisone re-sensitization of the adrenergic channel: time course and dose/timing thresholds.
