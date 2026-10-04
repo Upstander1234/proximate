@@ -111,3 +111,51 @@ For each drug, ideally from a population PK paper or a standard reference (Goodm
 - `src/data/drugs.js`: per-drug route, dose, max, receptors, `fx`, `toxicity` thresholds, `bioavailability` overrides.
 - Existing in-code comments in `pk.js` give the anchors used so far and explain which parameters were effect-matched. Read the comment above each `PK_PARAMS` entry before changing it.
 - Verification that must keep passing: `mechanismWiring.mjs`, `scenarioSweep.mjs`, `pkAudit.mjs`, `curveDrugAudit.mjs`, and the arrhythmia efficacy harness (onset time depends on `keo`).
+
+## 9. Findings received from OpenEvidence (2026-10-04), and what they change
+
+Source quality: OpenEvidence summaries of reviews and FDA labels, not primary-paper extraction. Treat every number as "to confirm in the primary paper" before it goes into `PK_PARAMS`. Two figures look suspect and are flagged below.
+
+### 9.1 Scaling model (settled enough to build against)
+
+- **Size**: volumes scale linearly on weight (exponent 1.0), clearance on weight^0.75. Fixed exponents are the field default for children over about 2 years (Germovsek 2019, van Valkengoed 2025).
+- **Maturation** (needed below about 2 years, essential in neonates): multiply clearance by a sigmoid in post-menstrual age, `PMA^n / (PMA^n + PMA50^n)`, with PMA50 and Hill n taken per elimination pathway from a published source, not a flat neonatal factor. Postmenstrual age, not postnatal age, because enzyme maturation starts before birth.
+- **Full equation**: `CL_i = CL_70kg * (WT_i/70)^0.75 * maturation(PMA_i)`. At 70 kg and an adult PMA the maturation term is about 1, so phase 1 can reproduce today's numbers exactly (the bit-for-bit adult regression requirement).
+- **Alternative if neonatal fit is poor**: age-dependent exponents (reported roughly 1.2 at 0 to 3 months, 1.0 at 3 months to 2 years, 0.9 above 2 years). Keep as a fallback, not the default.
+- **Engine inputs needed**: PMA means the patient needs gestational age at birth plus postnatal age. `AgeProfile` currently carries age, weight, sex, height only. Add a gestational-age field (default term, 40 weeks) for neonatal patients, and use actual current weight for dosing and scaling (this also settles the pregnancy question: use actual weight, matching the existing `anatomicalWeight()` note).
+- **Roster-wide doses** (`patientId == null`): resolve weight per receiving patient at administration. There is no single roster weight.
+- **Fentanyl is an exception to "neonates clear slower"**: weight-normalized clearance is reportedly higher in infants (peak about 18.9 mL/min/kg at 6 months to 6 years, versus 8.2 younger and 8.0 older), from higher weight-normalized hepatic blood flow. So the maturation function must be per pathway, and the planned assertion "neonates must not clear faster than adults" must be per drug and on a total (not per kg) basis, with fentanyl handled explicitly.
+- **Lipophilic drugs**: one remifentanil model found volume deviating from linear weight scaling at large body sizes. Consider lean body mass for fentanyl, rocuronium and similar, flagged as an open choice.
+
+### 9.2 Model-structure decisions the evidence forces
+
+| drug | what the literature says | decision to make |
+|---|---|---|
+| epinephrine | Pediatric population PK (Oualha 2014) fit **one compartment**, linear, Vd fixed to circulating blood volume, CL scaled with weight^0.75. Adult CL reported about 78 to 145 mL/kg/min (about 5 to 10 L/min at 70 kg) versus engine 2.4 L/min. Effective IV half-life under 5 minutes. No ke0 or EC50 published. | Collapse to one compartment (or a degenerate second), raise CL toward the published range, and keep `keo` as a documented calibration choice since none is published. |
+| norepinephrine | Pediatric population PK fit **one compartment**, CL and endogenous production both scale with weight^0.75. Adult label: Vd 8.8 L, CL 3.1 L/min, half-life about 2.4 min (engine CL is 0.8 L/min). A real PD anchor exists: Emax on MAP of 32 mmHg (3 or fewer organ dysfunctions) versus 12 mmHg (4 or more). | One compartment, CL about 3.1 L/min. The Emax figure gives the first real receptor-to-MAP anchor. Also needs a continuous-infusion input (mcg/kg/min), which the engine lacks. |
+| atropine | **Nonlinear** after IV 0.5 to 4 mg (saturable protein binding, about 44% over 2 to 20 mcg/mL). Half-life 2 to 4 h (engine terminal 46 min). Half-life more than doubled in children under 2 years. IM peaks about 30 min and is perfusion dependent. No published ke0 or EC50. | Decide whether to model saturable binding or accept a linear approximation with a documented range. Fix the half-life. Add the under-2-years prolongation through the maturation term. |
+| naloxone | No reliable two-compartment split. Vd 320 to 482 L (engine 21 L), CL 3 to 4 L/min (engine 1.18 L/min), exceeds hepatic blood flow, so extrahepatic metabolism. Half-life about 60 to 74 min adult, about 3.1 h in neonates (immature glucuronidation). | Large correction to `v1` and CL. The Ki shift (`NALOXONE_KI`) needs its own source. Re-fit `keo` and the reversal timing tests after changing volumes. |
+| adenosine | Clearance is **saturable** (CL fell from about 10.7 to 4.14 L/min as dose rose), Vd 8 to 13 L, half-life 0.6 to 1.9 min (under 10 s in whole blood), no hepatic or renal dependence. Pediatric 0.05 to 0.1 mg/kg, max 0.3 mg/kg. | If promoted from a curve drug, it is a Michaelis-Menten case, with no maturation term needed. |
+| fentanyl | Vd about 4 L/kg in one review; ICU infusion Vd 14 to 25 L/kg with CL 12 to 13 mL/min/kg; adult mean half-life about 317 min; t1/2 ke0 about 6 min. | **Suspect:** the ICU 14 to 25 L/kg looks like a steady-state infusion artifact (large peripheral loading), not a bolus-relevant Vc. Do not use it for `v1`. Confirm Vc and the three-compartment split in a primary paper. |
+| morphine | t1/2 ke0 about 2 to 3 h (range 1.6 to 4.8 h); M6G active with t1/2 about 7 h. | Consistent with the existing note that morphine ke0 is unsettled. Leave `keo` as an effect-matched calibration. M6G and renal accumulation is the real missing mechanism. |
+| midazolam | Vd 1 to 3.1 L/kg, t1/2 1.8 to 6.4 h, CYP3A4, hydroxylated metabolites renally cleared, inotropes reduce CL about 33%. | Engine v1 0.21 L/kg is well under the literature Vd per kg; confirm Vc versus Vss. |
+| ketamine | Vd about 2.3 L/kg, N-dealkylation to active norketamine, t1/2 about 2.5 h. | Engine v1 0.57 L/kg is a central volume; check against Vss. |
+
+### 9.3 Corrections to my own leads in section 3
+
+- **Naloxone**: I called Vc 21 L and CL 1.18 L/min "plausible". The retrieved literature says Vd 320 to 482 L and CL 3 to 4 L/min. The engine is off by roughly an order of magnitude in volume.
+- **Norepinephrine**: confirmed low (0.8 vs 3.1 L/min).
+- **Epinephrine**: engine CL 2.4 L/min is low against about 5 to 10 L/min.
+- **Atropine**: I called Vc and CL plausible; the terminal half-life (46 min) is well below the reported 2 to 4 h.
+
+### 9.4 Still missing (next literature passes)
+
+1. Primary-paper Vc, Vss, CL, three-compartment parameters for fentanyl, ketamine, rocuronium, etomidate, midazolam.
+2. Lidocaine, diltiazem, metoprolol, amiodarone (the engine values that looked implausible; none were covered).
+3. A published PMA50 and Hill n for each elimination pathway used: CYP3A4 (midazolam, fentanyl), glucuronidation (morphine, naloxone), renal GFR (atropine), CYP2D6 (metoprolol), and plasma esterase or other routes for rocuronium and etomidate.
+4. Effect-site ke0 and EC50 for the endpoints the engine uses. Epinephrine, norepinephrine, atropine and naloxone have essentially none published, so those `keo` values remain documented calibrations rather than literature values.
+5. Calcium, dextrose, vasopressin, magnesium, and the other curve-model promotion candidates in section 4.
+
+### 9.5 Suggested next literature request
+
+Run the same extraction for lidocaine, diltiazem, metoprolol and amiodarone, then fentanyl, ketamine, midazolam and rocuronium with a request for primary-paper Vc, Vss, three-compartment parameters, CL, and the maturation function used in each pediatric model.
