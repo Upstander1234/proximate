@@ -797,3 +797,47 @@ What a variable dose needs:
 6. **Weight-based orders:** the order shown is mg/kg times the receiving patient's weight (plan phase 2); pediatric and neonatal patients make the drawn volume small and error-prone, which is the teaching value.
 7. **Bookkeeping:** `s.given` and `max` should track cumulative mg (or units), not dose count. The PK dedupe key already includes `amount` (`id|at|amount`), so two different amounts at the same instant stay distinct.
 8. **Toxicity paths** that scale with dose (lidocaine seizure and cardiac thresholds, rocuronium Hill block) will respond to drawn amount immediately; saturated ones will not (point 4).
+
+## 27. Follow-up probes: multi-run, repeated-dose, realistic-rate arms, unit audit (measurement, no code changed)
+
+Scripts live outside the repo (scratchpad). Infusion-like arms are repeated boluses of `amount` mg every 60 or 120 s (mass rate = amount/interval; this is an approximation of a pump with ripple). 70 kg assumed for mcg/kg/min conversions. Traits neutral. All numbers are engine behavior, not validation.
+
+### 27a. Corrections to section 25
+- **Seeds add nothing.** Five runs per arm gave SD about 0 everywhere; these paths are deterministic. Re-check by varying scenario and traits (`baroreflexGain`, `vascularReactivity`, age), not seeds.
+- **Finding 1 (pressor gain saturated, overshoots) was largely a unit artifact.** Section 25 used bolus amounts up to 1 mg of norepinephrine (the engine's `dose:1` is 1 mg given the PK units, 100x a push dose). At realistic infusion-like rates the healthy MAP rise is not absurd.
+
+### 27b. Realistic-rate results (healthy `abdPain` / `septicShock`, rise in MAP after about 12 to 15 min, mmHg)
+| Arm | Healthy | Septic |
+|---|---|---|
+| NE 2 mcg/min | +2 | -5 (disease drift; no effect) |
+| NE 5 mcg/min (0.07 ug/kg/min) | +24 | +6 |
+| NE 10 mcg/min (0.14 ug/kg/min) | +39 | +16 |
+| Epi 1 mcg/min | 0 | 0 |
+| Epi 3 mcg/min | +14 (HR +6) | +3 (HR +2) |
+In per 0.1 ug/kg/min terms: healthy about 27 to 34 versus the volunteer slope of about 10 (section 21), so healthy gain is about 3x too high; septic about 8 to 11 versus the clinical about 12 (section 23), so septic gain already matches. The healthy/septic difference is the accidental attenuation noted in section 25; the healthy case is the one out of line.
+- Effect is nonlinear at the low end: 2 mcg/min does almost nothing, 5 mcg/min gives +24.
+- Higher infusion-like rates (25 to 50 mcg/min) give healthy MAP 158 to 180 and septic 99 to 112; still not steady at 15 min because the baroreflex setpoint is also resetting.
+
+### 27c. Offset is PK-limited and far too slow
+After stopping a 10 mcg/min infusion at 900 s, the alpha-drug term falls only 0.4 to 0.3 in 3 min and MAP barely moves (healthy 141 to 142; septic 87 to 85). SVR is an instantaneous function of alpha tone (`svr = baseSVR x (0.55 + 2.0 x alphaTone)`, cardiovascular.js line 937), so no vascular lag is the cause; the cause is slow norepinephrine elimination (CL 0.8 L/min vs label 3.1, brief 19b) plus accumulation in the peripheral compartment. Label expectation is a drop to near baseline within 1 to 2 min. keo 0.7/min is not the limiter. After the CL fix, re-run this arm before adding any PD offset mechanism.
+
+### 27d. Curve drugs ignore `amount` and stack without limit
+Phenylephrine (curve model) gave the same alpha effect for amount 0.3 as for 1.0, so `amount` is ignored. Repeated doses (0.3 every 120 s for 8 min) stack: `_alphaDrug` climbs to 3 to 4, SVR hits its 4000 ceiling, CO falls to 2.8 (healthy) or 4.9 (septic), MAP 169 to 212. After stopping, septic HR rebounds to 159 (baseline 137). So a phenylephrine drip cannot be dosed by amount until it is promoted to a concentration model.
+
+### 27e. Baroreflex HR slope confirmed weak
+Healthy about 0.1 to 0.2 bpm per mmHg, septic about 0.4 to 0.5 bpm per mmHg versus the 0.9 to 1.2 target (section 22). Healthy control HR also drifts 93.9 to 97.2 over 15 min (resting transient), so slopes are measured against a moving baseline; compare against the control arm.
+
+### 27f. Epinephrine low-dose dip still absent
+At 1 and 3 mcg/min, healthy SVR rises monotonically (1100 to 1264 at 3 mcg/min); no beta-2 fall in SVR or diastolic. HR response is small (+6 at 3 mcg/min), but present.
+
+### 27g. Unit audit (all drugs, `drugs.js` vs `PK_PARAMS`)
+- 21 two-compartment drugs: `dose` is in mg (names confirm: fentanyl 0.05 = 50 mcg, ketamine 100, amiodarone 300, pushEpi 0.02, epiIV 1). Exception: norepinephrine `dose:1` is labeled a "unit" and behaves as 1 mg.
+- 28 curve drugs and 7 fluids have NO `dose` field; the amount exists only in the drug name text (for example "Vasopressin 40 U", "Adenosine 12 mg", "Saline 500 mL"). The two curve drips (phenylephrine `dose:1`, norepinephrine) carry a placeholder `dose:1`.
+- `max` counts doses for every drug, regardless of unit.
+- Implication for the draw-up decision (section 26): a real-units field and vial concentration must be added for all 56 drugs, with the curve and fluid entries getting their first numeric dose.
+
+### 27h. Revised priorities
+1. Fix norepinephrine CL (and re-run the offset arm), then reconsider the healthy-gain mismatch (3x) against the septic match; do not recalibrate the septic case.
+2. Real-unit dose fields and `amount` handling for curve drugs (phenylephrine first).
+3. Reflex HR gain and SVR-buffer limb, epinephrine beta-2 dip, split V1 into its own accumulator (sections 22 to 25).
+4. Infusion input and pump state (section 20, revised by section 26).
