@@ -781,3 +781,17 @@ Method: scratch script (kept outside the repo) driving `physio()` with the real 
 
 ### 25d. Limits of this probe
 Single doses, single runs, one scenario each, neutral traits, pain confound in `abdPain`, undefined dose units, and no suites re-run. Findings 1, 5 and 6 should be re-checked with an infusion-like repeated-dose arm and with several seeds before any coefficient is changed.
+
+## 26. Dose is a variable, not a constant (design note from the user's draw-up minigame direction)
+
+Current state (read from the tree): the player path always delivers `drugDef.dose`. `giveDose(s, {id, at, route})` carries no amount; `pk.js` already honors an optional `d.amount` (`const dose = d.amount ?? drugDef.dose ?? 1`) but only scenario-seeded doses use it. `DrawUpMinigame` is a pass/fail check (random order, pick the right vial, pull to a gameplay-only volume; its own comment says drugs.js has no concentration), and a success only sets `prepped`. The `max` cap counts doses, not mg.
+
+What a variable dose needs:
+1. **Amount flows end to end:** draw-up (concentration x volume drawn, or a pump rate x time for drips) writes `amount` into `giveDose`, then `DrugInstance`. The drawn amount, not the ordered amount, must be authoritative so errors have consequences. The order/target is scoring only.
+2. **Real units per drug.** Drug definitions need vial concentration and unit (mg, mcg, U, mEq). Audit every `dose` first: norepinephrine's `dose:1` is an undefined "unit" and the PK parameters (v1 in L, ec50 in mg/L) imply mg for the two-compartment drugs. Vasopressin and insulin are units, not mg.
+3. **Per-drug rule for curve drugs.** They have no concentration; decide per drug whether `amount` scales the effect (and how) or only the label and max-dose check (brief section 5 and plan phase 3).
+4. **Saturation hides dose errors today.** Receptor-coefficient drugs (norepinephrine, vasopressin, diltiazem, metoprolol, atropine) and per-drug-id Emax drugs (fentanyl, midazolam, morphine) already saturate, so a 10x draw error changes little (section 25 probe; overdose-workstream findings). Dose realism therefore depends on the pressor recalibration and the other saturation fixes, otherwise the minigame teaches that errors do not matter.
+5. **Drips:** the pump state is a rate in mL/h against a drawn concentration (for example mg in mL of bag); mcg/kg/min is derived using patient weight. A wrong concentration or weight then gives a wrong dose, the realistic error. Section 20's pump state should store mL/h plus bag concentration, not mcg/kg/min directly.
+6. **Weight-based orders:** the order shown is mg/kg times the receiving patient's weight (plan phase 2); pediatric and neonatal patients make the drawn volume small and error-prone, which is the teaching value.
+7. **Bookkeeping:** `s.given` and `max` should track cumulative mg (or units), not dose count. The PK dedupe key already includes `amount` (`id|at|amount`), so two different amounts at the same instant stay distinct.
+8. **Toxicity paths** that scale with dose (lidocaine seizure and cardiac thresholds, rocuronium Hill block) will respond to drawn amount immediately; saturated ones will not (point 4).
