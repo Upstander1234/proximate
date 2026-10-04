@@ -362,3 +362,61 @@ The two numbers measure different things.
 ### 12.6 Next literature request (the one offered)
 
 Neonatal and infant population PK for ketamine and etomidate, to check whether their clearance tracks hepatic blood flow at the youngest ages. Also: the full rocuronium age-band table from the label, the Hill exponent for the Kos midazolam maturation function, and the adult fentanyl CL and extraction ratio from a primary adult paper.
+
+## 13. Fifth OpenEvidence pass (2026-10-04): ketamine, etomidate, rocuronium, midazolam maturation, adult fentanyl
+
+Same caveat as before: secondary summaries. Primary sources named: Hornik 2018 (pediatric ketamine IM/IV), Kamp 2020 (ketamine meta-analysis), Peltoniemi 2016, Mion 2013, Valk and Struys 2021 (etomidate review; Lin, Su, Shen models), Zheng 2025 (etomidate hazards), FDA rocuronium label, Kos 2020, Zuppa 2019, Ince 2013, Johnson 2023 (midazolam), Choi 2016 (ICU fentanyl), Beaucage-Charron 2025, Mahdy 2025 (fentanyl PBPK).
+
+### 13.1 Ketamine
+
+- **Structure to code (Hornik 2018, 113 children, median 3.3 years, range 0.02 to 17.6 years, 2.4 to 176 kg):** two-compartment, first-order IM absorption, allometric exponent 1 for central and peripheral volume, 0.75 for clearance and intercompartmental clearance, IM bioavailability 41%. Simulations support 2 mg/kg IV and 6 to 8 mg/kg IM (age dependent) for procedures up to about 20 minutes, which gives a bedside-behavior check for the rework.
+- **Adult anchors:** Vss 252 L/70 kg (CI 200 to 304) and CL 79 L/h/70 kg (CI 69 to 90) from the Kamp meta-analysis of 18 studies; Vc 38.7 L, V peripheral 102 L, Q 215 L/h from Peltoniemi. Norketamine (active) t1/2 1.1 h versus ketamine 2.1 h.
+- **Maturation:** clearance is reduced in the first 3 months of life (immature hepatic transformation and renal excretion), while volume is comparable to older children. Above infancy children show higher weight-normalized clearance (16.8 mL/kg/min) and a shorter half-life (about 100 min) than adults. The meta-analysis found no significant covariate effect once parameters are allometrically scaled. So a maturation term is only needed for the youngest infants, and size scaling is enough above about 3 months.
+- **Versus the engine:** engine `v1` 40 L and CL 1.2 L/min (72 L/h) are close to the literature (38.7 L, 79 L/h). The engine's implied Vss, `v1 * (1 + k12/k21)` = 40 * 3 = 120 L, is about half the literature's 252 L. So ketamine needs less rework than the other drugs; the main gap is the peripheral volume and the norketamine metabolite.
+
+### 13.2 Etomidate (needs its own maturation pathway)
+
+- Etomidate is hydrolyzed by **hepatic carboxylesterases (CES), not CYP**. About 75% protein bound, total plasma CL 15 to 20 mL/kg/min, metabolic half-life 2 to 5 h. Its ontogeny follows carboxylesterase development, which is a fifth pathway beyond CYP3A4, CYP2D6, UGT and GFR. Do not force it onto an existing sigmoid.
+- Three pediatric population models exist, with large between-study variability:
+  - **Lin:** children over 6 months, elective surgery, three-compartment allometric. Age was the most significant covariate, and older children had smaller size-adjusted clearance and volumes (same "younger clears faster per kg" pattern as fentanyl and amiodarone).
+  - **Su:** neonates and infants.
+  - **Shen:** neonates and infants, three-compartment allometric; tetralogy of Fallot lowered clearance.
+  - Lin reports almost 3-fold higher clearance than Su, and Su cautions that Lin's older-child model may be inappropriate for neonates and infants. Use Su or Shen for infants and Lin only above 6 months. Adult population PK is scarce.
+- The earlier "adult Vc 4.5 L/kg" is consistent with a whole-body or Vss-per-kg figure, not a central volume; the pediatric models report much smaller central volumes.
+- Not retrieved: the CES1 and CES2 ontogeny function itself.
+
+### 13.2b Engine note for etomidate
+The engine's `v1` is 8 L and CL 0.4 L/min. The 4-year standard model gave Cl1 1.50 L/min (section 11.3), so the engine CL looks low, but the pasted adult figure of 9.9 to 25 mL/kg/min (about 0.7 to 1.75 L/min) also exceeds the engine's value. Confirm per drug.
+
+### 13.3 Rocuronium
+
+The pasted age-band table was cut off again ("Birth to ..."), so the table itself is still not retrieved. The text states the same conclusion as section 11.3: weight-normalized clearance is essentially flat at 0.29 to 0.35 L/kg/h across all ages, and Vd falls monotonically from 0.42 to 0.18 L/kg. The prolonged neonatal terminal half-life (1.1 h) is a pure volume effect. **Maturation belongs on volume only; rocuronium clearance gets none.** Pull the exact band values directly from the label.
+
+### 13.4 Midazolam maturation: sources disagree on both half-point and form
+
+- **Kos:** PMA50 45.9 weeks. The Hill coefficient was not in the retrieved text; read it from the primary paper.
+- **Zuppa:** time to 50% mature clearance about 1.0 year postmenstrual age (about 52 weeks), close to Kos. Adult CL 0.61 L/min/70 kg (units worth confirming; the engine's CL is 0.30 L/min and Kos's scaled CL is 0.142 L/min, which was a critically ill population). Adds UGT2B7 genotype and ALT/renal covariates.
+- **Ince:** no Hill sigmoid. An allometric exponent that itself varies with weight (0.84 at 0.77 kg preterm down to 0.44 at 89 kg adult), capturing the fastest maturation in the youngest range.
+- **Johnson (PBPK):** the Upreti CYP3A4 ontogeny outperformed Salem (bias 0.14 versus 0.69) for midazolam. Salem over-predicts midazolam clearance in children.
+- **Consequence:** there is no single published midazolam Hill exponent to drop in. Options: take Kos's full sigmoid from the primary paper, or adopt Ince's weight-varying exponent. For the generic CYP3A4 fallback prefer Upreti over Salem. This revises the earlier plan (sections 11 and 12) that used Salem as the generic CYP3A4 function. Present it as a model-structure disagreement and do not average half-points.
+
+### 13.5 Adult fentanyl
+
+- **Choi 2016 (ICU, 337 patients, reference 92 kg, no severe liver disease or heart failure):** two-compartment, CL 35 L/h (CI 32 to 39), about 0.58 L/min, Q 55 L/h, V1 203 L, V2 523 L. Severe liver disease, heart failure and weight are the dominant covariates (supports flow-limited clearance). Allometrically toward 70 kg this is roughly 0.45 to 0.5 L/min.
+- **Non-ICU infusion reports:** 12 to 13 mL/kg/min, about 0.84 to 0.91 L/min at 70 kg.
+- **Result:** adult CL about 0.5 to 0.9 L/min. The engine's 0.13 L/min is about 4 to 7x low (my earlier "10x" came from an ambiguous source line, and the pasted "79 to 87" was ketamine's, in L/h).
+- **Volumes:** the large V1 (203 L) and infusion-based Vd of 14 to 25 L/kg are steady-state artifacts. Do not use them for bolus central volume. A bolus-appropriate Vc still needs a source.
+- **Extraction ratio:** no numeric human ER was retrieved. The PBPK analysis attributes about 59.7% of the dose to CYP3A, 31.6% to a nonspecific hepatic pathway and 8.7% to unchanged renal excretion (about 91% hepatic), consistent with a high-extraction, flow-limited drug. Heart failure and liver disease covariates corroborate flow dependence. A numeric ER for the well-stirred term remains a gap.
+
+### 13.6 Updated engineering consequences
+
+1. Ketamine: two-compartment allometric (Hornik), IM F 41%, maturation limited to the first 3 months. Smallest rework of the group.
+2. Etomidate: carboxylesterase ontogeny as a fifth pathway. Not CYP.
+3. Rocuronium: maturation on volume only, no clearance maturation.
+4. Midazolam: drug-specific maturation (Kos sigmoid after reading its Hill, or Ince's weight-varying exponent); Upreti not Salem as the generic fallback.
+5. Fentanyl: raise adult CL toward 0.5 to 0.9 L/min; use bolus-appropriate volumes; flow-limited clearance supported by covariates; postnatal age plus body weight for neonates (section 11.3).
+
+### 13.7 Remaining gaps and next request
+
+- Midazolam maturation Hill exponent (primary Kos paper), a numeric adult fentanyl extraction ratio, a bolus-appropriate fentanyl Vc, the rocuronium label age-band table, and CES1/CES2 ontogeny for etomidate.
+- Next request offered: carboxylesterase (CES1 and CES2) ontogeny data to anchor etomidate's maturation.
