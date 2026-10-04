@@ -7406,11 +7406,29 @@ plausible but not fitted to trial data.
     vasopressin/phenylephrine exist but this guideline names no step for
     them; (d) unverified in a live call, mock-`ctx` evaluation only.
 
-42. **NEW, filed 2026-09-21 — weight-scaled pediatric dosing.** Every
-    fixed-dose `national.js` rule is gated `ADULT`, so pediatric patients
-    get no auto-suggested drugs. Needs weight-scaled task variants (or a
-    dose multiplier on the task) for adenosine, atropine, naloxone, epi,
-    saline, midazolam, dextrose etc., then removal of the gate per rule.
+42. **MAJOR, SCOPED (2026-10-04, plan only, nothing built) — weight-aware dosing and pharmacokinetics for pediatric and neonatal patients.** Supersedes the old thin "weight-scaled pediatric dosing" entry; also the general fix the neonatal epinephrine/saline item asks for.
+
+    **What the tree actually does today (confirmed by reading, not assumed):**
+    - `pk.js` has NO weight awareness at all. `PK_PARAMS` volumes (`v1`, etc.) are absolute liters calibrated to a ~70 kg adult, `DrugInstance` takes a bare `dose`, and effect-site concentration is `central / v1`. A 3 kg newborn and a 70 kg adult given the same `epiIV` 1 mg get the identical concentration curve. 21 of 56 drugs are two-compartment; 28 are `pkModel:"curve"` (flat receptor coefficients, no concentration); 22 declare a fixed `dose`.
+    - A dose reaches the engine as `giveDose(s, {id, at, route})` (`physiology.js`), with no `amount`; `pk.js` falls back to `drugDef.dose`. Only scenario-seeded doses carry `d.amount`.
+    - `national.js` gates 21 rules on `ADULT(ctx)` (`PEDIATRIC` = age < 14 or weight < 40 kg, read from the roster patient's `ageProfile`). `laCounty.js`/`sanDiegoCounty.js` have their own pediatric handling per protocol page.
+    - The only weight-scaled dose today is the bespoke newborn `_neo` state machine (`newbornEpi`), which bypasses PK entirely by design.
+
+    **Why this is large:** it touches the shared PK hot path every drug passes through, so it needs the same before/after diff discipline as the other PK-calibration items, plus UI labels, protocol rules, and scenario content.
+
+    **Proposed phases, each independently shippable and verifiable:**
+    1. **Weight-scaled distribution volume (engine, the real prerequisite).** Scale `v1` (and the peripheral volume via the existing `k12`/`k21` ratio) by `pat.ageProfile.weight / 70` at `DrugInstance` construction, per drug, using an allometric exponent of 1 for volume (a published per-kg Vd is the anchor; `PK_PARAMS` comments already cite L/kg for several drugs, e.g. fentanyl 0.25 L/kg, catecholamines 0.1 L/kg, midazolam 0.2 L/kg). Scale clearance by weight^0.75 (standard allometry) with an age-maturation term for neonates (renal/hepatic clearance immature below roughly 1 month). Default of 70 kg must reproduce every current number bit-for-bit, so every existing assertion is the regression test. Needs a per-drug opt-out for drugs dosed per patient, not per kg (fluids are volume-per-kg already and go through `fluid` handling, not PK).
+    2. **Dose resolution at administration.** Add an optional `dosePerKg` (with unit and a `maxDose` cap) to drug definitions and make `giveDose` resolve an absolute `amount` from the receiving roster patient's weight, stamped onto the dose record (so the log and the PK both see it). A drug with only `dose` behaves exactly as today. Display the resolved dose in the med confirmation and log ("0.1 mg/kg = 2.0 mg").
+    3. **Curve-model drugs.** Decide per drug and record the decision: most curve drugs (albuterol, nitro, diphenhydramine) express a population-level effect with no concentration, so weight scaling changes only the label and any max-dose check, not the physiology. Only drugs whose real effect is concentration-driven need an engine change, and those are mostly already two-compartment.
+    4. **Protocol and task layer.** Tasks gain an optional weight-scaled variant (or a dose multiplier on the task), then each `ADULT`-gated `national.js` rule is paired with a pediatric rule using the guideline's own mg/kg and cap, and the gate is removed once the pediatric branch exists. Do the same pass on the LA County pediatric pages and San Diego where they already name pediatric doses. Start with the highest-teaching-value set: epinephrine (arrest, anaphylaxis), atropine, adenosine, naloxone, midazolam (seizure), dextrose, and weight-based fluid bolus.
+    5. **Neonatal follow-ons unlocked by 1-4.** Newborn epinephrine and saline through the real PK path instead of the bespoke `_neo` flag (keeping the NRP vigor state machine), and a hypovolemic-newborn producer for the saline step.
+    6. **Safety nets.** A dose-sanity check that flags an adult dose given to a child (a clinically important teaching moment, and a cheap one once phase 2 exists), and a `scenarioSweep` pass over every pediatric scenario.
+
+    **Verification plan:** (a) adult regression, since phase 1 must change nothing at 70 kg: full `mechanismWiring.mjs` and `scenarioSweep.mjs` diffed against the documented baseline; (b) new two-sided assertions: the same mg/kg dose gives a comparable effect-site concentration in a 4 kg and a 70 kg patient, and a flat adult dose in a 4 kg patient gives a much higher one; (c) clearance scaling does not make neonates clear faster than adults; (d) the live `verifyPediatricDoseLive.mjs` click-through. Measure each coefficient against a documented observable and write it into the comment, per section 4.
+
+    **Risks and open questions to settle before starting:** which per-kg Vd value anchors each of the 21 PK drugs (some comments cite them, some do not); how to model neonatal clearance maturation without inventing a number (find a published maturation function rather than a flat factor); whether roster-wide doses (`patientId == null`) need a per-patient weight lookup; and whether pregnancy's `anatomicalWeight()` versus actual weight matters here (the code already notes dosing must use actual current weight).
+
+    **Rough size:** phase 1 and 2 are the core (about one focused batch with a full suite diff each); phases 4 and 5 are content-heavy and can be split per protocol. Phases 3 and 6 are small.
 
 43. **NEW, filed 2026-09-21 — baseline assessment/monitoring rules
     (pulse ox, BP cuff, 12-lead, pads, serial vitals, drug-reassessment
