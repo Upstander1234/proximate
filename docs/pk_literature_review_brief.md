@@ -530,3 +530,35 @@ Vasopressin: model separately on V1 (Gq/11-PLC-IP3), not adrenergic. Pressor eff
 No in-vivo ke0 or absolute EC50 exists for these hemodynamic endpoints; receptor data are relative affinities and cloned or isolated-tissue pEC50. Engine effect-site constants for vasopressors stay documented calibrations.
 
 Next offered: dopamine receptor affinity and dose-dependent hemodynamics.
+
+## 18. Dopamine staging, pediatric fentanyl Ce50, midazolam maturation, CES1 ontogeny (tenth pass)
+
+Source: OpenEvidence pass pasted by the user. Values below are as reported there; primary-paper confirmation is still owed.
+
+### 18a. Dopamine (only needed if dopamine is promoted off its flat curve)
+- Canonical dose staging disagrees across sources, so carry ranges, never averages:
+  - Francis (JACC 2014): 3 to 10 ug/kg/min beta (inotropy, HR; also promotes NE release and blocks reuptake); 10 to 20 alpha (SVR).
+  - Prideaux (NeoReviews 2024): 2 to 5 dopaminergic (renal vasodilation); 5 to 10 beta; 10 to 20 alpha + beta + serotonergic.
+  - Drieghe 2008: above 7.5 beta then alpha, renal plasma flow falls.
+- Model as three overlapping sigmoidal concentration-effect curves (D1 vasodilation, beta-1 inotropy/chronotropy, alpha-1 vasoconstriction) with wide interindividual variability, not hard dose windows. Carry the renal-to-beta transition as a 3 to 7.5 ug/kg/min range.
+- Realism rule: NO renal protective benefit. Low-dose dopamine transiently raises renal blood flow and urine output, but eGFR does not improve (ROSE-AHF: no better than placebo). Do not model organ protection.
+- Receptor potency (Kahlous, Nat Commun 2026): D1 pEC50 8.48 (cAMP); beta-2 pEC50 5.29, about 2500x weaker than epinephrine and 63x weaker than norepinephrine. Direct adrenergic potency is intrinsically low (about 0.01 norepinephrine-equivalent), so mid/high-dose effect is partly indirect via endogenous NE release. The engine has no endogenous-NE-release term; that would be new mechanism work.
+- D1-like is Gs (cAMP, vascular smooth muscle relaxation); D2-like is Gi (inhibits presynaptic NE release).
+- No in-vivo ke0 or absolute EC50 exists for dopamine hemodynamic endpoints; constants stay documented calibrations.
+
+### 18b. Pediatric fentanyl Ce50 (resolved)
+- Cruzat 2024 (children, NoL index, sevoflurane): C50 1.93 ng/mL, gamma 1.33, t1/2ke0 1.69 min. Adult comparison 3.26 ng/mL (different endpoint).
+- Wu 2022 (neonates): no defined range; target 0.6 to 1.2 ug/L; neonates possibly more sensitive (higher unbound fraction, greater BBB permeability).
+
+### 18c. Midazolam maturation (resolved as a model choice)
+- Ince 2013: best description is an allometric exponent that varies with bodyweight, 0.84 at 0.77 kg falling to 0.44 at 89 kg, not a single Hill sigmoid.
+- Kos 2020: 50% of adult CL at 45.9 weeks PMA (critically ill; adult-scaled CL 8.52 L/h is probably low, use for shape only).
+- Johnson 2023 (PBPK, nine studies): Upreti CYP3A4 ontogeny beats Salem (bias 0.14 vs 0.69). Confirms the section 12/13 preference. Use Upreti or Ince with PMA50 about 46 weeks.
+
+### 18d. CES1 ontogeny for etomidate (section 14a inputs, now primary-sourced)
+- Hines 2016 (165 livers, Western blot): CES1 markedly lower under 3 weeks (microsomal 6.27 vs 17.5 pmol/mg; cytosolic 4.7 at birth to 3 wk vs 15.8 at 3 wk to 6 yr vs 16.6 above 6 yr).
+- Shi 2011: about 10% of adult CES1 activity at 1 to 31 days, rising about 4 to 7x to about 50% of adult by 35 to 70 days, roughly stable through 6 months.
+- Supports the fitted breakpoints (about 0.10 to 0.20 under 3 weeks, about 0.5 at 1 to 6 months, about 1.0 by 6 years). No published smooth sigmoid, so a piecewise age-band multiplier flagged engine-fitted is the honest encoding. The 14a design task still needs the function itself written down.
+
+### 18e. Offered next
+Dobutamine receptor pharmacology and concentration-effect data (racemic alpha-1/beta mechanism).
