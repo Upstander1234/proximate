@@ -887,3 +887,13 @@ Findings:
 - **Neuropathy lowers resting MAP substantially.** Multiplying the sympathetic target by up to 0.4 drops resting MAP from 102.6 to 94.3 at 0.5 and 83.3 at 1.0, and amplifies the pressor response (+34). The only condition that sets it (`diabeticVasculopathy`) uses 0.6, so the shipped case is about -9 mmHg resting. Real diabetic autonomic neuropathy is dominated by orthostatic hypotension and often supine hypertension, not a lower supine resting MAP, so this is a possible realism flag for that condition, not for the pressor work. Not changed.
 - **None of the age or neuropathy effects touches the weak reflex HR slope** (0.12 to 0.22 everywhere): the vagal constants in section 28c remain the main lever.
 - **Untested:** neonatal and pediatric patients (weight and age together), combined elderly plus neuropathy plus sepsis, and age-dependent PK clearance (not modeled yet).
+
+## 30. Implementation handoff (2026-10-04, end of session)
+
+Done and pushed: norepinephrine PK set to label values (kel 0.35, k12 0.02, v1 8.8, ec50 0.015).
+
+Measured: with new clearance the offset after stopping a drip is still slow (MAP 129 to 122 over 5 min at 10 mcg/min). Concentration falls on schedule, so the lag is in SVR-to-MAP and baroreflex adaptation (setpoint drifts up about 4 mmHg), not PK or ec50 (the fraction of rise lost in 2 min is about 15 to 28 percent for any ec50). ec50 0.015 targets healthy gain near +14 mmHg at 10 mcg/min (74 kg); septic gain at that value is about +5 against a clinical 8 to 11, needing its own axis. Healthy gain at 0.015 has not been re-measured.
+
+NOT verified: mechanismWiring.mjs was partway through (about 207 passed, 4 failed, all failures the documented BVM trio and the Tzivoni near-miss, no new ones) when the session ended; scenarioSweep.mjs has not been run. Detached (setsid) runs get killed here; run suites as harness background tasks or in chunks, one at a time.
+
+Next: (1) rerun both suites and diff failure sets; (2) re-measure healthy gain at ec50 0.015; (3) probe and fix the SVR-to-MAP/baroreflex offset lag and septic gain; (4) real-unit dose fields and amount handling for curve drugs (phenylephrine first); (5) baroreflex vagal gain, epinephrine low-dose beta-2 dip, split V1 accumulator; (6) infusion input and pump state; (7) weight-aware dosing phases.
