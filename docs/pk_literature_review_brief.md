@@ -507,3 +507,26 @@ Lidocaine: flat band, no antiarrhythmic Emax. Therapeutic 1.5-6 ug/mL; adverse a
 Engine consequences: diltiazem ec50 confirmed; metoprolol ec50 down about 3.5x with a keo giving about 20 min peak; amiodarone acute effect restricted; lidocaine toxicity breakpoints re-anchored together with the v1/CL fix (note this shifts every lidocaine toxicity calibration and the hematoma block thresholds).
 
 Still open: numeric ke0 for atropine; adult epinephrine/norepinephrine effect-site equilibration constants. Next offered: adrenergic receptor affinity and relative potency for vasopressors (alpha1/beta1/beta2 coefficients).
+
+## 17. Ninth literature pass: vasopressor receptor affinity and relative potency
+
+Key finding: alpha-1 affinities of epinephrine, norepinephrine and phenylephrine are within about 5-fold, so large clinical potency differences come mostly from beta activity and receptor-bed distribution, not alpha-1 affinity alone.
+
+Alpha-1 (Besse and Furchgott 1976, rabbit aorta, equal intrinsic efficacy): relative affinity epinephrine 1.25, norepinephrine 1.0, phenylephrine 0.200. Oriowo 1991: rank epinephrine > norepinephrine > phenylephrine > methoxamine > dopamine in five arteries; affinity is bed-dependent (up to 40-fold for norepinephrine, about 4-fold for epinephrine). Cloned subtypes (Minneman 1994): epinephrine and norepinephrine full agonists of similar potency; phenylephrine full agonist except submaximal at alpha-1B. Lumped encoding: epinephrine about 1.25, norepinephrine 1.0, phenylephrine 0.2, equal efficacy.
+
+Beta:
+- Epinephrine non-selective (beta-1 about beta-2). Norepinephrine about 10x beta-1 selective, purely an affinity effect with equal efficacy (McPherson 1985, Xu 2021). Phenylephrine essentially no beta activity.
+- Functional beta-2 (Kahlous 2026): epinephrine pEC50 8.69 (cAMP) vs norepinephrine 7.09, about 40x weaker. Norepinephrine is a partial agonist at beta-2 (Weitl and Seifert 2008).
+- Clinically: norepinephrine minimal heart-rate effect; epinephrine potent beta-1 plus moderate beta-2 and alpha-1 (Surviving Sepsis 2021).
+
+Clinical potency (validation targets for net pressor output):
+- Norepinephrine:phenylephrine about 13:1 by bolus (Ngan Kee 2017), about 6:1 by infusion (Qian 2022). Carry as documented route dependence, do not average.
+- Norepinephrine-equivalent scale (Kotani 2023): epinephrine 1, phenylephrine about 0.06, dopamine about 0.01, vasopressin about 2.5 (0.03 U/min is about 7.5 ug/min norepinephrine).
+
+Phenylephrine: pure alpha-1 (alpha about 0.2 relative, beta-1 and beta-2 zero); reflex bradycardia expected.
+
+Vasopressin: model separately on V1 (Gq/11-PLC-IP3), not adrenergic. Pressor effect proportional to infusion rate, peaks within about 15 min, fades within about 20 min of stopping; tends to lower HR and CO; fixed dose 0.01-0.1 U/min; efficacy preserved in acidosis (catecholamine-resistant flag).
+
+No in-vivo ke0 or absolute EC50 exists for these hemodynamic endpoints; receptor data are relative affinities and cloned or isolated-tissue pEC50. Engine effect-site constants for vasopressors stay documented calibrations.
+
+Next offered: dopamine receptor affinity and dose-dependent hemodynamics.
