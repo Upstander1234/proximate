@@ -420,3 +420,21 @@ The pasted age-band table was cut off again ("Birth to ..."), so the table itsel
 
 - Midazolam maturation Hill exponent (primary Kos paper), a numeric adult fentanyl extraction ratio, a bolus-appropriate fentanyl Vc, the rocuronium label age-band table, and CES1/CES2 ontogeny for etomidate.
 - Next request offered: carboxylesterase (CES1 and CES2) ontogeny data to anchor etomidate's maturation.
+
+## 14. Sixth literature pass: carboxylesterase ontogeny and etomidate
+
+No published CES1/CES2 maturation sigmoid (PMA50 + Hill) exists. The data are age-banded protein abundance and activity with very large interindividual variability (up to ~100-fold protein, ~127-fold activity). Etomidate's relevant enzyme is CES1 (hepatic ester hydrolysis).
+
+CES1 versus adult (Hines 2016, Shi 2011, Zhu 2009, Boberg 2017, Yang 2009):
+- Fetal about 10%; birth to 3 weeks about 28 to 36% by abundance (Hines), about 10% by expression and activity (Shi, 1 to 31 d).
+- 35 to 198 d about 50% (Shi); 3 weeks to 6 years near plateau; neonate about 19% overall (Boberg proteomics, 315 vs 1664 pmol/mg).
+- CES2 matures more modestly: about 3-fold neonate to adult (neonate about 34%), mRNA surge about 2.7-fold between 1 and 2 months.
+- Sharpest breakpoint: 3 weeks of age.
+
+Encoding decision: piecewise age-band multiplier on the CES pathway (about 0.10 to 0.20 at birth to 3 weeks, about 0.5 at 1 to 6 months, about 1.0 by 6 years), explicitly flagged as engine-fitted. Boberg abundance data is the raw material if a continuous curve is wanted (precedent: Simcyp oseltamivir ontogeny).
+
+Interaction with size scaling: Lin et al. found size-adjusted etomidate clearance higher in younger children above 6 months. CES immaturity dominates below about 3 months; supra-allometric size dominates above. The "neonates must not clear faster than adults" assertion should hold for etomidate in the first months.
+
+Etomidate extraction ratio resolved (Valk and Struys 2021): ER 0.5 to 0.9, CL 9.9 to 25.0 mL/min/kg, t1/2 2.9 to 5.5 h, about 75% protein bound. Intermediate-to-high extraction, so partly hepatic-blood-flow dependent. Clearance term blends CES maturation, allometric size, and partial flow sensitivity. Still open: a true adult population PK model.
+
+Next anchors offered: ke0 and EC50 (BIS/EEG) for the sedative-hypnotics.
