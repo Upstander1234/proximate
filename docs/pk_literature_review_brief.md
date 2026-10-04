@@ -595,3 +595,31 @@ For epinephrine, norepinephrine, atropine, naloxone, dopamine and vasopressors t
 
 ### 19e. Offered next
 Structure of the continuous-infusion input so titrated vasopressors reproduce their published onset and offset windows.
+
+## 20. Continuous-infusion input design (twelfth pass)
+
+Source: OpenEvidence pass pasted by the user plus our own review. Design intent only; nothing built.
+
+### 20a. Structure
+- Zero-order mass input into the central compartment alongside the existing bolus/depot terms. No new disposition structure. Plateau falls out of Css = R/CL; time to plateau is set only by elimination half-life (about 4 to 5 half-lives), independent of rate. Short-half-life vasopressors need no loading bolus.
+- One pump state per line (rate in mcg/kg/min, on/off, target vein), written by the drip minigame and read by the PK layer each tick. Never duplicate the rate into a separate PK field. Titration is writing a new value; stop is toggling the term; ODE state persists so there is no reset.
+- Per tick add R_mass x dt to central amount, with R_mass = rate x weight. Input is linear, so a bolus or timed loading infusion plus a maintenance infusion coexist by addition (amiodarone load-then-maintain falls out for free).
+- Weight enters both rate (linear) and clearance (weight^0.75 times maturation), so per-kg plateau is not weight-invariant: large patients get a lower plateau at a fixed per-kg rate. Epinephrine label agrees (higher weight, higher CL; elderly clear faster, 144.8 vs 78 mL/kg/min).
+- Integration: norepinephrine k about 0.35/min. The engine tick is up to 1 min, so use the exact per-step update C = Css + (C0 - Css) exp(-k dt) for a piecewise-constant rate (applied to the central amount with the two-compartment exact or substepped solution), not an explicit Euler step.
+
+### 20b. Validation anchors (adult labels, as reported)
+| Drug | Vd | CL | t1/2 | Steady state | Offset after stop | Infusion range |
+|---|---|---|---|---|---|---|
+| Norepinephrine | 8.8 L | 3.1 L/min | 2.4 min | about 5 min | 1 to 2 min | 2 to 12 mcg/min titrated |
+| Epinephrine | not reported in this pass | weight dependent | not reported | 10 to 15 min | 15 to 20 min | not reported in this pass |
+| Phenylephrine | 340 L (Vss) | 2.095 L/min | about 5 min | about 15 to 25 min | up to 20 min | 0.5 to 1.4 periop, 0.5 to 6 shock mcg/kg/min; max 200 mcg/min |
+(The pass's epinephrine row was incomplete; fill from the epinephrine label in a later pass.)
+
+### 20c. Offset caution (our correction to the pass's framing)
+The pass says norepinephrine offset (1 to 2 min) is faster than its 2.4 min plasma half-life predicts and must therefore be a PD property. That is overstated: after a stop, plasma falls to about 25% in two half-lives (about 5 min), and a pressor effect that is already near the top of a sigmoid can drop visibly sooner, so 1 to 2 min is roughly compatible with plain PK plus a steep or saturated E(C) curve. Decide by simulation: drive the engine with the label rate, check the offset, and only add a PD offset mechanism if plain PK plus the existing keo cannot reproduce it. Epinephrine and phenylephrine 15 to 20 min offsets need the longer-lived pieces (epinephrine endogenous baseline and dual Emax; phenylephrine t1/2 about 5 min with a large Vss) and a keo calibration. Either way the vasopressor PD layer is calibrated to label windows, not fitted (section 19d).
+
+### 20d. Optional realism for the drip minigame
+Pump dead volume and carrier-flow coupling cause delivery lag after a rate change and a transient bolus or dip when a carrier line is stopped (Lovich 2006). Vasopressors are titrated to MAP, not to a concentration, so the minigame closes the loop (player adjusts R against MAP). A small delivery lag on rate changes is the one piece worth considering for teaching titration; full dead-volume modeling is probably beyond scope for v1.
+
+### 20e. Offered next
+Calibration of the effect-site/keo layer so each vasopressor's offset and reflex-HR behavior emerges from the infusion.
