@@ -224,3 +224,86 @@ An important consequence for lidocaine: with the engine's 3 L central volume, a 
 ### 10.8 Next literature request
 
 Pathway-specific PMA50 and Hill values for CYP1A2 and CYP3A4 (lidocaine, diltiazem, amiodarone, midazolam, fentanyl), CYP2D6 (metoprolol), UGT glucuronidation (morphine, naloxone), and GFR maturation (atropine, renally cleared fractions). Also still outstanding from section 9.4: primary-paper Vc, Vss, CL and maturation for fentanyl, ketamine, midazolam, rocuronium, etomidate, plus lidocaine therapeutic and toxic plasma ranges.
+
+## 11. Third OpenEvidence pass (2026-10-04): maturation constants, lidocaine thresholds, sedative disposition
+
+Same caveat as sections 9 and 10: secondary summaries; confirm in the primary papers before values enter `PK_PARAMS`. Primary sources named: Salem 2014 (CYP1A2 and CYP3A4 ontogeny), Rhodin 2009 (GFR), Stevens 2008 (CYP2D6), Badee 2019 (UGT), Wu 2022 and Rzasa Lynn 2024 (neonatal fentanyl), Kamp 2020 and Peltoniemi 2016 (ketamine), Lin 2012 and Valk 2021 (etomidate), FDA rocuronium label, plus the lidocaine sources listed in 11.2.
+
+### 11.1 Pathway maturation functions (fraction of adult activity, PMA in weeks)
+
+Form: `PMA^Hill / (PMA50^Hill + PMA^Hill)`.
+
+| Pathway | Drugs in this engine | PMA50 (wk) | Hill | Notes |
+|---|---|---|---|---|
+| CYP3A4 | midazolam, fentanyl, diltiazem, amiodarone, lidocaine (minor) | 108 | 3.9 | Asymptote 1.0. Derived in vivo from midazolam clearance. |
+| CYP1A2 | lidocaine (major) | 54.6 | 5.7 | Asymptote 1.6, i.e. it overshoots adult. Below 196 wk: `1.6 * PMA^5.7/(54.6^5.7 + PMA^5.7)`. Above 196 wk: `0.8 * exp(-0.001*(PMA-196)) + 0.8`. |
+| GFR | atropine (renal fraction), renally cleared metabolites | 47.7 | 3.40 | Rhodin. Adult 121.2 mL/min per 70 kg. |
+| CYP2D6 | metoprolol | none published | none | About 2% adult at 24 h, about 25% by 7 to 28 days (preterm), then genotype dependent. Handle as size scaling only plus a CYP2D6 phenotype trait. |
+| UGT | morphine (UGT2B7), naloxone | none published | none | Isoform specific. At birth 0 to 23% of adult. UGT2B7 reaches adult activity anywhere from about 2 months to 14 years depending on the study. Present as a range. |
+
+Engine values at selected ages, computed from those equations (my arithmetic):
+
+| Age | PMA (wk) | CYP3A4 | CYP1A2 | GFR |
+|---|---|---|---|---|
+| term birth | 40 | 0.020 | 0.232 | 0.355 |
+| 1 month | 44 | 0.029 | 0.362 | 0.432 |
+| 3 months | 53 | 0.059 | 0.732 | 0.589 |
+| 6 months | 66 | 0.128 | 1.195 | 0.751 |
+| 1 year | 92 | 0.349 | 1.522 | 0.903 |
+| 2 years | 144 | 0.754 | 1.594 | 0.977 |
+| about 3.8 years | 196 | 0.911 | 1.600 | 0.992 |
+| 10 years | 560 | 0.998 | 1.356 | 1.000 |
+| 25 years | 1340 | 1.000 | 1.055 | 1.000 |
+
+Things to check or handle:
+- **Adult normalization.** The CYP1A2 function gives 1.055 at 25 years, not 1.0. To keep phase 1 bit-for-bit at adult values, divide every maturation term by its own value at the adult reference age (or clamp to 1.0 at and above the adult reference PMA), and say which one in the code comment.
+- **CYP3A4 versus the AHA/PACES statement.** The Salem sigmoid gives about 3% of adult CYP3A4 at one month, but the AHA/PACES neonatal statement (via the same pass) says CYP3A reaches 30 to 40% of adult by the end of the first month. That is roughly a 10x disagreement. Possible reasons: different quantity (CYP3A4 versus total CYP3A including fetal CYP3A7), or an in vivo midazolam-derived function versus an expression measurement. Resolve this in the primary papers before coding the neonatal range for midazolam, fentanyl, and amiodarone.
+- **GFR checks out**: 0.355 at term versus the statement's about 33%, 0.90 at 1 year versus the stated 90%.
+- **Do not invent CYP2D6 or UGT numbers.** For metoprolol and morphine/naloxone use size scaling only with an explicit "no neonatal anchor" flag, as in sections 9 and 10. Metoprolol has no data below 6 years anyway.
+
+### 11.2 Lidocaine plasma thresholds (all in ug/mL, which equals the engine's mg/L)
+
+| Threshold | Reported | Source type |
+|---|---|---|
+| Antiarrhythmic therapeutic | 1.5 to 6 | FDA label |
+| Perioperative infusion therapeutic | 1.4 to 6.0 | Beaussier 2018 review |
+| Pediatric infusion therapeutic | 2.5 to 3.5 | Hall 2021 review |
+| Earliest toxicity | as low as 5 | pediatric review |
+| CNS symptoms (slurred speech, tinnitus) | above 6 | prospective study |
+| Seizure or loss of consciousness | about 15 (about 8 mg/kg); loss of consciousness above 10 | Beaussier, prospective study |
+| Cardiovascular toxicity | above 21 (Beaussier); 15 to 20 elsewhere | review, prospective |
+
+- The engine's seizure threshold of 10 mg/L is at the upper end of the CNS-symptom range and below the frank-seizure figure of about 15. The cardiac threshold of 18 mg/L falls inside the 15 to 21 band. Neither is wrong; they are single points inside wide ranges.
+- **Protein binding changes the picture**: 60 to 80% bound at 1 to 4 ug/mL, falling as concentration rises, and AAG dependent. Free-drug toxicity at a given total concentration rises when AAG is low (hypoproteinemia) and falls when AAG is high (acute MI).
+- **Flow limitation**: hepatic extraction about 0.7, so clearance can halve or more in heart failure or shock.
+- **Design choice for the rework**: keep two thresholds but pick values inside the published ranges, state the chosen point and the range in the comment, and re-fit the lidocaine overdose and hematoma-block conditions after the volume change (section 10.1).
+
+### 11.3 Sedative and paralytic disposition (70 kg standardized where reported)
+
+| Drug | Vc | Vss / Vperiph | CL | Model | Pediatric or neonatal signal |
+|---|---|---|---|---|---|
+| fentanyl | scaled, nonlinear | neonatal Vd median 12 L/kg (adult 3.2 to 5.9) | best fit with body weight plus postnatal age; 2.7x rise from day 1 to 7; supra-allometric exponent above 0.75 | 2 to 3 compartments, flow limited (CYP3A4 and CYP3A7 plus hepatic blood flow) | clearance higher per kg in infants; use body weight plus postnatal age, not PMA alone |
+| ketamine | 38.7 L | Vss 160 to 550 L; Vperiph 102 L | 79 to 90 L/h (about liver blood flow); meta-analysis 79 L/h | 2 compartments, linear (meta-analysis); flow limited | pediatric CL comparable to adult when allometrically scaled; norketamine active, t1/2 1.1 h |
+| midazolam | not retrieved | Vd 1 to 3.1 L/kg | CYP3A4 driven | 2 compartments | inotropes lower CL about 33%; alpha-hydroxy metabolite renally cleared |
+| rocuronium | not retrieved | Vd 0.42 L/kg (neonate) falling to 0.18 L/kg (adolescent) | 0.29 to 0.35 L/kg/h, about flat across ages | compartmental (label) | neonatal t1/2 beta longer (1.1 h versus 0.7 to 0.8 h) because of the larger Vd, not lower CL |
+| etomidate | 9.51 L (4-year standard); adult Vc 4.5 L/kg | V2 11.0 L, V3 79.2 L (4-year std); adult Vperiph 74.9 L/kg | Cl1 1.50, Cl2 1.95, Cl3 1.23 L/min (4-year std); adult 9.9 to 25 mL/min/kg | 3 compartments, allometric; hepatic esterase, extraction ratio 0.5 to 0.9 | younger children have higher size-adjusted CL and V, so weight-based dosing underdoses small children |
+
+Observations (confirm before relying on them):
+- **Rocuronium is the cleanest "volume, not clearance" case**: do not put a maturation term on its clearance; put the neonatal effect in the volume.
+- **Fentanyl and etomidate both show supra-allometric behavior** (younger means higher size-adjusted clearance), like amiodarone. They need the counterexample handling, not the plain "neonates clear slower" assertion.
+- **Ketamine's clearance is about hepatic blood flow**, a well-stirred flow-limited candidate like lidocaine. Shock should lower it.
+- **Internal inconsistency in the pasted summary**: ketamine CL is given as 79 to 90 L/h per 70 kg but the engine's CL is 1.2 L/min (72 L/h). That is close, so ketamine CL may not need much change, while its Vc (38.7 L versus the engine's 40 L) is also close. Ketamine may be one of the few drugs already near the literature.
+- **Etomidate adult Vc 4.5 L/kg** looks like a volume per kg of the whole body; read the primary paper to see whether that is Vc or Vss.
+- Midazolam and rocuronium Vc values were not retrieved.
+
+### 11.4 Engineering consequences
+
+1. Hard-code CYP3A4, CYP1A2 and GFR sigmoids now, normalized to their adult reference. Flag CYP2D6 and UGT as size scaling only.
+2. Do not apply a maturation term to rocuronium clearance. Handle its neonatal prolongation through volume.
+3. Fentanyl needs body weight plus postnatal age rather than PMA alone.
+4. Lidocaine and ketamine are flow-limited. A well-stirred hepatic model is the principled treatment; hepatic blood flow maturation data are the missing input.
+5. Per-drug minimum evidence needed before coding: an unresolved CYP3A4 neonatal range, midazolam and rocuronium Vc, and etomidate's Vc versus Vss.
+
+### 11.5 Next literature request
+
+Hepatic blood flow in neonates and infants as a function of age and weight, and well-stirred model parameters (extraction ratio, unbound fraction, intrinsic clearance) for fentanyl, ketamine, lidocaine and morphine. Also resolve the CYP3A4 neonatal discrepancy in 11.1 and extract midazolam and rocuronium Vc.
