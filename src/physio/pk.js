@@ -207,7 +207,11 @@ export const PK_PARAMS = {
   // be — while 20 mcg gives ~0.2, so the two are finally different drugs.
   epiIV:     { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },// COMT/MAO in blood and tissue, not organ-dependent
   pushEpi:   { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },
-  norepi:    { kel: 0.1,  k12: 0.4, k21: 0.3, v1: 8,     ec50: 0.008, renalFrac: 0.05, keo: 0.7 },  // immediate
+  // Label disposition is effectively one compartment: Vd ~8.8 L, CL ~3.1 L/min (kel = CL/Vd ~0.35/min,
+  // t1/2 ~2 min), so k12 is near zero. The old kel 0.1 cleared ~3.5x too slowly, which made offset after
+  // stopping a drip PK-limited and far slower than the 1-2 min seen clinically. ec50 is unchanged pending
+  // re-identification against the healthy volunteer MAP slope (see docs/pk_literature_review_brief.md).
+  norepi:    { kel: 0.35, k12: 0.02, k21: 0.3, v1: 8.8,   ec50: 0.008, renalFrac: 0.05, keo: 0.7 },  // immediate
   // NALOXONE — parameters identified against published PK/PD, replacing the
   // technical-debt note that stood here.
   //
