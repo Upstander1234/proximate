@@ -209,9 +209,9 @@ export const PK_PARAMS = {
   pushEpi:   { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },
   // Label disposition is effectively one compartment: Vd ~8.8 L, CL ~3.1 L/min (kel = CL/Vd ~0.35/min,
   // t1/2 ~2 min), so k12 is near zero. The old kel 0.1 cleared ~3.5x too slowly, which made offset after
-  // stopping a drip PK-limited and far slower than the 1-2 min seen clinically. ec50 is unchanged pending
+  // stopping a drip PK-limited and far slower than the 1-2 min seen clinically. ec50 0.015 (was 0.008) puts healthy MAP gain near +14 mmHg at 10 mcg/min, matching the volunteer slope (~10 mmHg per 0.1 ug/kg/min, 74 kg); septic gain is left to a separate axis. Pending
   // re-identification against the healthy volunteer MAP slope (see docs/pk_literature_review_brief.md).
-  norepi:    { kel: 0.35, k12: 0.02, k21: 0.3, v1: 8.8,   ec50: 0.008, renalFrac: 0.05, keo: 0.7 },  // immediate
+  norepi:    { kel: 0.35, k12: 0.02, k21: 0.3, v1: 8.8,   ec50: 0.015, renalFrac: 0.05, keo: 0.7 },  // immediate
   // NALOXONE — parameters identified against published PK/PD, replacing the
   // technical-debt note that stood here.
   //
