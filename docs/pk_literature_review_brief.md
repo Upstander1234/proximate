@@ -841,3 +841,29 @@ At 1 and 3 mcg/min, healthy SVR rises monotonically (1100 to 1264 at 3 mcg/min);
 2. Real-unit dose fields and `amount` handling for curve drugs (phenylephrine first).
 3. Reflex HR gain and SVR-buffer limb, epinephrine beta-2 dip, split V1 into its own accumulator (sections 22 to 25).
 4. Infusion input and pump state (section 20, revised by section 26).
+
+## 28. Trait-variation probe (measurement, no code changed)
+
+Setup: `baroreflexGain` 0.7 / 1 / 1.3 (vascularReactivity 1) and `vascularReactivity` 0.75 / 1.25 (baroreflexGain 1), one trait at a time, set at tick 1; each combo run for control, norepinephrine 10 mcg/min infusion-like (0.01 mg every 60 s from t=182 s) and a single phenylephrine dose; deltas are versus the control with the SAME traits. Healthy `abdPain` and `septicShock`. One run per cell (engine deterministic). Age was not varied (needs a scenario with a different patient). Numbers are engine behavior, not validation.
+
+### 28a. Results (dMAP mmHg, dHR bpm, slope bpm/mmHg)
+| Traits | Healthy NE @540 s | Healthy PE @+60 s | Septic NE @540 s | Septic PE @+60 s |
+|---|---|---|---|---|
+| baro 0.7 | +28.1, -2.7 (0.10) | +72.9, -14.0 (0.19) | +15.1, -3.7 (0.24) | +54.1, -20.5 (0.38) |
+| baro 1.0 | +22.8, -4.3 (0.19) | +70.5, -15.8 (0.22) | +12.1, -5.8 (0.48) | +49.4, -25.6 (0.52) |
+| baro 1.3 | +19.4, -5.7 (0.29) | +68.7, -17.6 (0.26) | +9.8, -7.4 (0.75) | +45.2, -29.4 (0.65) |
+| vasc 0.75 | +26.6, -5.8 (0.22) | +75.4, -17.5 (0.23) | +12.2, -6.7 (0.55) | +52.3, -28.1 (0.54) |
+| vasc 1.25 | +20.3, -3.1 (0.15) | +66.1, -14.6 (0.22) | +11.9, -5.0 (0.42) | +46.6, -23.3 (0.50) |
+Control MAP at 540 s: healthy 96.6 to 107.4 across vasc 0.75 to 1.25 (baro barely moves it); septic 64.4 to 73.0.
+
+### 28b. What the traits do
+- `baroreflexGain` works as intended: higher gain buffers the pressor rise (healthy NE dMAP 28 to 19 over 0.7 to 1.3) and steepens the HR slope about 3x (healthy 0.10 to 0.29, septic 0.24 to 0.75). The trait range alone spans roughly +-20% on pressor MAP rise.
+- `vascularReactivity` also acts as the SVR-buffer strength: low reactivity gives a lower resting MAP (97 vs 107) and a LARGER drug rise (26.6 vs 20.3), because the reflex withdrawal of neural alpha tone is scaled by the same trait (`alphaTone = neuralSymp x 0.9 x vascularReactivity + ...`). That is the weak-buffer behavior section 23 describes for sepsis, available already via the trait.
+
+### 28c. Root cause of the weak reflex HR slope (our analysis, from the code)
+Small-signal vagal slope at the setpoint = kBaro/4 x kVagal x 60 bpm per mmHg = 0.033/4 x (0.45 to 0.9 x 0.72) x 60, giving about 0.2 (above setpoint, gain 0.45) to 0.3 (below, gain 0.9) bpm/mmHg at baro 1.0. That matches the healthy measurements (0.19 to 0.22) and is about 4 to 5x under the 0.9 to 1.2 target (section 22). Septic readings are higher (0.5) because the operating point is below the setpoint (higher-gain side) and the MAP excursion stays in the near-linear range; healthy pressor rises of 40 to 70 mmHg run into the logistic saturation (F near 0.95 to 1), which flattens the slope further. So the levers are the vagal gain constants (0.9 / 0.45), the HR coefficient (`- (parasympathetic - REST_PARA) x 60`) and, secondarily, kBaro; the trait multiplies all of it but cannot reach the target within 0.7 to 1.3. The structure needs no change.
+
+### 28d. Implications
+- Calibrate the reflex HR gain by roughly 4x on the vagal limb before judging trait ranges; re-run this probe after the change, since septic slopes (0.5 to 0.75) would then overshoot and the setpoint/asymmetry may need rebalancing.
+- The healthy-vs-septic pressor difference noted in section 27 is only partly trait-driven: trait changes moved healthy dMAP 19 to 28, still nowhere near septic (10 to 15) or the 3x volunteer-slope overshoot; the rest comes from disease state (baseline SVR, tone).
+- Not yet tested: age (elderly blunting, neonates), diabetic autonomic neuropathy, and combined trait corners.
