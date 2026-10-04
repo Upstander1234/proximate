@@ -7885,6 +7885,14 @@ plausible but not fitted to trial data.
     to avoid guessing at the split under time pressure — not attempted in
     the same batch as the shipped floor-at-neutral mechanism.
 
+59. **NEW, filed 2026-10-04 — drug draw-up and drip minigames must carry real doses, and the drawn amount is authoritative (decided with the user).** Full design in `docs/pk_literature_review_brief.md` sections 20, 26 and 27; read them first. Today `DrawUpMinigame` is a pass/fail check with a random order and a gameplay-only volume, a success only sets `prepped`, and the player path always delivers the drug's single declared dose (`giveDose` carries no amount; `pk.js` already honors `d.amount`, so the engine side is ready for it). To do:
+    - **Real units in the data.** Add a unit (mg, mcg, U, mEq, mL) and vial concentration (and bag size for drips) to all 56 drugs. The 21 two-compartment drugs already have `dose` in mg (norepinephrine's `dose:1` is a mislabeled "unit" that behaves as 1 mg); the 28 curve drugs and 7 fluids have no `dose` field, only text in the name.
+    - **Draw-up minigame.** The player picks the vial and draws a volume; delivered amount = concentration x volume drawn, written as `amount` into `giveDose` and on into `DrugInstance`. The ordered amount (mg, or mg/kg times the receiving patient's weight for weight-based orders) is shown and used only to score the player. Include wrong-vial, wrong-concentration, dilution and unit-confusion errors as realistic failure modes.
+    - **Curve drugs and fluids.** Decide per drug whether `amount` scales the effect (and how) or only the label and max-dose check; phenylephrine currently ignores `amount` and stacks without limit, so it needs a concentration model first.
+    - **Drips.** Pump state stores a rate in mL/h plus the drawn bag concentration; mcg/kg/min is derived from the patient's weight; vasopressin is in U/min. This needs the continuous-infusion input (brief section 20).
+    - **Bookkeeping.** `s.given` and the `max` cap should track cumulative amount in real units, not dose count; the confirmation line and log should show the resolved amount ("0.1 mg/kg = 2.0 mg").
+    - **Dependency (do not skip).** Dose errors only matter if the engine stops saturating: pressor gain and offset, per-drug-id Emax drugs and receptor-ceiling drugs all hide a 10x error today (brief sections 25 to 27), so the pressor/PK recalibration and the weight-aware dosing work must land before this minigame can teach anything about overdose or underdose. Front-end checks apply (`vite build`, `eslint`, save compatibility for `s.given` shape changes, a Playwright click-through of the draw-up flow); the physiology suites must be re-run when `amount` handling changes.
+
 ## 7. Hard-won lessons
 
 **1. Do not unit-test a subsystem outside its feedback loops.** Driving one
