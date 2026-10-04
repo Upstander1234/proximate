@@ -470,3 +470,12 @@ Rocuronium Ce50 is U-shaped by age (Saldien 2003, Wierda 1997):
 - Label bedside check: neonatal T3 reappearance about 114 min at 0.6 mg/kg vs about 53 min in children.
 
 Still open: pediatric fentanyl Ce50 numeric value; midazolam maturation Hill exponent. Next offered: effect-site PD anchors for the cardiovascular drugs (epinephrine, norepinephrine, atropine, antiarrhythmics).
+
+### 14a. Open design task: engine-fitted CES1 maturation function
+
+No published CES1/CES2 PMA50 + Hill exists, so we must design one ourselves (needed for etomidate, and for any later CES substrate).
+- Inputs to fit: Boberg 2017 proteomics (continuous, 136 pediatric donors, neonate about 19% of adult for CES1), Hines 2016 age bands, Shi 2011 (about 10% at 1 to 31 d, about 50% at 35 to 198 d), Zhu 2009, Yang 2009.
+- Required behavior: steep rise in the first 1 to 2 months, 3-week breakpoint, near-adult by about 6 years, asymptote 1.0 normalized to adult.
+- Must be flagged in code as engine-fitted, not literature-reported, with the fit data and residuals in the comment.
+- Must be combined with allometric size scaling and partial hepatic-flow sensitivity (ER 0.5 to 0.9), and pass the test that neonates never clear faster than adults in the first months.
+- Decide: smooth sigmoid fit to Boberg points versus the simple piecewise bands. Record the choice and the measured fit.
