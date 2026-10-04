@@ -562,3 +562,36 @@ Source: OpenEvidence pass pasted by the user. Values below are as reported there
 
 ### 18e. Offered next
 Dobutamine receptor pharmacology and concentration-effect data (racemic alpha-1/beta mechanism).
+
+## 19. Audit of the brief's own claims (eleventh pass) and the realism direction
+
+Direction from the user: procedures are moving toward minigames where the player draws the drug and eventually starts drips and similar. Push toward realism. Values below are as reported by the audit pass (FDA labels plus reviews); primary confirmation still owed.
+
+### 19a. Must-fix structural items
+1. **Continuous-infusion input is a prerequisite, not an open question.** Epinephrine, norepinephrine, phenylephrine, dopamine and vasopressin are titrated infusions; their behavior is rate-in/rate-out steady state. Epinephrine reaches PK steady state in 10 to 15 min, BP effect offsets 15 to 20 min after stopping. Norepinephrine steady state about 5 min, pressor action stops within 1 to 2 min of stopping. Repeated boluses cannot reproduce plateau or washout. Design the infusion input (rate in mcg/kg/min, pump start/stop/titrate) so it composes with the drug-draw and drip minigames; it also resolves brief section 2 question on infusions.
+2. **Naloxone disposition is wrong by an order of magnitude and its clearance must NOT be hepatic-flow scaled.** Reported Vd 320 to 482 L, CL 3 to 3.66 L/min (above hepatic blood flow, so substantial extrahepatic metabolism), three-compartment, terminal t1/2 60 to 120 min. Tying it to `organClearanceFactor` would make naloxone clearance fall in shock, which is false. Neonatal t1/2 about 3.1 h vs about 64 min adult belongs on a UGT maturation term.
+3. **Retract the global assertion "neonates must not clear faster than adults".** On a per-kg basis fentanyl, amiodarone, etomidate and ketamine (beyond early infancy) clear faster in young children. The assertion must be per drug, on total (not per kg) clearance, with those four exempted. Removed from the CLAUDE.md verification plan accordingly.
+4. **Norepinephrine chronotropy.** Pressor doses reflexly slow HR (baroreflex vagal) while raising MAP (label). If the engine's beta-1 term makes norepinephrine raise HR like a generic beta agonist, that is an error; net HR must fall at pressor doses.
+
+### 19b. Numeric anchors still off (engine/brief vs reported)
+| Parameter | Engine / brief | Reported realistic value | Action |
+|---|---|---|---|
+| Epinephrine CL | 2.4 L/min | MCR 78 to 145 mL/kg/min, about 5.5 to 10 L/min at 70 kg | raise 2 to 4x, weight-scaled |
+| Norepinephrine CL | 0.8 L/min | 3.1 L/min (Vd 8.8 L, t1/2 2.4 min) | raise about 4x |
+| Naloxone Vd / CL | 21 L / 1.18 L/min | 320 to 482 L / 3 to 3.66 L/min | raise about 15 to 20x / 3x, extrahepatic |
+| Fentanyl Vd | 13 L central | label Vss 4 L/kg, 3-compartment, distribution 1.7 min, redistribution 13 min, terminal t1/2 219 min | anchor Vss to 4 L/kg; reject ICU 14 to 25 L/kg |
+| Fentanyl CL | 0.13 L/min | flow-limited, about 0.5 to 1.5 L/min | raise, well-stirred |
+| Etomidate CL | 0.4 L/min | 15 to 20 mL/kg/min, about 1.05 to 1.4 L/min | raise about 3x |
+| Etomidate "Vc 4.5 L/kg" | treated as central V | whole-body Vss figure, not Vc | reassign; central V far smaller (see section 15: Vc about 4.45 L total) |
+
+### 19c. Confirmed, keep
+- Rocuronium maturation on VOLUME only: clearance flat at 0.29 to 0.35 L/kg/h across ages; Vd falls 0.42 L/kg (birth to 28 d) to 0.18 L/kg (2 to 17 yr); neonatal t1/2 prolongation (1.1 h vs 0.7 h) is purely the volume effect. This also closes the "full rocuronium age-band table" open item (label table).
+- Midazolam maturation via Upreti/Ince, no single Hill exponent; stop listing it as open. Kos CL 8.52 L/h is a critically-ill value; take adult CL from an adult source.
+- Etomidate CES1 as a piecewise engine-fitted multiplier.
+- Amiodarone acute IV effect is AV-nodal/beta-block only, QT suppressed on the sim timescale.
+
+### 19d. Honesty framing
+For epinephrine, norepinephrine, atropine, naloxone, dopamine and vasopressors there is no published effect-site ke0 or mg/L EC50 for the hemodynamic endpoints; labels give onset/offset and threshold concentrations only. The PD layer for this group is CALIBRATED to reproduce label windows (epinephrine offset 15 to 20 min; norepinephrine offset 1 to 2 min), not fitted to literature constants. Say so in code comments so calibrations are not mistaken for anchored values.
+
+### 19e. Offered next
+Structure of the continuous-infusion input so titrated vasopressors reproduce their published onset and offset windows.
