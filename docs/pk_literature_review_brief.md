@@ -623,3 +623,36 @@ Pump dead volume and carrier-flow coupling cause delivery lag after a rate chang
 
 ### 20e. Offered next
 Calibration of the effect-site/keo layer so each vasopressor's offset and reflex-HR behavior emerges from the infusion.
+
+## 21. Vasopressor effect-site calibration, reflex HR, epinephrine PD (thirteenth pass)
+
+Source: OpenEvidence pass pasted by the user. The final calibration caveat in the pass was truncated mid-sentence; treated as a gap.
+
+### 21a. Correction to our section 20c
+Our claim that an effect "near the top of a sigmoid" drops visibly sooner after a stop was wrong. Near saturation, effect falls slower than concentration. A fast visible offset comes from operating on the steep part around EC50. A norepinephrine infusion titrated to a MAP target sits on that steep, near-linear region, so a 1 to 2 min visible offset is reproducible from plain PK plus the existing keo. The plan stays simulation-first (add a PD offset mechanism only if PK plus keo cannot hit the window), but the stated reason is now the steep-region argument.
+
+### 21b. Norepinephrine PD
+- De Keijzer 2026 (healthy volunteers, awake and anesthetized): MAP tracked infusion RATE better than plasma concentration, with an essentially linear dose to MAP slope (about 103 mmHg per ug/kg/min awake, steeper under anesthesia). Closed form under anesthesia: rate about (target MAP - 54)/222 ug/kg/min. Healthy volunteers, not shock; do not transplant the slope to septic patients without a shock-specific anchor.
+- Engine consequence: model MAP as a near-direct function of pump rate with a short effect-site lag, a linear or shallow-Emax gain, not a steep sigmoid with large hysteresis.
+- Mechanism supporting fast offset: neuronal reuptake clears norepinephrine at the junction (biexponential removal, fast t1/2 about 2.0 min, slow 33 min; Esler 1981, hypertensive patients).
+- Ensinger 1992 (volunteers): infusion raises BP and lowers HR.
+
+### 21c. Reflex heart rate (needs its own mechanism)
+- Phenylephrine is pure alpha-1 with no cardiac beta activity, yet the label reports reflex bradycardia. So HR must fall through a MAP to baroreceptor to vagal efferent loop, not through a coefficient on the SA node. Bolus phenylephrine probes the vagal limb; with an infusion, sympathoinhibition also contributes (Salman 2015).
+- One MAP-driven baroreflex term covers phenylephrine and norepinephrine's net HR decrease, while beta-active drugs (epinephrine) can still raise HR through their direct beta-1 term. The engine already has a baroreflex (`baroGain`, trait `baroreflexGain`); first measure what it does with norepinephrine and phenylephrine today before adding anything.
+
+### 21d. Epinephrine PD (Oualha 2014, children)
+- One-compartment PK with endogenous production q0; CL and q0 scale with weight^0.75. Two Emax relationships: HR (C50_HR) and the SV x SVR product (C50). Matches the plan.
+- Dose-dependent sign: beta-2 vasodilation lowers SVR and diastolic pressure at low doses, overtaken by alpha-1 vasoconstriction at higher doses. The SV x SVR term must be able to go the "wrong" way at low rates; it is not a monotone pressor.
+- Offset about 20 min (hormonal, longer effective clearance), so its keo target differs from norepinephrine's.
+- Bighamian 2016: dose-response parameters should be individualized, a population-average latency model costs little. Supports fixed label-anchored keo per drug with the dose-response gain carrying inter-patient variability.
+
+### 21e. Calibration targets
+| Drug | Effect model | Offset after stop | Reflex HR | Dose-sign |
+|---|---|---|---|---|
+| Norepinephrine | near-linear dose to MAP, short keo | 1 to 2 min | net HR down via baroreflex | monotone pressor |
+| Epinephrine | dual Emax: HR and SV x SVR | about 20 min | HR up (direct beta-1) | beta-2 vasodilation low dose, alpha-1 high dose |
+| Phenylephrine | alpha-1 to SVR to MAP | up to about 20 min | HR down via baroreflex (prominent) | monotone pressor |
+
+### 21f. Offered next
+Structure of the single MAP-driven baroreflex term so it lowers HR for alpha agonists but still lets beta-active drugs raise it.
