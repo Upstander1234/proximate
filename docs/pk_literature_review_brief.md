@@ -867,3 +867,23 @@ Small-signal vagal slope at the setpoint = kBaro/4 x kVagal x 60 bpm per mmHg = 
 - Calibrate the reflex HR gain by roughly 4x on the vagal limb before judging trait ranges; re-run this probe after the change, since septic slopes (0.5 to 0.75) would then overshoot and the setpoint/asymmetry may need rebalancing.
 - The healthy-vs-septic pressor difference noted in section 27 is only partly trait-driven: trait changes moved healthy dMAP 19 to 28, still nowhere near septic (10 to 15) or the 3x volunteer-slope overshoot; the rest comes from disease state (baseline SVR, tone).
 - Not yet tested: age (elderly blunting, neonates), diabetic autonomic neuropathy, and combined trait corners.
+
+## 29. Age and autonomic neuropathy probe (measurement, no code changed)
+
+Setup: healthy `abdPain` with the scenario's patient age overridden (19, 45, 70, 85) and `autonomicNeuropathy` set at 0, 0.5 and 1.0 on the 19-year-old; traits neutral; control, norepinephrine 10 mcg/min infusion-like (0.01 mg every 60 s) and a single phenylephrine dose per case. The scenario fixes weight at 74 kg, so the age override did not change weight (mcg/kg is therefore constant across ages here; neonatal and pediatric physiology is NOT covered). One run per cell.
+
+| Case | Control MAP / HR at 540 s | NE10 dMAP, dHR (slope) | PE dMAP, dHR (slope) |
+|---|---|---|---|
+| age 19 | 102.6 / 95.3 | +22.8, -4.2 (0.18) | +70.5, -15.8 (0.22) |
+| age 45 | 102.6 / 95.3 | +22.8, -4.1 (0.18) | +70.5, -15.8 (0.22) |
+| age 70 | 105.0 / 94.8 | +24.6, -4.3 (0.17) | +74.0, -15.3 (0.21) |
+| age 85 | 95.9 / 93.7 | +29.9, -3.9 (0.13) | +81.5, -14.8 (0.18) |
+| neuropathy 0.5 | 94.3 / 94.1 | +27.6, -3.7 (0.13) | +76.4, -15.1 (0.20) |
+| neuropathy 1.0 | 83.3 / 93.6 | +34.2, -4.1 (0.12) | +85.2, -15.0 (0.18) |
+
+Findings:
+- **No age effect below 65.** Ages 19 and 45 are identical to the digit. Elderly blunting (`sympTarget x (1 - min(0.4, (age-65) x 0.02))`) starts above 65 and reaches its 40% cap at 85.
+- **Elderly: weaker buffer, bigger drug response.** At 85 the pressor MAP rise grows by about 30% (NE) and 16% (PE) and the HR slope falls (0.18 to 0.13), because the blunting acts on the sympathetic target; the vagal limb is not blunted, but the HR slope still falls, probably because the larger MAP rise pushes further into logistic saturation. Resting MAP at 85 is 95.9 (lower), SVR 1273.
+- **Neuropathy lowers resting MAP substantially.** Multiplying the sympathetic target by up to 0.4 drops resting MAP from 102.6 to 94.3 at 0.5 and 83.3 at 1.0, and amplifies the pressor response (+34). The only condition that sets it (`diabeticVasculopathy`) uses 0.6, so the shipped case is about -9 mmHg resting. Real diabetic autonomic neuropathy is dominated by orthostatic hypotension and often supine hypertension, not a lower supine resting MAP, so this is a possible realism flag for that condition, not for the pressor work. Not changed.
+- **None of the age or neuropathy effects touches the weak reflex HR slope** (0.12 to 0.22 everywhere): the vagal constants in section 28c remain the main lever.
+- **Untested:** neonatal and pediatric patients (weight and age together), combined elderly plus neuropathy plus sepsis, and age-dependent PK clearance (not modeled yet).
