@@ -464,7 +464,7 @@ export const DRUGS = {
     onset: 20, dur: 300, max: 3,
     dose: 1,
     fx: {},                                      // hemodynamics entirely via receptors
-    receptors: { alpha: 0.9, beta1: 1.0, beta2: 0.3 },
+    receptors: { alpha: 0.9, beta1: 1.0, beta2: 0.3, beta2Vasodilation: 0.35 },
     note: "On the AEMT closed IV list — for ARREST. Benefit falls away after 3 doses."
   },
 

@@ -2415,6 +2415,15 @@ export function updateDrugs(pat, s, dt) {
         if (rec.arteriolarDilation) {
           alphaDrug -= rec.arteriolarDilation * recIntensity;
         }
+        // Beta-2 vasodilation (epinephrine). Beta-2 receptors are occupied at
+        // lower concentration than the alpha-1 receptors that constrict, so at a
+        // low dose epinephrine nets a small FALL in vascular tone (the textbook
+        // low-dose dip) and only at a higher dose does alpha dominate. Modeled as
+        // a saturating occupancy with a half-point at 0.1 effect intensity, a
+        // tenth of the alpha scale, subtracted from the alpha accumulator.
+        if (rec.beta2Vasodilation) {
+          alphaDrug -= rec.beta2Vasodilation * recIntensity / (recIntensity + 0.1);
+        }
         // Calcium-channel blockade (diltiazem) — negative inotrope/chronotrope + vasodilation.
         // Was defined in drugs.js but never consumed; route through beta1 (rate/contractility)
         // and alpha (vasodilation) so it composes correctly with other drugs on the same tone.
