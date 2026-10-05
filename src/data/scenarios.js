@@ -791,6 +791,7 @@ childbirth: {cat: "trauma", id: "OBGY-004", pronouns: "she", title: "Female, 30.
         if (!nb._neo.ppv) return {say: "Ventilate first. Most depressed newborns need breaths, not fluid; volume is for the baby who stays pale and limp despite good ventilation.", kind: "crit"};
         const wt = nb.ageProfile?.weight || nb.weight || 3.3, mL = Math.round(wt * 10);
         s.doses = [...(s.doses || []), {id: "saline", at: s.t, route: "IO", volumeL: mL / 1000, patientId: "newborn"}];
+        nb._neo.saline = (nb._neo.saline || 0) + 1;
         s.given = {...s.given, nbSaline: (s.given.nbSaline || 0) + 1};
         return {say: `${mL} mL normal saline, 10 mL/kg against a ${wt} kg newborn, pushed over several minutes.`, kind: "beat"};}},
   ],

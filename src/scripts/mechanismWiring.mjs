@@ -8898,6 +8898,18 @@ console.log("\n[ADENOSINE DOSE-DEPENDENT SVT CONVERSION]");
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${"6 mg converts some SVT, 12 mg converts more".padEnd(46)} 6mg=${c6}/40 12mg=${c12}/40`);
 }
 
+console.log("\n[VALSALVA TECHNIQUE]");
+{
+  // Strain quality scales the vagal surge: a modified (leg-raise) Valsalva converts SVT more often
+  // than a standard one, and a weak strain (quality 0.3) almost never does.
+  const conv = (quality, legRaise) => { let c = 0; for (let i = 0; i < 30; i++) { const s = { scen: "svt", t: 0, doses: [], given: {}, activePatientId: null }; for (let t = STEP; t <= 60; t += STEP) { s.t = t; if (t === 20) s.doses.push({ id: "valsalva", at: t, quality, legRaise }); physio(s); } if (activePatient(s).rhythm !== "svt") c++; } return c; };
+  const weak = conv(0.3, false), mod = conv(1, true);
+  const ok = mod > weak + 3 && weak <= 3;
+  ok ? pass++ : fail++;
+  if (!ok) failures.push(`Valsalva technique should matter: weak ${weak}/30, modified ${mod}/30`);
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${"modified Valsalva beats a weak strain".padEnd(46)} weak=${weak}/30 modified=${mod}/30`);
+}
+
 console.log("\n[REAL DRUG UNITS AND DRAWN AMOUNT]");
 {
   // Table integrity: every listed drug exists and its standard dose matches the

@@ -249,6 +249,7 @@ export const TASKS=[
   // weight rather than a flat adult dose. lvl:4 (paramedic/IV-IO scope),
   // matching epiIV's own AEMT-closed-list note.
   {id:"newbornEpi",name:"Newborn epinephrine (weight-scaled IV/IO)",lvl:4,dur:20,readback:'"Newborn epi, copy."',neoAction:"epi"},
+  {id:"newbornSaline",name:"Newborn volume bolus (10 mL/kg NS)",lvl:4,dur:30,readback:'"Ten per kilo, copy."',neoAction:"saline"},
   // Batch 8 — TP 1237(-P) (Respiratory Distress), TP 1238(-P) (Carbon
   // Monoxide Exposure — no new rules, see laCounty.js's own header note),
   // TP 1239(-P) (Dystonic Reaction — no automatic rule, see the same note).

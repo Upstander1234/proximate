@@ -509,6 +509,11 @@ const NEWBORN_NEEDS_CPR = (ctx) => { const nb = newbornPat(ctx); return !!nb && 
 // NEWBORN_NEEDS_CPR already makes for its own timer-free trigger) — the
 // real, objective, already-available signal is HR still <60 with
 // compressions already running, which is what's checked here.
+// Step 15: normal saline 10 mL/kg for suspected hypovolemia (pallor and poor perfusion
+// that persist despite effective ventilation). The engine's own remaining-volume fraction
+// (neonatalTransition's _neo.volFrac) stands in for the bedside pallor/weak-pulse picture;
+// one bolus, then reassess.
+const NEWBORN_NEEDS_VOLUME = (ctx) => { const nb = newbornPat(ctx); return !!nb && !!nb._neo?.ppv && nb.hr > 0 && nb.hr < 120 && (nb._neo?.volFrac ?? 1) < 0.85 && !nb._neo?.saline; };
 const NEWBORN_NEEDS_EPI = (ctx) => { const nb = newbornPat(ctx); return !!nb && nb.hr > 0 && nb.hr < 60 && !!nb._neo?.compressions && !nb._neo?.epi; };
 // TP 1217/1217-P step 22: "SBP<90, OR HR>SBP, OR EBL>500mL" — the third
 // criterion (estimated blood loss) has no representable field (this
@@ -1095,10 +1100,9 @@ export default {
     // (gear.js's newbornEpi/App.jsx's t.neoAction==="epi" — queue item 65),
     // not a flat adult dose.
     { id: "newbornEpi", when: NEWBORN_NEEDS_EPI, task: "newbornEpi", note: "newborn HR<60 despite PPV+compressions — weight-scaled epinephrine" },
-    // Step 12 (vascular access) and step 15 (saline, for suspected
-    // neonatal hypovolemia — a distinct clinical picture from the
-    // hypoxic-asphyxia course this state machine models) remain
-    // deliberately NOT implemented. See CLAUDE.md queue item 65.
+    // Step 15: weight-scaled saline for a newborn still pale and slow despite PPV.
+    { id: "newbornSaline", when: NEWBORN_NEEDS_VOLUME, task: "newbornSaline", note: "newborn pale, HR<120 despite PPV — suspected blood loss, NS 10 mL/kg" },
+    // Step 12 (vascular access) remains not implemented.
 
     // ── TP 1217/1217-P, new step 22 (added since this file's batch-3
     //    implementation) ──

@@ -2462,6 +2462,15 @@ export default function App({onHome}={}){
         // dose resolves to 0.01 mg/kg of the baby's own weight and acts through the PK layer's alpha drive.
         m.doses=[...(m.doses||[]),{id:"epiIV",at:m.t,route:"IV/IO",patientId:nb._id}];
         return {say:`${c.name.toUpperCase()}: "Epi, ${mg} mg IV/IO — ${wt} kilo baby, point-oh-one per kilo."`,kind:"good"};}
+      if(t.neoAction==="saline"){
+        // NRP volume expansion for suspected blood loss: 10 mL/kg normal saline as a real
+        // weight-sized fluid dose on the newborn (the fluid PK path scales every load by volumeL).
+        if(!nb._neo.ppv) return {say:`${c.name.toUpperCase()}: "Ventilation first. Fluid is for the baby who stays pale despite good breaths."`,kind:"warn"};
+        const wt=nb.ageProfile?.weight||nb.weight||3.3, mL=Math.round(wt*10);
+        m.doses=[...(m.doses||[]),{id:"saline",at:m.t,route:"IO",volumeL:mL/1000,patientId:nb._id}];
+        nb._neo.saline=(nb._neo.saline||0)+1;
+        m.given={...(m.given||{}),nbSaline:((m.given||{}).nbSaline||0)+1};
+        return {say:`${c.name.toUpperCase()}: "${mL} mL saline going in, ten per kilo for a ${wt} kilo baby."`,kind:"good"};}
     }
     if(t.ivAttempt){const free=LIMBS.find(l=>!(m.ivSites||[]).includes(l));
       if(!free) return {say:`${c.name.toUpperCase()}: ${applyPron(t.report,pr)}`,kind:"warn"};
