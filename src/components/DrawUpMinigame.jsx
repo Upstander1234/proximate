@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C } from "../theme.js";
 import { DRUGS } from "../data/drugs.js";
 import { DRUG_UNITS, drawVolumeMl } from "../data/drugUnits.js";
-import { resolveDoseMg } from "../physio/pk.js";
+import { resolveDoseMg, molOf } from "../physio/pk.js";
 import { assistToleranceMult } from "../procedureAssist.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
@@ -80,10 +80,10 @@ function Vial({ name, cap, conc, selected, active, onClick }) {
 // The syringe itself: barrel graduated to 6 mL, plunger position driven live
 // by `vol`, and an air bubble at the tip that only clears once flicked. A
 // tinted fill (the vial's own cap color) shows what's actually in it.
-function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
+function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks, minFlick = 0.15 }) {
   const bx = 20, bw = 220, by = 40, bh = 26;
   const fillW = Math.max(0, Math.min(bw - 6, (vol / max) * (bw - 6)));
-  const canFlick = hasVial && bubble && vol > 0.15;
+  const canFlick = hasVial && bubble && vol > minFlick;
   return (
     <svg viewBox="0 0 280 90" style={{ width: "100%", background: "#0B0F12", borderRadius: 6, marginBottom: 10 }}>
       {/* needle */}
@@ -117,7 +117,7 @@ function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
 // Alternate real-world vial strengths (mg/mL), used for the wrong-concentration variant.
 const ALT_CONC = { morphine: [4, 2], midazolam: [1], ketamine: [10, 100], lidocaine: [10] };
 
-export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve, forceOrder, forceAlt }) {
+function OrderedDraw({ open, kind, pat, assist, interrupted, onResolve, forceOrder, forceAlt }) {
   const [setup] = useState(() => {
     const pool = INJECTABLE();
     let four = pick(pool, 4);
@@ -262,4 +262,124 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
       </div>
     </div>
   );
+}
+
+// FREE DRAW (the player's own draw-up). No order and no right answer: pick any
+// vial in the kit, any syringe, pull any volume, optionally dilute it and push
+// only part of the mix. The syringe holds exactly what was drawn, and that amount
+// is what the patient receives when any route of the same drug is given (see the
+// give path in App.jsx, matched by molecule). Half a milligram of morphine is
+// half a milligram of morphine; the engine decides what it does.
+const DEVICE_ONLY = new Set(["epiAuto", "pushEpi", "naloxone_in", "lidocaineBlock"]);   // prefilled devices, mixed doses, or a procedure-bound block, not tray vials
+const vialLabel = (id) => (DRUGS[id]?.name || id)
+  .replace(/\s*\((IV|IM|IN|IV\/IO|IO)\)/i, "")
+  .replace(/\s+\d[\d.,]*\s*(mg|mcg|g|U|mEq|units?)\b.*$/i, "")
+  .replace(/\s*\(.*\)\s*$/, "")
+  .trim();
+const FREE_TRAY = () => {
+  const seen = new Set(), out = [];
+  Object.keys(DRUG_UNITS).forEach(id => {
+    if (DEVICE_ONLY.has(id) || !DRUGS[id] || DRUGS[id].pkModel === "fluid") return;
+    if (!/IV|IO|IM/.test(DRUGS[id].route || "")) return;
+    const u = DRUG_UNITS[id];
+    const concs = [u.conc, ...(ALT_CONC[id] || [])];
+    concs.forEach(c => {
+      const key = `${molOf(id)}|${c}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ key, id, name: vialLabel(id), conc: c, unit: u.unit });
+    });
+  });
+  return out.sort((a, b) => a.name.localeCompare(b.name) || a.conc - b.conc);
+};
+
+function FreeDraw({ pat, interrupted, onResolve }) {
+  const [tray] = useState(FREE_TRAY);
+  const [filter, setFilter] = useState("");
+  const [vialKey, setVialKey] = useState(null);
+  const [syringe, setSyringe] = useState(10);
+  const [vol, setVol] = useState(0);
+  const [dilute, setDilute] = useState(false);
+  const [mixTotal, setMixTotal] = useState(10);
+  const [pushVol, setPushVol] = useState(1);
+  const [bubble, setBubble] = useState(true);
+  const [flicks, setFlicks] = useState(0);
+  const [flash, setFlash] = useState(null);
+  const onFlick = () => { const n = flicks + 1; if (n >= 3) { setBubble(false); setFlicks(0); } else setFlicks(n); };
+  const vial = tray.find(v => v.key === vialKey) || null;
+  const inSyringe = vial ? vol * vial.conc : 0;
+  const total = Math.max(vol, mixTotal);
+  const mixConc = vial && dilute && total > 0 ? inSyringe / total : 0;
+  const pushed = dilute ? Math.min(pushVol, total) : vol;
+  const amount = vial ? (dilute ? pushed * mixConc : inSyringe) : 0;
+  const unit = vial?.unit || "mg";
+  const shown = tray.filter(v => !filter || v.name.toLowerCase().includes(filter.toLowerCase()));
+  const confirm = () => {
+    if (!vial) { setFlash("Pick a vial first."); return; }
+    if (!(amount > 0)) { setFlash("The syringe is empty."); return; }
+    if (bubble) { setFlash("There is still an air bubble in the barrel. Tap it to flick it out."); return; }
+    onResolve(PROCEDURE_OUTCOME.SUCCESS, {
+      drugId: vial.id, amount, label: vial.id,
+      vialLabel: `${vial.name} ${vial.conc} ${unit}/mL`,
+      ...(dilute ? { mixConc } : {}),
+    });
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000C", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: C.panel || "#141A1F", border: `1px solid ${C.line}`, borderRadius: 10, padding: 20, width: "min(520px,94vw)", maxHeight: "92vh", overflowY: "auto" }}>
+        <div style={{ fontSize: 14, color: C.amber, marginBottom: 8 }}>Draw up medication</div>
+        <MinigameVitalsStrip pat={pat} />
+        {interrupted && (
+          <div style={{ fontSize: 12, color: C.red, background: "#2A1418", border: `1px solid ${C.red}`, borderRadius: 6, padding: "8px 10px", marginBottom: 12 }}>
+            The patient's condition just changed. Check the alert once you're done, or abandon now.
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>1. Pick a vial. Read the label and the strength.</div>
+        <input placeholder="Search vials" value={filter} onChange={e => setFilter(e.target.value)} aria-label="Search vials"
+          style={{ width: "100%", marginBottom: 8, background: "#0B0F12", border: `1px solid ${C.line}`, color: C.text, borderRadius: 4, padding: "4px 8px", fontSize: 12 }} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 200, overflowY: "auto", marginBottom: 12, justifyContent: "center" }}>
+          {shown.map(v => (
+            <Vial key={v.key} name={v.name} conc={`${v.conc} ${v.unit}/mL`} cap={capColorFor(v.id)} selected={vialKey === v.key} active={vialKey === v.key}
+              onClick={() => { setVialKey(v.key); setVol(0); setBubble(true); setFlash(null); }} />
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Syringe</div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {SYRINGES.map(sz => (
+            <button key={sz} onClick={() => { setSyringe(sz); setVol(v => Math.min(v, sz)); }} aria-label={`${sz} mL syringe`}
+              style={{ flex: 1, fontSize: 12, padding: "4px 0", borderRadius: 4, cursor: "pointer", background: syringe === sz ? "#122A18" : "#0B0F12", border: `1px solid ${syringe === sz ? C.hr : C.line}`, color: syringe === sz ? C.hr : C.text }}>{sz} mL</button>
+          ))}
+        </div>
+        <Syringe vol={vol} max={syringe} cap={vial ? capColorFor(vial.id) : "#5C6E78"} bubble={bubble} hasVial={!!vial} onFlick={onFlick} flicks={flicks} minFlick={0} />
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>3. Pull the plunger: {vol.toFixed(syringe <= 3 ? 2 : 1)} mL{vial ? ` = ${fmt(inSyringe)} ${unit}` : ""}</div>
+        <input type="range" aria-label="Plunger" min={0} max={syringe} step={syringe / 400} value={vol} onChange={e => setVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+        <label style={{ fontSize: 12, color: C.faint, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <input type="checkbox" checked={dilute} onChange={e => setDilute(e.target.checked)} /> Dilute with saline and push only part of it
+        </label>
+        {dilute && (<>
+          <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Total after saline: {total.toFixed(1)} mL{vial ? ` (${fmt(mixConc)} ${unit}/mL)` : ""}</div>
+          <input type="range" aria-label="Total volume after dilution" min={0} max={syringe} step={syringe / 200} value={mixTotal} onChange={e => setMixTotal(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+          <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Push: {pushed.toFixed(2)} mL of the mix</div>
+          <input type="range" aria-label="Volume to push" min={0} max={total || syringe} step={(total || syringe) / 200} value={Math.min(pushVol, total || syringe)} onChange={e => setPushVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+        </>)}
+        <div style={{ fontSize: 12, color: bubble ? C.faint : C.hr, marginBottom: 8 }}>4. {bubble ? "Tap the bubble in the barrel to flick it out." : "Air expelled."}</div>
+        <div style={{ fontSize: 13, color: C.text, marginBottom: 10 }}>
+          Dose in hand: <b>{vial ? `${fmt(amount)} ${unit} of ${vial.name}` : "nothing"}</b>
+        </div>
+        {flash && <div style={{ fontSize: 12, color: C.red, marginBottom: 8 }}>{flash}</div>}
+        <button onClick={confirm} className="px-3 py-2 rounded w-full" style={{ background: "#122A18", border: `1px solid ${C.hr}`, color: C.hr }}>Confirm and cap</button>
+        <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+          <button onClick={() => onResolve(PROCEDURE_OUTCOME.CANCELLED)} style={{ fontSize: 11, color: C.faint, background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
+          {interrupted && <button onClick={() => onResolve(PROCEDURE_OUTCOME.ABORTED)} style={{ fontSize: 11, color: C.red, background: "none", border: "none", cursor: "pointer" }}>Abandon and attend to the patient</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The player's draw-up is free (FreeDraw). An ordered, scored draw is kept for
+// tests and training hooks that pass `forceOrder`.
+export default function DrawUpMinigame(props) {
+  if (!props.open || props.kind !== "prep") return null;
+  return props.forceOrder ? <OrderedDraw {...props} /> : <FreeDraw {...props} />;
 }

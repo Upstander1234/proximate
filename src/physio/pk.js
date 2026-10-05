@@ -20,6 +20,13 @@ import { curve } from "../util.js";
 import { DRUG_UNITS } from "../data/drugUnits.js";
 import { HCT_NORMAL, NORMAL_HB } from "./constants.js";
 
+// The molecule a drug entry delivers. Several entries are one drug in different
+// presentations or routes (epinephrine IM/IV/auto-injector/push-dose, naloxone
+// IV/IM/IN, amiodarone 300/150): they share one pharmacology, so the engine pools
+// their concentrations and applies their effects once per molecule. Entries
+// without a `molecule` are their own molecule.
+export const molOf = (id) => DRUGS[id]?.molecule || id;
+
 // `renalFrac` is the fraction of TOTAL clearance that is renal; the remainder is
 // treated as hepatic. It is not decoration — see organClearanceFactor() below.
 // Until it existed, kel was a constant, which meant NO drug in the engine
@@ -281,7 +288,12 @@ export const PK_PARAMS = {
   // bands). epiAuto does NOT need this — its much smaller deep-depot fraction
   // already lands Tmax ~21 min at its own default keo — so only epiIM's is
   // changed.
-  epiIM:     { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.1 },  // slow effect-site tracking, see above
+  // SUPERSEDED (one-molecule epinephrine): keo is a property of the molecule's
+  // effect site, not of the route, so epiIM now shares epinephrine's 0.7. The IM
+  // delay lives where it physically is, in the muscle depot and its absorption
+  // (imKa, deepDepot* in drugs.js); the old 0.1 made the same epinephrine
+  // concentration act slower when it happened to arrive from a thigh.
+  epiIM:     { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.7 },
   epiAuto:   { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.7 },  // the DELAY for IM is absorption, modelled in the depot
   // AMIODARONE EC50: 0.1 -> 1.75 mg/L. The last SATURATED entry in pkAudit.
   //
@@ -1510,10 +1522,14 @@ export function updateDrugs(pat, s, dt) {
     // that properly means computing intensity once per drug from the summed
     // concentration, which changes every drug's behaviour and needs its own
     // batch.
+    // Keyed by MOLECULE, not by drug entry: epinephrine given as an arrest push,
+    // an IM anaphylaxis dose or a push-dose pressor is one molecule acting on
+    // one set of receptors, so its concentrations pool and its intensity is
+    // computed once from the total (see molOf below).
     const totalConcByDrug = {};
     for (const dr of pat.drugInstances) {
       if (!dr.pk) continue;
-      totalConcByDrug[dr.id] = (totalConcByDrug[dr.id] || 0) + Math.max(0, dr.effectConc || 0);
+      totalConcByDrug[molOf(dr.id)] = (totalConcByDrug[molOf(dr.id)] || 0) + Math.max(0, dr.effectConc || 0);
     }
 
     // LOCAL ANESTHETIC NERVE BLOCK (queue item 62's remainder, hematoma
@@ -1705,7 +1721,7 @@ export function updateDrugs(pat, s, dt) {
         // cutoff and measured, directly, that it silently never fired for
         // fentanyl at all despite real, substantial occupancy -- caught by
         // instrumenting the real engine (lesson 8) before trusting it.
-        const totalC = totalConcByDrug[dr.id] ?? 0;
+        const totalC = totalConcByDrug[molOf(dr.id)] ?? 0;
         const ec50 = dr.pk.ec50 ?? 0.1;
         const occ = totalC / (ec50 + totalC);
         if (occ > 0.05) {
@@ -1780,7 +1796,7 @@ export function updateDrugs(pat, s, dt) {
         // double the concentration gives about 0.67. The model therefore
         // rewarded splitting a dose, and a stacked overdose produced an effect
         // that could exceed the drug's own maximum.
-        const totalC = totalConcByDrug[dr.id] ?? dr.effectConc;
+        const totalC = totalConcByDrug[molOf(dr.id)] ?? dr.effectConc;
         // HILL COEFFICIENT (queue item 62's own remainder — see the separate
         // respiratory-depression pathway below for the paired half of this
         // change). Defaults to 1 (a plain hyperbola), matching every existing
@@ -1862,8 +1878,8 @@ export function updateDrugs(pat, s, dt) {
         // applied ONCE however many instances carry it. The remaining instances
         // have already had their compartments integrated, which is the only
         // thing they are individually responsible for.
-        if (effectsApplied.has(dr.id)) continue;
-        effectsApplied.add(dr.id);
+        if (effectsApplied.has(molOf(dr.id))) continue;
+        effectsApplied.add(molOf(dr.id));
       } else {
         // Non‑PK drug: classic curve.
         //
@@ -1931,12 +1947,12 @@ export function updateDrugs(pat, s, dt) {
         // delivered amount relative to its declared reference dose, instead of
         // ignoring it and stacking to the SVR ceiling. At the default dose the
         // factor is exactly 1, so every existing scenario is unchanged. The
-        // cap of 3x keeps a gross over-draw bounded; the real ceiling is still
+        // cap of 10x (raised from 3x so a player-drawn overdose is felt) keeps a gross over-draw bounded; the real ceiling is still
         // the receptor/SVR clamp downstream.
         let amountScale = 1;
         const refDoseForScale = dr.refDose ?? drugDef.dose;
         if ((drugDef.receptors || drugDef.antiarrhythmic?.avSlowing) && refDoseForScale > 0 && dr.givenDose > 0) {
-          amountScale = Math.min(3, dr.givenDose / refDoseForScale);
+          amountScale = Math.min(10, dr.givenDose / refDoseForScale);
         }
         amountScale *= dr.deliveredFraction ?? 1;
         intensity = k * amountScale;
@@ -2334,7 +2350,7 @@ export function updateDrugs(pat, s, dt) {
       // people — an ordinary dose in a patient whose clearance has collapsed
       // with their cardiac output.
       if (drugDef.toxicity && dr.pk) {
-        const C = totalConcByDrug[dr.id] ?? Math.max(0, dr.effectConc || 0);
+        const C = totalConcByDrug[molOf(dr.id)] ?? Math.max(0, dr.effectConc || 0);
         const tox = drugDef.toxicity;
         if (tox.seizureThreshold && C > tox.seizureThreshold) {
           // Graded, not a switch: the probability of frank seizure activity
@@ -2466,7 +2482,7 @@ export function updateDrugs(pat, s, dt) {
           if (drugDef.class === "opioid" && pat.opioidAntagonistConc > 0) {
             respEc50Eff = respEc50 * (1 + pat.opioidAntagonistConc / NALOXONE_KI);
           }
-          const totalC = totalConcByDrug[dr.id] ?? dr.effectConc;
+          const totalC = totalConcByDrug[molOf(dr.id)] ?? dr.effectConc;
           respIntensity = hillOcc(totalC, respEc50Eff, respN);
           // Queue item 65: the respiratory pathway reads its OWN, slower,
           // lower-ceiling tolerance accumulator (opioidDesensResp) for an

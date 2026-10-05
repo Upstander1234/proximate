@@ -31,7 +31,7 @@ const setRange = (page, idx, v) => page.evaluate(([i, val]) => {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, String(val));
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }, [idx, v]);
-// Open the minigame through the real "Draw up the next drug" action (a stub action has
+// Open the minigame through the real "Draw up a drug" action (a stub action has
 // no run(), so the drawn syringe would never land in state), then pin the order.
 async function openPrep(page, forceOrder) {
   await page.evaluate(() => window.__proximateTestSetState({
@@ -42,7 +42,7 @@ async function openPrep(page, forceOrder) {
   for (let i = 0; i < 20; i++) {
     if (await page.evaluate(() => !!window.__proximateTestGetState().accessMinigame)) break;
     await page.evaluate(() => window.__proximateTestSetState({ busy: null, prepped: 0, preppedDraw: null, done: {} }));
-    await clickText(page, "Draw up the next drug").catch(() => {});
+    await clickText(page, "Draw up a drug").catch(() => {});
     await page.waitForTimeout(300);
   }
   // Remount with the pinned order (the minigame picks its order once, at mount).

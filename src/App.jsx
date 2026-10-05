@@ -12,7 +12,7 @@ import { DRUG_CATEGORIES, PROC_CATEGORIES, drugCategoryOf, procCategoryOf } from
 import { SCEN } from "./data/scenarios.js";
 import { physio, critical, arrestWarning, giveDose, roster, setActivePatient, outcomeReport } from "./physiology.js";
 import { CONDITIONS } from "./physio/conditions.js";
-import { resolveDoseMg } from "./physio/pk.js";
+import { resolveDoseMg, molOf } from "./physio/pk.js";
 import { woundDef, woundColor, WOUND_TYPES } from "./physio/wounds.js";
 import { CLOTH_LOCK, REGION_LABEL, lockedRegions, initialExposure, initialShoes } from "./clothing.js";
 import { LIB, PROC_ACTS } from "./actions.js";
@@ -1897,14 +1897,15 @@ export default function App({onHome}={}){
     // Player draw-up, resolved through DrawUpMinigame.jsx (start() intercepts
     // id "prep"). On success start() re-enters with _skipMinigame and this
     // run() sets the same `prepped` flag the crew "prep" task already sets.
-    out.push({id:"prep",region:"head",tab:"meds",label:"Draw up the next drug",gerund:"Drawing up",cost:25,lvl:2,bag:"drug",
-      tip:"Draw the next drug ahead of time; the next push takes half as long.",
+    out.push({id:"prep",region:"head",tab:"meds",label:"Draw up a drug",gerund:"Drawing up",cost:25,lvl:2,bag:"drug",
+      tip:"Draw any drug from the kit in any amount. The patient gets exactly what you drew when you give that drug, by any of its routes, and the push takes half as long.",
       run:(s,v,a)=>{if(s.prepped) return {say:"A drug is already drawn up and in your hand.",kind:"obs"};
         s.prepped=1;
         // The DRAWN amount rides along with the prepped syringe and is what the
         // patient receives when that drug is given (see the give run() below).
         if(a&&a._draw){s.preppedDraw=a._draw;const d=DRUGS[a._draw.label||a._draw.id];
-          return {say:`Drawn and labeled: ${d?d.name:"the drug"}, ${+a._draw.amount.toPrecision(3)} ${DRUG_UNITS[a._draw.id]?.unit||"mg"}.`,kind:"obs"};}
+          const what=a._draw.vialLabel||(d?d.name:"the drug");
+          return {say:`Drawn and labeled: ${what}, ${+a._draw.amount.toPrecision(3)} ${DRUG_UNITS[a._draw.id]?.unit||"mg"}${a._draw.mixConc?` (diluted to ${+a._draw.mixConc.toPrecision(3)} ${DRUG_UNITS[a._draw.id]?.unit||"mg"}/mL)`:""}.`,kind:"obs"};}
         return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
     Object.entries(DRUGS).forEach(([id,d])=>{
       // Split a combined route string into one action per REAL delivery
@@ -1928,14 +1929,17 @@ export default function App({onHome}={}){
         // (falling back to the first site placed); IM/IN drugs follow whichever limb you click.
         const region=ivOnly?(g.ivSites.includes(g.region)?g.region:g.ivSites[0]):(imN?(LIMBS.includes(g.region)?g.region:"legR"):"head");
         const base=(routeLabel==="NEB"?25:(routeLabel==="PO"||routeLabel==="ODT")?22:routeLabel==="INH"?20:15); // §5 realistic push/route times
-        const cost=Math.round(base*(g.prepped?.5:1));
+        // A drawn syringe speeds up only the push of the drug it holds (any presentation or route of
+        // the same molecule); holding a different drug does not make this one faster.
+        const prepMatch=!!g.prepped&&(!g.preppedDraw||molOf(g.preppedDraw.id)===molOf(id)||g.preppedDraw.label===id);
+        const cost=Math.round(base*(prepMatch?.5:1));
         // A route-specific action id only when a drug actually offers more
         // than one route — every single-route drug's action id is
         // unchanged, so nothing that keys off a drug's action id elsewhere
         // (TASKS, mechanismWiring probes, s.given[id]'s own dose-count key
         // is `id` the DRUG id below, unaffected either way) breaks.
         const actionId=groups.length>1?`${id}@${routeLabel.replace(/\//g,"")}`:id;
-        out.push({id:actionId,region,tab:"meds",drug:id,route:routeLabel,prepped:!!g.prepped,label:`${d.name} · ${routeLabel}`,
+        out.push({id:actionId,region,tab:"meds",drug:id,route:routeLabel,prepped:prepMatch,label:`${d.name} · ${routeLabel}`,
           gerund:`Giving ${d.name.split(" ")[0].toLowerCase()}`, cost,
           lvl:lvlOf(id,d.lvl),bag:"drug",tip:d.note,
           run:(s,v,act)=>{const ov=!!(act&&act._override);
@@ -1965,7 +1969,7 @@ export default function App({onHome}={}){
           if(d.max&&n>d.max&&!ov) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
           // The cap is also checked in real amount: max doses of the weight-based dose, so one oversized draw
           // cannot slip under a dose-count cap.
-          {const w0=s.patient?.ageProfile?.weight,ref0=resolveDoseMg(d,w0,id),dr0=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:ref0;
+          {const w0=s.patient?.ageProfile?.weight,ref0=resolveDoseMg(d,w0,id),dr0=(s.preppedDraw&&molOf(s.preppedDraw.id)===molOf(id))?s.preppedDraw.amount:ref0;
            if(d.max&&ref0>0&&((s.givenAmt||{})[id]||0)+dr0>d.max*ref0*1.05&&!ov) return {say:`Cumulative amount would exceed ${d.max} standard doses (${+(((s.givenAmt||{})[id]||0)+dr0).toPrecision(3)} given with this draw). Stop, or call Base.`,kind:"warn"};}
           s.given={...s.given,[id]:n};
           // The drawn amount is authoritative: if the syringe in hand holds THIS drug, the patient
@@ -1973,10 +1977,15 @@ export default function App({onHome}={}){
           // the weight-resolved default.
           // A mislabeled syringe (wrong vial used anyway) carries the ordered drug's label: giving
           // "that" drug delivers the syringe's real contents instead, recorded as a medication error.
-          const pd=s.preppedDraw,swapped=pd&&pd.label===id&&pd.id!==id&&!!DRUGS[pd.id];
-          const drawn=(pd&&(pd.id===id||swapped))?pd.amount:null;
+          // The syringe is matched by MOLECULE, not by drug entry: epinephrine drawn from either vial
+          // goes in by whichever epinephrine route the player picks, as exactly the amount drawn.
+          const pd=s.preppedDraw,sameMol=!!pd&&molOf(pd.id)===molOf(id);
+          const swapped=!!pd&&!sameMol&&pd.label===id&&!!DRUGS[pd.id];
+          const drawn=(sameMol||swapped)?pd.amount:null;
           if(swapped) s.medErrors=[...(s.medErrors||[]),{t:s.t,labeled:id,actual:pd.id,amount:pd.amount}];
-          giveDose(s,{id:swapped?pd.id:id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});s.prepped=0;s.preppedDraw=null;
+          giveDose(s,{id:swapped?pd.id:id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});
+          // A syringe holding some other drug stays in hand; only the one just pushed is used up.
+          if(!pd||sameMol||swapped){s.prepped=0;s.preppedDraw=null;}
           // Resolved amount in real units: the drawn amount, else the weight-resolved dose. Tracked
           // cumulatively per drug in real units (s.givenAmt), and compared with the weight-based dose
           // so an adult dose given to a child is flagged (dose-sanity check).
@@ -3917,7 +3926,7 @@ export default function App({onHome}={}){
       // reads (see the Monitor panel below).
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
-      const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount,label:detail.label||detail.drugId}}:{};
+      const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount,label:detail.label||detail.drugId,...(detail.vialLabel?{vialLabel:detail.vialLabel}:{}),...(detail.mixConc?{mixConc:detail.mixConc}:{})}}:{};
       const pumpExtra=(mg.kind==="hang"&&detail&&detail.pumpMlH>0)?{_pumpMlH:detail.pumpMlH}:{};
       const valsalvaExtra=(mg.kind==="valsalva"&&detail&&detail.quality!=null)?{_vq:detail.quality,_leg:!!detail.legRaise}:{};
       const flushExtra=(mg.kind==="give"&&detail&&detail.flushMlPerSec>0)?{_flushRate:detail.flushMlPerSec}:{};

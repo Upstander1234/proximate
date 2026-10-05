@@ -8987,6 +8987,29 @@ console.log("\n[CONTINUOUS INFUSION (pump state, zero-order input)]");
   console.log(`  ${curveOk ? "PASS" : "FAIL"}  ${"...curve-model drug (phenylephrine) pump raises MAP".padEnd(46)} MAP ${curveCtl[500].map.toFixed(0)} -> ${curveLine[500].map.toFixed(0)}`);
 }
 
+console.log("\n[ONE MOLECULE, ONE MECHANISM]");
+{
+  // Epinephrine is one drug whether it is labeled for arrest, a push-dose pressor or
+  // anaphylaxis: the same amount by the same route must do the same thing, and a
+  // player's arbitrary draw (half a milligram of morphine) must still act, scaled.
+  const at = (scen, doses, T) => {
+    const s = { scen, t: 0, doses: [], given: {}, activePatientId: null };
+    for (let t = STEP; t <= T; t += STEP) { s.t = t; for (const d of doses) if (d.at === t) s.doses.push({ ...d }); physio(s); if (t === STEP) pinTraitsNeutral(activePatient(s)); }
+    const p = activePatient(s); return { sbp: p.sbp, hr: p.hr, pain: p.drugPain ?? p.pain };
+  };
+  const a = at("abdPain", [{ id: "epiIV", at: 180, amount: 0.1, route: "IV" }], 240);
+  const b = at("abdPain", [{ id: "pushEpi", at: 180, amount: 0.1, route: "IV" }], 240);
+  const same = Math.abs(a.sbp - b.sbp) < 0.5 && Math.abs(a.hr - b.hr) < 0.5;
+  same ? pass++ : fail++;
+  if (!same) failures.push(`0.1 mg epinephrine IV should act the same under either label, epiIV sbp ${a.sbp.toFixed(1)} hr ${a.hr.toFixed(1)} vs pushEpi sbp ${b.sbp.toFixed(1)} hr ${b.hr.toFixed(1)}`);
+  console.log(`  ${same ? "PASS" : "FAIL"}  ${"0.1 mg epi IV: same effect under either label".padEnd(46)} sbp ${a.sbp.toFixed(1)} vs ${b.sbp.toFixed(1)}`);
+  const none = at("abdPain", [], 900), small = at("abdPain", [{ id: "morphine", at: 180, amount: 0.5 }], 900), full = at("abdPain", [{ id: "morphine", at: 180, amount: 4 }], 900);
+  const graded = small.pain < none.pain - 0.02 && full.pain < small.pain - 0.2;
+  graded ? pass++ : fail++;
+  if (!graded) failures.push(`morphine 0.5 mg should relieve some pain and 4 mg more, pain none ${none.pain.toFixed(2)} 0.5 mg ${small.pain.toFixed(2)} 4 mg ${full.pain.toFixed(2)}`);
+  console.log(`  ${graded ? "PASS" : "FAIL"}  ${"drawn 0.5 mg morphine acts, less than 4 mg".padEnd(46)} pain ${none.pain.toFixed(2)} -> ${small.pain.toFixed(2)} / ${full.pain.toFixed(2)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {

@@ -1,8 +1,25 @@
+// ONE MOLECULE, ONE MECHANISM. Epinephrine is the same drug whether it is pushed
+// in arrest, given IM for anaphylaxis, mixed as a push-dose pressor or fired from
+// an auto-injector. The entries below differ only in presentation, default dose
+// and route (absorption: imKa, depot, bioavailability); the receptors and direct
+// effects are this one object, and pk.js pools every epinephrine instance into a
+// single concentration (molOf). What a dose does therefore depends only on how
+// much reaches the blood and how fast, which is what the player controls when
+// drawing up. Receptor maxima are the former IV/arrest values (the full adult
+// pharmacology) with the IM entries' beta-2 and airway/edema effects, which a
+// small IM dose reaches only partially because its concentration is low.
+const EPINEPHRINE = {
+  molecule: "epinephrine",
+  fx: { bronch: -0.5, edema: -0.35, angioedema: -0.4 },
+  receptors: { alpha: 0.9, beta1: 1.0, beta2: 0.6, beta2Vasodilation: 0.06 },
+};
+
 export const DRUGS = {
   /* ================================================================
      EMR (1)
      ================================================================ */
   naloxone_in: {
+    molecule: "naloxone",
     pkModel: "twoCompartment",
     name: "Naloxone (IN)", route: "IN", lvl: 0,
     onset: 60, dur: 1800, max: 2,
@@ -12,6 +29,7 @@ export const DRUGS = {
     note: "Intranasal unit‑dose — layperson and EMR scope. Publicly available; ventilate first, titrate to RR."
   },
   naloxone_im: {
+    molecule: "naloxone",
     pkModel: "twoCompartment",
     name: "Naloxone (IM)", route: "IM", lvl: 1,
     onset: 60, dur: 2400, max: 4,
@@ -21,6 +39,7 @@ export const DRUGS = {
     note: "Intramuscular auto‑injector — EMT scope."
   },
   naloxone_iv: {
+    molecule: "naloxone",
     pkModel: "twoCompartment",
     name: "Naloxone (IV)", route: "IV", lvl: 2,
     onset: 30, dur: 1200, max: 4,
@@ -31,6 +50,7 @@ export const DRUGS = {
   },
 
   epiAuto: {
+    ...EPINEPHRINE,
     pkModel: "twoCompartment",
     // DOSE WAS UNDECLARED — DrugInstance fell back to `?? 1`, so every
     // administration was silently 1 mg. Same silent default that was found on
@@ -59,8 +79,6 @@ export const DRUGS = {
     // documented real-world mechanism for epi relieving anaphylactic
     // angioedema, the same receptor already justifying `edema`'s own
     // reduction here.
-    fx: { bronch: -0.5, edema: -0.35, angioedema: -0.4 },        // non‑hemodynamic effects kept
-    receptors: { alpha: 0.5, beta1: 0.8, beta2: 0.6 },
     note: "National Scope: EMR. Drug of choice in anaphylaxis. Lateral thigh."
   },
 
@@ -142,6 +160,7 @@ export const DRUGS = {
   },
 
   epiIM: {
+    ...EPINEPHRINE,
     dosePerKg: 0.01,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     // DOSE WAS UNDECLARED — DrugInstance fell back to `?? 1`, so every
@@ -204,8 +223,6 @@ export const DRUGS = {
     onset: 60, dur: 900, max: 3,
     // QUEUE ITEM 61: see epiAuto's own comment above — same real alpha-1
     // mucosal-vasoconstriction mechanism, same magnitude.
-    fx: { bronch: -0.5, edema: -0.35, angioedema: -0.4 },
-    receptors: { alpha: 0.5, beta1: 0.8, beta2: 0.6 },
     note: "Drawn from a vial. National Scope added IM route at EMT (Change Notice 1.0)."
   },
 
@@ -468,13 +485,12 @@ export const DRUGS = {
   },
 
   epiIV: {
+    ...EPINEPHRINE,
     pkModel: "twoCompartment",
     name: "Epinephrine 1 mg (0.1 mg/mL)", route: "IV/IO", lvl: 3,
     onset: 20, dur: 300, max: 3,
     dose: 1,
     dosePerKg: 0.01,   // mg/kg for a child (< 40 kg), capped at the adult dose above
-    fx: {},                                      // hemodynamics entirely via receptors
-    receptors: { alpha: 0.9, beta1: 1.0, beta2: 0.3, beta2Vasodilation: 0.06 },
     note: "On the AEMT closed IV list — for ARREST. Benefit falls away after 3 doses."
   },
 
@@ -532,6 +548,7 @@ export const DRUGS = {
   },
 
   amiodarone: {
+    molecule: "amiodarone",
     pkModel: "twoCompartment",
     name: "Amiodarone 300 mg", route: "IV/IO", lvl: 4,
     onset: 60, dur: 600, max: 2,
@@ -567,6 +584,7 @@ export const DRUGS = {
   // lower `dose`, the same reason naloxone_in/im/iv are three separate
   // entries rather than one drug with a route flag).
   amiodarone2: {
+    molecule: "amiodarone",
     dosePerKg: 5,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Amiodarone 150 mg (repeat)", route: "IV/IO", lvl: 4,
@@ -844,6 +862,7 @@ export const DRUGS = {
   },
 
   pushEpi: {
+    ...EPINEPHRINE,
     pkModel: "twoCompartment",
     name: "Push-dose Epinephrine", route: "IV", lvl: 4,
     onset: 30, dur: 300, max: 10,
@@ -868,8 +887,6 @@ export const DRUGS = {
     // post-intubation patient, in whom that buffering is already spent.
     // 0.02 mg is the top of the documented 10-20 mcg range, not a fitted number.
     dose: 0.02,
-    fx: {},
-    receptors: { alpha: 0.7, beta1: 0.9, beta2: 0.4 },
     note: "Low‑dose bolus for transient hypotension (e.g., post‑intubation)."
   },
 
