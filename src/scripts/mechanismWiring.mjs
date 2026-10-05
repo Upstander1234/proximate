@@ -20,7 +20,7 @@
 //
 // Run:  node src/scripts/mechanismWiring.mjs
 import { physio, activePatient, outcomeReport } from "../physiology.js";
-import { seedPastDose, hillOcc, updateDrugs } from "../physio/pk.js";
+import { seedPastDose, hillOcc, updateDrugs, infusionRateMgPerMin, PK_PARAMS } from "../physio/pk.js";
 import { Patient } from "../physio/patient.js";
 import { updateVenousReturn, updateRhythm } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
@@ -8747,6 +8747,53 @@ console.log("\n[GATE-CONTROL MODULATION — descending affective gate on allodyn
   regGateOk ? pass++ : fail++;
   if (!regGateOk) failures.push(`agitation=0 should reproduce the pre-gate formula exactly, got ${ctrl.drugPain}, expected ${expected}`);
   console.log(`  ${regGateOk ? "PASS" : "FAIL"}  ${"regression control: agitation=0 is a true no-op".padEnd(46)} drugPain=${ctrl.drugPain}, expected=${expected}`);
+}
+
+console.log("\n[CONTINUOUS INFUSION (pump state, zero-order input)]");
+{
+  // A pump line in s.infusions drives a zero-order mass input into the
+  // central compartment. Checks: plateau at Css = rate/kel, a real pressor
+  // effect, washout after the stop, and that a curve-model drug line is
+  // ignored instead of crashing or doing something.
+  const run = (id, perKgMin, stopAt, total) => {
+    const s = { scen: "abdPain", t: 0, doses: [], infusions: [], given: {}, activePatientId: null };
+    const out = {};
+    for (let T = STEP; T <= total; T += STEP) {
+      s.t = T;
+      const p0 = activePatient(s);
+      if (T === 182) s.infusions.push({ line: "A", id, rate: infusionRateMgPerMin(null, perKgMin, p0.weight ?? 74), from: 182, to: stopAt });
+      physio(s);
+      const p = activePatient(s);
+      if (T === STEP) pinTraitsNeutral(p);
+      out[T] = { map: p.map, central: p.drugInstances.filter(d => d.id === id).reduce((a, d) => a + d.central, 0), w: p.weight ?? 74 };
+    }
+    return out;
+  };
+  const ne = run("norepi", 0.1, 900, 1200);
+  const base = run("norepi", 0, 900, 300);   // rate 0 line: control
+  const kelNe = PK_PARAMS.norepi.kel;
+  const css = infusionRateMgPerMin(null, 0.1, ne[900].w) / kelNe;
+  const cssOk = Math.abs(ne[900].central - css) / css < 0.25;
+  cssOk ? pass++ : fail++;
+  if (!cssOk) failures.push(`infusion should plateau near Css=rate/kel=${css.toFixed(4)}, got central ${ne[900].central.toFixed(4)}`);
+  console.log(`  ${cssOk ? "PASS" : "FAIL"}  ${"norepinephrine infusion plateaus near rate/kel".padEnd(46)} central=${ne[900].central.toFixed(4)} Css=${css.toFixed(4)}`);
+
+  const dMap = ne[900].map - base[180].map;
+  const effOk = dMap > 8 && dMap < 25;
+  effOk ? pass++ : fail++;
+  if (!effOk) failures.push(`0.1 mcg/kg/min norepinephrine should raise MAP about 10-20 mmHg, got ${dMap.toFixed(1)}`);
+  console.log(`  ${effOk ? "PASS" : "FAIL"}  ${"...raises MAP by a clinical amount (~10-20 mmHg)".padEnd(46)} dMAP=${dMap.toFixed(1)}`);
+
+  const washOk = ne[1200].central < 0.3 * ne[900].central;
+  washOk ? pass++ : fail++;
+  if (!washOk) failures.push(`drug should wash out after the pump stops, central ${ne[900].central.toFixed(4)} -> ${ne[1200].central.toFixed(4)}`);
+  console.log(`  ${washOk ? "PASS" : "FAIL"}  ${"...washes out after the pump stops (5 min)".padEnd(46)} central ${ne[900].central.toFixed(4)} -> ${ne[1200].central.toFixed(4)}`);
+
+  const curveLine = run("phenylephrine", 0.1, 900, 300);
+  const curveOk = Number.isFinite(curveLine[300].map) && curveLine[300].central === 0;
+  curveOk ? pass++ : fail++;
+  if (!curveOk) failures.push("an infusion line for a curve-model drug should be ignored without error");
+  console.log(`  ${curveOk ? "PASS" : "FAIL"}  ${"...curve-model drug line is ignored".padEnd(46)} central=${curveLine[300].central}`);
 }
 
 console.log("\n" + "=".repeat(74));

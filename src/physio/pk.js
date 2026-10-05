@@ -616,7 +616,10 @@ function advancePkCompartments(dr, dt, pat) {
     }
     // Elimination scaled by the eliminating organs' current function.
     const kelEff = kel * organClearance;
-    const dCentral = absorbed - kelEff * dr.central - k12 * dr.central + k21 * dr.peripheral;
+    // Zero-order infusion input (mg/min), written each tick by the pump state
+    // (see syncInfusions). Linear with the bolus/depot terms, so a bolus or load
+    // plus a maintenance infusion coexist by addition.
+    const dCentral = absorbed + (dr.infusionRate || 0) - kelEff * dr.central - k12 * dr.central + k21 * dr.peripheral;
     const dPeriph = k12 * dr.central - k21 * dr.peripheral;
     dr.central += dCentral * sstep;
     dr.peripheral += dPeriph * sstep;
@@ -840,6 +843,41 @@ export function applyProcedures(pat, s) {
 // Queue item 62 — see physio/pain.js for the sensitization mechanism itself.
 const PAIN_HYPERALGESIA_GAIN_MAX = 1.5; // up to ~2.5x multiplier at centralSensitization=1
 const PAIN_ALLODYNIA_MAX = 4;           // up to 4/10 pain from innocuous input alone
+
+// ---------------------------------------------------------------------------
+// CONTINUOUS INFUSIONS. A pump line is plain data in s.infusions:
+//   { line, id, rate, from, to, patientId? }
+// rate is in mg/min (use infusionRateMgPerMin to convert from mcg/kg/min or
+// U/min), from/to are sim seconds (to omitted or null means still running).
+// Titrating is writing a new rate (or pushing a new line segment); stopping is
+// setting `to`. The drip minigame and this PK layer share this one record, so
+// the rate is never duplicated into a separate PK field. Each line owns one
+// persistent DrugInstance (dose 0) whose infusionRate is the zero-order input
+// into the central compartment of advancePkCompartments, so it uses the same
+// two-compartment disposition (and weight/organ scaling) as a bolus.
+// Only twoCompartment drugs can be infused; a curve drug has no concentration.
+// ---------------------------------------------------------------------------
+export function infusionRateMgPerMin(drugDef, amountPerKgMin, weightKg) {
+  // amountPerKgMin in mcg/kg/min for mass drugs; for unit drugs (vasopressin)
+  // pass units/min with weightKg = 1 (not per kg).
+  return (amountPerKgMin * weightKg) / 1000;
+}
+function syncInfusions(pat, s) {
+  const lines = (s.infusions || []).filter(l => l.patientId == null || l.patientId === pat._id);
+  pat._infusionInst = pat._infusionInst || {};
+  for (const l of lines) {
+    const active = s.t >= l.from && (l.to == null || s.t < l.to);
+    let dr = pat._infusionInst[l.line];
+    if (!dr || !pat.drugInstances.includes(dr)) {
+      if (!active) continue;
+      if (!PK_PARAMS[l.id] || DRUGS[l.id]?.pkModel === "curve") continue;
+      dr = new DrugInstance(l.id, 0, l.from, 1, null);
+      pat.drugInstances.push(dr);
+      pat._infusionInst[l.line] = dr;
+    }
+    dr.infusionRate = active ? Math.max(0, l.rate) : 0;
+  }
+}
 
 export function updateDrugs(pat, s, dt) {
     // Reset per‑step accumulators
@@ -1284,6 +1322,8 @@ export function updateDrugs(pat, s, dt) {
       }
     });
 
+    syncInfusions(pat, s);
+
     // ---- ANTAGONIST PRE-PASS ------------------------------------------------
     // Receptor ANTAGONISTS must be resolved BEFORE the agonists they block are
     // applied, because the agonist's effect is scaled by (1 - blockade). The
@@ -1684,7 +1724,7 @@ export function updateDrugs(pat, s, dt) {
             pat.opioidBlockade = Math.max(pat.opioidBlockade, 1 - intensity / unblocked);
           }
         }
-        if (dr.central < 0.001 && dr.peripheral < 0.001 && (dr.depot || 0) < 0.001 && (dr.airwayDose || 0) < 0.001 && (dr.deepDepot || 0) < 0.001) continue;
+        if (!(dr.infusionRate > 0) && dr.central < 0.001 && dr.peripheral < 0.001 && (dr.depot || 0) < 0.001 && (dr.airwayDose || 0) < 0.001 && (dr.deepDepot || 0) < 0.001) continue;
         toKeep.push(dr);
         // The intensity above is the whole drug's, so the drug's effects are
         // applied ONCE however many instances carry it. The remaining instances
