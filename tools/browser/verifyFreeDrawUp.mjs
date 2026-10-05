@@ -2,7 +2,8 @@
 // the player picks any vial, draws any amount, and that exact amount reaches the
 // patient by any route of the same drug. Two cases: 0.5 mg of morphine (an
 // arbitrary under-dose), and epinephrine drawn from the 0.1 mg/mL cardiac vial
-// but given IM through the 1:1000 IM action (one molecule, any presentation).
+// but given IM through the 1:1000 IM action (one molecule, any presentation),
+// plus a 10x fentanyl draw from a vial labeled in mcg.
 //
 // Run: node tools/browser/verifyFreeDrawUp.mjs   (needs `npx vite --port 5174`)
 import { launch, clickText, waitForPhase, toTitleScreen } from "./driver.mjs";
@@ -50,6 +51,7 @@ async function draw(page, name, conc, syringe, ml) {
   await page.getByRole("button", { name: `${syringe} mL syringe` }).click();
   await setRange(page, "Plunger", ml);
   for (let i = 0; i < 3; i++) await page.locator('svg g circle[r="10"]').first().click({ force: true }).catch(() => {});
+  draw.lastText = await page.locator("text=Dose in hand").first().innerText().catch(() => "");
   await page.getByRole("button", { name: "Confirm and cap" }).click();
 
   for (let i = 0; i < 60; i++) { const d = (await st(page)).preppedDraw; if (d) return d; await page.waitForTimeout(250); }
@@ -59,6 +61,9 @@ async function giveIM(page, label) {
   const before = ((await st(page)).doses || []).length;
   await page.evaluate(() => window.__proximateTestSetState({ busy: null, region: "legR" }));
   await page.getByText(label, { exact: false }).first().click();
+  // An oversized draw raises the max-amount warning; the player may give it anyway.
+  const anyway = page.getByRole("button", { name: "Give it anyway" });
+  if (await anyway.isVisible({ timeout: 1500 }).catch(() => false)) { giveIM.warned = true; await anyway.click(); }
   await page.getByRole("button", { name: "Pinch the muscle" }).click();
   await setRange(page, "", 90);
   await page.getByRole("button", { name: "Insert the needle" }).click();
@@ -89,6 +94,14 @@ async function main() {
   const s2 = await giveIM(page, "Epinephrine 0.5 mg (1:1000) · IM");
   const d2 = (s2.doses || []).at(-1);
   check("cardiac-vial epinephrine given IM goes in as 0.3 mg by the IM route", d2 && d2.id === "epiIM" && Math.abs(d2.amount - 0.3) < 0.01, JSON.stringify(d2));
+
+  await scene(page);
+  const f = await draw(page, "Fentanyl", "50 mcg/mL", 10, 10);
+  check("fentanyl vial labeled in mcg; 10 mL shows 500 mcg (0.5 mg) in hand", f && f.id === "fentanyl" && Math.abs(f.amount - 0.5) < 0.01 && /500 mcg \(0\.5 mg\)/.test(draw.lastText), `${JSON.stringify(f)} "${draw.lastText}"`);
+  giveIM.warned = false;
+  const s3 = await giveIM(page, "Fentanyl 50 mcg · IM");
+  const d3 = (s3.doses || []).at(-1);
+  check("a 10x fentanyl draw warns first, then reaches the patient as 0.5 mg", giveIM.warned && d3 && d3.id === "fentanyl" && Math.abs(d3.amount - 0.5) < 0.01, JSON.stringify(d3));
 
   const real = consoleErrors.filter(x => !/Failed to load resource|LocalLLMProvider|Hugging|favicon|Firebase|ERR_CERT/i.test(x));
   check("no console errors", real.length === 0, real.join(" | ").slice(0, 200));

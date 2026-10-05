@@ -26,7 +26,7 @@ const INJECTABLE = () => Object.keys(DRUG_UNITS)
   .map(id => ({ id, name: DRUGS[id].name, conc: DRUG_UNITS[id].conc, unit: DRUG_UNITS[id].unit }));
 
 const SYRINGES = [1, 3, 5, 10, 20, 60];
-const fmt = (n) => (n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(1) : n.toPrecision(2));
+const fmt = (n) => String(parseFloat(n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(1) : n.toPrecision(2)));
 
 function pick(arr, n) {
   const a = [...arr];
@@ -293,6 +293,12 @@ const FREE_TRAY = () => {
   return out.sort((a, b) => a.name.localeCompare(b.name) || a.conc - b.conc);
 };
 
+// Real labels: a vial labeled in mcg shows mcg, and the amount in hand shows both
+// units, so the conversion is on screen but the player still has to read it.
+const inMcg = id => DRUG_UNITS[id]?.labelUnit === "mcg";
+const concText = v => inMcg(v.id) ? `${fmt(v.conc * 1000)} mcg/mL` : `${v.conc} ${v.unit}/mL`;
+const amtText = (id, a, unit) => inMcg(id) ? `${fmt(a * 1000)} mcg (${fmt(a)} ${unit})` : `${fmt(a)} ${unit}`;
+
 function FreeDraw({ pat, interrupted, onResolve }) {
   const [tray] = useState(FREE_TRAY);
   const [filter, setFilter] = useState("");
@@ -320,7 +326,7 @@ function FreeDraw({ pat, interrupted, onResolve }) {
     if (bubble) { setFlash("There is still an air bubble in the barrel. Tap it to flick it out."); return; }
     onResolve(PROCEDURE_OUTCOME.SUCCESS, {
       drugId: vial.id, amount, label: vial.id,
-      vialLabel: `${vial.name} ${vial.conc} ${unit}/mL`,
+      vialLabel: `${vial.name} ${concText(vial)}`,
       ...(dilute ? { mixConc } : {}),
     });
   };
@@ -339,7 +345,7 @@ function FreeDraw({ pat, interrupted, onResolve }) {
           style={{ width: "100%", marginBottom: 8, background: "#0B0F12", border: `1px solid ${C.line}`, color: C.text, borderRadius: 4, padding: "4px 8px", fontSize: 12 }} />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 200, overflowY: "auto", marginBottom: 12, justifyContent: "center" }}>
           {shown.map(v => (
-            <Vial key={v.key} name={v.name} conc={`${v.conc} ${v.unit}/mL`} cap={capColorFor(v.id)} selected={vialKey === v.key} active={vialKey === v.key}
+            <Vial key={v.key} name={v.name} conc={concText(v)} cap={capColorFor(v.id)} selected={vialKey === v.key} active={vialKey === v.key}
               onClick={() => { setVialKey(v.key); setVol(0); setBubble(true); setFlash(null); }} />
           ))}
         </div>
@@ -351,20 +357,20 @@ function FreeDraw({ pat, interrupted, onResolve }) {
           ))}
         </div>
         <Syringe vol={vol} max={syringe} cap={vial ? capColorFor(vial.id) : "#5C6E78"} bubble={bubble} hasVial={!!vial} onFlick={onFlick} flicks={flicks} minFlick={0} />
-        <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>3. Pull the plunger: {vol.toFixed(syringe <= 3 ? 2 : 1)} mL{vial ? ` = ${fmt(inSyringe)} ${unit}` : ""}</div>
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>3. Pull the plunger: {vol.toFixed(syringe <= 3 ? 2 : 1)} mL{vial ? ` = ${amtText(vial.id, inSyringe, unit)}` : ""}</div>
         <input type="range" aria-label="Plunger" min={0} max={syringe} step={syringe / 400} value={vol} onChange={e => setVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
         <label style={{ fontSize: 12, color: C.faint, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <input type="checkbox" checked={dilute} onChange={e => setDilute(e.target.checked)} /> Dilute with saline and push only part of it
         </label>
         {dilute && (<>
-          <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Total after saline: {total.toFixed(1)} mL{vial ? ` (${fmt(mixConc)} ${unit}/mL)` : ""}</div>
+          <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Total after saline: {total.toFixed(1)} mL{vial ? ` (${inMcg(vial.id) ? `${fmt(mixConc * 1000)} mcg` : `${fmt(mixConc)} ${unit}`}/mL)` : ""}</div>
           <input type="range" aria-label="Total volume after dilution" min={0} max={syringe} step={syringe / 200} value={mixTotal} onChange={e => setMixTotal(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
           <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>Push: {pushed.toFixed(2)} mL of the mix</div>
           <input type="range" aria-label="Volume to push" min={0} max={total || syringe} step={(total || syringe) / 200} value={Math.min(pushVol, total || syringe)} onChange={e => setPushVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
         </>)}
         <div style={{ fontSize: 12, color: bubble ? C.faint : C.hr, marginBottom: 8 }}>4. {bubble ? "Tap the bubble in the barrel to flick it out." : "Air expelled."}</div>
         <div style={{ fontSize: 13, color: C.text, marginBottom: 10 }}>
-          Dose in hand: <b>{vial ? `${fmt(amount)} ${unit} of ${vial.name}` : "nothing"}</b>
+          Dose in hand: <b>{vial ? `${amtText(vial.id, amount, unit)} of ${vial.name}` : "nothing"}</b>
         </div>
         {flash && <div style={{ fontSize: 12, color: C.red, marginBottom: 8 }}>{flash}</div>}
         <button onClick={confirm} className="px-3 py-2 rounded w-full" style={{ background: "#122A18", border: `1px solid ${C.hr}`, color: C.hr }}>Confirm and cap</button>

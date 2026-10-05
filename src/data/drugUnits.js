@@ -13,6 +13,8 @@
 // curve drug it is the reference dose that the amount scaling in pk.js is
 // relative to. Fluids, oral, sublingual, nebulized and inhaled drugs are not
 // listed: they are not drawn into a syringe.
+// labelUnit: the unit the real vial label prints (fentanyl and push-dose
+// epinephrine are labeled in mcg). Amounts are still stored in `unit`.
 export const DRUG_UNITS = {
   naloxone_iv:   { unit: "mg",  std: 0.4,  conc: 0.4 },
   naloxone_im:   { unit: "mg",  std: 0.4,  conc: 0.4 },
@@ -20,8 +22,8 @@ export const DRUG_UNITS = {
   epiAuto:       { unit: "mg",  std: 0.3,  conc: 0.3 },     // fixed-dose device, 0.3 mL
   epiIM:         { unit: "mg",  std: 0.5,  conc: 1 },       // 1 mg/mL (1:1000)
   epiIV:         { unit: "mg",  std: 1,    conc: 0.1 },     // 0.1 mg/mL (1:10,000), 10 mL
-  pushEpi:       { unit: "mg",  std: 0.02, conc: 0.01 },    // 10 mcg/mL, diluted
-  fentanyl:      { unit: "mg",  std: 0.05, conc: 0.05 },    // 50 mcg/mL
+  pushEpi:       { unit: "mg",  std: 0.02, conc: 0.01, labelUnit: "mcg" },    // 10 mcg/mL, diluted
+  fentanyl:      { unit: "mg",  std: 0.05, conc: 0.05, labelUnit: "mcg" },    // 50 mcg/mL
   morphine:      { unit: "mg",  std: 4,    conc: 10 },
   ketamine:      { unit: "mg",  std: 100,  conc: 50 },
   ketorolac:     { unit: "mg",  std: 15,   conc: 30 },

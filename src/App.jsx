@@ -3601,6 +3601,10 @@ export default function App({onHome}={}){
       const lineOnlyRoute=((a.route||d.route).includes("IV")||(a.route||d.route).includes("IO"))&&!(a.route||d.route).includes("IM")&&!(a.route||d.route).includes("IN");
       if(lineOnlyRoute&&s.done?.[`tq@${a.region}`]) warnings.push("The tourniquet is still on this limb. Nothing pushed below it reaches central circulation.");
       if(d.max&&(s.given[a.drug]||0)>=d.max) warnings.push(`Maximum dose reached (${d.max}). Stop, or call Base.`);
+      // The real-amount cap belongs on the same confirm screen: an oversized draw is the player's
+      // call to make. Checked only here it was a silent refusal after the whole give minigame.
+      else{const w0=s.patient?.ageProfile?.weight,ref0=resolveDoseMg(d,w0,a.drug),dr0=(s.preppedDraw&&molOf(s.preppedDraw.id)===molOf(a.drug))?s.preppedDraw.amount:ref0,tot=((s.givenAmt||{})[a.drug]||0)+dr0;
+        if(d.max&&ref0>0&&tot>d.max*ref0*1.05) warnings.push(`This would bring the total to ${+tot.toPrecision(3)} ${DRUG_UNITS[a.drug]?.unit||"mg"}, more than ${d.max} standard doses. Stop, or call Base.`);}
       {
         const r=a.route||d.route;
         const lineOnly=(r.includes("IV")||r.includes("IO"))&&!r.includes("IM")&&!r.includes("IN");

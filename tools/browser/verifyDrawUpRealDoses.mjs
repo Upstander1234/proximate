@@ -1,4 +1,5 @@
 // tools/browser/verifyDrawUpRealDoses.mjs — real-click check of the draw-up
+// The player draw-up is free (verifyFreeDrawUp.mjs); this checks the scored ordered mode via forceOrder.
 // minigame with real units: the order shows a real amount, each vial shows its
 // concentration, drawing amount/concentration succeeds, and a 10x volume error
 // is rejected as a wrong dose.
@@ -35,7 +36,7 @@ const setRange = (page, v) => page.evaluate((val) => {
 async function openPrep(page) {
   await page.evaluate(() => window.__proximateTestSetState({
     phase: "scene", gmode: "sandbox", scen: "chest", level: "paramedic", t: 5, onSceneAt: 0, tab: "meds",
-    accessMinigame: { action: { id: "prep", region: "head", cost: 25, gerund: "Drawing up" }, kind: "prep" },
+    accessMinigame: { action: { id: "prep", region: "head", cost: 25, gerund: "Drawing up" }, kind: "prep", forceOrder: "morphine" },
   }));
   await page.waitForTimeout(400);
 }
