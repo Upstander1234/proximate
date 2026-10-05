@@ -671,6 +671,11 @@ export const DRUGS = {
 
   adenosine: {
     dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
+    // Real regimen: adult first dose 6 mg rapid IV push plus a 20 mL saline flush, then
+    // 12 mg (repeatable once more) if no conversion in 1-2 min; child 0.1 mg/kg (max 6 mg)
+    // then 0.2 mg/kg (max 12 mg). This single entry stands in for both steps at 12 mg and
+    // the per-kg value is the FIRST dose only; a sequenced first/second dose (the engine
+    // has no per-drug dose-count resolution yet) is open work, see the PK brief.
     pkModel: "curve",
     name: "Adenosine 12 mg", route: "IV", lvl: 4,
     // DEAD-CODE SWEEP FIX (physiology queue item 5). `fx: { hr: -70, sbp: -15 }`
