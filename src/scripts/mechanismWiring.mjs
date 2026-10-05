@@ -8817,6 +8817,24 @@ console.log("\n[WEIGHT- AND AGE-AWARE PK]");
   console.log(`  ${pwOk ? "PASS" : "FAIL"}  ${"per-pathway maturation and exemptions".padEnd(46)} immature=${immature} exempt=${exempt} rocVol=${rocoVol} adult=${adultPw}`);
 }
 
+console.log("\n[NEWBORN EPINEPHRINE THROUGH THE PK LAYER]");
+{
+  // A critically depressed newborn (reserve < 0.2) plateaus bradycardic on PPV plus compressions alone;
+  // a routed, weight-resolved epinephrine dose completes the rescue through its alpha drive (no flag).
+  const run = (dose) => {
+    const p = new Patient({ age: 0, sex: "M", weight: 3.3 });
+    p._id = "newborn"; p._neo = { vigor: 0.3, reserve: 0.1, ppv: true, compressions: true };
+    const st = { t: 0, doses: dose ? [{ id: "epiIV", at: 0, patientId: "newborn" }] : [], given: {} };
+    for (let i = 1; i <= 40; i++) { st.t = i * 6; updateDrugs(p, st, 0.1); CONDITIONS.neonatalTransition.progress(p, 0.1, st); }
+    return { hr: p.hrBase, amt: st.doses[0]?.resolvedAmount };
+  };
+  const no = run(false), yes = run(true);
+  const ok = no.hr < 110 && yes.hr > 140 && Math.abs(yes.amt - 0.033) < 0.002;
+  ok ? pass++ : fail++;
+  if (!ok) failures.push(`routed newborn epinephrine should lift a critical newborn from a plateau (no epi hr ${no.hr}, epi hr ${yes.hr}, dose ${yes.amt} mg, expected 0.033)`);
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${"routed 0.01 mg/kg epi rescues a critical newborn".padEnd(46)} no epi hr=${no.hr.toFixed(0)} epi hr=${yes.hr.toFixed(0)} dose=${yes.amt}`);
+}
+
 console.log("\n[ADENOSINE DOSE-DEPENDENT SVT CONVERSION]");
 {
   const conv = (amt) => { let c = 0; for (let i = 0; i < 40; i++) { const s = { scen: "svt", t: 0, doses: [], given: {}, activePatientId: null }; for (let t = STEP; t <= 60; t += STEP) { s.t = t; if (t === 20) s.doses.push({ id: "adenosine", at: t, amount: amt }); physio(s); } if (activePatient(s).rhythm !== "svt") c++; } return c; };

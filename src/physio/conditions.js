@@ -6265,8 +6265,12 @@ export const CONDITIONS = {
         // weight-scaled epi dose (see App.jsx's `t.neoAction==="epi"`) is
         // what completes the rescue.
         const CRITICAL_RESERVE = 0.2;
+        // Epinephrine now arrives as a real weight-resolved PK dose (0.01 mg/kg), and its alpha-adrenergic
+        // vasoconstriction (the drug-driven alpha drive the engine computes) is what raises coronary
+        // perfusion pressure. The legacy neo.epi flag is still honored for callers that set it directly.
+        const epiOnBoard = !!neo.epi || (pat._alphaDrug || 0) >= 0.3;
         target = chestComp
-          ? ((neo.reserve < CRITICAL_RESERVE && !neo.epi) ? 0.55 : 1)
+          ? ((neo.reserve < CRITICAL_RESERVE && !epiOnBoard) ? 0.55 : 1)
           : 0.95;                                       // effective PPV rescues any newborn
       } else {
         const base = neo.reserve + (stim ? 0.12 : 0);  // drying/stimulation nudges the borderline

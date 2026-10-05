@@ -2449,7 +2449,9 @@ export default function App({onHome}={}){
         // consumer for a routed dose to feed.
         if(!nb._neo.compressions) return {say:`${c.name.toUpperCase()}: "Not yet — this needs effective compressions and ventilation first."`,kind:"warn"};
         const wt=nb.weight||3.3, mg=Math.round(wt*0.01*1000)/1000;
-        nb._neo.epi=true;
+        // A real routed dose on the newborn (patientId stamped directly; giveDose would stamp the active patient). The
+        // dose resolves to 0.01 mg/kg of the baby's own weight and acts through the PK layer's alpha drive.
+        m.doses=[...(m.doses||[]),{id:"epiIV",at:m.t,route:"IV/IO",patientId:nb._id}];
         return {say:`${c.name.toUpperCase()}: "Epi, ${mg} mg IV/IO — ${wt} kilo baby, point-oh-one per kilo."`,kind:"good"};}
     }
     if(t.ivAttempt){const free=LIMBS.find(l=>!(m.ivSites||[]).includes(l));
