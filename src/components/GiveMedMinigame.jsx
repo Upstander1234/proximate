@@ -163,7 +163,7 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
   const awake = !pat?.consciousness || pat.consciousness === "awake";
   const title = { line: `Push ${drugName} via ${access}`, im: `Inject ${drugName} IM`, in: `${drugName} intranasal`, oral: `Give ${drugName}`, neb: `Set up ${drugName}` }[mode] || `Give ${drugName}`;
   const fail = (why) => setFlash({ ok: false, why });
-  const win = (msg) => setFlash({ ok: true, why: msg });
+  const win = (msg, detail) => setFlash({ ok: true, why: msg, detail });
 
   const stepView = () => {
     if (mode === "line") {
@@ -186,13 +186,22 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
         <input type="range" min={1} max={10} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: "100%", marginBottom: 8 }} />
         <PushBar label={fastPush ? "Push it in fast, in 1 to 3 seconds." : "Steady pressure on the plunger."} speed={speed} maxSpeed={maxSpeed} invert={fastPush}
           onDone={(f) => { setFast(f); setStep(3); }} /></>);
+      if (fastPush && step === 3) return (<>
+        <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
+          4. Flush 20 mL of saline hard and fast right behind it, before it is metabolized in the vein.
+        </div>
+        <PushBar label="Rapid saline flush." speed={speed} maxSpeed={maxSpeed} invert
+          onDone={(slow) => (!scrubbed ? fail("The hub was never scrubbed. Contaminated line, redo it clean.")
+            : fast ? fail("You pushed too slowly. Adenosine's half-life is under 10 seconds, a slow push never reaches the AV node before it's metabolized. It won't work.")
+            : slow ? win("The flush was slow. The bolus took longer to reach the heart and more of it was metabolized on the way.", { flushMlPerSec: speed })
+            : win("Pushed fast and flushed hard right behind it. That's the only way this drug reaches the AV node intact.", { flushMlPerSec: speed }))} /></>);
       return (<>
         <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>
-          4. {fastPush ? "Flush hard and fast right behind it, before it clears the line." : "Flush the line so the drug reaches the patient."}
+          4. Flush the line so the drug reaches the patient.
         </div>
         <button style={GO} onClick={() => (!scrubbed ? fail("The hub was never scrubbed. Contaminated line, redo it clean.")
-          : fast ? fail(fastPush ? "You pushed too slowly. Adenosine's half-life is under 10 seconds — a slow push never reaches the AV node before it's metabolized. It won't work." : "You pushed too fast. Rapid push risks a reaction, slow it down.")
-          : win(fastPush ? "Pushed fast and flushed hard right behind it — that's the only way this drug reaches the AV node intact." : "Pushed, flushed, and the line is still good."))}>Flush and finish</button></>);
+          : fast ? fail("You pushed too fast. Rapid push risks a reaction, slow it down.")
+          : win("Pushed, flushed, and the line is still good."))}>Flush and finish</button></>);
     }
     if (mode === "im") {
       if (step === 0) return (<>
@@ -264,7 +273,7 @@ export default function GiveMedMinigame({ open, kind, drugName, mode, access: ac
         {flash && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, color: flash.ok ? "#7CD68A" : C.red, marginBottom: 10 }}>{flash.why}</div>
-            <button style={NEUTRAL} onClick={() => (flash.ok ? onResolve(PROCEDURE_OUTCOME.SUCCESS) : onResolve(PROCEDURE_OUTCOME.FAILED, flash.why))}>Continue</button>
+            <button style={NEUTRAL} onClick={() => (flash.ok ? onResolve(PROCEDURE_OUTCOME.SUCCESS, flash.detail) : onResolve(PROCEDURE_OUTCOME.FAILED, flash.why))}>Continue</button>
           </div>
         )}
         {!flash && (ack || !warnings || warnings.length === 0) && (

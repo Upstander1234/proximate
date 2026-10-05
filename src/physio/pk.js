@@ -713,6 +713,30 @@ export function seedPastDose(pat, id, dose, elapsedMin, bioavailability = 1, rou
 // writes s.doses directly working exactly as before (global, roster-wide).
 const dosesFor = (s, pat) => (s.doses || []).filter(d => d.patientId == null || d.patientId === pat._id);
 
+// Fast-clearing bolus drugs (adenosine: taken up by red cells and endothelium and
+// deaminated, half-life under 10 s) lose drug in proportion to how long the bolus spends
+// in transit from the injection site to the heart. Transit time = time to deliver the flush
+// (20 mL at the flush rate the player achieved) + time for venous flow to carry whatever
+// path volume the flush did not cover (arm veins and SVC for a peripheral IV, much less for
+// a sternal IO). Arm venous flow scales with cardiac output, so a low-output patient
+// delays the bolus. The reference technique (a standard rapid flush in a normal-output
+// patient) is the one the clinical conversion figures were measured with, so loss is
+// counted only beyond it; a dose with no recorded technique (scenario seeds) is ideal.
+const FLUSH_ML = 20, ARM_FLOW_FRACTION = 0.05;   // arm carries about 5% of cardiac output
+export function bolusDeliveredFraction(drugDef, pat, d) {
+  const tr = drugDef?.transit;
+  if (!tr || !(d.flushMlPerSec > 0)) return 1;
+  const io = /IO/.test(d.route || "");
+  const pathMl = io ? tr.pathMl.IO : tr.pathMl.IV;
+  const coMlPerSec = Math.max(5, (pat.co || 5) * 1000 / 60);
+  const armFlow = Math.max(0.3, coMlPerSec * ARM_FLOW_FRACTION);
+  const flushSec = FLUSH_ML / d.flushMlPerSec;
+  const transit = flushSec + Math.max(0, pathMl - FLUSH_ML) / armFlow;
+  const refCo = 5 * 1000 / 60, refArm = refCo * ARM_FLOW_FRACTION;
+  const refTransit = FLUSH_ML / tr.refFlushMlPerSec + Math.max(0, tr.pathMl.IV - FLUSH_ML) / refArm;
+  return Math.min(1, Math.pow(2, -(transit - refTransit) / tr.halfLifeSec));
+}
+
 export function applyProcedures(pat, s) {
     dosesFor(s, pat).forEach(d => {
       const proc = PROCS[d.id] || DRUGS[d.id];
@@ -1370,6 +1394,7 @@ export function updateDrugs(pat, s, dt) {
           const refDose = resolveDoseMg(drugDef, pat.ageProfile?.weight, d.id);
           const dose = d.amount ?? refDose;   // an explicit (drawn or scenario) amount wins over the weight-resolved dose
           const inst = new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null);
+          inst.deliveredFraction = bolusDeliveredFraction(drugDef, pat, d);   // fast-clearing bolus: fraction surviving transit to the heart
           inst.refDose = refDose;             // the dose the patient should get; curve-drug amount scaling is relative to it
           d.resolvedAmount = dose;            // stamped on the dose record so the log/UI can show the delivered amount
           pat.drugInstances.push(inst);
@@ -1850,6 +1875,7 @@ export function updateDrugs(pat, s, dt) {
         if ((drugDef.receptors || drugDef.antiarrhythmic?.avSlowing) && refDoseForScale > 0 && dr.givenDose > 0) {
           amountScale = Math.min(3, dr.givenDose / refDoseForScale);
         }
+        amountScale *= dr.deliveredFraction ?? 1;
         intensity = k * amountScale;
         toKeep.push(dr);
       }

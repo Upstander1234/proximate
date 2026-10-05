@@ -719,6 +719,10 @@ export const DRUGS = {
     // by a fast saline flush. GiveMedMinigame.jsx reads this to invert its
     // push-rate check for this one drug instead of penalizing a fast push.
     pushRate: "fast",
+    // Transit loss model (pk.js bolusDeliveredFraction): half-life 10 s (red-cell and
+    // endothelial uptake, adenosine deaminase); path volume from the injection site to
+    // the heart; reference technique is a standard rapid flush (about 7 mL/s).
+    transit: { halfLifeSec: 10, pathMl: { IV: 40, IO: 15 }, refFlushMlPerSec: 7 },
     note: "Contraindicated in WPW+AF. Does NOT touch sinus tach. Warn them: it feels like dying. Rapid IV push, then a rapid saline flush immediately behind it — a slow push never reaches the AV node."
   },
 

@@ -1957,7 +1957,7 @@ export default function App({onHome}={}){
           // gets exactly what was drawn, not the ordered or standard dose. A different drug gets
           // the weight-resolved default.
           const drawn=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:null;
-          giveDose(s,{id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{})});s.prepped=0;s.preppedDraw=null;
+          giveDose(s,{id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});s.prepped=0;s.preppedDraw=null;
           if(id==="calcium") s.calcium=1;
           // F0 — treatment-response dialogue (item 18): analgesics are
           // identified by their own real, already-declared fx.pain delta,
@@ -3859,7 +3859,8 @@ export default function App({onHome}={}){
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
       const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount}}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra});
+      const flushExtra=(mg.kind==="give"&&detail&&detail.flushMlPerSec>0)?{_flushRate:detail.flushMlPerSec}:{};
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra,...flushExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
