@@ -1171,6 +1171,7 @@ export function updateDrugs(pat, s, dt) {
     pat.opioidMiosis = 0;
     pat.uterotonicDrive = 0;
     let alphaDrug = 0, beta1Drug = 0, beta2Drug = 0;
+    let v1Drug = 0;   // vasopressin V1 vasoconstriction, kept OFF the adrenergic accumulator so a catecholamine-resistance term can act on alphaDrug without touching it
     // Local airway receptor activity from inhaled drugs, kept separate from the
     // systemic tone so route determines where a drug acts, not just how much.
     let beta2Airway = 0;
@@ -2466,7 +2467,7 @@ export function updateDrugs(pat, s, dt) {
           const v1Sens = perfusing
             ? Math.max(0.25, Math.min(1.3, 1.75 - 1.5 * tone))
             : 1.0;
-          alphaDrug += rec.V1 * recIntensity * v1Sens;
+          v1Drug += rec.V1 * recIntensity * v1Sens;
         }
         // For completeness, if drug has parasympathetic property (old style), handle as vagal block
         if (rec.parasympathetic) {
@@ -2675,6 +2676,7 @@ export function updateDrugs(pat, s, dt) {
     }
 
     pat._alphaDrug = alphaDrug;
+    pat._v1Drug = v1Drug;
     pat._beta1Drug = beta1Drug;
     pat._beta2Drug = beta2Drug;
     pat._beta2Airway = beta2Airway;

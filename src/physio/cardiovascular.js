@@ -282,7 +282,7 @@ export function updateAutonomic(pat, dt) {
   // patients retain SOME residual pressor responsiveness, not none.
   const cortisolPermissive = (pat.cortisol ?? 1) >= 0.15 ? 1
     : 0.4 + 0.6 * ((pat.cortisol ?? 1) / 0.15);
-  pat.alphaTone = clamp((pat.neuralSymp * 0.9 * (pat.vascularReactivity ?? 1) + catExcess * 0.35 + (pat._alphaDrug || 0) + (pat._cushingAlpha || 0)) * cortisolPermissive, 0, 3);
+  pat.alphaTone = clamp((pat.neuralSymp * 0.9 * (pat.vascularReactivity ?? 1) + catExcess * 0.35 + (pat._alphaDrug || 0) + (pat._v1Drug || 0) + (pat._cushingAlpha || 0)) * cortisolPermissive, 0, 3);
   pat.beta1Tone = clamp(pat.neuralSymp * 0.7 + catExcess * 0.30 + (pat._beta1Drug || 0), -1, 3);
   pat.beta2Tone = clamp(pat.neuralSymp * 0.35 + catExcess * 0.25 + (pat._beta2Drug || 0), 0, 3);
 

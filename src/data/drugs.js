@@ -802,7 +802,11 @@ export const DRUGS = {
     // "fix" for a field that appears to do nothing is to make it work, and that
     // would have silently double-counted the whole vasopressor effect on top of
     // a V1 limb that is already wired (pk.js adds rec.V1 to alpha tone).
-    receptors: { alpha: 0.9, V1: 1.0 },
+    // Vasopressin acts on V1 receptors only; it has no alpha-adrenergic action.
+    // The old alpha:0.9 term was a mislabel that also put it on the adrenergic
+    // accumulator (where a catecholamine-resistance term must NOT act, since
+    // V1 is the non-adrenergic channel in refractory shock).
+    receptors: { V1: 1.0 },
     note: "Works in acidosis where catecholamines will not."
   },
 
