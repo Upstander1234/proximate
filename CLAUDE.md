@@ -599,6 +599,10 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-05 (e) — Pericardial RA-pressure assertion was measuring beat phase
+
+The `[PERICARDIAL CONSTRAINT]` Refsum-style assertion failed (-0.50 vs predicted 7.48). Bisected to f2c5e17 (hypertension-side vagal gain 2.0), but the tamponade arm is byte-identical before and after it (HR 127, MAP 55.4, CVP 10.92, pericardialP 10.90); only the healthy control's HR moved 1.4 bpm. The assertion compared one instantaneous `fourChamberLoop.Pra` per arm, and Pra swings about -0.3 to 5.2 mmHg within a beat, so the original 4.80 pass was beat-phase luck too. It now averages Pra over the last 100 s: mean rise 3.61 mmHg, about half the 0.75 x periDelta prediction (the restrained atrium also fills less). The assertion is now two-sided on that fraction (30-100% of the prediction). No engine change.
+
 ### 2026-10-05 (d) — Draw-up labels in mcg, oversized draws warn instead of failing
 
 - **Real vial labels:** `drugUnits.js` gains `labelUnit: "mcg"` for fentanyl and push-dose epinephrine. The free draw-up shows those vials as "50 mcg/mL" and the dose in hand in both units ("500 mcg (0.5 mg) of Fentanyl"). Amounts are still stored in mg. `fmt` no longer prints a trailing ".0".
