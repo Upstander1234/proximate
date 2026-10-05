@@ -2419,10 +2419,13 @@ export function updateDrugs(pat, s, dt) {
         // lower concentration than the alpha-1 receptors that constrict, so at a
         // low dose epinephrine nets a small FALL in vascular tone (the textbook
         // low-dose dip) and only at a higher dose does alpha dominate. Modeled as
-        // a saturating occupancy with a half-point at 0.1 effect intensity, a
-        // tenth of the alpha scale, subtracted from the alpha accumulator.
+        // a saturating occupancy with a half-point at 0.02 effect intensity, a
+        // small fraction of the alpha scale, subtracted from the alpha accumulator.
+        // Sized so a 20 mcg IV bolus still gives its documented 10-25 mmHg pressor
+        // response (physiologyValidation epi dose-response); a first, stronger
+        // version (0.35, half-point 0.1) erased that response entirely.
         if (rec.beta2Vasodilation) {
-          alphaDrug -= rec.beta2Vasodilation * recIntensity / (recIntensity + 0.1);
+          alphaDrug -= rec.beta2Vasodilation * recIntensity / (recIntensity + 0.02);
         }
         // Calcium-channel blockade (diltiazem) — negative inotrope/chronotrope + vasodilation.
         // Was defined in drugs.js but never consumed; route through beta1 (rate/contractility)

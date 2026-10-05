@@ -4118,13 +4118,13 @@ console.log("\n[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]");
   console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...specificity: condition-less control shows no such picture".padEnd(46)} sbp=${control.after.sbp.toFixed(1)} alphaTone=${control.after.alphaTone.toFixed(2)}`);
 
   // Severity scales with the infusion rate (norepinephrine now has label
-  // clearance and a non-saturating ec50): a 10x smaller pump error, seeded
+  // clearance and a non-saturating ec50): a 10x smaller pump error (0.1 mg/min), seeded
   // the same way, must give a clearly smaller pressor effect.
   const s30 = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
   for (let T = STEP; T <= 180; T += STEP) { s30.t = T; physio(s30); pinTraitsNeutral(activePatient(s30)); }
   {
     const p30 = activePatient(s30);
-    for (let m = 0; m < 10; m++) p30.drugInstances.push(seedPastDose(p30, "norepi", 0.03, m));
+    for (let m = 0; m < 10; m++) p30.drugInstances.push(seedPastDose(p30, "norepi", 0.1, m));
   }
   for (let T = 182; T <= 600; T += STEP) { s30.t = T; physio(s30); }
   const afterLow = activePatient(s30);
@@ -6118,7 +6118,7 @@ console.log("[HYPERTROPHIC OBSTRUCTIVE CARDIOMYOPATHY — queue item 7, dynamic 
   // The correct field response — a pure alpha agent (raises afterload,
   // adds no contractility) — genuinely IMPROVES the gradient, the real,
   // teachable "opposite of ordinary cardiogenic shock" lesson.
-  const phenylTreated = probe({ scen: "hocmObstructive", settle: 180, run: 300, apply: ["phenylephrine"], reapply: 99999 });
+  const phenylTreated = probe({ scen: "hocmObstructive", settle: 180, run: 300, apply: ["phenylephrine"], reapply: 90 });   // repeated 100 mcg pushes (a real push is 0.1 mg, so one dose no longer carries the whole relief)
   assertVersus("phenylephrine RELIEVES the dynamic LVOT gradient", phenylTreated, rest, "hocmObstruction", "down", 0.03);
 
   // Two-sided confirmation the mechanism reaches a real hemodynamic

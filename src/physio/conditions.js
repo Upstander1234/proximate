@@ -3793,16 +3793,16 @@ export const CONDITIONS = {
     progress(pat) {
       if (!pat._norepiOdSeeded) {
         pat._norepiOdSeeded = true;
-        // An ONGOING pump error, not a single bolus: 0.3 mg/min (about
-        // 300 mcg/min, ~100x a usual titrated rate) delivered for the 10
-        // minutes before EMS contact, approximated as one 0.3 mg seed per
+        // An ONGOING pump error, not a single bolus: 1 mg/min (about
+        // 1000 mcg/min, ~300x a usual titrated rate) delivered for the 10
+        // minutes before EMS contact, approximated as one 1 mg seed per
         // minute. With norepinephrine's label clearance (CL ~3.1 L/min, t1/2
         // ~2 min) a single seeded bolus is gone within minutes, so only a
         // continuing rate holds the toxidrome. MEASURED (sbp at 600 s,
-        // mg/min seeded for 10 min): 0.01 -> 128, 0.03 -> 140, 0.1 -> 166,
+        // mg/min seeded for 10 min, standalone probe): 0.01 -> 128, 0.03 -> 140, 0.1 -> 166,
         // 0.3 -> 178, 1 -> 183 (alphaTone 0.21 to 0.90), so severity scales
         // with rate and flattens at the top; it is no longer a flat ceiling.
-        for (let m = 0; m < 10; m++) pat.drugInstances.push(seedPastDose(pat, "norepi", 0.3, m));
+        for (let m = 0; m < 10; m++) pat.drugInstances.push(seedPastDose(pat, "norepi", 1, m));
       }
     },
   },
