@@ -711,7 +711,7 @@ export const DRUGS = {
     onset: 5, dur: 15, max: 2,
     fx: {},
     antiarrhythmic: { avSlowing: 1.0 },
-    rhythmFix: "svt",
+    // No rhythmFix: SVT termination emerges from the AV-nodal block (updateRhythm).
     // Real adenosine technique is the OPPOSITE of every other IV push drug
     // in this formulary: its plasma half-life is under 10 seconds, so a
     // slow push never reaches the AV node at an effective concentration —

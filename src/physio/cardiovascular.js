@@ -3040,6 +3040,22 @@ export function updateRhythm(pat, dt) {
   else if (effK < 6.0 && pat.rhythm === "peakedT") pat.rhythm = "sinus";
   else if (effK < 7.0 && pat.rhythm === "wideQRS") pat.rhythm = "peakedT";
 
+  // ---- Reentrant SVT is terminated by blocking the AV node ----
+  // AVNRT/AVRT circuits run through the AV node, so while conduction through it is
+  // transiently depressed enough (adenosine's avSlowing; also vagal maneuvers) the
+  // circuit can be interrupted and sinus resumes. Hazard rises with block depth below
+  // SVT_BLOCK_THRESHOLD. Constants are fit to the clinical conversion figures for
+  // first-dose (6 mg, about 60%) and 12 mg (about 90% cumulative) adenosine.
+  // Sinus tachycardia and AF/flutter are not circuits through the node and are untouched.
+  if (pat.rhythm === "svt") {
+    const SVT_BLOCK_THRESHOLD = 0.75, SVT_BREAK_RATE = 14;   // measured 27/40 at 6 mg, 36/40 at 12 mg;   // per minute at full block
+    const depth = clamp((SVT_BLOCK_THRESHOLD - pat.avConduction) / SVT_BLOCK_THRESHOLD, 0, 1);
+    if (depth > 0 && Math.random() < 1 - Math.exp(-SVT_BREAK_RATE * depth * dt)) {
+      pat.rhythm = "sinus";
+      pat.rhythmInstability = 0;
+    }
+  }
+
   // ---- Complete heart block from AV nodal failure ----
   if (pat.avConduction <= 0.05 && PERFUSING.includes(pat.rhythm) && pat.rhythm !== "chb") {
     pat.rhythm = "chb";

@@ -822,22 +822,10 @@ export function applyProcedures(pat, s) {
       // says "contraindicated in WPW+AF" — a very short-acting AV nodal
       // block does not terminate chaotic atrial reentry the way it
       // terminates a single reentrant circuit).
-      if (proc.rhythmFix === "svt" && pat.rhythm === "svt") {
-        // One conversion roll per dose, scaled by the amount actually given:
-        // ~60% for a first dose (6 mg adult, 0.1 mg/kg child), rising to ~90% at
-        // 12 mg (0.2 mg/kg) as the cumulative clinical figure. Drawn amount wins.
-        if (d._svtRolled == null) {
-          const wt = pat.ageProfile?.weight || pat.weight || 74;
-          const mg = d.amount ?? resolveDoseMg(DRUGS[d.id], wt, d.id);
-          const x = mg / (wt >= PEDIATRIC_WEIGHT_KG ? 60 : wt);   // mg/kg-equivalent, adult 60 kg ref
-          const pConv = x <= 0.1 ? 0.6 * Math.min(1, x / 0.1) : Math.min(0.9, 0.6 + 0.3 * (x - 0.1) / 0.1);
-          d._svtRolled = Math.random() < pConv;
-        }
-        if (d._svtRolled) {
-          pat.rhythm = "sinus";
-          pat.rhythmInstability = 0;
-        }
-      }
+      // (Adenosine's SVT termination is no longer a per-dose flag here: it is an
+      // emergent consequence of its transient AV-nodal block interrupting the
+      // reentrant circuit, see updateRhythm's svt branch in cardiovascular.js.)
+
       // Synchronised cardioversion has a WIDER real indication than
       // adenosine — unstable SVT AND unstable AFib/AFib-with-RVR both get
       // electrically cardioverted in the field (ACLS unstable-tachycardia
@@ -1859,7 +1847,7 @@ export function updateDrugs(pat, s, dt) {
         // the receptor/SVR clamp downstream.
         let amountScale = 1;
         const refDoseForScale = dr.refDose ?? drugDef.dose;
-        if (drugDef.receptors && refDoseForScale > 0 && dr.givenDose > 0) {
+        if ((drugDef.receptors || drugDef.antiarrhythmic?.avSlowing) && refDoseForScale > 0 && dr.givenDose > 0) {
           amountScale = Math.min(3, dr.givenDose / refDoseForScale);
         }
         intensity = k * amountScale;
