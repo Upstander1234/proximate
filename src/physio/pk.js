@@ -37,7 +37,7 @@ import { HCT_NORMAL, NORMAL_HB } from "./constants.js";
 // shared 0.1 for the whole formulary until the arrhythmia efficacy harness showed
 // what that costs — every drug peaked at ~17 minutes, which made lidocaine
 // useless in the arrhythmia it exists to treat. Absent here, 0.1 is still used.
-export const NALOXONE_KI = 0.0005;
+export const NALOXONE_KI = 0.0000262;   // was 0.0005 at v1 21 L; rescaled by 21/400 with the volume correction below so reversal strength is unchanged
 
 // Plain Hill-equation receptor occupancy, 0-1. n=1 (the default everywhere
 // except morphine's analgesic curve, queue item 62's remainder) reduces to
@@ -205,8 +205,9 @@ export const PK_PARAMS = {
   //   ec50 0.01       10 ng/mL, mid-range for beta-adrenergic effect
   // A 1 mg arrest dose now gives Imax ~0.93 — still near-maximal, as it should
   // be — while 20 mcg gives ~0.2, so the two are finally different drugs.
-  epiIV:     { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },// COMT/MAO in blood and tissue, not organ-dependent
-  pushEpi:   { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },
+  // kel 0.75 (CL = kel x v1 = 6 L/min): reported epinephrine clearance is about 78-145 mL/kg/min (5.5-10 L/min at 70 kg); was 0.3 (2.4 L/min).
+  epiIV:     { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.7 },// COMT/MAO in blood and tissue, not organ-dependent
+  pushEpi:   { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.7 },
   // Label disposition is effectively one compartment: Vd ~8.8 L, CL ~3.1 L/min (kel = CL/Vd ~0.35/min,
   // t1/2 ~2 min), so k12 is near zero. The old kel 0.1 cleared ~3.5x too slowly, which made offset after
   // stopping a drip PK-limited and far slower than the 1-2 min seen clinically. ec50 0.015 (was 0.008) puts healthy MAP gain near +14 mmHg at 10 mcg/min, matching the volunteer slope (~10 mmHg per 0.1 ug/kg/min, 74 kg); septic gain is left to a separate axis. Pending
@@ -254,9 +255,16 @@ export const PK_PARAMS = {
   // for every route. Same kinetics for all three — this is one drug, only
   // the route/absorption differs, which DrugInstance's own route handling
   // (this.route, this.intramuscular) already accounts for separately.
-  naloxone_in: { kel: 0.0564, k12: 0.154, k21: 0.0513, v1: 21, ec50: 0.002, renalFrac: 0.15, keo: 0.5 },
-  naloxone_im: { kel: 0.0564, k12: 0.154, k21: 0.0513, v1: 21, ec50: 0.002, renalFrac: 0.15, keo: 0.5 },
-  naloxone_iv: { kel: 0.0564, k12: 0.154, k21: 0.0513, v1: 21, ec50: 0.002, renalFrac: 0.15, keo: 0.5 },  // reversal is visible within 1-2 min// hepatic glucuronidation
+  // VOLUME/CLEARANCE CORRECTION (pediatric/weight-aware PK work): reported adult
+  // Vd is 320-482 L and CL 3-3.66 L/min (t1/2 = 0.693 Vd/CL, about 80 min, inside the
+  // documented 30-90). v1 400 L, kel 0.00825 (CL 3.3 L/min). Because effect depends on
+  // concentration ratios, ec50 (0.002) and NALOXONE_KI (0.0005) are both divided by
+  // 400/21 so a standard 0.4-2 mg dose reverses exactly as before; only the kinetics
+  // and the weight-scaling basis become realistic. CL is extrahepatic-heavy, so
+  // renalFrac stays low and hepatic-flow scaling is not the main driver.
+  naloxone_in: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },
+  naloxone_im: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },
+  naloxone_iv: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },  // reversal is visible within 1-2 min// hepatic glucuronidation
   // epiIM's keo is lower than every other drug in this table (0.1 vs the
   // usual 0.5-0.7-ish range) — identified by measurement, not left at the
   // shared default. The two-stage depot (drugs.js, queue item 4) already
@@ -268,8 +276,8 @@ export const PK_PARAMS = {
   // bands). epiAuto does NOT need this — its much smaller deep-depot fraction
   // already lands Tmax ~21 min at its own default keo — so only epiIM's is
   // changed.
-  epiIM:     { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.1 },  // slow effect-site tracking, see above
-  epiAuto:   { kel: 0.3,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.003, renalFrac: 0.05, keo: 0.7 },  // the DELAY for IM is absorption, modelled in the depot
+  epiIM:     { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.1 },  // slow effect-site tracking, see above
+  epiAuto:   { kel: 0.75,  k12: 0.5, k21: 0.3, v1: 8,     ec50: 0.0022, renalFrac: 0.05, keo: 0.7 },  // the DELAY for IM is absorption, modelled in the depot
   // AMIODARONE EC50: 0.1 -> 1.75 mg/L. The last SATURATED entry in pkAudit.
   //
   // The defect was an EC50 an order of magnitude below the concentrations the
