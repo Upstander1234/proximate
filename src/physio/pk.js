@@ -577,6 +577,33 @@ class DrugInstance {
   }
 }
 
+// ---------------------------------------------------------------------------
+// WEIGHT- AND AGE-AWARE DISPOSITION. PK_PARAMS are calibrated for the default scenario adult (74 kg; literature values are for ~70 kg adults, a 6% difference below the calibration noise).
+// For another patient: volumes scale linearly with weight, clearance scales with
+// weight^0.75 (standard allometry), so kel = CL/V scales with (w/74)^-0.25. For
+// children under 2 years clearance is also multiplied by a maturation sigmoid in
+// post-menstrual age, MF = PMA^h / (PMA50^h + PMA^h), PMA50 47.7 weeks and Hill
+// 3.4 (Rhodin et al. 2009, renal/GFR maturation; used here as a generic default
+// because pathway-specific functions (CYP3A4, CES1, UGT) are only partly
+// published; per-pathway overrides belong in drug definitions later). PMA assumes
+// term birth. Both factors are exactly 1 at 74 kg and age >= 2 years.
+// ---------------------------------------------------------------------------
+const PK_REF_WEIGHT = 74;   // the default scenario adult, the patient PK_PARAMS were calibrated and tested against
+export function weightPkScale(pat) {
+  const ap = pat?.ageProfile;
+  const w = ap?.weight || PK_REF_WEIGHT;
+  const r = Math.max(0.03, w / PK_REF_WEIGHT);
+  let cl = Math.pow(r, 0.75);
+  if (ap && ap.age < 2) {
+    const pma = ap.age * 52 + 40;               // weeks
+    const h = 3.4, pma50 = 47.7;
+    const mf = Math.pow(pma, h) / (Math.pow(pma50, h) + Math.pow(pma, h));
+    const adultMf = 1;                           // sigmoid saturates well above 2 y
+    cl *= Math.min(1, mf / adultMf);
+  }
+  return { v: r, cl };
+}
+
 // Advances one two-compartment instance's central/peripheral/effect-site
 // state by `dt` minutes. Factored out of the main per-tick loop below (which
 // now just calls this) so the SAME code can also fast-forward a freshly
@@ -589,7 +616,10 @@ function advancePkCompartments(dr, dt, pat) {
   let rem = dt;
   while (rem > 0) {
     const sstep = Math.min(0.1, rem);
-    const { kel, k12, k21 } = dr.pk;
+    const wsc = weightPkScale(pat);
+    const fcl = wsc.cl / wsc.v;               // rate constants scale CL/V (intercompartmental Q follows the same allometry)
+    const k12 = dr.pk.k12 * fcl, k21 = dr.pk.k21 * fcl;
+    const kel = dr.pk.kel * fcl;   // CL scales (w/70)^0.75 x maturation, V scales w/70
     // QUEUE ITEM 4 — deep-depot release feeds the normal depot BEFORE
     // that depot absorbs into central (see the constructor comment).
     // Slow, first-order, and independent of ka — this is the
@@ -634,7 +664,7 @@ function advancePkCompartments(dr, dt, pat) {
   // while building the efficacy harness: lidocaine failed to reduce VT
   // incidence at all, and the reason was onset, not potency.
   const ke0 = dr.pk.keo ?? 0.1;
-  dr.effectConc += (dr.central / dr.pk.v1 - dr.effectConc) * (1 - Math.exp(-ke0 * dt));
+  dr.effectConc += (dr.central / (dr.pk.v1 * weightPkScale(pat).v) - dr.effectConc) * (1 - Math.exp(-ke0 * dt));
 }
 
 // Seeds a dose that is ALREADY circulating when a scenario starts — an

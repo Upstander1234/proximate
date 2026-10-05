@@ -20,7 +20,7 @@
 //
 // Run:  node src/scripts/mechanismWiring.mjs
 import { physio, activePatient, outcomeReport } from "../physiology.js";
-import { seedPastDose, hillOcc, updateDrugs, infusionRateMgPerMin, PK_PARAMS } from "../physio/pk.js";
+import { seedPastDose, hillOcc, updateDrugs, infusionRateMgPerMin, PK_PARAMS, weightPkScale } from "../physio/pk.js";
 import { Patient } from "../physio/patient.js";
 import { updateVenousReturn, updateRhythm } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
@@ -8604,7 +8604,7 @@ console.log("\n[LOCAL ANESTHETIC NERVE BLOCK — hematoma block, queue item 62's
   // Direct calls to the real updateDrugs() (lesson 8), same idiom the
   // ketamine section above uses -- isolates the block mechanism from the
   // sensitization cascade's own separately-verified kinetics.
-  const mkBlk = (extra = {}) => new Patient({ age: 40, sex: "M", weight: 80, ...extra });
+  const mkBlk = (extra = {}) => new Patient({ age: 40, sex: "M", weight: 74, ...extra });
   const tick = (p, dt = 0.1, n = 5) => { for (let i = 0; i < n; i++) updateDrugs(p, { t: 0 }, dt); };
   const doseBlk = (p, elapsedMin) => p.drugInstances.push(seedPastDose(p, "lidocaineBlock", 120, elapsedMin));
 
@@ -8747,6 +8747,39 @@ console.log("\n[GATE-CONTROL MODULATION — descending affective gate on allodyn
   regGateOk ? pass++ : fail++;
   if (!regGateOk) failures.push(`agitation=0 should reproduce the pre-gate formula exactly, got ${ctrl.drugPain}, expected ${expected}`);
   console.log(`  ${regGateOk ? "PASS" : "FAIL"}  ${"regression control: agitation=0 is a true no-op".padEnd(46)} drugPain=${ctrl.drugPain}, expected=${expected}`);
+}
+
+console.log("\n[WEIGHT- AND AGE-AWARE PK]");
+{
+  const mk = (age, weight) => new Patient({ age, sex: "M", weight });
+  const ce = (p, id, mg, min) => { const d = seedPastDose(p, id, mg, min); return d.effectConc; };
+  // Same mg/kg gives a comparable effect-site concentration across a 5 kg infant
+  // and the 74 kg reference adult (within 2x), while a flat adult dose in the
+  // infant gives a far higher one (the overdose a flat dose causes).
+  const adult = mk(35, 74), infant = mk(0.5, 5);
+  const perKg = 0.001;   // mg/kg
+  const cAdult = ce(adult, "fentanyl", perKg * 74, 4);
+  const cInfantKg = ce(infant, "fentanyl", perKg * 5, 4);
+  const cInfantFlat = ce(infant, "fentanyl", perKg * 74, 4);
+  const sameOk = cInfantKg > cAdult * 0.5 && cInfantKg < cAdult * 2;
+  sameOk ? pass++ : fail++;
+  if (!sameOk) failures.push(`same mg/kg should give a comparable concentration, adult ${cAdult}, infant ${cInfantKg}`);
+  console.log(`  ${sameOk ? "PASS" : "FAIL"}  ${"same mg/kg: infant concentration within 2x of adult".padEnd(46)} adult=${cAdult.toExponential(2)} infant=${cInfantKg.toExponential(2)}`);
+  const flatOk = cInfantFlat > cAdult * 4;
+  flatOk ? pass++ : fail++;
+  if (!flatOk) failures.push(`a flat adult dose in an infant should give a much higher concentration, adult ${cAdult}, infant flat ${cInfantFlat}`);
+  console.log(`  ${flatOk ? "PASS" : "FAIL"}  ${"flat adult dose in an infant: much higher concentration".padEnd(46)} infant flat=${cInfantFlat.toExponential(2)} vs adult ${cAdult.toExponential(2)}`);
+  // Reference patient is unchanged, and total clearance never exceeds weight allometry.
+  const ref = weightPkScale(adult);
+  const refOk = Math.abs(ref.v - 1) < 1e-9 && Math.abs(ref.cl - 1) < 1e-9;
+  refOk ? pass++ : fail++;
+  if (!refOk) failures.push(`74 kg adult should have unit PK scale, got ${JSON.stringify(ref)}`);
+  console.log(`  ${refOk ? "PASS" : "FAIL"}  ${"74 kg adult has unit PK scale (no calibration drift)".padEnd(46)} v=${ref.v} cl=${ref.cl}`);
+  const neo = weightPkScale(mk(0.02, 3.5)), allo = Math.pow(3.5 / 74, 0.75);
+  const neoOk = neo.cl < allo && neo.cl > 0;
+  neoOk ? pass++ : fail++;
+  if (!neoOk) failures.push(`neonate total clearance should sit below weight allometry (immature), got ${neo.cl} vs ${allo}`);
+  console.log(`  ${neoOk ? "PASS" : "FAIL"}  ${"neonate clearance below allometry (maturation)".padEnd(46)} cl=${neo.cl.toFixed(4)} allometric=${allo.toFixed(4)}`);
 }
 
 console.log("\n[CONTINUOUS INFUSION (pump state, zero-order input)]");
