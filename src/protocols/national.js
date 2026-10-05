@@ -57,7 +57,9 @@
 // reference, GRADE methodology, the ACS-COT field-triage guideline) are
 // reference material, not a protocol of their own, and produce no rules.
 //
-// A DELIBERATE, DOCUMENT-WIDE PEDIATRIC-DOSING EXCLUSION, STATED ONCE HERE.
+// PEDIATRIC DOSING (UPDATED): drugs that now declare `dosePerKg` (data/drugs.js) resolve a weight-based dose at administration, so the rules for those drugs (dexamethasone, acetaminophen, ketorolac, morphine, atropine, calcium, glucagon, adenosine, epinephrine IM, diphenhydramine, magnesium) no longer carry an ADULT gate. The exclusion below still applies to every drug WITHOUT dosePerKg. Original note:
+//
+// A DELIBERATE, DOCUMENT-WIDE PEDIATRIC-DOSING EXCLUSION (now partial).
 // This guideline gives extensive, genuinely weight-based pediatric dosing
 // for nearly every drug (e.g., adenosine 0.1 mg/kg then 0.2 mg/kg; atropine
 // 0.02 mg/kg; naloxone 0.1 mg/kg) — far more than LA County's or San Diego
@@ -380,7 +382,7 @@ export default {
     { id: "bronchospasmIpratropium", when: (ctx) => WHEEZING(ctx) && ADULT(ctx) && gaveDose(ctx, "albuterol") && doseCount(ctx, "ipratropium") < 3, task: "ipratropiumNeb", note: "bronchospasm — ipratropium with the albuterol" },
     // p.10175-10181: steroids "should be administered in the prehospital
     // setting"; IV dexamethasone (0.6 mg/kg, max 16 mg — the 10 mg entry) for the critically ill.
-    { id: "bronchospasmDexamethasone", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && ADULT(ctx) && HAS_IV(ctx) && doseCount(ctx, "dexamethasone") < 1, task: "dexamethasoneTask", note: "bronchospasm — steroid" },
+    { id: "bronchospasmDexamethasone", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && HAS_IV(ctx) && doseCount(ctx, "dexamethasone") < 1, task: "dexamethasoneTask", note: "bronchospasm — steroid" },
     // Tachycardia with a Pulse p.2083-2115. Stable irregular narrow (A-fib/
     // flutter): diltiazem 0.25 mg/kg, second dose 0.35 mg/kg after 15 minutes;
     // over 65, initial max 10 mg (the fixed 20 mg entry overshoots, so
@@ -397,10 +399,10 @@ export default {
     // "with caution" for GCS <15, p.4865). Chest pain keeps its own nitro-then-
     // fentanyl ladder above (morphine "with caution" in NSTEMI, p.1544), so
     // opioids here skip anyone already given fentanyl and any STEMI rhythm.
-    { id: "painAcetaminophen", when: (ctx) => GENERIC_PAIN(ctx) && ADULT(ctx) && HAS_IV(ctx) && !SHOCK(ctx) && doseCount(ctx, "acetaminophenIV") < 1, task: "acetaminophenTask", note: "pain — non-opioid adjunct" },
+    { id: "painAcetaminophen", when: (ctx) => GENERIC_PAIN(ctx) && HAS_IV(ctx) && !SHOCK(ctx) && doseCount(ctx, "acetaminophenIV") < 1, task: "acetaminophenTask", note: "pain — non-opioid adjunct" },
     { id: "painNitrous", when: (ctx) => GENERIC_PAIN(ctx) && ADULT(ctx) && !SHOCK(ctx) && ctx.v.ptx !== "tptx" && ctx.v.ptx !== "ptx" && doseCount(ctx, "nitrous") < 2, task: "nitrousTask", note: "pain — nitrous oxide" },
-    { id: "painKetorolac", when: (ctx) => ctx.v.pain >= 4 && ctx.v.pain < 7 && ADULT(ctx) && HAS_IV(ctx) && !SHOCK(ctx) && ctx.v.sbp >= 100 && !ACTIVE_HEMORRHAGE(ctx) && !(ctx.v.coag < 70) && ctx.v.rhythm !== "stemi" && doseCount(ctx, "ketorolac") < 1, task: "ketorolacTask", note: "moderate pain — ketorolac" },
-    { id: "painMorphine", when: (ctx) => ctx.v.pain >= 7 && ADULT(ctx) && HAS_IV(ctx) && OPIOID_SAFE(ctx) && ctx.v.rhythm !== "stemi" && !gaveDose(ctx, "fentanyl") && doseCount(ctx, "morphine") < 3 && since(ctx, "morphine", 300), task: "morphinePain", note: "severe pain — morphine" },
+    { id: "painKetorolac", when: (ctx) => ctx.v.pain >= 4 && ctx.v.pain < 7 && HAS_IV(ctx) && !SHOCK(ctx) && ctx.v.sbp >= 100 && !ACTIVE_HEMORRHAGE(ctx) && !(ctx.v.coag < 70) && ctx.v.rhythm !== "stemi" && doseCount(ctx, "ketorolac") < 1, task: "ketorolacTask", note: "moderate pain — ketorolac" },
+    { id: "painMorphine", when: (ctx) => ctx.v.pain >= 7 && HAS_IV(ctx) && OPIOID_SAFE(ctx) && ctx.v.rhythm !== "stemi" && !gaveDose(ctx, "fentanyl") && doseCount(ctx, "morphine") < 3 && since(ctx, "morphine", 300), task: "morphinePain", note: "severe pain — morphine" },
     // Agitation p.3050: ketamine is the option "for high violence risk" — used
     // as the step after midazolam has failed to settle severe agitation.
     { id: "agitationKetamine", when: (ctx) => AGITATED_SEVERE(ctx) && ADULT(ctx) && HAS_IV(ctx) && gaveDose(ctx, "midazolam") && !apnoeic(ctx) && doseCount(ctx, "ketamine") < 1, task: "ketamineSedation", note: "severe agitation despite midazolam — ketamine" },
@@ -431,25 +433,25 @@ export default {
     //    same drug ladder (atropine -> calcium -> glucagon -> pacing ->
     //    vasopressor) for the identical clinical picture. "Atropine 1 mg IV
     //    q 3-5 min (maximum total dose of 3 mg)." ──
-    { id: "bradyAtropine", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && ADULT(ctx) && doseCount(ctx, "atropine") < 3, task: "atropineTask", note: "unstable bradycardia — atropine" },
+    { id: "bradyAtropine", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && doseCount(ctx, "atropine") < 3, task: "atropineTask", note: "unstable bradycardia — atropine" },
     // p.296 (CCB overdose): "calcium gluconate/chloride" as a second-line
     // agent once atropine alone hasn't resolved instability — a real,
     // literature-anchored countering mechanism (this engine's own
     // `calciumChannel` receptor term), not just a hyperkalemia-bundle
     // reuse.
-    { id: "bradyCalcium", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && ADULT(ctx) && gaveDose(ctx, "atropine") && doseCount(ctx, "calcium") < 1, task: "calciumChloride", note: "refractory to atropine — calcium" },
+    { id: "bradyCalcium", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && gaveDose(ctx, "atropine") && doseCount(ctx, "calcium") < 1, task: "calciumChloride", note: "refractory to atropine — calcium" },
     // p.195 (beta blocker)/p.198 (CCB): "Glucagon 5 mg IVP, then 1 mg q 5
     // minutes... may require 5-15 mg to see effect" — glucagon's own real
     // beta1-receptor bypass mechanism (drugs.js), a genuine second-line
     // agent distinct from atropine's vagal-block mechanism.
-    { id: "bradyGlucagon", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && ADULT(ctx) && gaveDose(ctx, "atropine") && doseCount(ctx, "glucagon") < 2, task: "glucagonIM", note: "refractory bradycardia — glucagon" },
+    { id: "bradyGlucagon", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && gaveDose(ctx, "atropine") && doseCount(ctx, "glucagon") < 2, task: "glucagonIM", note: "refractory bradycardia — glucagon" },
     { id: "bradyMidazolamPrePacing", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && ADULT(ctx) && (gaveDose(ctx, "atropine") || ctx.v.rhythm === "chb") && doseCount(ctx, "midazolam") < 1, task: "midazolamSeizure", note: "pre-pacing sedation" },
     { id: "bradyPacing", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && (ctx.v.rhythm === "chb" || doseCount(ctx, "atropine") >= 3) && doseCount(ctx, "pacing") < 1, task: "pacingTask", note: "refractory to atropine — transcutaneous pacing" },
     { id: "bradySaline", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && (gaveDose(ctx, "atropine") || gaveDose(ctx, "pacing")) && doseCount(ctx, "saline") < 2, task: "salineBolus", note: "still hypotensive — fluid" },
     { id: "bradyPushEpi", when: (ctx) => BRADYCARDIC(ctx) && SHOCK(ctx) && (gaveDose(ctx, "atropine") || gaveDose(ctx, "pacing")) && doseCount(ctx, "pushEpi") < 6, task: "pushEpi", note: "still hypotensive — push-dose epinephrine (stands in for norepinephrine/epinephrine drip)" },
 
     // ── Tachycardia with a Pulse (p.42-47) ──
-    { id: "svtAdenosine", when: (ctx) => TACHY_SVT(ctx) && !UNSTABLE(ctx) && ADULT(ctx) && doseCount(ctx, "adenosine") < 3, task: "adenosineTask", note: "stable SVT — adenosine (6mg, then two 12mg doses)" },
+    { id: "svtAdenosine", when: (ctx) => TACHY_SVT(ctx) && !UNSTABLE(ctx) && doseCount(ctx, "adenosine") < 3, task: "adenosineTask", note: "stable SVT — adenosine (6mg, then two 12mg doses)" },
     { id: "svtSaline", when: (ctx) => TACHY_SVT(ctx) && SHOCK(ctx) && doseCount(ctx, "saline") < 1, task: "salineBolus", note: "SVT with hypotension — fluid" },
     // Unstable narrow/wide, regular/irregular — a single synchronized-
     // cardioversion ladder with pre-treatment sedation, matching this
@@ -487,9 +489,9 @@ export default {
     // ── Anaphylaxis and Allergic Reaction (p.66-70) ──
     // p.67: "Adult (25kg or more) 0.3mg IM... may be repeated q5-15min" —
     // no stated total, a conservative default of 3 is used.
-    { id: "anaphEpi", when: (ctx) => WHEEZING(ctx) && (SHOCK(ctx) || lowSpo2(ctx)) && ADULT(ctx) && doseCount(ctx, "epiIM") < 3, task: "epiIM", note: "anaphylaxis with respiratory/circulatory compromise — epinephrine IM" },
+    { id: "anaphEpi", when: (ctx) => WHEEZING(ctx) && (SHOCK(ctx) || lowSpo2(ctx)) && doseCount(ctx, "epiIM") < 3, task: "epiIM", note: "anaphylaxis with respiratory/circulatory compromise — epinephrine IM" },
     { id: "anaphAlbuterol", when: (ctx) => WHEEZING(ctx) && doseCount(ctx, "albuterol") < 6, task: "albuterolNeb", note: "respiratory involvement — nebulized albuterol" },
-    { id: "anaphDiphen", when: (ctx) => WHEEZING(ctx) && gaveDose(ctx, "epiIM") && !gaveDose(ctx, "diphen") && ADULT(ctx), task: "diphenhydramine", note: "urticaria/pruritus after epinephrine — diphenhydramine" },
+    { id: "anaphDiphen", when: (ctx) => WHEEZING(ctx) && gaveDose(ctx, "epiIM") && !gaveDose(ctx, "diphen"), task: "diphenhydramine", note: "urticaria/pruritus after epinephrine — diphenhydramine" },
     // p.67: "20 mL/kg isotonic fluid rapidly (over 15min), repeat as
     // needed" — a real large-volume target; capped at 4 (2L) as a
     // reasonable middle ground given the same guideline's own "at least
@@ -628,12 +630,12 @@ export default {
     { id: "bronchospasmAlbuterol", when: (ctx) => WHEEZING(ctx) && doseCount(ctx, "albuterol") < 6, task: "albuterolNeb", note: "bronchospasm — albuterol" },
     // p.192: "Magnesium sulfate (40mg/kg IV, max 2g)... for severe
     // bronchoconstriction and concern for impending respiratory failure."
-    { id: "bronchospasmMagnesium", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && ADULT(ctx) && gaveDose(ctx, "albuterol") && doseCount(ctx, "magnesium") < 1, task: "magnesiumSulfate", note: "severe bronchoconstriction, impending failure — magnesium sulfate" },
+    { id: "bronchospasmMagnesium", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && gaveDose(ctx, "albuterol") && doseCount(ctx, "magnesium") < 1, task: "magnesiumSulfate", note: "severe bronchoconstriction, impending failure — magnesium sulfate" },
     // p.192: "Epinephrine (0.01mg/kg, max 0.3mg IM) should ONLY be
     // administered for impending respiratory failure... when there are no
     // clinical signs of improvement" — deliberately gated as the last
     // resort in this ladder.
-    { id: "bronchospasmEpi", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && ADULT(ctx) && gaveDose(ctx, "magnesium") && doseCount(ctx, "epiIM") < 1, task: "epiIM", note: "impending respiratory failure, no improvement with above — epinephrine IM" },
+    { id: "bronchospasmEpi", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && gaveDose(ctx, "magnesium") && doseCount(ctx, "epiIM") < 1, task: "epiIM", note: "impending respiratory failure, no improvement with above — epinephrine IM" },
     { id: "asthmaCpap", when: (ctx) => WHEEZING(ctx) && lowSpo2(ctx) && !apnoeic(ctx) && doseCount(ctx, "cpap") < 1, task: "cpapTask", note: "severe respiratory distress — CPAP" },
     // p.191: SBP<100 -> 250-500mL fluid; SBP<160 -> nitro 0.4mg (repeat
     // q5min for SBP>100); SBP>=160 -> a 0.8mg tier this engine has no

@@ -142,6 +142,7 @@ export const DRUGS = {
   },
 
   epiIM: {
+    dosePerKg: 0.01,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     // DOSE WAS UNDECLARED — DrugInstance fell back to `?? 1`, so every
     // administration was silently 1 mg. Same silent default that was found on
@@ -566,6 +567,7 @@ export const DRUGS = {
   // lower `dose`, the same reason naloxone_in/im/iv are three separate
   // entries rather than one drug with a route flag).
   amiodarone2: {
+    dosePerKg: 5,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Amiodarone 150 mg (repeat)", route: "IV/IO", lvl: 4,
     onset: 60, dur: 600, max: 1,
