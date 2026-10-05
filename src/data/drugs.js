@@ -430,6 +430,7 @@ export const DRUGS = {
   },
 
   ondansetron: {
+    dosePerKg: 0.15,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Ondansetron 4 mg", route: "ODT/IV/IM", lvl: 3,
     onset: 180, dur: 3600, max: 2,
@@ -457,6 +458,7 @@ export const DRUGS = {
   // presenting WITH an already-established reaction rather than one this
   // engine spontaneously triggers mid-call.
   metoclopramide: {
+    dosePerKg: 0.1,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Metoclopramide 10 mg", route: "IV/IM", lvl: 4,
     onset: 180, dur: 3600, max: 1,
@@ -510,6 +512,7 @@ export const DRUGS = {
   },
 
   ketorolac: {
+    dosePerKg: 0.5,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Ketorolac 15 mg", route: "IV/IM", lvl: 4,
     onset: 300, dur: 3600, max: 1,
@@ -519,6 +522,7 @@ export const DRUGS = {
   },
 
   acetaminophenIV: {
+    dosePerKg: 15,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Acetaminophen 1 g", route: "IV", lvl: 4,
     onset: 240, dur: 3600, max: 1,
@@ -573,6 +577,7 @@ export const DRUGS = {
   },
 
   lidocaine: {
+    dosePerKg: 1,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Lidocaine", route: "IV/IO", lvl: 4,
     onset: 45, dur: 600, max: 2,
@@ -727,6 +732,7 @@ export const DRUGS = {
   },
 
   diltiazem: {
+    dosePerKg: 0.25,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Diltiazem 20 mg", route: "IV", lvl: 4,
     onset: 120, dur: 1800, max: 2,
@@ -782,6 +788,7 @@ export const DRUGS = {
   },
 
   bicarb: {
+    dosePerKg: 1,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Sodium Bicarbonate 50 mEq", route: "IV/IO", lvl: 4,
     onset: 60, dur: 1800, max: 2,
@@ -862,6 +869,7 @@ export const DRUGS = {
   },
 
   dexamethasone: {
+    dosePerKg: 0.6,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Dexamethasone 10 mg", route: "IV/IM", lvl: 4,
     onset: 900, dur: 9999, max: 1,
@@ -1023,6 +1031,7 @@ export const DRUGS = {
   },
 
   magnesium: {
+    dosePerKg: 50,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Magnesium Sulfate 4 g", route: "IV", lvl: 4,
     onset: 300, dur: 3600, max: 1,
@@ -1139,6 +1148,7 @@ export const DRUGS = {
   },
 
   txa: {
+    dosePerKg: 15,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Tranexamic Acid 1 g", route: "IV/IO", lvl: 4,
     onset: 120, dur: 3600, max: 1,
@@ -1147,6 +1157,7 @@ export const DRUGS = {
   },
 
   hydroxo: {
+    dosePerKg: 70,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Hydroxocobalamin 5 g", route: "IV/IO", lvl: 4,
     onset: 300, dur: 3600, max: 2,
@@ -1348,6 +1359,7 @@ export const DRUGS = {
   },
 
   etomidate: {
+    dosePerKg: 0.3,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Etomidate 20 mg", route: "IV/IO", lvl: 5,
     onset: 20, dur: 300, max: 2,
@@ -1389,6 +1401,7 @@ export const DRUGS = {
   },
 
   rocuronium: {
+    dosePerKg: 1,   // mg/kg (mEq/kg for bicarb) for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "twoCompartment",
     name: "Rocuronium 100 mg", route: "IV/IO", lvl: 5,
     onset: 45, dur: 2400, max: 1,
