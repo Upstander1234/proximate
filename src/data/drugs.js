@@ -1231,9 +1231,17 @@ export const DRUGS = {
     pkModel: "curve",
     name: "Phenylephrine", route: "IV", lvl: 5,
     onset: 60, dur: 360, max: 6,
-    dose: 1,
+    // Real units: dose is in mg. A 100 mcg (0.1 mg) IV push is the usual
+    // hypotension bolus. The alpha coefficient is identified against that
+    // dose: the old dose:1 / alpha:1.0 pair gave a peak MAP rise of about +95
+    // mmHg (measured), several times a real push (about +20 to +30, one
+    // 100 mcg bolus lasting 10 to 20 min). Measured peak MAP rise by amount
+    // at alpha 1.0 was linear in amount (0.25 -> +20, 0.5 -> +41), so alpha
+    // 0.25 at 0.1 mg reproduces about +24. The drawn amount scales the
+    // effect (pk.js, DrugInstance.givenDose), so a 10x draw error is visible.
+    dose: 0.1,
     fx: {},
-    receptors: { alpha: 1.0 },
+    receptors: { alpha: 0.25 },
     drip: true,
     note: "Pure alpha. Raises pressure, DROPS heart rate — the one for tachycardic hypotension."
   },
