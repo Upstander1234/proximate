@@ -879,6 +879,17 @@ export const DRUGS = {
     note: "Fifteen minutes to work. Prevents the SECOND wave. It has never rescued anybody from the first."
   },
 
+  angiotensinII: {
+    pkModel: "curve",
+    name: "Angiotensin II", route: "IV", lvl: 5,
+    onset: 30, dur: 1200, max: 2,
+    fx: {},
+    // AT1 vasoconstriction, a non-adrenergic channel (pk.js adds it to the vasopressin accumulator), so
+    // catecholamine resistance does not blunt it. Last rung of the shock escalation ladder.
+    receptors: { AT1: 0.8 },
+    note: "Refractory vasodilatory shock, after norepinephrine and vasopressin. Works through a different receptor than the catecholamines."
+  },
+
   hydrocortisone: {
     dosePerKg: 2,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",

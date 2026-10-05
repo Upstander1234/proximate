@@ -2660,6 +2660,16 @@ export function updateDrugs(pat, s, dt) {
             : 1.0;
           v1Drug += rec.V1 * recIntensity * v1Sens;
         }
+        // Angiotensin II (AT1): a non-adrenergic vasoconstrictor like vasopressin, so it also feeds the
+        // channel catecholamine resistance cannot touch. Its response is preserved in vasodilatory shock
+        // (it replaces a depleted endogenous angiotensin II), so it uses the same tone-dependent
+        // sensitivity as V1.
+        if (rec.AT1) {
+          const tone = pat.svr / Math.max(1, pat.baseSVR || 1200);
+          const perfusing = (pat.co ?? 0) > 1.5;
+          const atSens = perfusing ? Math.max(0.25, Math.min(1.3, 1.75 - 1.5 * tone)) : 1.0;
+          v1Drug += rec.AT1 * recIntensity * atSens;
+        }
         // For completeness, if drug has parasympathetic property (old style), handle as vagal block
         if (rec.parasympathetic) {
           pat.vagalBlock += Math.abs(rec.parasympathetic) * recIntensity;
