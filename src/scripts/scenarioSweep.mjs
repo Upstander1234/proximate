@@ -118,7 +118,7 @@ const REQUIRED = [
   // Queue item 62's remainder: ketamine's NMDA-blockade occupancy signal,
   // consumed by pk.js's pain reseed to suppress (not erase) the
   // sensitization-driven hyperalgesia/allodynia terms while on board.
-  "nmdaBlockade",
+  "nmdaBlockade", "alphaResistance", "steroidResensitization",
   // Queue item 62's remainder: lidocaineBlock's (hematoma block) own
   // nerve-block depth, consumed by pk.js's pain reseed as a direct
   // reduction of pat.intrinsicPain itself, before hyperalgesiaGain.
@@ -329,7 +329,7 @@ const NON_NEGATIVE = [
   // Queue item 62's remainder: ketamine's NMDA-blockade occupancy signal,
   // consumed by pk.js's pain reseed to suppress (not erase) the
   // sensitization-driven hyperalgesia/allodynia terms while on board.
-  "nmdaBlockade",
+  "nmdaBlockade", "alphaResistance", "steroidResensitization",
   // Queue item 62's remainder: lidocaineBlock's (hematoma block) own
   // nerve-block depth, consumed by pk.js's pain reseed as a direct
   // reduction of pat.intrinsicPain itself, before hyperalgesiaGain.

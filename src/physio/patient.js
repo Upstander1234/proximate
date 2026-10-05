@@ -182,8 +182,8 @@ export class Patient {
     // that doesn't opt into it.
     this.pathogenBurden = 0;
     this.cytokineLoad = 0;
-    this.alphaResistance = 0;        // 0-1 loss of adrenergic (alpha) responsiveness to exogenous pressors, see cardiovascular.js
-    this.alphaResistanceBase = 0;    // scenario-initial refractoriness (e.g. prolonged shock), set by a condition
+    this.alphaResistance = b.alphaResistanceBase ?? 0;        // 0-1 loss of adrenergic (alpha) responsiveness to exogenous pressors, see cardiovascular.js
+    this.alphaResistanceBase = b.alphaResistanceBase ?? 0;    // scenario-initial refractoriness (e.g. prolonged shock), set by a condition
     this.steroidResensitization = 0; // hydrocortisone's partial reversal, set each tick by pk.js
     // tricyclicOverdose (queue item 7): condition-owned accumulators that
     // compose alongside pk.js's own reset-and-rederive fields

@@ -493,6 +493,35 @@ septicShock: {cat: "medical", id: "SHOCK-012", pronouns: "she", title: "Female, 
     return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Septic shock (urosepsis source), hyperdynamic/warm phase"};},
 },
 
+// Refractory septic shock: the same septic physiology as septicShock above, but in a patient who has been
+// shocked for a long time, so the adrenergic receptors have lost much of their response (alphaResistanceBase,
+// patient.js / cardiovascular.js). More norepinephrine buys little; vasopressin (a non-adrenergic channel)
+// still works, and hydrocortisone slowly re-sensitizes. Teaches the escalation ladder.
+refractorySepticShock: {cat: "medical", id: "SHOCK-013", pronouns: "he", title: "Male, 70. Interfacility transfer, septic shock not responding to norepinephrine.",
+  limit: 1500, transport: 600,
+  bystanders: "The sending nurse is giving report and keeps glancing at the pump.",
+  units: [{at: 400, level: "paramedic", name: "Medic 12"}],
+  dispatch: ["70M, septic shock, critical care transfer.", "Sending hospital reports MAP will not stay up on norepinephrine."],
+  update: ["Nurse: \"He has been on norepinephrine for two days and we keep going up. Pressure just keeps sliding.\""],
+  impression: "On a stretcher in a hospital bay, flushed and warm, breathing fast, drowsy. A pump is running a pressor into his arm.",
+  imps: ["SEPS", "SHOK", "HOTN", "ALOC"],
+  condition: "septicShock",
+  patient: {age: 70, gender: "male", alphaResistanceBase: 0.6},
+  clothing: {top: "short", bottom: "pants", shoes: false},
+  seed: () => ({}),
+  probes: {
+    opqrst: () => ({say: "Nurse: \"Pneumonia, then sepsis. Two days in the unit. Every time we raise the norepinephrine he gets a little better and then it fades.\"", kind: "pt", find: "Two days of septic shock on escalating norepinephrine, with a falling response."}),
+    sample: () => ({say: "Nurse: \"No allergies. Hypertension and diabetes at home. Cultures are pending.\"", kind: "pt", find: "SAMPLE: NKDA, hypertension, diabetes."}),
+  },
+  resolve: (s, v, arr) => {const notes = []; let died = !!arr, cause = arr?.story || "";
+    if (died) cause = (arr?.story ? arr.story + "\n\n" : "") + "Refractory septic shock: more of the same pressor no longer works because the receptors it acts on have lost their response.";
+    notes.push("When a pressor stops working, more of it is the wrong move. The adrenergic receptors it acts on have been downregulated and inactivated, so the next rung is a drug that acts through a different channel: vasopressin.");
+    if (s.given.vasopressin) notes.push("Adding vasopressin was the right escalation. It does not depend on the adrenergic receptors that have failed.");
+    else notes.push("No vasopressin was added. Raising norepinephrine alone gives a smaller and smaller pressure return when the adrenergic response is blunted.");
+    if (s.given.hydrocortisone) notes.push("Hydrocortisone does not raise pressure directly. It slowly restores some of the vessels' response to catecholamines, which is why it is given late in refractory shock.");
+    return {died, cause, notes, correct: s.pi === "SEPS" || s.pi === "SHOK", truth: "Refractory septic shock with catecholamine resistance"};},
+},
+
 // Toxic shock syndrome (condition-library workstream, Infectious Disease
 // category, section 8) — a genuinely different mechanism from septicShock
 // above, not a re-skin: superantigen (TSST-1)-driven near-total T-cell
