@@ -161,7 +161,7 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   const msg = {
     success: "Drawn, labeled, and in your hand.",
     wrongdrug: "That is not the ordered drug.",
-    wrongdose: "That is not the ordered dose.",
+    wrongdose: `That is not the ordered dose: ordered ${fmt(setup.amount)} ${setup.order.unit}, drawn ${fmt(drawnAmount)} (${(drawnAmount / setup.amount).toFixed(1)}x). You can waste it and redraw, or use it anyway.`,
     bubble: "There is still an air bubble in the barrel.",
     novial: "Pick a vial first.",
   };
@@ -201,6 +201,9 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
             <div style={{ fontSize: 13, color: flash === "success" ? "#7CD68A" : C.red, marginBottom: 10 }}>{msg[flash]}</div>
             <button onClick={flash === "novial" ? () => setFlash(null) : finish} className="px-3 py-2 rounded w-full"
               style={{ background: C.panelHi || "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>{flash === "novial" ? "Back" : "Continue"}</button>
+            {flash === "wrongdose" && (
+              <button onClick={() => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: setup.order.id, amount: drawnAmount, ordered: setup.amount })} className="px-3 py-2 rounded w-full" style={{ marginTop: 8, background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Use it anyway</button>
+            )}
           </div>
         )}
         {!flash && (
