@@ -4117,25 +4117,24 @@ console.log("\n[NOREPINEPHRINE OVERDOSE — queue item 55, seventh drug]");
   if (!specOk) failures.push(`condition-less control should not show a hypertensive-emergency picture, got sbp=${control.after.sbp} alphaTone=${control.after.alphaTone}`);
   console.log(`  ${specOk ? "PASS" : "FAIL"}  ${"...specificity: condition-less control shows no such picture".padEnd(46)} sbp=${control.after.sbp.toFixed(1)} alphaTone=${control.after.alphaTone.toFixed(2)}`);
 
-  // The real, honest finding this condition exists to teach: severity does
-  // NOT scale with a bigger seeded dose — the receptor model saturates at a
-  // single push-scale unit. Compare this condition's own 1-unit seed
-  // against a synthetic 40-unit seed on an otherwise identical patient.
-  const s40 = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
-  for (let T = STEP; T <= 180; T += STEP) { s40.t = T; physio(s40); pinTraitsNeutral(activePatient(s40)); }
+  // Severity scales with the infusion rate (norepinephrine now has label
+  // clearance and a non-saturating ec50): a 10x smaller pump error, seeded
+  // the same way, must give a clearly smaller pressor effect.
+  const s30 = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+  for (let T = STEP; T <= 180; T += STEP) { s30.t = T; physio(s30); pinTraitsNeutral(activePatient(s30)); }
   {
-    const p40 = activePatient(s40);
-    p40.drugInstances.push(seedPastDose(p40, "norepi", 40, 10));
+    const p30 = activePatient(s30);
+    for (let m = 0; m < 10; m++) p30.drugInstances.push(seedPastDose(p30, "norepi", 0.03, m));
   }
-  for (let T = 182; T <= 600; T += STEP) { s40.t = T; physio(s40); }
-  const after40 = activePatient(s40);
-  const ceilingOk = Math.abs(after40.sbp - nOd.after.sbp) < 15;
-  ceilingOk ? pass++ : fail++;
-  if (!ceilingOk) failures.push(`norepinephrineOverdose severity should NOT scale with a much larger seeded dose (receptor ceiling), 1 unit sbp=${nOd.after.sbp} vs 40 units sbp=${after40.sbp}`);
-  console.log(`  ${ceilingOk ? "PASS" : "FAIL"}  ${"...confirmed: severity is receptor-ceilinged, not dose-scaling".padEnd(46)} 1 unit sbp=${nOd.after.sbp.toFixed(1)} vs 40 units sbp=${after40.sbp.toFixed(1)}`);
+  for (let T = 182; T <= 600; T += STEP) { s30.t = T; physio(s30); }
+  const afterLow = activePatient(s30);
+  const scaleOk = nOd.after.sbp > afterLow.sbp + 20;
+  scaleOk ? pass++ : fail++;
+  if (!scaleOk) failures.push(`norepinephrineOverdose severity should scale with infusion rate, overdose sbp=${nOd.after.sbp} vs 10x lower rate sbp=${afterLow.sbp}`);
+  console.log(`  ${scaleOk ? "PASS" : "FAIL"}  ${"...severity scales with the pump-error rate".padEnd(46)} overdose sbp=${nOd.after.sbp.toFixed(1)} vs 10x lower ${afterLow.sbp.toFixed(1)}`);
 
   // No specific antidote (phentolamine) exists in this formulary
-  // (grep-confirmed) — this section is presence/specificity/ceiling-only,
+  // (grep-confirmed) — this section is presence/specificity/dose-scaling,
   // the same honest framing amiodaroneOverdose's own section established.
 }
 
