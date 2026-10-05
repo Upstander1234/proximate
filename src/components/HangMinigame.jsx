@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../theme.js";
 import { assistToleranceMult } from "../procedureAssist.js";
 import { gaugeMaxFlowMlMin } from "../access.js";
+import { DRUG_UNITS } from "../data/drugUnits.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 
@@ -85,7 +86,7 @@ function BagScene({ spiked, primed, rate, running, fluidMode, primable, onPrimeD
   );
 }
 
-export default function HangMinigame({ open, kind, drugName, fluidMode, access: accessProp, accessOptions, gauge = 18, warnings, pat, assist, interrupted, onResolve }) {
+export default function HangMinigame({ open, kind, drugName, drugId, fluidMode, access: accessProp, accessOptions, gauge = 18, warnings, pat, assist, interrupted, onResolve }) {
   const [step, setStep] = useState(0);
   const [picked, setPicked] = useState(null);
   const [spiked, setSpiked] = useState(false);
@@ -109,7 +110,7 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
   const access = picked || accessProp;
   const tol = assistToleranceMult(assist);
   const fail = (why) => setFlash({ ok: false, why });
-  const win = (why) => setFlash({ ok: true, why });
+  const win = (why, detail) => setFlash({ ok: true, why, detail });
 
   let v; try { v = pat?.vitals ? pat.vitals() : null; } catch { v = null; }
   const shock = (v?.sbp ?? 120) < 90;
@@ -135,6 +136,11 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
   // track weight-based mcg/kg/min anywhere else either), banded low.
   const pressorLo = 12 * tol, pressorHi = 35 + 10 * (tol - 1);
 
+  const pumpBag = !fluidMode && drugId && DRUG_UNITS[drugId]?.drip ? DRUG_UNITS[drugId].drip : null;
+  const wtKg = pat?.ageProfile?.weight || 74;
+  const bagMcgPerMl = pumpBag ? (pumpBag.amountInBag * 1000) / pumpBag.mlBag : 0;
+  const mcgKgMin = pumpBag ? (rate * bagMcgPerMl) / 60 / wtKg : 0;
+
   const confirmRate = () => {
     if (fluidMode) {
       if (rate < targetGtt - gttTol) { fail(shock
@@ -150,13 +156,20 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
       win(`Roller clamp set, ${rate} gtt/min — ${shock ? "wide open for a hypotensive patient" : "a controlled rate for a stable one"}. Running.`);
       return;
     }
+    if (pumpBag) {
+      // A real pump: the player sets mL/h. The dose actually delivered follows from the bag
+      // concentration and the patient's weight, and the physiology decides whether it was right.
+      if (rate <= 0) { fail("The pump is set to zero. Nothing is running."); return; }
+      win(`Pump started at ${rate} mL/h, ${mcgKgMin.toFixed(2)} mcg/kg/min. Titrate to the monitor.`, { pumpMlH: rate });
+      return;
+    }
     if (rate < pressorLo) { fail("Too low to have any measurable pressor effect. Dial it up and reassess in a couple of minutes."); return; }
     if (rate > pressorHi) { fail("Started too aggressive right out of the gate. Start low and titrate up to the target MAP, don't jump straight there."); return; }
     win(`Infusion started low. Titrate up from here, watching for MAP ≥ 65 mmHg.`);
   };
 
   const finish = () => {
-    if (flash.ok) { onResolve(PROCEDURE_OUTCOME.SUCCESS); return; }
+    if (flash.ok) { onResolve(PROCEDURE_OUTCOME.SUCCESS, flash.detail); return; }
     onResolve(PROCEDURE_OUTCOME.FAILED, flash.why);
   };
 
@@ -184,8 +197,9 @@ export default function HangMinigame({ open, kind, drugName, fluidMode, access: 
     return (<>
       <Line>4. {fluidMode
         ? `Count the drops falling in the chamber and adjust the roller clamp: ${rate} gtt/min ${shock ? "(this patient is hypotensive — run it wide open)" : "(a controlled maintenance rate is right here)"}${access === "IV" ? ` — this ${gauge}g line tops out around ${Math.round(gaugeCeilGtt)} gtt/min` : ""}.`
+        : pumpBag ? `Set the pump rate: ${rate} mL/h of a ${pumpBag.amountInBag} mg / ${pumpBag.mlBag} mL bag (${bagMcgPerMl} mcg/mL) is ${mcgKgMin.toFixed(2)} mcg/kg/min for this ${Math.round(wtKg)} kg patient. Start low and titrate to the monitor.`
         : `Set the starting infusion rate: ${rate}. Start low, then titrate up watching the monitor — this is not a dose you push all at once.`}</Line>
-      <Slider value={rate} onChange={setRate} max={fluidMode ? 250 : 100} />
+      <Slider value={rate} onChange={setRate} max={fluidMode ? 250 : pumpBag ? 300 : 100} />
       <button style={GO} onClick={confirmRate}>{fluidMode ? "Open the roller clamp" : "Start the infusion"}</button>
     </>);
   };

@@ -435,7 +435,7 @@ function useReadAloud(log,voice,dispatchCue,volume=1,patientGender=null){
 // via SettingsOverlay or the TIME SCALE picker itself.
 export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:1,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},practiceScenarios:0,
   t:0,onSceneAt:null,pockets:[],bags:[],stretcher:0,
-  log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},givenAmt:{},crew:[],
+  log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},givenAmt:{},infusions:[],crew:[],
   busy:null,cBusy:{},ivSites:[],ivGauge:{},accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
   // F44: a snapshot of outcomeReport(s) — the OBJECTIVE physiological outcome
   // (neuro outcome, ROSC/downtime, irreversible/reversible injury, troponin,
@@ -1939,6 +1939,15 @@ export default function App({onHome}={}){
           lvl:lvlOf(id,d.lvl),bag:"drug",tip:d.note,
           run:(s,v,act)=>{const ov=!!(act&&act._override);
           if(d.hold&&!ov){const h=d.hold(v);if(h)return {say:h,kind:"warn"};}
+          // A hung drip pressor runs on a pump: start a real infusion line (s.infusions, shared with the PK
+          // layer) at the rate the player dialed, instead of a bolus. Titrate or stop it with the pump actions.
+          if(act&&act._pumpMlH>0&&DRUG_UNITS[id]?.drip){
+            const bag=DRUG_UNITS[id].drip,mgPerMl=bag.amountInBag/bag.mlBag,rate=act._pumpMlH/60*mgPerMl;
+            const wt=s.patient?.ageProfile?.weight||74;
+            const live=(s.infusions||[]).find(l=>l.id===id&&(l.to==null));
+            if(live){s.infusions=s.infusions.map(l=>l===live?{...l,to:s.t}:l);}
+            s.infusions=[...(s.infusions||[]),{line:`pump${(s.infusions||[]).length+1}`,id,rate,mlH:act._pumpMlH,site:act.region,from:s.t,to:null,patientId:s.activePatientId??s._roster?.[0]?.id??null}];
+            return {say:`${d.name} infusion started at ${act._pumpMlH} mL/h (${+(rate*1000/wt).toFixed(2)} mcg/kg/min).`,kind:"good"};}
           // F6: a tourniquet occludes venous return from everything distal to
           // it — a line placed on that same limb cannot deliver anything to
           // central circulation while the tourniquet is on. Real teaching
@@ -1995,6 +2004,19 @@ export default function App({onHome}={}){
           }
           const dir=Object.entries(d.fx||{}).filter(([,m])=>m).map(([p,m])=>`${p.toUpperCase()} ${m>0?"↑":"↓"}${Math.abs(m)}`).join("  ");
           return {say:`${d.name} in${amtText}.${sanityNote}${dir?"   ["+dir+" · onset "+routeOnsetSec(routeLabel,d)+"s]":""}${allergyNote}`,kind:allergyNote?"crit":"good"};}});});});
+    // Pump control for every running infusion line: raise, lower or stop, each a new line segment
+    // in s.infusions (the one record the PK layer reads), so titrating is a physical act with a cost.
+    (g.infusions||[]).filter(l=>l.to==null).forEach(l=>{
+      const nm=(DRUGS[l.id]?.name||l.id).replace(/\s*\d.*$/,"");
+      const wtp=g.patient?.ageProfile?.weight||74;
+      const retitrate=(mult)=>(s)=>{
+        const cur=(s.infusions||[]).find(x=>x.line===l.line&&x.to==null); if(!cur) return {say:"That pump is not running.",kind:"warn"};
+        const mlH=mult===0?0:Math.max(1,Math.round(cur.mlH*mult)), bag=DRUG_UNITS[l.id].drip, rate=mlH/60*bag.amountInBag/bag.mlBag;
+        s.infusions=s.infusions.map(x=>x===cur?{...x,to:s.t}:x);
+        if(mlH>0) s.infusions=[...s.infusions,{...cur,line:`${cur.line}.`,rate,mlH,from:s.t,to:null}];
+        return {say:mult===0?`${nm} pump stopped.`:`${nm} pump ${mult>1?"raised":"lowered"} to ${mlH} mL/h (${+(rate*1000/wtp).toFixed(2)} mcg/kg/min).`,kind:"good"};};
+      [["up",1.25,"Raise"],["down",0.75,"Lower"],["stop",0,"Stop"]].forEach(([k,m,lab])=>out.push({id:`pump_${k}_${l.line}`,region:l.site||"armR",tab:"meds",label:`${lab} ${nm} pump`,gerund:"Adjusting pump",cost:6,lvl:3,bag:"drug",tip:`Currently ${l.mlH} mL/h.`,run:retitrate(m)}));
+    });
     (g.ivSites||[]).forEach(limb=>out.push({id:`flush_${limb}`,region:limb,tab:"meds",label:"Flush the line",gerund:"Flushing",cost:15,lvl:3,bag:"drug",
       tip:"Calcium and bicarbonate precipitate together.",run:(s)=>{s.flushed=1;return {say:"Flushed.",kind:"good"};}}));
     return out;};
@@ -3869,8 +3891,9 @@ export default function App({onHome}={}){
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
       const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount}}:{};
+      const pumpExtra=(mg.kind==="hang"&&detail&&detail.pumpMlH>0)?{_pumpMlH:detail.pumpMlH}:{};
       const flushExtra=(mg.kind==="give"&&detail&&detail.flushMlPerSec>0)?{_flushRate:detail.flushMlPerSec}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra,...flushExtra});
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra,...flushExtra,...pumpExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -10603,7 +10626,7 @@ export default function App({onHome}={}){
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="hang"&&<HangMinigame open kind="hang" warnings={g.accessMinigame.warnings}
-      drugName={g.accessMinigame.drugName} fluidMode={g.accessMinigame.fluidMode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
+      drugName={g.accessMinigame.drugName} drugId={g.accessMinigame.drugId} fluidMode={g.accessMinigame.fluidMode} access={g.accessMinigame.access} accessOptions={g.accessMinigame.accessOptions}
       gauge={(g.ivGauge||{})[g.accessMinigame.site]||18}
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
