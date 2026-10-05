@@ -897,3 +897,10 @@ Measured: with new clearance the offset after stopping a drip is still slow (MAP
 NOT verified: mechanismWiring.mjs was partway through (about 207 passed, 4 failed, all failures the documented BVM trio and the Tzivoni near-miss, no new ones) when the session ended; scenarioSweep.mjs has not been run. Detached (setsid) runs get killed here; run suites as harness background tasks or in chunks, one at a time.
 
 Next: (1) rerun both suites and diff failure sets; (2) re-measure healthy gain at ec50 0.015; (3) probe and fix the SVR-to-MAP/baroreflex offset lag and septic gain; (4) real-unit dose fields and amount handling for curve drugs (phenylephrine first); (5) baroreflex vagal gain, epinephrine low-dose beta-2 dip, split V1 accumulator; (6) infusion input and pump state; (7) weight-aware dosing phases.
+
+### 30a. Progress after the handoff (not suite-verified; full suites to be run locally)
+
+- Norepinephrine overdose condition rebuilt as an ongoing pump error (0.3 mg/min for 10 min); the old "receptor ceiling" assertion is replaced by a dose-scaling one. Probe: sbp 128/140/166/178/183 at 0.01/0.03/0.1/0.3/1 mg/min.
+- Curve-model receptor drugs now scale with the delivered amount (`DrugInstance.givenDose` relative to the declared reference `dose`, capped at 3x); default dose gives factor 1 so existing scenarios are unchanged. Phenylephrine probe, peak MAP rise at 0.25/0.5/1/2 units: +20/+41/+95/+124. Open: phenylephrine's reference dose of 1 gives about +95 MAP, far above a real 100 mcg push (about +20), so its declared unit needs real-unit calibration (a 1 unit dose is effectively an overdose).
+- Baroreflex vagal gain: raising the hypertension-side kVagal 0.45 to 1.2 and 2.4 barely moved reflex HR (slope -0.19 to -0.15 bpm/mmHg for phenylephrine), so the limit is elsewhere in the HR chain (not kVagal alone). Reverted; needs a different probe.
+- Per user decision, cloud sessions implement and verify with short probes only; full mechanismWiring.mjs and scenarioSweep.mjs are run locally.

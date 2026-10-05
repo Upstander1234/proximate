@@ -378,6 +378,7 @@ class DrugInstance {
   constructor(id, dose, time, bioavailability = 1, route = null) {
     this.id = id;
     this.time = time;
+    this.givenDose = dose;   // delivered amount; scales curve-model receptor drugs (see the curve branch)
     const drugDef = DRUGS[id] || PROCS[id];
     this.drugDef = drugDef;
     // ROUTE IS A PROPERTY OF THE ADMINISTRATION, NOT OF THE PK MODEL.
@@ -1729,7 +1730,18 @@ export function updateDrugs(pat, s, dt) {
         const effDur = (drugDef.dur || 600) / Math.max(0.1, oc);
         const k = curve(s.t - dr.time, drugDef.onset || 30, effDur);
         if (k <= 0) continue;
-        intensity = k;
+        // The drawn amount is authoritative: a receptor-driven curve drug
+        // (phenylephrine, a pure alpha agonist, is the main case) scales with
+        // delivered amount relative to its declared reference dose, instead of
+        // ignoring it and stacking to the SVR ceiling. At the default dose the
+        // factor is exactly 1, so every existing scenario is unchanged. The
+        // cap of 3x keeps a gross over-draw bounded; the real ceiling is still
+        // the receptor/SVR clamp downstream.
+        let amountScale = 1;
+        if (drugDef.receptors && drugDef.dose > 0 && dr.givenDose > 0) {
+          amountScale = Math.min(3, dr.givenDose / drugDef.dose);
+        }
+        intensity = k * amountScale;
         toKeep.push(dr);
       }
 
