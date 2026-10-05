@@ -3190,6 +3190,12 @@ export const CONDITIONS = {
   // no difference to the peak (the ceiling above is hit either way), and a
   // tighter, more recent cluster is the more plausible "used again shortly
   // before collapse" presentation for an unresponsive/unidentified patient.
+  // UPDATE 2026-10-05: the ceiling described above is lifted by pk.js's
+  // overdoseTail (and the respEc50 read fix). MEASURED on this scenario,
+  // untreated: drive suppression ~0.37, PaCO2 ~56, SpO2 ~92 for the whole call;
+  // naloxone at 120 s brings PaCO2 to 38 and SpO2 to 98. Consciousness still
+  // reads "awake", since opioids do not feed sedationDepth (see neuro.js);
+  // that remaining gap is separate.
   opioidOD: {
     initial: { hr: 52, sbp: 98, glu: 96, pain: 0, blood: 6, tv: 0.5 },
     progress(pat, dt, s) {

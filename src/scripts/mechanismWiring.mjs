@@ -9010,6 +9010,34 @@ console.log("\n[ONE MOLECULE, ONE MECHANISM]");
   console.log(`  ${graded ? "PASS" : "FAIL"}  ${"drawn 0.5 mg morphine acts, less than 4 mg".padEnd(46)} pain ${none.pain.toFixed(2)} -> ${small.pain.toFixed(2)} / ${full.pain.toFixed(2)}`);
 }
 
+console.log("\n[DRAWN OVERDOSE ESCALATES]");
+{
+  // A therapeutic dose keeps its documented effect, but a 10-20x draw must keep
+  // going: respiratory/sedative coefficients used to be the drug's ceiling, so
+  // 1 mg fentanyl left the patient awake at SpO2 97. pk.js's overdoseTail adds a
+  // high-occupancy term that carries the effect toward apnea/unconsciousness.
+  const worst = (id, amount) => {
+    const s = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+    let sup = 0, spo2 = 100, sed = 0, uncon = false;
+    for (let t = STEP; t <= 780; t += STEP) {
+      s.t = t; if (t === 180) s.doses.push({ id, at: t, amount, route: "IV" }); physio(s);
+      const p = activePatient(s); if (t === STEP) pinTraitsNeutral(p);
+      if (t > 180) { sup = Math.max(sup, p.respDriveSuppression || 0); spo2 = Math.min(spo2, p.sao2 ?? 100); sed = Math.max(sed, p.sedationDepth || 0); uncon ||= p.consciousness === "unconscious" || p.consciousness === "coma"; }
+    }
+    return { sup, spo2, sed, uncon };
+  };
+  const fT = worst("fentanyl", 0.05), fOD = worst("fentanyl", 1);
+  const ok1 = fT.sup > 0.08 && fT.sup < 0.16 && fT.spo2 > 95 && fOD.sup > 0.45 && fOD.spo2 < 88;
+  ok1 ? pass++ : fail++;
+  if (!ok1) failures.push(`fentanyl 50 mcg should stay mild and 1 mg should cause severe hypoventilation, got sup ${fT.sup.toFixed(3)}/spo2 ${fT.spo2.toFixed(0)} vs sup ${fOD.sup.toFixed(3)}/spo2 ${fOD.spo2.toFixed(0)}`);
+  console.log(`  ${ok1 ? "PASS" : "FAIL"}  ${"fentanyl 0.05 mg mild, 1 mg severe hypoventilation".padEnd(46)} sup ${fT.sup.toFixed(3)} -> ${fOD.sup.toFixed(3)}, spo2 ${fT.spo2.toFixed(0)} -> ${fOD.spo2.toFixed(0)}`);
+  const mT = worst("midazolam", 5), mOD = worst("midazolam", 50);
+  const ok2 = !mT.uncon && mT.sed < 0.3 && mOD.uncon;
+  ok2 ? pass++ : fail++;
+  if (!ok2) failures.push(`midazolam 5 mg should not render unconscious and 50 mg should, got sed ${mT.sed.toFixed(2)} (${mT.uncon}) vs ${mOD.sed.toFixed(2)} (${mOD.uncon})`);
+  console.log(`  ${ok2 ? "PASS" : "FAIL"}  ${"midazolam 5 mg drowsy at most, 50 mg unconscious".padEnd(46)} sed ${mT.sed.toFixed(2)} -> ${mOD.sed.toFixed(2)}`);
+}
+
 console.log("\n" + "=".repeat(74));
 console.log(`${pass} passed, ${fail} failed`);
 if (failures.length) {

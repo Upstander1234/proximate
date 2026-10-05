@@ -417,7 +417,14 @@ export const DRUGS = {
     // in an opioid-naive adult raises PaCO2 by roughly 5-8 mmHg and blunts the
     // hypercapnic ventilatory response slope by about a third to a half. The
     // values below are each drug's maximal drive suppression scaled to that.
-    respiratoryDepression: 0.25,   // slightly above morphine per equianalgesic dose
+    // RE-IDENTIFIED 0.25 -> 0.36 when pk.js started actually reading fentanyl's
+    // respEc50 (2.3 ng/mL, declared in PK_PARAMS but previously ignored, so the
+    // respiratory curve used the 1.2 ng/mL analgesic ec50). At the higher EC50
+    // the same 50 mcg dose sits at lower occupancy; 0.36 restores the measured
+    // peak suppression (0.122 before, 0.12 after), still slightly above
+    // morphine 4 mg (0.13). Large overdoses escalate through pk.js's overdose
+    // tail, not this coefficient.
+    respiratoryDepression: 0.36,   // slightly above morphine per equianalgesic dose
     fx: { pain: -8 },                   // direct respiratory depression (opioid effect will be blocked by naloxone)
     receptors: {},                               // no α/β receptors; pain & RR handled via fx
     note: "National Scope: parenteral analgesia is AEMT. PREFERRED over nitro in dissection."

@@ -599,6 +599,14 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-05 (c) — Drawn overdoses now escalate (respiratory depression and sedation tail)
+
+- **Problem, measured:** respiratory/sedative coefficients were each drug's ceiling (Emax x occupancy, identified at a therapeutic dose), so a drawn 20x overdose barely moved anything: fentanyl 1 mg gave drive suppression 0.24, SpO2 97, awake; midazolam 50 mg only drowsy.
+- **Fix** (`pk.js`, `overdoseTail`): suppression = coef x occ + (max - coef) x occ^k (`RESP_SUPP_MAX` 0.95, `RESP_OD_EXP` 8; sedation max 1, `SED_OD_EXP` 4). The exponents are engine-fitted, not literature values. Therapeutic doses move little (morphine 4 mg 0.113 -> 0.131, midazolam 5 mg 0.096 -> 0.097). Overdoses: fentanyl 1 mg SpO2 76 / PaCO2 +38 / confused; morphine 40 mg SpO2 73 / PaCO2 +41; midazolam 50 mg unconscious; etomidate 60 mg suppression 0.40.
+- **Real bug fixed:** `respEc50`/`respHillN` live in `PK_PARAMS` but were read from the drug definition, so fentanyl's 2.3 ng/mL respiratory EC50 was never applied. Now read from `dr.pk`. Fentanyl's `respiratoryDepression` was re-identified 0.25 -> 0.36 to restore its measured therapeutic suppression (0.122 before, 0.119 after).
+- **Not changed:** respiratory rate stays about 13 even in severe overdose (hypoventilation is mostly tidal volume, because the gain-scaled hypercapnic drive partly offsets the rate reduction). Classic bradypnea would need a `respiratory.js` change, not attempted. The `opioidOD` scenario seeds 0.45 mg of fentanyl and is now more severe; see the probe note in its condition comment.
+- Verified: new `[DRAWN OVERDOSE ESCALATES]` assertions; 21 opioid/sedative/pain/toxicology/airway mwSections 123 passed, 1 failed (the documented flaky bagging-delay trial). Full suites not run.
+
 ### 2026-10-05 (b) — Free draw-up, and one molecule, one mechanism
 
 - **Free draw-up** (`DrawUpMinigame.jsx`, `FreeDraw`): the player's "Draw up a drug" no longer gets a random order. Any vial in the kit (with alternate strengths), any syringe, any volume, optional dilution and partial push; the syringe holds exactly that amount. The scored ordered mode remains only behind `forceOrder` (tests). Tiny draws can now be de-bubbled (the flick threshold was 0.15 mL).

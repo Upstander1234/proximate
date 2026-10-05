@@ -45,7 +45,30 @@ export const molOf = (id) => DRUGS[id]?.molecule || id;
 // shared 0.1 for the whole formulary until the arrhythmia efficacy harness showed
 // what that costs — every drug peaked at ~17 minutes, which made lidocaine
 // useless in the arrhythmia it exists to treat. Absent here, 0.1 is still used.
-export const NALOXONE_KI = 0.0000262;   // was 0.0005 at v1 21 L; rescaled by 21/400 with the volume correction below so reversal strength is unchanged
+export const NALOXONE_KI = 0.0000262;
+// OVERDOSE TAIL ON RESPIRATORY DEPRESSION AND SEDATION.
+// Each drug's `respiratoryDepression` / `sedative` coefficient was identified
+// against a THERAPEUTIC dose (morphine 4 mg -> PaCO2 +5-8 mmHg, midazolam 5 mg
+// -> drowsy), and used as Emax x occupancy. That made the coefficient the
+// drug's ceiling: a 20x fentanyl overdose reached a drive suppression of 0.24
+// and left the patient awake at rr 15, because occupancy can only roughly
+// double from a therapeutic ~0.5 to ~1. Real opioid and benzodiazepine
+// overdose has no such ceiling in the respiratory sense: a large enough dose
+// abolishes drive (apnea) and consciousness. The engine's suppression is a
+// chemoreflex-gain fraction composed with closed-loop CO2 dynamics, not the
+// isohypercapnic ventilation fraction the PK/PD papers fit, so the mapping
+// between the two is not linear. The tail below keeps the therapeutic anchor
+// (the linear coefficient term dominates at therapeutic occupancy) and adds a
+// steep high-occupancy term that carries the effect toward full suppression as
+// occupancy approaches 1. The exponents are engine-fitted, not literature
+// values: measured so each drug's documented therapeutic effect moves little
+// while a 10-20x dose reaches apnea-range hypoventilation and unconsciousness.
+export const RESP_SUPP_MAX = 0.95;     // the same clamp respDriveSuppression already had
+export const RESP_OD_EXP = 8;
+export const SED_OD_EXP = 4;
+export const overdoseTail = (coef, occ, max, exp) =>
+  coef * occ + Math.max(0, max - coef) * Math.pow(Math.max(0, Math.min(1, occ)), exp);
+   // was 0.0005 at v1 21 L; rescaled by 21/400 with the volume correction below so reversal strength is unchanged
 
 // Plain Hill-equation receptor occupancy, 0-1. n=1 (the default everywhere
 // except morphine's analgesic curve, queue item 62's remainder) reduces to
@@ -2476,8 +2499,12 @@ export function updateDrugs(pat, s, dt) {
         let respIntensity = intensity;
         if (dr.pk) {
           const ec50 = dr.pk.ec50 ?? 0.1;
-          const respEc50 = drugDef.respEc50 ?? ec50;
-          const respN = drugDef.respHillN ?? 1;
+          // respEc50/respHillN are declared on PK_PARAMS (dr.pk), not on the
+          // drug definition. This used to read only drugDef, so fentanyl's
+          // respEc50 was never applied and its respiratory curve silently
+          // used the analgesic ec50.
+          const respEc50 = dr.pk.respEc50 ?? drugDef.respEc50 ?? ec50;
+          const respN = dr.pk.respHillN ?? drugDef.respHillN ?? 1;
           let respEc50Eff = respEc50;
           if (drugDef.class === "opioid" && pat.opioidAntagonistConc > 0) {
             respEc50Eff = respEc50 * (1 + pat.opioidAntagonistConc / NALOXONE_KI);
@@ -2496,7 +2523,7 @@ export function updateDrugs(pat, s, dt) {
         }
         // Scale by this pathway's own occupancy, and let naloxone reverse
         // it for opioids exactly as it reverses their other actions.
-        let supp = drugDef.respiratoryDepression * respIntensity;
+        let supp = overdoseTail(drugDef.respiratoryDepression, respIntensity, RESP_SUPP_MAX, RESP_OD_EXP);
         if (drugDef.class === "opioid" && !dr.pk) supp *= (1 - pat.opioidBlockade);
         pat.respDriveSuppression = Math.min(0.95, pat.respDriveSuppression + supp);
       }
@@ -2547,7 +2574,7 @@ export function updateDrugs(pat, s, dt) {
           pat.anticonvulsant + drugDef.anticonvulsant * intensity);
       }
       if (drugDef.sedative) {
-        pat.sedationDepth = Math.min(1, pat.sedationDepth + drugDef.sedative * intensity);
+        pat.sedationDepth = Math.min(1, pat.sedationDepth + overdoseTail(drugDef.sedative, intensity, 1, SED_OD_EXP));
       }
       // Queue item 62's remainder — NMDA blockade, keyed off drug class
       // rather than a new per-drug coefficient (ketamine's existing,
