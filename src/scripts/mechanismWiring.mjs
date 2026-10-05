@@ -25,6 +25,8 @@ import { Patient } from "../physio/patient.js";
 import { updateVenousReturn, updateRhythm } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
 import { LIM } from "../scope.js";
+import { DRUG_UNITS, drawVolumeMl, amountFromDraw, infusionAmountPerMin } from "../data/drugUnits.js";
+import { DRUGS as DRUG_DEFS } from "../data/drugs.js";
 import { CONDITIONS } from "../physio/conditions.js";
 import { establishPregnancy, updateObstetric } from "../physio/obstetric.js";
 import { updateFluidShifts } from "../physio/metabolic.js";
@@ -8800,6 +8802,34 @@ console.log("\n[WEIGHT- AND AGE-AWARE PK]");
   neoOk ? pass++ : fail++;
   if (!neoOk) failures.push(`neonate total clearance should sit below weight allometry (immature), got ${neo.cl} vs ${allo}`);
   console.log(`  ${neoOk ? "PASS" : "FAIL"}  ${"neonate clearance below allometry (maturation)".padEnd(46)} cl=${neo.cl.toFixed(4)} allometric=${allo.toFixed(4)}`);
+}
+
+console.log("\n[REAL DRUG UNITS AND DRAWN AMOUNT]");
+{
+  // Table integrity: every listed drug exists and its standard dose matches the
+  // drug's own declared dose where it has one.
+  const bad = Object.entries(DRUG_UNITS).filter(([k, u]) => !DRUG_DEFS[k] || (DRUG_DEFS[k].dose != null && DRUG_DEFS[k].dose !== u.std) || !(u.conc > 0));
+  const tblOk = bad.length === 0;
+  tblOk ? pass++ : fail++;
+  if (!tblOk) failures.push(`drug unit table inconsistent for: ${bad.map(b => b[0]).join(", ")}`);
+  console.log(`  ${tblOk ? "PASS" : "FAIL"}  ${"drugUnits table matches drugs.js".padEnd(46)} ${Object.keys(DRUG_UNITS).length} drugs, ${bad.length} bad`);
+  const volOk = Math.abs(drawVolumeMl("epiIV", 1) - 10) < 1e-9 && Math.abs(drawVolumeMl("midazolam", 5) - 1) < 1e-9 && Math.abs(amountFromDraw("morphine", 0.4) - 4) < 1e-9 && Math.abs(infusionAmountPerMin("norepi", 30, 4, 250) - 0.008) < 1e-9;
+  volOk ? pass++ : fail++;
+  if (!volOk) failures.push("draw volume / drawn amount / infusion conversions are wrong");
+  console.log(`  ${volOk ? "PASS" : "FAIL"}  ${"draw volume and infusion conversions".padEnd(46)} epiIV 1 mg = ${drawVolumeMl("epiIV", 1)} mL; NE 30 mL/h of 4 mg/250 mL = ${infusionAmountPerMin("norepi", 30, 4, 250)} mg/min`);
+  // A curve-model receptor drug scales with the DRAWN amount (vasopressin: a half
+  // draw gives a smaller pressor rise than the full dose, a double draw a bigger one).
+  const rise = (amount) => {
+    const s = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+    let b = 0, pk = 0;
+    for (let T = STEP; T <= 420; T += STEP) { s.t = T; if (T === 182) s.doses.push(amount == null ? { id: "vasopressin", at: T } : { id: "vasopressin", at: T, amount }); physio(s); const p = activePatient(s); if (T === 180) b = p.map; if (T > 180) pk = Math.max(pk, p.map - b); }
+    return pk;
+  };
+  const half = rise(20), full = rise(null), dbl = rise(80);
+  const scaleOk = half < full - 3 && dbl > full + 3;
+  scaleOk ? pass++ : fail++;
+  if (!scaleOk) failures.push(`vasopressin pressor rise should scale with the drawn amount, 20 U ${half}, 40 U ${full}, 80 U ${dbl}`);
+  console.log(`  ${scaleOk ? "PASS" : "FAIL"}  ${"drawn amount scales a curve drug (vasopressin)".padEnd(46)} 20 U +${half.toFixed(1)}, 40 U +${full.toFixed(1)}, 80 U +${dbl.toFixed(1)}`);
 }
 
 console.log("\n[CONTINUOUS INFUSION (pump state, zero-order input)]");

@@ -108,6 +108,7 @@ import AirwayMinigame from "./components/AirwayMinigame.jsx";
 import CricMinigame from "./components/CricMinigame.jsx";
 import SGAMinigame from "./components/SGAMinigame.jsx";
 import DrawUpMinigame from "./components/DrawUpMinigame.jsx";
+import { DRUG_UNITS } from "./data/drugUnits.js";
 import PupilMinigame from "./components/PupilMinigame.jsx";
 import GiveMedMinigame from "./components/GiveMedMinigame.jsx";
 import HangMinigame from "./components/HangMinigame.jsx";
@@ -462,7 +463,7 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   // field for the first time behaves exactly as it always did.
   procedureAssist:"standard",
   region:"torso",tab:"assess",panel:"actions",micnOpen:0,newUnit:null,
-  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,leadsOn:0,leadsSecured:0,
+  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,preppedDraw:null,leadsOn:0,leadsSecured:0,
   devices:{},defib:{energy:null,charged:0},bpMode:null,devTick:0,ecgInterp:null,autoBPAt:null,ecgTxAt:null,
   o2Psi:2000,
   vomited:0,aspirated:0,cleared:0,pushedDeeper:0,badOrder:0,refused:0,paCath:0,arrestLogged:0,
@@ -1896,8 +1897,13 @@ export default function App({onHome}={}){
     // run() sets the same `prepped` flag the crew "prep" task already sets.
     out.push({id:"prep",region:"head",tab:"meds",label:"Draw up the next drug",gerund:"Drawing up",cost:25,lvl:2,bag:"drug",
       tip:"Draw the next drug ahead of time; the next push takes half as long.",
-      run:(s)=>{if(s.prepped) return {say:"A drug is already drawn up and in your hand.",kind:"obs"};
-        s.prepped=1; return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
+      run:(s,v,a)=>{if(s.prepped) return {say:"A drug is already drawn up and in your hand.",kind:"obs"};
+        s.prepped=1;
+        // The DRAWN amount rides along with the prepped syringe and is what the
+        // patient receives when that drug is given (see the give run() below).
+        if(a&&a._draw){s.preppedDraw=a._draw;const d=DRUGS[a._draw.id];
+          return {say:`Drawn and labeled: ${d?d.name:"the drug"}, ${+a._draw.amount.toPrecision(3)} ${DRUG_UNITS[a._draw.id]?.unit||"mg"}.`,kind:"obs"};}
+        return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
     Object.entries(DRUGS).forEach(([id,d])=>{
       // Split a combined route string into one action per REAL delivery
       // mechanism, so a drug declared "IV/IM/IN" offers three real choices
@@ -1946,7 +1952,12 @@ export default function App({onHome}={}){
           // doses of it, the same clinical ceiling either way.
           const n=(s.given[id]||0)+1;
           if(d.max&&n>d.max&&!ov) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
-          s.given={...s.given,[id]:n};giveDose(s,{id,at:s.t,route:routeLabel});s.prepped=0;
+          s.given={...s.given,[id]:n};
+          // The drawn amount is authoritative: if the syringe in hand holds THIS drug, the patient
+          // gets exactly what was drawn, not the ordered or standard dose. A different drug gets
+          // the weight-resolved default.
+          const drawn=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:null;
+          giveDose(s,{id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{})});s.prepped=0;s.preppedDraw=null;
           if(id==="calcium") s.calcium=1;
           // F0 — treatment-response dialogue (item 18): analgesics are
           // identified by their own real, already-declared fx.pain delta,
@@ -3847,7 +3858,8 @@ export default function App({onHome}={}){
       // reads (see the Monitor panel below).
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra});
+      const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount}}:{};
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;

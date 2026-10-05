@@ -17,6 +17,7 @@
 import { DRUGS } from "../data/drugs.js";
 import { PROCS } from "../data/procedures.js";
 import { curve } from "../util.js";
+import { DRUG_UNITS } from "../data/drugUnits.js";
 import { HCT_NORMAL, NORMAL_HB } from "./constants.js";
 
 // `renalFrac` is the fraction of TOTAL clearance that is renal; the remainder is
@@ -614,8 +615,10 @@ export function weightPkScale(pat) {
 // can show "0.1 mg/kg = 0.35 mg" in the confirmation.
 // ---------------------------------------------------------------------------
 export const PEDIATRIC_WEIGHT_KG = 40;
-export function resolveDoseMg(drugDef, weightKg) {
-  const adult = drugDef?.dose ?? 1;
+export function resolveDoseMg(drugDef, weightKg, id) {
+  // curve drugs carry no `dose` of their own: the reference dose is the standard
+  // dose in their real unit (data/drugUnits.js), so amount scaling is relative to it
+  const adult = drugDef?.dose ?? DRUG_UNITS[id]?.std ?? 1;
   if (!drugDef?.dosePerKg || !(weightKg > 0) || weightKg >= PEDIATRIC_WEIGHT_KG) return adult;
   let d = drugDef.dosePerKg * weightKg;
   if (drugDef.minDose != null) d = Math.max(d, drugDef.minDose);
@@ -1364,7 +1367,7 @@ export function updateDrugs(pat, s, dt) {
         const drugDef = DRUGS[d.id] || PROCS[d.id];
         if (drugDef) {
           const bioavailability = drugDef.bioavailability ?? 1;
-          const refDose = resolveDoseMg(drugDef, pat.ageProfile?.weight);
+          const refDose = resolveDoseMg(drugDef, pat.ageProfile?.weight, d.id);
           const dose = d.amount ?? refDose;   // an explicit (drawn or scenario) amount wins over the weight-resolved dose
           const inst = new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null);
           inst.refDose = refDose;             // the dose the patient should get; curve-drug amount scaling is relative to it

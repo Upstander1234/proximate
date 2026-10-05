@@ -21,7 +21,8 @@
 import { chromium } from "playwright";
 
 export async function launch({ headless = true } = {}) {
-  const browser = await chromium.launch({ headless });
+  // PROXIMATE_CHROMIUM lets a sandbox point at a preinstalled browser (e.g. /opt/pw-browsers/chromium).
+  const browser = await chromium.launch({ headless, ...(process.env.PROXIMATE_CHROMIUM ? { executablePath: process.env.PROXIMATE_CHROMIUM } : {}) });
   const page = await browser.newPage();
   const consoleErrors = [];
   page.on("console", (msg) => {
