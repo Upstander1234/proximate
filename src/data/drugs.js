@@ -837,6 +837,9 @@ export const DRUGS = {
     // accumulator (where a catecholamine-resistance term must NOT act, since
     // V1 is the non-adrenergic channel in refractory shock).
     receptors: { V1: 1.0 },
+    drip: true,
+    // Pump form (U/min): the standard clinical fixed rate 0.03 U/min reproduces about a quarter of the standard-dose effect.
+    infusion: { refPerMin: 0.12, tauMin: 3 },
     note: "Works in acidosis where catecholamines will not."
   },
 
@@ -1309,6 +1312,8 @@ export const DRUGS = {
     dose: 0.1,
     fx: {},
     receptors: { alpha: 0.25 },
+    // Pump form (mg/min): 40 mcg/min reproduces the standard 100 mcg push effect level, a typical 20 to 100 mcg/min infusion.
+    infusion: { refPerMin: 0.04, tauMin: 1.5 },
     drip: true,
     note: "Pure alpha. Raises pressure, DROPS heart rate — the one for tachycardic hypotension."
   },

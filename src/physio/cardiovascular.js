@@ -85,7 +85,7 @@ const SEPSIS_PRESSOR_GAIN = 0.85;   // fraction of an exogenous pressor's alpha 
 export const FULL_ODE_AUTHORITATIVE = true;
 
 // Rhythms that are organized enough to still be perfusing/at-risk (not arrest).
-const VALSALVA_AV_DEPRESSION = 0.22;
+const VALSALVA_AV_DEPRESSION = 0.19;
 const PERFUSING = ["sinus", "stemi", "svt", "afib", "flutter", "peakedT", "wideQRS", "junctional", "chb"];
 // Torsades is a ventricular tachycardia: the atria are dissociated from it
 // exactly as they are in monomorphic VT, so it belongs here. It was absent,
@@ -2319,7 +2319,7 @@ function updateConduction(pat, dt) {
   // IK-ACh) beyond the resting vagal term above, which is what interrupts a reentrant
   // SVT circuit; coefficient set so one 60 s maneuver converts roughly a quarter of
   // SVT (clinical first-attempt conversion about 20 to 40 percent, higher modified).
-  av -= clamp(pat.vagalSurge || 0, 0, 1) * VALSALVA_AV_DEPRESSION;
+  av -= clamp(pat.vagalSurge || 0, 0, 1.6) * VALSALVA_AV_DEPRESSION;
   // HYPERMAGNESAEMIA slows AV conduction — the documented ECG progression is
   // "prolonged PR interval and widened QRS" at 5.0-7.5 mmol/L and "complete
   // heart block" above 7.5 (Bolt Pharmacy / StatPearls). Magnesium blocks

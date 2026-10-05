@@ -8947,11 +8947,13 @@ console.log("\n[CONTINUOUS INFUSION (pump state, zero-order input)]");
   if (!washOk) failures.push(`drug should wash out after the pump stops, central ${ne[900].central.toFixed(4)} -> ${ne[1200].central.toFixed(4)}`);
   console.log(`  ${washOk ? "PASS" : "FAIL"}  ${"...washes out after the pump stops (5 min)".padEnd(46)} central ${ne[900].central.toFixed(4)} -> ${ne[1200].central.toFixed(4)}`);
 
-  const curveLine = run("phenylephrine", 0.1, 900, 300);
-  const curveOk = Number.isFinite(curveLine[300].map) && curveLine[300].central === 0;
+  // A curve-model drug (phenylephrine, 0.54 mcg/kg/min = 40 mcg/min) runs on the pump through its own relaxing effect level
+  // (drugs.js `infusion`): it raises pressure steadily where a bolus would fade, and washes out when stopped.
+  const curveLine = run("phenylephrine", 0.54, 900, 500), curveCtl = run("phenylephrine", 0, 900, 500);
+  const curveOk = Number.isFinite(curveLine[500].map) && curveLine[500].map > curveCtl[500].map + 8;
   curveOk ? pass++ : fail++;
-  if (!curveOk) failures.push("an infusion line for a curve-model drug should be ignored without error");
-  console.log(`  ${curveOk ? "PASS" : "FAIL"}  ${"...curve-model drug line is ignored".padEnd(46)} central=${curveLine[300].central}`);
+  if (!curveOk) failures.push(`a phenylephrine pump line should raise MAP steadily, with ${curveLine[500].map}, control ${curveCtl[500].map}`);
+  console.log(`  ${curveOk ? "PASS" : "FAIL"}  ${"...curve-model drug (phenylephrine) pump raises MAP".padEnd(46)} MAP ${curveCtl[500].map.toFixed(0)} -> ${curveLine[500].map.toFixed(0)}`);
 }
 
 console.log("\n" + "=".repeat(74));

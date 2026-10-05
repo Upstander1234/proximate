@@ -109,7 +109,7 @@ import AirwayMinigame from "./components/AirwayMinigame.jsx";
 import CricMinigame from "./components/CricMinigame.jsx";
 import SGAMinigame from "./components/SGAMinigame.jsx";
 import DrawUpMinigame from "./components/DrawUpMinigame.jsx";
-import { DRUG_UNITS } from "./data/drugUnits.js";
+import { DRUG_UNITS, pumpRateLabel } from "./data/drugUnits.js";
 import PupilMinigame from "./components/PupilMinigame.jsx";
 import GiveMedMinigame from "./components/GiveMedMinigame.jsx";
 import HangMinigame from "./components/HangMinigame.jsx";
@@ -119,6 +119,7 @@ import DeviceMinigame from "./components/DeviceMinigame.jsx";
 import PulseOxScreen from "./components/PulseOxScreen.jsx";
 import CprMinigame from "./components/CprMinigame.jsx";
 import ProcMinigame from "./components/ProcMinigame.jsx";
+import ValsalvaMinigame from "./components/ValsalvaMinigame.jsx";
 import MonitorScreenMinigame from "./components/MonitorScreenMinigame.jsx";
 import BvmMinigame from "./components/BvmMinigame.jsx";
 import AuscultationMinigame from "./components/AuscultationMinigame.jsx";
@@ -1947,7 +1948,7 @@ export default function App({onHome}={}){
             const live=(s.infusions||[]).find(l=>l.id===id&&(l.to==null));
             if(live){s.infusions=s.infusions.map(l=>l===live?{...l,to:s.t}:l);}
             s.infusions=[...(s.infusions||[]),{line:`pump${(s.infusions||[]).length+1}`,id,rate,mlH:act._pumpMlH,site:act.region,from:s.t,to:null,patientId:s.activePatientId??s._roster?.[0]?.id??null}];
-            return {say:`${d.name} infusion started at ${act._pumpMlH} mL/h (${+(rate*1000/wt).toFixed(2)} mcg/kg/min).`,kind:"good"};}
+            return {say:`${d.name} infusion started at ${act._pumpMlH} mL/h (${pumpRateLabel(id,rate,wt)}).`,kind:"good"};}
           // F6: a tourniquet occludes venous return from everything distal to
           // it — a line placed on that same limb cannot deliver anything to
           // central circulation while the tourniquet is on. Real teaching
@@ -2018,7 +2019,7 @@ export default function App({onHome}={}){
         const mlH=mult===0?0:Math.max(1,Math.round(cur.mlH*mult)), bag=DRUG_UNITS[l.id].drip, rate=mlH/60*bag.amountInBag/bag.mlBag;
         s.infusions=s.infusions.map(x=>x===cur?{...x,to:s.t}:x);
         if(mlH>0) s.infusions=[...s.infusions,{...cur,line:`${cur.line}.`,rate,mlH,from:s.t,to:null}];
-        return {say:mult===0?`${nm} pump stopped.`:`${nm} pump ${mult>1?"raised":"lowered"} to ${mlH} mL/h (${+(rate*1000/wtp).toFixed(2)} mcg/kg/min).`,kind:"good"};};
+        return {say:mult===0?`${nm} pump stopped.`:`${nm} pump ${mult>1?"raised":"lowered"} to ${mlH} mL/h (${pumpRateLabel(l.id,rate,wtp)}).`,kind:"good"};};
       [["up",1.25,"Raise"],["down",0.75,"Lower"],["stop",0,"Stop"]].forEach(([k,m,lab])=>out.push({id:`pump_${k}_${l.line}`,region:l.site||"armR",tab:"meds",label:`${lab} ${nm} pump`,gerund:"Adjusting pump",cost:6,lvl:3,bag:"drug",tip:`Currently ${l.mlH} mL/h.`,run:retitrate(m)}));
     });
     (g.ivSites||[]).forEach(limb=>out.push({id:`flush_${limb}`,region:limb,tab:"meds",label:"Flush the line",gerund:"Flushing",cost:15,lvl:3,bag:"drug",
@@ -2144,7 +2145,7 @@ export default function App({onHome}={}){
     // branch never matched anything; removed along with the PROCS.glucometer
     // entry and every s.given.glucometer/categories.js reference that made
     // the same id mistake (see scenarios.js/categories.js).
-    giveDose(s,{id:p.id,at:s.t});
+    giveDose(s,{id:p.id,at:s.t,...(a&&a._vq!=null?{quality:a._vq,legRaise:!!a._leg}:{})});
     const dir=Object.entries(pr.fx||{}).filter(([,m])=>m).map(([k,m])=>`${k.toUpperCase()} ${m>0?"↑":"↓"}${Math.abs(m)}`).join("  ");
     return {say:`${pr.name}.${dir?"   ["+dir+"]":""}`,kind:"good"};}}));
 
@@ -3499,6 +3500,13 @@ export default function App({onHome}={}){
     // Extremity splinting: unique per limb (arm/leg, left/right — right
     // pulse site and joints) and unique per material (rigid/cardboard vs
     // vacuum), distinct from the generic flat-timer ProcMinigame below.
+    // Valsalva: strain technique decides how strong the vagal surge is (quality) and the modified
+    // maneuver (leg raise) adds to it; only offered for a patient in a reentrant SVT, otherwise the
+    // normal path states that a sinus tachycardia does not respond.
+    if(a.id==="valsalva"&&!a._skipMinigame&&s.patient&&s.patient.rhythm==="svt"){
+      return {...s,accessMinigame:{action:a,kind:"valsalva",site:a.region,
+        attempts:0,alertBaseline:(s.eventAlertQueue||[]).length}};
+    }
     if(a.id==="splint"&&!a._skipMinigame){
       return {...s,accessMinigame:{action:a,kind:"splint",site:a.region,
         attempts:(s.accessAttempts||{})[`splint@${a.region}`]||0,
@@ -3898,8 +3906,9 @@ export default function App({onHome}={}){
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
       const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount}}:{};
       const pumpExtra=(mg.kind==="hang"&&detail&&detail.pumpMlH>0)?{_pumpMlH:detail.pumpMlH}:{};
+      const valsalvaExtra=(mg.kind==="valsalva"&&detail&&detail.quality!=null)?{_vq:detail.quality,_leg:!!detail.legRaise}:{};
       const flushExtra=(mg.kind==="give"&&detail&&detail.flushMlPerSec>0)?{_flushRate:detail.flushMlPerSec}:{};
-      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra,...flushExtra,...pumpExtra});
+      start({...mg.action,_skipMinigame:true,_override:!!(mg.warnings&&mg.warnings.length),cost:POST_MINIGAME_CONFIRM_S,...leadsExtra,...gaugeExtra,...drawExtra,...flushExtra,...pumpExtra,...valsalvaExtra});
       return;
     }
     const key=`${mg.kind}@${mg.site}`;
@@ -10576,6 +10585,10 @@ export default function App({onHome}={}){
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame} onDialogue={fireMinigameDialogue}/>}
+    {g.accessMinigame&&g.accessMinigame.kind==="valsalva"&&<ValsalvaMinigame open kind="valsalva"
+      pat={g.patient} assist={g.procedureAssist}
+      interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
+      onResolve={resolveAccessMinigame}/>}
     {g.accessMinigame&&g.accessMinigame.kind==="splint"&&<SplintMinigame open kind="splint"
       site={g.accessMinigame.site} pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}

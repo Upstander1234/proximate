@@ -989,8 +989,10 @@ function syncInfusions(pat, s) {
     let dr = pat._infusionInst[l.line];
     if (!dr || !pat.drugInstances.includes(dr)) {
       if (!active) continue;
-      if (!PK_PARAMS[l.id] || DRUGS[l.id]?.pkModel === "curve") continue;
+      const curveInf = DRUGS[l.id]?.pkModel === "curve" && DRUGS[l.id]?.infusion;
+      if (DRUGS[l.id]?.pkModel === "curve" ? !curveInf : !PK_PARAMS[l.id]) continue;
       dr = new DrugInstance(l.id, 0, l.from, 1, null);
+      if (curveInf) dr.curveInf = { level: 0 };
       pat.drugInstances.push(dr);
       pat._infusionInst[l.line] = dr;
     }
@@ -1440,6 +1442,8 @@ export function updateDrugs(pat, s, dt) {
           const dose = d.amount ?? refDose;   // an explicit (drawn or scenario) amount wins over the weight-resolved dose
           const inst = new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null);
           inst.deliveredFraction = bolusDeliveredFraction(drugDef, pat, d);   // fast-clearing bolus: fraction surviving transit to the heart
+          // Technique of a vagal maneuver: strain quality (0 to 1) plus a leg raise (modified Valsalva) that adds to it.
+          if (d.quality != null) inst.technique = Math.min(1.6, Math.max(0, d.quality) * (d.legRaise ? 1.15 : 1));
           inst.refDose = refDose;             // the dose the patient should get; curve-drug amount scaling is relative to it
           d.resolvedAmount = dose;            // stamped on the dose record so the log/UI can show the delivered amount
           pat.drugInstances.push(inst);
@@ -1903,6 +1907,17 @@ export function updateDrugs(pat, s, dt) {
         // hepatically/renally "cleared" the way a drug is. Extending organ
         // clearance to those would be the wrong mechanism for what they
         // represent, not an oversight.
+        if (dr.curveInf) {
+          // A curve-model drug running on a pump (vasopressin, phenylephrine): there is no concentration, so the
+          // effect level relaxes toward rate / refPerMin (the rate that reproduces the standard-dose effect)
+          // with the drug's own time constant, holds while it runs, and washes out after it stops.
+          const ci = drugDef.infusion;
+          const target = Math.min(3, (dr.infusionRate || 0) / ci.refPerMin);
+          dr.curveInf.level += (target - dr.curveInf.level) * (1 - Math.exp(-dt / ci.tauMin));
+          if (dr.curveInf.level < 0.005 && !(dr.infusionRate > 0)) continue;
+          intensity = dr.curveInf.level;
+          toKeep.push(dr);
+        } else {
         const oc = organClearanceFactor(pat, drugDef.renalFrac);
         pat._organClearance = oc;   // exposed for the wiring suite, same as the PK branch above
         const effDur = (drugDef.dur || 600) / Math.max(0.1, oc);
@@ -1923,6 +1938,7 @@ export function updateDrugs(pat, s, dt) {
         amountScale *= dr.deliveredFraction ?? 1;
         intensity = k * amountScale;
         toKeep.push(dr);
+        }
       }
 
       // Apply the within-encounter receptor desensitization computed once,
@@ -2714,7 +2730,7 @@ export function updateDrugs(pat, s, dt) {
         pat.steroidResensitization = Math.max(pat.steroidResensitization, dr.drugDef.steroidResensitize * intensity);
       }
       if (dr.drugDef?.vagalManeuver) {
-        pat.vagalSurge = Math.max(pat.vagalSurge, dr.drugDef.vagalManeuver * intensity);
+        pat.vagalSurge = Math.max(pat.vagalSurge, dr.drugDef.vagalManeuver * intensity * (dr.technique ?? 1));
       }
       if (dr.drugDef?.aorticOcclusion && intensity > 0.05) {
         pat.aorticOcclusion = Math.max(pat.aorticOcclusion, dr.drugDef.aorticOcclusion * intensity);

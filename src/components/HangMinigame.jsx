@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../theme.js";
 import { assistToleranceMult } from "../procedureAssist.js";
 import { gaugeMaxFlowMlMin } from "../access.js";
-import { DRUG_UNITS } from "../data/drugUnits.js";
+import { DRUG_UNITS, pumpRateLabel } from "../data/drugUnits.js";
 import { PROCEDURE_OUTCOME } from "../procedureOutcome.js";
 import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 
@@ -138,8 +138,10 @@ export default function HangMinigame({ open, kind, drugName, drugId, fluidMode, 
 
   const pumpBag = !fluidMode && drugId && DRUG_UNITS[drugId]?.drip ? DRUG_UNITS[drugId].drip : null;
   const wtKg = pat?.ageProfile?.weight || 74;
-  const bagMcgPerMl = pumpBag ? (pumpBag.amountInBag * 1000) / pumpBag.mlBag : 0;
-  const mcgKgMin = pumpBag ? (rate * bagMcgPerMl) / 60 / wtKg : 0;
+  const bagPerMl = pumpBag ? pumpBag.amountInBag / pumpBag.mlBag : 0;       // drug unit per mL
+  const unitIsU = pumpBag && DRUG_UNITS[drugId].unit === "U";
+  const ratePerMin = pumpBag ? (rate / 60) * bagPerMl : 0;                // drug unit per minute
+  const rateText = pumpBag ? pumpRateLabel(drugId, ratePerMin, wtKg) : "";
 
   const confirmRate = () => {
     if (fluidMode) {
@@ -160,7 +162,7 @@ export default function HangMinigame({ open, kind, drugName, drugId, fluidMode, 
       // A real pump: the player sets mL/h. The dose actually delivered follows from the bag
       // concentration and the patient's weight, and the physiology decides whether it was right.
       if (rate <= 0) { fail("The pump is set to zero. Nothing is running."); return; }
-      win(`Pump started at ${rate} mL/h, ${mcgKgMin.toFixed(2)} mcg/kg/min. Titrate to the monitor.`, { pumpMlH: rate });
+      win(`Pump started at ${rate} mL/h, ${rateText}. Titrate to the monitor.`, { pumpMlH: rate });
       return;
     }
     if (rate < pressorLo) { fail("Too low to have any measurable pressor effect. Dial it up and reassess in a couple of minutes."); return; }
@@ -197,7 +199,7 @@ export default function HangMinigame({ open, kind, drugName, drugId, fluidMode, 
     return (<>
       <Line>4. {fluidMode
         ? `Count the drops falling in the chamber and adjust the roller clamp: ${rate} gtt/min ${shock ? "(this patient is hypotensive — run it wide open)" : "(a controlled maintenance rate is right here)"}${access === "IV" ? ` — this ${gauge}g line tops out around ${Math.round(gaugeCeilGtt)} gtt/min` : ""}.`
-        : pumpBag ? `Set the pump rate: ${rate} mL/h of a ${pumpBag.amountInBag} mg / ${pumpBag.mlBag} mL bag (${bagMcgPerMl} mcg/mL) is ${mcgKgMin.toFixed(2)} mcg/kg/min for this ${Math.round(wtKg)} kg patient. Start low and titrate to the monitor.`
+        : pumpBag ? `Set the pump rate: ${rate} mL/h of a ${pumpBag.amountInBag} ${DRUG_UNITS[drugId].unit} / ${pumpBag.mlBag} mL bag is ${rateText}${unitIsU ? "" : ` for this ${Math.round(wtKg)} kg patient`}. Start low and titrate to the monitor.`
         : `Set the starting infusion rate: ${rate}. Start low, then titrate up watching the monitor — this is not a dose you push all at once.`}</Line>
       <Slider value={rate} onChange={setRate} max={fluidMode ? 250 : pumpBag ? 300 : 100} />
       <button style={GO} onClick={confirmRate}>{fluidMode ? "Open the roller clamp" : "Start the infusion"}</button>
