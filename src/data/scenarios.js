@@ -728,7 +728,10 @@ childbirth: {cat: "trauma", id: "OBGY-004", pronouns: "she", title: "Female, 30.
   locOnStreet: true,
   patient: {age: 30},
   clothing: {top: "long", bottom: "skirt", shoes: false},
-  seed: () => ({leftLateralTilt: 0, neoDelivered: 0}),
+  // Blunt abdominal trauma in late pregnancy can bleed the fetus into the mother (fetomaternal
+  // hemorrhage): in some runs the baby is born a quarter of its blood volume short, pale and
+  // unresponsive to ventilation alone until it gets a volume bolus.
+  seed: () => ({leftLateralTilt: 0, neoDelivered: 0, neonatalBloodLoss: Math.random() < 0.3 ? 0.25 : 0}),
   probes: {
     history: () => ({say: "\"Thirty-six weeks... the car clipped me... please, the baby—\" She grips the ground. Another contraction.", kind: "pt",
       evid: "Term pregnancy + blunt trauma + active labor. Two patients.", find: "36 wks, blunt trauma, active labor."}),
@@ -778,6 +781,18 @@ childbirth: {cat: "trauma", id: "OBGY-004", pronouns: "she", title: "Female, 30.
         const wt = nb.weight || 3.3, mg = Math.round(wt * 0.01 * 1000) / 1000;
         nb._neo.epi = true;
         return {say: `${mg} mg IV/IO — 0.01 mg/kg against a ${wt} kg newborn, not a flat adult dose.`, kind: "beat"};}},
+    // NRP volume expansion: 10 mL/kg normal saline over 5-10 minutes for a newborn with suspected
+    // blood loss (pallor, weak pulses, poor response to effective ventilation). Delivered as a real
+    // weight-sized fluid dose to the newborn, so it refills its own circulation through the fluid PK path.
+    {id: "nbSaline", region: "torso", tab: "procedures", label: "💧 Newborn volume bolus (10 mL/kg NS, UVC/IO)", gerund: "Giving the newborn a volume bolus",
+      cost: 30, lvl: 4, run: (s) => {const nb = s._roster?.find(e => e.id === "newborn")?.patient;
+        if (!nb) return {say: "No baby yet.", kind: "obs"};
+        nb._neo = nb._neo || {};
+        if (!nb._neo.ppv) return {say: "Ventilate first. Most depressed newborns need breaths, not fluid; volume is for the baby who stays pale and limp despite good ventilation.", kind: "crit"};
+        const wt = nb.ageProfile?.weight || nb.weight || 3.3, mL = Math.round(wt * 10);
+        s.doses = [...(s.doses || []), {id: "saline", at: s.t, route: "IO", volumeL: mL / 1000, patientId: "newborn"}];
+        s.given = {...s.given, nbSaline: (s.given.nbSaline || 0) + 1};
+        return {say: `${mL} mL normal saline, 10 mL/kg against a ${wt} kg newborn, pushed over several minutes.`, kind: "beat"};}},
   ],
   resolve: (s, v, arr) => {const notes = [];
     const nb = s._roster?.find(e => e.id === "newborn")?.patient;
@@ -798,6 +813,9 @@ childbirth: {cat: "trauma", id: "OBGY-004", pronouns: "she", title: "Female, 30.
       } else if (nb._neo?.ppv) {
         notes.push(`Newborn heart rate ${nbHr} — coming up on PPV but not there yet; keep bagging and reassess every 30 seconds.`);
       }
+      if (nb._neo?.bloodLoss > 0) notes.push(s.given.nbSaline
+        ? "This baby was born short of blood: the impact bled the fetus into the mother. Ventilation alone could not fill an empty circulation; the 10 mL/kg bolus is what turned the pallor around."
+        : "This baby was born short of blood (fetomaternal hemorrhage from the impact): pale, weak pulses, and a heart rate that stalled despite good ventilation. That picture is the NRP indication for a 10 mL/kg normal saline bolus.");
     } else {
       notes.push("She never delivered within your scene time — reassess whether crowning meant delivery was imminent and you should have been set up to catch.");
     }

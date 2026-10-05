@@ -287,7 +287,7 @@ export const DRUGS = {
 
   saline: {
     pkModel: "fluid",
-    name: "Normal Saline 500 mL", route: "IV/IO", lvl: 3,
+    name: "Normal Saline 500 mL", route: "IV/IO", lvl: 3, volumeL: 0.5,
     onset: 60, dur: 5400, max: 8,
     // ph: -350 WAS SIZED FOR A RATCHET THAT DELIVERED IT EVERY TICK, NOT
     // ONCE. Found while investigating a genuinely unrelated task (queue

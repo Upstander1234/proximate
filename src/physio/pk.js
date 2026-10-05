@@ -1445,6 +1445,9 @@ export function updateDrugs(pat, s, dt) {
           // Technique of a vagal maneuver: strain quality (0 to 1) plus a leg raise (modified Valsalva) that adds to it.
           if (d.quality != null) inst.technique = Math.min(1.6, Math.max(0, d.quality) * (d.legRaise ? 1.15 : 1));
           inst.refDose = refDose;             // the dose the patient should get; curve-drug amount scaling is relative to it
+          // A weight-based fluid bolus (e.g. 10 mL/kg for a newborn) carries its real volume; every fx of the
+          // fluid (volume, dilution, chloride load, cooling) scales with it relative to the bag's nominal volume.
+          if (drugDef.pkModel === "fluid" && d.volumeL > 0 && drugDef.volumeL > 0) inst.fluidScale = d.volumeL / drugDef.volumeL;
           d.resolvedAmount = dose;            // stamped on the dose record so the log/UI can show the delivered amount
           pat.drugInstances.push(inst);
         }
@@ -1960,7 +1963,7 @@ export function updateDrugs(pat, s, dt) {
           // Skip HR/SBP if receptor model is active (avoids double‑counting)
           if (hasReceptorModel && (prop === "hr" || prop === "sbp")) return;
 
-          let delta = val * intensity;
+          let delta = val * intensity * (dr.fluidScale ?? 1);
 
           // Opioid blockade: reduce effects of opioid drugs
           // PK opioids already have the antagonist folded into their intensity
@@ -2002,7 +2005,7 @@ export function updateDrugs(pat, s, dt) {
             const prev = dr[curveKey] ?? 0;
             const rise = Math.max(0, k - prev);
             dr[curveKey] = Math.max(prev, k);
-            return rise;
+            return rise * (dr.fluidScale ?? 1);   // a weight-based fluid volume scales every one-time load
           };
 
           if (prop === "hr") pat.drugHr += delta;

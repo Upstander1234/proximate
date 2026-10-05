@@ -8835,6 +8835,25 @@ console.log("\n[NEWBORN EPINEPHRINE THROUGH THE PK LAYER]");
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${"routed 0.01 mg/kg epi rescues a critical newborn".padEnd(46)} no epi hr=${no.hr.toFixed(0)} epi hr=${yes.hr.toFixed(0)} dose=${yes.amt}`);
 }
 
+console.log("\n[HYPOVOLEMIC NEWBORN VOLUME BOLUS]");
+{
+  // A newborn born 25% volume-depleted plateaus pale and bradycardic on effective PPV; a 10 mL/kg
+  // saline bolus (volume carried on the dose) refills the circulation and the rescue completes.
+  // A normovolemic newborn on PPV recovers without it (specificity).
+  const run = (loss, bolus) => {
+    const p = new Patient({ age: 0, sex: "M", weight: 3.3 });
+    p._id = "newborn"; p._neo = { vigor: 0.3, reserve: 0.3, ppv: true, bloodLoss: loss };
+    const st = { t: 0, doses: bolus ? [{ id: "saline", at: 0, volumeL: 0.033, patientId: "newborn" }] : [], given: {} };
+    for (let i = 1; i <= 60; i++) { st.t = i * 6; updateDrugs(p, st, 0.1); CONDITIONS.neonatalTransition.progress(p, 0.1, st); }
+    return { hr: p.hrBase, vf: p._neo.volFrac };
+  };
+  const normal = run(0, false), lost = run(0.25, false), filled = run(0.25, true);
+  const ok = normal.hr > 140 && lost.hr < 120 && filled.hr > 140 && filled.vf > lost.vf + 0.06 && lost.vf < 0.8;
+  ok ? pass++ : fail++;
+  if (!ok) failures.push(`hypovolemic newborn: normal hr ${normal.hr}, 25% loss hr ${lost.hr} (vol ${lost.vf}), after 10 mL/kg hr ${filled.hr} (vol ${filled.vf})`);
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${"10 mL/kg bolus rescues a hypovolemic newborn".padEnd(46)} normal=${normal.hr.toFixed(0)} lost=${lost.hr.toFixed(0)} (${lost.vf.toFixed(2)}) filled=${filled.hr.toFixed(0)} (${filled.vf.toFixed(2)})`);
+}
+
 console.log("\n[CATECHOLAMINE RESISTANCE]");
 {
   // Norepinephrine infusion (0.25 mcg/kg/min) in septic shock. Adrenergic resistance blunts the pressor

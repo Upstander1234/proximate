@@ -465,7 +465,7 @@ export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,spee
   // field for the first time behaves exactly as it always did.
   procedureAssist:"standard",
   region:"torso",tab:"assess",panel:"actions",micnOpen:0,newUnit:null,
-  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,preppedDraw:null,leadsOn:0,leadsSecured:0,
+  rolled:0,suctioned:0,bvm:0,base:0,calcium:0,flushed:0,prepped:0,preppedDraw:null,medErrors:[],leadsOn:0,leadsSecured:0,
   devices:{},defib:{energy:null,charged:0},bpMode:null,devTick:0,ecgInterp:null,autoBPAt:null,ecgTxAt:null,
   o2Psi:2000,
   vomited:0,aspirated:0,cleared:0,pushedDeeper:0,badOrder:0,refused:0,paCath:0,arrestLogged:0,
@@ -1903,7 +1903,7 @@ export default function App({onHome}={}){
         s.prepped=1;
         // The DRAWN amount rides along with the prepped syringe and is what the
         // patient receives when that drug is given (see the give run() below).
-        if(a&&a._draw){s.preppedDraw=a._draw;const d=DRUGS[a._draw.id];
+        if(a&&a._draw){s.preppedDraw=a._draw;const d=DRUGS[a._draw.label||a._draw.id];
           return {say:`Drawn and labeled: ${d?d.name:"the drug"}, ${+a._draw.amount.toPrecision(3)} ${DRUG_UNITS[a._draw.id]?.unit||"mg"}.`,kind:"obs"};}
         return {say:"Drawn, labeled, and in your hand.",kind:"obs"};}});
     Object.entries(DRUGS).forEach(([id,d])=>{
@@ -1971,8 +1971,12 @@ export default function App({onHome}={}){
           // The drawn amount is authoritative: if the syringe in hand holds THIS drug, the patient
           // gets exactly what was drawn, not the ordered or standard dose. A different drug gets
           // the weight-resolved default.
-          const drawn=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:null;
-          giveDose(s,{id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});s.prepped=0;s.preppedDraw=null;
+          // A mislabeled syringe (wrong vial used anyway) carries the ordered drug's label: giving
+          // "that" drug delivers the syringe's real contents instead, recorded as a medication error.
+          const pd=s.preppedDraw,swapped=pd&&pd.label===id&&pd.id!==id&&!!DRUGS[pd.id];
+          const drawn=(pd&&(pd.id===id||swapped))?pd.amount:null;
+          if(swapped) s.medErrors=[...(s.medErrors||[]),{t:s.t,labeled:id,actual:pd.id,amount:pd.amount}];
+          giveDose(s,{id:swapped?pd.id:id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});s.prepped=0;s.preppedDraw=null;
           // Resolved amount in real units: the drawn amount, else the weight-resolved dose. Tracked
           // cumulatively per drug in real units (s.givenAmt), and compared with the weight-based dose
           // so an adult dose given to a child is flagged (dose-sanity check).
@@ -3904,7 +3908,7 @@ export default function App({onHome}={}){
       // reads (see the Monitor panel below).
       const leadsExtra=(mg.kind==="device"&&mg.deviceId==="leads"&&detail?.quality!=null)?{_leadsQuality:detail.quality}:{};
       const gaugeExtra=(mg.kind==="iv"&&detail?.gauge)?{_ivGauge:detail.gauge}:{};
-      const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount}}:{};
+      const drawExtra=(mg.kind==="prep"&&detail?.drugId)?{_draw:{id:detail.drugId,amount:detail.amount,label:detail.label||detail.drugId}}:{};
       const pumpExtra=(mg.kind==="hang"&&detail&&detail.pumpMlH>0)?{_pumpMlH:detail.pumpMlH}:{};
       const valsalvaExtra=(mg.kind==="valsalva"&&detail&&detail.quality!=null)?{_vq:detail.quality,_leg:!!detail.legRaise}:{};
       const flushExtra=(mg.kind==="give"&&detail&&detail.flushMlPerSec>0)?{_flushRate:detail.flushMlPerSec}:{};
@@ -7960,6 +7964,11 @@ export default function App({onHome}={}){
             {tropLabel&&<div style={{fontSize:13.5,lineHeight:1.75,marginBottom:8}}>{tropLabel}</div>}
             {mechLabel&&<div style={{fontSize:13.5,lineHeight:1.75}}>{mechLabel}</div>}
           </div>);})()}
+        {(g.medErrors||[]).length>0&&<div className="mt-5 pt-5" style={{borderTop:`1px solid ${C.line}`}}>
+          <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".16em",color:C.red,marginBottom:10}}>MEDICATION ERRORS</div>
+          {g.medErrors.map((e,i)=>(<div key={i} style={{fontSize:13.5,lineHeight:1.75}}>
+            Minute {Math.floor(e.t/60)}: the syringe labeled {DRUGS[e.labeled]?.name||e.labeled} held {DRUGS[e.actual]?.name||e.actual} ({+Number(e.amount).toPrecision(3)} {DRUG_UNITS[e.actual]?.unit||"mg"}). The patient received the wrong drug.</div>))}
+        </div>}
         {g.gmode==="sandbox"&&(()=>{const R=sandboxRating(g,o);return(
           <div className="mt-6 pt-5" style={{borderTop:`1px solid ${C.line}`}}>
             <div style={{fontFamily:MONO,fontSize:10,letterSpacing:".16em",color:C.spo2,marginBottom:12}}>CALL RATING</div>

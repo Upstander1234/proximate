@@ -19,8 +19,10 @@ import MinigameVitalsStrip from "./MinigameVitalsStrip.jsx";
 // its real concentration (data/drugUnits.js), and the volume to pull is
 // amount / concentration. The DRAWN amount (volume x concentration), not the
 // ordered amount, is what the patient receives; the order only scores the draw.
+// Push-dose epinephrine has no vial of its own: it is mixed from the 0.1 mg/mL
+// cardiac epinephrine (see the dilution steps below), so it never sits in the tray.
 const INJECTABLE = () => Object.keys(DRUG_UNITS)
-  .filter(id => DRUGS[id] && /IV|IO|IM/.test(DRUGS[id].route) && DRUGS[id].pkModel !== "fluid")
+  .filter(id => id !== "pushEpi" && DRUGS[id] && /IV|IO|IM/.test(DRUGS[id].route) && DRUGS[id].pkModel !== "fluid")
   .map(id => ({ id, name: DRUGS[id].name, conc: DRUG_UNITS[id].conc, unit: DRUG_UNITS[id].unit }));
 
 const SYRINGES = [1, 3, 5, 10, 20, 60];
@@ -114,11 +116,19 @@ function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
 
 export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve }) {
   const [setup] = useState(() => {
-    const four = pick(INJECTABLE(), 4);
-    const order = four[Math.floor(Math.random() * four.length)];
+    const pool = INJECTABLE();
+    let four = pick(pool, 4);
+    let order = four[Math.floor(Math.random() * four.length)];
+    // Sometimes the order is push-dose epinephrine, which must be mixed: the
+    // tray then has to hold the 0.1 mg/mL epinephrine it is made from.
+    if (Math.random() < 0.15 && DRUG_UNITS.pushEpi && DRUGS.pushEpi) {
+      const src = pool.find(v => v.id === "epiIV");
+      if (src && !four.some(v => v.id === "epiIV")) four = [...four.slice(0, 3), src];
+      order = { id: "pushEpi", name: DRUGS.pushEpi.name, conc: DRUG_UNITS.pushEpi.conc, unit: DRUG_UNITS.pushEpi.unit };
+    }
     // The ordered amount is this patient's own dose (a child gets mg/kg, capped at the adult dose).
     const amount = resolveDoseMg(DRUGS[order.id], pat?.ageProfile?.weight, order.id);
-    const mL = drawVolumeMl(order.id, amount);
+    const mL = order.id === "pushEpi" ? 10 : drawVolumeMl(order.id, amount);
     const syringe = SYRINGES.find(s => s >= mL * 1.25) || 60;
     return { vials: four, order, amount, mL, syringe };
   });
@@ -127,6 +137,10 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   const [bubble, setBubble] = useState(true);
   const [flicks, setFlicks] = useState(0);
   const [flash, setFlash] = useState(null);
+  // Push-dose epinephrine mixing: total volume after adding saline to the drawn
+  // epinephrine, and the volume of that mix pushed as one dose.
+  const [mixTotal, setMixTotal] = useState(0);
+  const [pushVol, setPushVol] = useState(0);
   // A real repeated-tap gesture directly on the bubble, not a checkbox —
   // three taps to work it up the barrel and out, same idea as this
   // project's other "hold/press to do the physical motion" minigames.
@@ -139,16 +153,27 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
 
   // Tolerance on the DRAWN AMOUNT: 10% of the order (widened or narrowed by the assist setting).
   const tolAmt = 0.10 * setup.amount * assistToleranceMult(assist);
-  const drawnAmount = vial ? vol * (DRUG_UNITS[vial]?.conc || 0) : 0;
+  const mixing = setup.order.id === "pushEpi";
+  // When mixing, the drug in the syringe is diluted to (epi drawn) / (total volume),
+  // and one dose is pushVol of that mix. No saline added (total at or below the drawn
+  // volume) means the mix IS the vial, the classic 10x push-dose error.
+  const mixConc = vial ? (vol * (DRUG_UNITS[vial]?.conc || 0)) / Math.max(vol, mixTotal, 1e-6) : 0;
+  const drawnAmount = !vial ? 0 : mixing ? pushVol * mixConc : vol * (DRUG_UNITS[vial]?.conc || 0);
+  const vialOk = mixing ? vial === "epiIV" : vial === setup.order.id;
   // A drawn syringe carries an air bubble that scales with how far past the
   // ordered volume you overshoot the pull; flicking it clears it.
   const draw = () => {
     if (!vial) { setFlash("novial"); return; }
-    if (vial !== setup.order.id) { setFlash("wrongdrug"); return; }
+    if (!vialOk) { setFlash("wrongdrug"); return; }
     if (Math.abs(drawnAmount - setup.amount) > tolAmt) { setFlash("wrongdose"); return; }
     if (bubble) { setFlash("bubble"); return; }
     setFlash("success");
   };
+  // The syringe holds what was actually drawn: a wrong vial used anyway gives the
+  // patient THAT drug under the ordered drug's label (`label`), and the give path
+  // delivers the actual contents.
+  const actualId = mixing && vial === "epiIV" ? "pushEpi" : vial;
+  const useAnyway = () => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: actualId, label: setup.order.id, amount: mixing && vial !== "epiIV" ? vol * (DRUG_UNITS[vial]?.conc || 0) : drawnAmount, ordered: setup.amount });
   const finish = () => {
     if (flash === "success") { onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: setup.order.id, amount: drawnAmount, ordered: setup.amount }); return; }
     onResolve(PROCEDURE_OUTCOME.FAILED, {
@@ -160,7 +185,7 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   };
   const msg = {
     success: "Drawn, labeled, and in your hand.",
-    wrongdrug: "That is not the ordered drug.",
+    wrongdrug: "That is not the ordered drug. You can waste it and redraw, or use it anyway.",
     wrongdose: `That is not the ordered dose: ordered ${fmt(setup.amount)} ${setup.order.unit}, drawn ${fmt(drawnAmount)} (${(drawnAmount / setup.amount).toFixed(1)}x). You can waste it and redraw, or use it anyway.`,
     bubble: "There is still an air bubble in the barrel.",
     novial: "Pick a vial first.",
@@ -188,8 +213,14 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
               ))}
             </div>
             <Syringe vol={vol} max={setup.syringe} cap={vial ? capColorFor(vial) : "#5C6E78"} bubble={bubble} hasVial={!!vial} onFlick={onFlick} flicks={flicks} />
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Pull the plunger: {vol.toFixed(setup.syringe <= 3 ? 2 : 1)} mL{vial ? ` (${fmt(drawnAmount)} ${DRUG_UNITS[vial].unit})` : ""}</div>
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Pull the plunger: {vol.toFixed(setup.syringe <= 3 ? 2 : 1)} mL{vial ? ` (${fmt(vol * DRUG_UNITS[vial].conc)} ${DRUG_UNITS[vial].unit})` : ""}</div>
             <input type="range" min={0} max={setup.syringe} step={setup.syringe / 200} value={vol} onChange={(e) => setVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+            {mixing && (<>
+              <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2b. Add saline to a total of {mixTotal.toFixed(1)} mL{vial ? ` (${fmt(mixConc * 1000)} mcg/mL)` : ""}</div>
+              <input type="range" min={0} max={10} step={0.1} value={mixTotal} onChange={(e) => setMixTotal(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+              <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2c. One dose: push {pushVol.toFixed(1)} mL of the mix{vial ? ` (${fmt(drawnAmount * 1000)} mcg)` : ""}</div>
+              <input type="range" min={0} max={5} step={0.1} value={pushVol} onChange={(e) => setPushVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
+            </>)}
             <div style={{ fontSize: 12, color: bubble ? C.faint : C.hr, marginBottom: 12 }}>
               3. {bubble ? "Tap the bubble in the barrel above to flick it out." : "Air expelled."}
             </div>
@@ -201,8 +232,8 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
             <div style={{ fontSize: 13, color: flash === "success" ? "#7CD68A" : C.red, marginBottom: 10 }}>{msg[flash]}</div>
             <button onClick={flash === "novial" ? () => setFlash(null) : finish} className="px-3 py-2 rounded w-full"
               style={{ background: C.panelHi || "#1B232B", border: `1px solid ${C.line}`, color: C.text }}>{flash === "novial" ? "Back" : "Continue"}</button>
-            {flash === "wrongdose" && (
-              <button onClick={() => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: setup.order.id, amount: drawnAmount, ordered: setup.amount })} className="px-3 py-2 rounded w-full" style={{ marginTop: 8, background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Use it anyway</button>
+            {(flash === "wrongdose" || flash === "wrongdrug") && (
+              <button onClick={flash === "wrongdrug" ? useAnyway : () => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: setup.order.id, amount: drawnAmount, ordered: setup.amount })} className="px-3 py-2 rounded w-full" style={{ marginTop: 8, background: "#2A1418", border: `1px solid ${C.red}`, color: C.red }}>Use it anyway</button>
             )}
           </div>
         )}

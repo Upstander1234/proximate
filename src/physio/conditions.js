@@ -6071,6 +6071,7 @@ export const CONDITIONS = {
         pat._pregnancy = {
           gestation: 36, laborProgress: 0.72, contractionRate: 0.06,
           tilted: false, apgarSeed: 0.35, birthWeight: 2.8,
+          neonatalBloodLoss: (s && s.neonatalBloodLoss) || 0,
         };
       }
       // Keep the supine mother's position tied to a session flag the UI/tilt
@@ -6244,6 +6245,22 @@ export const CONDITIONS = {
       const chestComp = !!neo.compressions || !!(s && s.neoCompressions);
       const stim = !!neo.stimulated;
 
+      // Neonatal hypovolemia (cord avulsion, abruption, fetomaternal bleed): a newborn born with a
+      // real blood-volume deficit, applied once to its own volume compartments. Ventilation clears
+      // the hypoxia but cannot fill an empty circulation, so recovery is capped by the remaining
+      // volume fraction; the NRP volume bolus (10 mL/kg NS) raises totalBloodVol through the fluid
+      // PK path, and the cap lifts with it. Cap: full rescue at >=85% of normal volume, falling
+      // linearly to a pale, poorly perfused plateau (~0.45 vigor) at a 30%+ loss.
+      if (neo.bloodLoss > 0 && !neo.bloodLossApplied) {
+        const f = 1 - clamp(neo.bloodLoss, 0, 0.5);
+        pat.totalBloodVol *= f; pat.plasmaVol *= f; pat.rbcVol *= f; pat.rbcMass *= f;
+        pat.unstressedVol = 0.35 * pat.totalBloodVol; pat.stressedVol = pat.totalBloodVol - pat.unstressedVol;
+        neo.bloodLossApplied = true;
+      }
+      const volFrac = pat.totalBloodVol / Math.max(1e-6, pat.ageProfile.bloodVolumeL());
+      const volumeCap = clamp(0.45 + (volFrac - 0.70) / 0.15 * 0.55, 0.45, 1);
+      neo.volFrac = volFrac;
+
       const TRANSITION = 0.5;   // vigour needed to self-sustain without PPV
       let target;
       if (ppv) {
@@ -6276,6 +6293,7 @@ export const CONDITIONS = {
         const base = neo.reserve + (stim ? 0.12 : 0);  // drying/stimulation nudges the borderline
         target = base >= TRANSITION ? base : 0;        // below threshold, no PPV -> arrest
       }
+      target = Math.min(target, volumeCap);
       const k = Math.min(1, dt * 1.4);
       neo.vigor = clamp(neo.vigor + (target - neo.vigor) * k, 0, 1);
       const v = neo.vigor;

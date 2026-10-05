@@ -636,7 +636,9 @@ export function updateObstetric(pat, dt, s) {
       patient: { age: 0.0, weight: preg.birthWeight || 3.3 },
       makeActive: false,
       init: (nb) => {
-        nb._neo = { vigor, stimulated: false, deliveredAt: s.t };
+        // preg.neonatalBloodLoss: a fraction of the newborn's own blood volume lost before birth
+        // (vasa previa, cord avulsion), applied by neonatalTransition on its first tick.
+        nb._neo = { vigor, stimulated: false, deliveredAt: s.t, bloodLoss: preg.neonatalBloodLoss || 0 };
       },
     });
     s._deliveryEvent = { t: s.t, vigor };
