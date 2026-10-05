@@ -203,7 +203,12 @@ export function updateAutonomic(pat, dt) {
   // the old max(0,·) clamped it flat; the baroreflex setpoint also adapts over
   // ~20 min, so this fades on longer calls (baroreflex resetting).
   const kCentral = 0.9;
-  const kVagal = (F <= F0 ? 0.9 : 0.45) * baroGain;
+  // Hypertension-side gain raised 0.45 -> 2.0: reflex bradycardia to a pressor-driven
+  // rise in MAP was about -0.18 bpm per mmHg (norepinephrine) against human baroreflex
+  // sensitivity of roughly 0.9-1.2 bpm/mmHg for a pure alpha agonist. Measured with
+  // norepinephrine infusion (beta1 partly offsets the slowing): slope -0.18 (0.45),
+  // -0.33 (1.0), -0.41 (1.5), -0.50 (2.5). The hypotension side is unchanged.
+  const kVagal = (F <= F0 ? 0.9 : 2.0) * baroGain;
   const paraTarget = clamp(0.78 + kVagal * (F - F0) - kCentral * nonBaroDrive, 0.05, 0.95);
   // VAGAL MANEUVER (Valsalva, carotid sinus massage). The straining phase raises
   // intrathoracic pressure; on release, venous return and arterial pressure
