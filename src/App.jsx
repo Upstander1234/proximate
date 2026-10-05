@@ -12,6 +12,7 @@ import { DRUG_CATEGORIES, PROC_CATEGORIES, drugCategoryOf, procCategoryOf } from
 import { SCEN } from "./data/scenarios.js";
 import { physio, critical, arrestWarning, giveDose, roster, setActivePatient, outcomeReport } from "./physiology.js";
 import { CONDITIONS } from "./physio/conditions.js";
+import { resolveDoseMg } from "./physio/pk.js";
 import { woundDef, woundColor, WOUND_TYPES } from "./physio/wounds.js";
 import { CLOTH_LOCK, REGION_LABEL, lockedRegions, initialExposure, initialShoes } from "./clothing.js";
 import { LIB, PROC_ACTS } from "./actions.js";
@@ -434,7 +435,7 @@ function useReadAloud(log,voice,dispatchCue,volume=1,patientGender=null){
 // via SettingsOverlay or the TIME SCALE picker itself.
 export const blank=()=>({phase:"boot",scen:null,level:null,roster:[],code:3,speed:1,scopeOff:{},scopeOverride:{},scopeLocked:0,oosUsed:{},practiceScenarios:0,
   t:0,onSceneAt:null,pockets:[],bags:[],stretcher:0,
-  log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},crew:[],
+  log:[],vitals:{},findings:[],evidence:[],done:{},fired:{},doses:[],given:{},givenAmt:{},crew:[],
   busy:null,cBusy:{},ivSites:[],ivGauge:{},accessTypes:{},exposed:{},shoesOff:{},pi:null,committedAt:null,transportT:0,outcome:null,
   // F44: a snapshot of outcomeReport(s) — the OBJECTIVE physiological outcome
   // (neuro outcome, ROSC/downtime, irreversible/reversible injury, troponin,
@@ -1958,6 +1959,15 @@ export default function App({onHome}={}){
           // the weight-resolved default.
           const drawn=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:null;
           giveDose(s,{id,at:s.t,route:routeLabel,...(drawn!=null?{amount:drawn}:{}),...(act&&act._flushRate>0?{flushMlPerSec:act._flushRate}:{})});s.prepped=0;s.preppedDraw=null;
+          // Resolved amount in real units: the drawn amount, else the weight-resolved dose. Tracked
+          // cumulatively per drug in real units (s.givenAmt), and compared with the weight-based dose
+          // so an adult dose given to a child is flagged (dose-sanity check).
+          const wtKg=s.patient?.ageProfile?.weight;const refMg=resolveDoseMg(d,wtKg,id);const gaveMg=drawn!=null?drawn:refMg;const unit=DRUG_UNITS[id]?.unit||"mg";
+          s.givenAmt={...(s.givenAmt||{}),[id]:((s.givenAmt||{})[id]||0)+gaveMg};
+          const perKg=wtKg>0&&wtKg<40&&d.dosePerKg?`, ${+(gaveMg/wtKg).toPrecision(2)} ${unit}/kg`:"";
+          const amtText=` (${+gaveMg.toPrecision(3)} ${unit}${perKg})`;
+          const overFold=refMg>0?gaveMg/refMg:1;
+          const sanityNote=(wtKg>0&&wtKg<40&&d.dosePerKg&&overFold>1.5)?` DOSE CHECK: that is ${+overFold.toPrecision(2)} times the weight-based dose for this child.`:"";
           if(id==="calcium") s.calcium=1;
           // F0 — treatment-response dialogue (item 18): analgesics are
           // identified by their own real, already-declared fx.pain delta,
@@ -1984,7 +1994,7 @@ export default function App({onHome}={}){
             allergyNote=` ALLERGIC REACTION — the chart never had this listed, but the patient's airway does not agree. Wheeze, swelling, tightening fast.`;
           }
           const dir=Object.entries(d.fx||{}).filter(([,m])=>m).map(([p,m])=>`${p.toUpperCase()} ${m>0?"↑":"↓"}${Math.abs(m)}`).join("  ");
-          return {say:`${d.name} in.${dir?"   ["+dir+" · onset "+routeOnsetSec(routeLabel,d)+"s]":""}${allergyNote}`,kind:allergyNote?"crit":"good"};}});});});
+          return {say:`${d.name} in${amtText}.${sanityNote}${dir?"   ["+dir+" · onset "+routeOnsetSec(routeLabel,d)+"s]":""}${allergyNote}`,kind:allergyNote?"crit":"good"};}});});});
     (g.ivSites||[]).forEach(limb=>out.push({id:`flush_${limb}`,region:limb,tab:"meds",label:"Flush the line",gerund:"Flushing",cost:15,lvl:3,bag:"drug",
       tip:"Calcium and bicarbonate precipitate together.",run:(s)=>{s.flushed=1;return {say:"Flushed.",kind:"good"};}}));
     return out;};
