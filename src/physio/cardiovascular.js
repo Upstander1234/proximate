@@ -31,6 +31,7 @@ const approach = (cur, target, dt, tauMin) => {
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const S = 1 / 60; // seconds -> minutes helper for readable time constants
+const SEPSIS_PRESSOR_GAIN = 0.85;   // fraction of an exogenous pressor's alpha effect retained in septic shock (identified: gives septic norepinephrine +8-9 mmHg per 0.1 mcg/kg/min, clinical 8-11)
 
 // ---------------------------------------------------------------------------
 // FEATURE FLAG — Task 1 completion.
@@ -934,9 +935,19 @@ export function updateCardiovascular(pat, dt) {
   // raised MAP, lengthened the Windkessel time constant (tau = R*C) and so held
   // diastolic pressure up (DBP 94 against a documented 60-85) and narrowed pulse
   // pressure (29 against 35-50).
-  pat.svr = pat.baseSVR * (0.55 + clamp(pat.alphaTone, 0, 3) * 2.0)
+  // In sepsis the 0.45 vasoplegia factor applies to the patient's own tone, but an
+  // exogenous pressor still acts on the vasculature that remains (receptor
+  // responsiveness is reduced, not erased): its alpha contribution is attenuated
+  // by SEPSIS_PRESSOR_GAIN instead of the full 0.45. Measured: with the whole tone
+  // scaled by 0.45, norepinephrine 0.1 mcg/kg/min raised septic MAP only ~5 mmHg
+  // against a clinical 8-11 (healthy +12 to 14).
+  const _alphaT = clamp(pat.alphaTone, 0, 3);
+  const _alphaD = pat.riskFactors.sepsis ? Math.min(_alphaT, Math.max(0, (pat._alphaDrug || 0) + (pat._v1Drug || 0))) : 0;
+  const _toneTerm = pat.riskFactors.sepsis
+    ? 0.45 * (0.55 + (_alphaT - _alphaD) * 2.0) + SEPSIS_PRESSOR_GAIN * _alphaD * 2.0
+    : (0.55 + _alphaT * 2.0);
+  pat.svr = pat.baseSVR * _toneTerm
                         * (1 - clamp(pat.vasodilation || 0, 0, 0.9) * 0.6)
-                        * (pat.riskFactors.sepsis ? 0.45 : 1)
                         * (pat.riskFactors.spinalShock ? 0.55 : 1)
                         // AORTIC OCCLUSION (REBOA). Occluding the aorta removes
                         // that fraction of the systemic bed from the circuit.
