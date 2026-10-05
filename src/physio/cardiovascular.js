@@ -114,6 +114,26 @@ export function updateAutonomic(pat, dt) {
   pat.mapRate = approach(pat.mapRate, dmap, dt, 3 * S);
   pat.prevMap = pat.map;
   pat.baroSetpoint = approach(pat.baroSetpoint, pat.map, dt, 20); // adaptation over ~20 min
+  // HYPERTENSION-SIDE VAGAL REFERENCE. The reflex-bradycardia limb (kVagal 2.0
+  // above setpoint, below) reads its own reference, not baroSetpoint. Reading
+  // baroSetpoint, it saw the start-up gap between the constructor MAP (93 for
+  // most patients) and the engine's settled resting MAP (abdPain ~102, svt ~110)
+  // as an acute pressor rise for the whole call: resting parasympathetic tone
+  // sat at 0.85-0.95 (clamp), hypertensive urgency HR fell 72 -> 66, and a
+  // vagal maneuver had no room left. Moving baroSetpoint itself was tried and
+  // rejected: it also removes sympathetic buffering, so resting MAP rose for
+  // every patient (abdPain 102 -> 107, hypertensive emergency 134 -> 163). This
+  // reference touches only the vagal (HR/AV) limb, so MAP is unchanged:
+  //  - it takes the presenting MAP once the start-up transient has passed
+  //    (90 s); the patient existed before EMS arrived,
+  //  - then adapts over 20 minutes like baroSetpoint, so an acute pressor's
+  //    reflex bradycardia (the 2.0 calibration) is kept,
+  //  - and follows a chronically high MAP on a 1-minute scale when the patient
+  //    has chronic hypertension, whose cardiac baroreflex is reset.
+  pat._autoAge = (pat._autoAge || 0) + dt;
+  if (!pat._vagalPresented && pat._autoAge >= 1.5) { pat._vagalPresented = true; pat.vagalSetpoint = pat.map; }
+  pat.vagalSetpoint = approach(pat.vagalSetpoint ?? pat.baroSetpoint, pat.map, dt,
+    pat.chronicHypertension && pat.map > (pat.vagalSetpoint ?? pat.map) ? 1 : 20);
 
   // Baroreceptor afferent FIRING — explicit logistic firing rate (Task 7).
   //   F(P) = 1 / (1 + e^(−k(P − P50)))     0 (silent) … 1 (max firing), ½ at setpoint
@@ -209,8 +229,11 @@ export function updateAutonomic(pat, dt) {
   // sensitivity of roughly 0.9-1.2 bpm/mmHg for a pure alpha agonist. Measured with
   // norepinephrine infusion (beta1 partly offsets the slowing): slope -0.18 (0.45),
   // -0.33 (1.0), -0.41 (1.5), -0.50 (2.5). The hypotension side is unchanged.
-  const kVagal = (F <= F0 ? 0.9 : 2.0) * baroGain;
-  const paraTarget = clamp(0.78 + kVagal * (F - F0) - kCentral * nonBaroDrive, 0.05, 0.95);
+  // Above setpoint the deviation is the smaller of the two references' firing
+  // (see vagalSetpoint above), so the term is continuous at F = F0.
+  const Fv = 1 / (1 + Math.exp(-kBaro * (pat.map - pat.vagalSetpoint)));
+  const vagalDev = F <= F0 ? 0.9 * baroGain * (F - F0) : 2.0 * baroGain * Math.max(0, Math.min(F, Fv) - F0);
+  const paraTarget = clamp(0.78 + vagalDev - kCentral * nonBaroDrive, 0.05, 0.95);
   // VAGAL MANEUVER (Valsalva, carotid sinus massage). The straining phase raises
   // intrathoracic pressure; on release, venous return and arterial pressure
   // overshoot and the baroreceptors fire hard, producing a burst of efferent

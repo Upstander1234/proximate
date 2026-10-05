@@ -514,6 +514,7 @@ export const CONDITIONS = {
   hypertension: {
     initial: {},
     progress(pat) {
+      pat.chronicHypertension = true;   // its baroreflex HR limb is reset (cardiovascular.js vagalSetpoint)
       if (pat._htnSet) return;
       pat._htnSet = true;
       if (pat._htnRestSvr == null) pat._htnRestSvr = pat.ageProfile.baseSVR();
@@ -1422,6 +1423,7 @@ export const CONDITIONS = {
   hypertensiveUrgency: {
     initial: { sbp: 210, hr: 84, rr: 16, pain: 4 },
     progress(pat, dt) {
+      pat.chronicHypertension = true;   // its baroreflex HR limb is reset (cardiovascular.js vagalSetpoint)
       // Target is a MULTIPLE of the patient's own fixed anatomical reference
       // (pat.ageProfile.baseSVR() — the same fixed denominator
       // cardiovascular.js's own restSvr computation uses), captured once,
@@ -1468,6 +1470,7 @@ export const CONDITIONS = {
   hypertensiveEmergency: {
     initial: { sbp: 230, hr: 96, rr: 24, pain: 6 },
     progress(pat, dt) {
+      pat.chronicHypertension = true;   // its baroreflex HR limb is reset (cardiovascular.js vagalSetpoint)
       if (pat._htnRestSvr == null) pat._htnRestSvr = pat.ageProfile.baseSVR();
       const k = Math.min(1, dt / 3);
       const target = pat._htnRestSvr * 4.0; // MEASURED: sbp/dbp 183/158 in isolation

@@ -848,6 +848,8 @@ export class Patient {
     this.catecholLevel = 1.0;      // circulating catecholamine level, relative to rest (slow)
     this.adrenalReserve = 1.0;     // depletable medullary reserve (replenishes over hours)
     this.baroSetpoint = this.map;  // adapts toward sustained MAP over minutes
+    this.vagalSetpoint = this.map; // reference for the hypertension-side vagal (HR) limb only; see cardiovascular.js
+    this.chronicHypertension = false; // set by hypertension conditions; lets vagalSetpoint follow a chronically high MAP
     this.prevMap = this.map;       // for baroreceptor dP/dt term
     this.mapRate = 0;              // smoothed dMAP/dt (mmHg/min)
 

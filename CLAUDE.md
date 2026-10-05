@@ -599,6 +599,13 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-05 (f) — Hypertension-side vagal limb reads its own reference (resting vagal saturation fixed)
+
+- **Found by the full suite:** `[VAGAL MANEUVER]` failed (parasympathetic 0.943 -> 0.950, no headroom). Cause: the f2c5e17 hypertension-side vagal gain (2.0) read `baroSetpoint`, which starts at the constructor MAP (93 for most patients) while the engine's settled MAP is higher (abdPain ~102, svt ~110). That gap read as an acute pressor rise for the whole call: resting parasympathetic 0.85 (abdPain), 0.92 (svt), 0.95 clamp (hypertensive urgency, HR 72 -> 66).
+- **Rejected:** moving `baroSetpoint` up to the presenting MAP. It also removes sympathetic buffering, so resting MAP rose everywhere (abdPain 102 -> 107, hypertensive emergency 134 -> 163).
+- **Fix** (`cardiovascular.js`): a separate `pat.vagalSetpoint`, read only by the above-setpoint vagal term, which takes the presenting MAP at 90 s, then adapts over 20 min, and follows a rising MAP on a 1-min scale when `pat.chronicHypertension` (set by `hypertension`, `hypertensiveUrgency`, `hypertensiveEmergency`). The deviation used is the smaller of the two references, so the term stays continuous at the setpoint. MEASURED at 300 s: parasympathetic abdPain 0.77, svt 0.78, urgency 0.83 (HR 72.3); MAP unchanged (102.4 / 108.6 / 121.8). Norepinephrine-infusion reflex slope kept: -0.57 bpm/mmHg (-0.55 before).
+- Verification: autonomic/cardiac mwSections run in progress at commit time; full suites not yet re-run on this change.
+
 ### 2026-10-05 (e) — Pericardial RA-pressure assertion was measuring beat phase
 
 The `[PERICARDIAL CONSTRAINT]` Refsum-style assertion failed (-0.50 vs predicted 7.48). Bisected to f2c5e17 (hypertension-side vagal gain 2.0), but the tamponade arm is byte-identical before and after it (HR 127, MAP 55.4, CVP 10.92, pericardialP 10.90); only the healthy control's HR moved 1.4 bpm. The assertion compared one instantaneous `fourChamberLoop.Pra` per arm, and Pra swings about -0.3 to 5.2 mmHg within a beat, so the original 4.80 pass was beat-phase luck too. It now averages Pra over the last 100 s: mean rise 3.61 mmHg, about half the 0.75 x periDelta prediction (the restrained atrium also fills less). The assertion is now two-sided on that fraction (30-100% of the prediction). No engine change.
