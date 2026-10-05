@@ -938,3 +938,5 @@ Open:
 - Catecholamine resistance and shock-axis adjustments (sections 23, 24).
 
 Verification owed locally (run sequentially, diff failure sets against documented baselines): `mechanismWiring.mjs`, `scenarioSweep.mjs`, `curveDrugAudit.mjs`, `pkAudit.mjs`, `physiologyValidation.mjs` section 2b, plus `npx eslint src` (3-error App.jsx baseline) and `npx vite build`.
+
+Update: `dosePerKg` now also declared for adenosine (0.1 mg/kg, standard dose is 12 mg, not 20 as an earlier note said), glucagon (0.03), calcium (20) and diphenhydramine (1); probe at 10 kg gives 1, 0.3, 200, 10 and at 80 kg the adult doses 12, 1, 1000, 50. Still no suite run in the cloud session; run `mechanismWiring.mjs` locally.

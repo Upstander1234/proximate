@@ -356,6 +356,7 @@ export const DRUGS = {
   },
 
   glucagon: {
+    dosePerKg: 0.03,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Glucagon 1 mg", route: "IM", lvl: 3,
     onset: 300, dur: 3600, max: 2,
@@ -669,6 +670,7 @@ export const DRUGS = {
   },
 
   adenosine: {
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Adenosine 12 mg", route: "IV", lvl: 4,
     // DEAD-CODE SWEEP FIX (physiology queue item 5). `fx: { hr: -70, sbp: -15 }`
@@ -744,6 +746,7 @@ export const DRUGS = {
   },
 
   calcium: {
+    dosePerKg: 20,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Calcium Chloride 1 g", route: "IV/IO", lvl: 4,
     onset: 45, dur: 1800, max: 2,
@@ -858,6 +861,7 @@ export const DRUGS = {
   },
 
   diphen: {
+    dosePerKg: 1,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",
     name: "Diphenhydramine 50 mg", route: "IV/IM", lvl: 4,
     onset: 300, dur: 3600, max: 1,
