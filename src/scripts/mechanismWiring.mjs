@@ -8804,6 +8804,16 @@ console.log("\n[WEIGHT- AND AGE-AWARE PK]");
   console.log(`  ${neoOk ? "PASS" : "FAIL"}  ${"neonate clearance below allometry (maturation)".padEnd(46)} cl=${neo.cl.toFixed(4)} allometric=${allo.toFixed(4)}`);
 }
 
+console.log("\n[ADENOSINE DOSE-DEPENDENT SVT CONVERSION]");
+{
+  const conv = (amt) => { let c = 0; for (let i = 0; i < 40; i++) { const s = { scen: "svt", t: 0, doses: [], given: {}, activePatientId: null }; for (let t = STEP; t <= 60; t += STEP) { s.t = t; if (t === 20) s.doses.push({ id: "adenosine", at: t, amount: amt }); physio(s); } if (activePatient(s).rhythm !== "svt") c++; } return c; };
+  const c6 = conv(6), c12 = conv(12);
+  const ok = c6 >= 14 && c6 <= 34 && c12 > c6 && c12 >= 30;
+  ok ? pass++ : fail++;
+  if (!ok) failures.push(`adenosine conversion should be ~60% at 6 mg and ~90% at 12 mg, got ${c6}/40 and ${c12}/40`);
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${"6 mg converts some SVT, 12 mg converts more".padEnd(46)} 6mg=${c6}/40 12mg=${c12}/40`);
+}
+
 console.log("\n[REAL DRUG UNITS AND DRAWN AMOUNT]");
 {
   // Table integrity: every listed drug exists and its standard dose matches the
