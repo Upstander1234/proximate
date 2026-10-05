@@ -1962,6 +1962,10 @@ export default function App({onHome}={}){
           // doses of it, the same clinical ceiling either way.
           const n=(s.given[id]||0)+1;
           if(d.max&&n>d.max&&!ov) return {say:`Maximum dose (${d.max}). Stop, or call Base.`,kind:"warn"};
+          // The cap is also checked in real amount: max doses of the weight-based dose, so one oversized draw
+          // cannot slip under a dose-count cap.
+          {const w0=s.patient?.ageProfile?.weight,ref0=resolveDoseMg(d,w0,id),dr0=(s.preppedDraw&&s.preppedDraw.id===id)?s.preppedDraw.amount:ref0;
+           if(d.max&&ref0>0&&((s.givenAmt||{})[id]||0)+dr0>d.max*ref0*1.05&&!ov) return {say:`Cumulative amount would exceed ${d.max} standard doses (${+(((s.givenAmt||{})[id]||0)+dr0).toPrecision(3)} given with this draw). Stop, or call Base.`,kind:"warn"};}
           s.given={...s.given,[id]:n};
           // The drawn amount is authoritative: if the syringe in hand holds THIS drug, the patient
           // gets exactly what was drawn, not the ordered or standard dose. A different drug gets
