@@ -8802,6 +8802,19 @@ console.log("\n[WEIGHT- AND AGE-AWARE PK]");
   neoOk ? pass++ : fail++;
   if (!neoOk) failures.push(`neonate total clearance should sit below weight allometry (immature), got ${neo.cl} vs ${allo}`);
   console.log(`  ${neoOk ? "PASS" : "FAIL"}  ${"neonate clearance below allometry (maturation)".padEnd(46)} cl=${neo.cl.toFixed(4)} allometric=${allo.toFixed(4)}`);
+  // Per-pathway maturation: immature pathways (midazolam CYP3A4, etomidate CES1, atropine GFR)
+  // sit below allometry in a neonate, deliberate exemptions (fentanyl, ketamine, amiodarone)
+  // sit on it apart from their small renal fraction, and rocuronium carries its neonatal effect on volume, not clearance.
+  const nb = mk(0.02, 3.5);
+  const pw = (id) => weightPkScale(nb, id);
+  const immature = ["midazolam", "etomidate", "atropine", "diltiazem"].every(id => pw(id).cl < allo * 0.6);
+  const exempt = ["fentanyl", "ketamine"].every(id => pw(id).cl > allo * 0.85) && Math.abs(pw("amiodarone").cl - allo) < 1e-9;   // only the small renal fraction matures
+  const rocoVol = pw("rocuronium").v > weightPkScale(nb, "fentanyl").v * 2 && pw("rocuronium").cl > allo * 0.6;
+  const adultPw = ["midazolam", "etomidate", "lidocaine", "diltiazem"].every(id => { const a = weightPkScale(adult, id); return a.cl === 1 && a.v === 1; });
+  const pwOk = immature && exempt && rocoVol && adultPw;
+  pwOk ? pass++ : fail++;
+  if (!pwOk) failures.push(`per-pathway maturation wrong: immature ${immature}, exempt ${exempt}, rocuronium volume-only ${rocoVol}, adult unit ${adultPw}`);
+  console.log(`  ${pwOk ? "PASS" : "FAIL"}  ${"per-pathway maturation and exemptions".padEnd(46)} immature=${immature} exempt=${exempt} rocVol=${rocoVol} adult=${adultPw}`);
 }
 
 console.log("\n[ADENOSINE DOSE-DEPENDENT SVT CONVERSION]");

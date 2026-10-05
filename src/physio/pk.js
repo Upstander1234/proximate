@@ -590,19 +590,63 @@ class DrugInstance {
 // term birth. Both factors are exactly 1 at 74 kg and age >= 2 years.
 // ---------------------------------------------------------------------------
 const PK_REF_WEIGHT = 74;   // the default scenario adult, the patient PK_PARAMS were calibrated and tested against
-export function weightPkScale(pat) {
+// Pathway-specific maturation (brief sections 11, 12, 14, 18). Each is a fraction of adult
+// activity versus age; clearance blends the renal (GFR) and non-renal pathway by the
+// drug's renalFrac. Every function is divided by its own adult value, so adults are
+// exactly 1. "size" means no published neonatal anchor, so allometry only (flagged).
+const hillMat = (pma, pma50, h) => Math.pow(pma, h) / (Math.pow(pma50, h) + Math.pow(pma, h));
+const lerpPts = (x, pts) => {
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+  return pts[pts.length - 1][1];
+};
+const PMA_ADULT = 1340;   // 25 y, in weeks of PMA, the normalization point
+const MATURATION = {
+  gfr:     (pma) => hillMat(pma, 47.7, 3.4),                              // Rhodin 2009
+  cyp3a4:  (pma) => hillMat(pma, 108, 3.9) / hillMat(PMA_ADULT, 108, 3.9),   // Salem; generic fallback
+  // Midazolam-specific in-vivo maturation (Kos 2020 PMA50 45.9 wk; Hill borrowed from the generic
+  // CYP3A4 sigmoid because the paper's Hill was not retrieved, flagged).
+  midazolam: (pma) => hillMat(pma, 45.9, 3.9),
+  // CYP1A2 (lidocaine), asymptote 1.6, overshoots adult in toddlers; normalized to the 25 y value
+  cyp1a2:  (pma) => { const f = (w) => (w < 196 ? 1.6 * hillMat(w, 54.6, 5.7) : 0.8 * Math.exp(-0.001 * (w - 196)) + 0.8); return f(pma) / f(PMA_ADULT); },
+  // Carboxylesterase 1 (etomidate): ENGINE-FITTED piecewise-linear in age (years) to the
+  // reported ontogeny (neonate about 10 to 19 percent of adult, about 50 percent by 2 months,
+  // near adult by 6 y; Shi 2011, Boberg 2017); not a published sigmoid.
+  ces1:    (pma, ageY) => lerpPts(ageY, [[0, 0.15], [0.06, 0.2], [0.17, 0.5], [0.5, 0.6], [1, 0.7], [2, 0.85], [6, 1]]),
+  size:    () => 1,
+};
+// Hepatic pathway per drug. Fentanyl, amiodarone and ketamine are deliberate "size" cases:
+// weight-normalized clearance is NOT lower in young children for them (fentanyl peaks in
+// infants from higher hepatic blood flow), so a maturation term would be wrong.
+const HEPATIC_PATHWAY = {
+  midazolam: "midazolam", diltiazem: "cyp3a4", lidocaine: "cyp1a2", lidocaineBlock: "cyp1a2",
+  etomidate: "ces1", fentanyl: "size", amiodarone: "size", amiodarone2: "size", ketamine: "size",
+  metoprolol: "size", morphine: "size", rocuronium: "size",
+  naloxone_iv: "size", naloxone_im: "size", naloxone_in: "size",
+};
+// Rocuronium: the neonatal prolongation is a VOLUME effect (Vd 0.42 L/kg at birth falling to
+// 0.18 by 2 to 17 y; clearance per kg is flat), so volume, not clearance, carries it.
+const VOLUME_AGE_FACTOR = { rocuronium: (ageY) => lerpPts(ageY, [[0, 2.33], [0.08, 2.33], [2, 1.0]]) };
+
+export function weightPkScale(pat, drugId) {
   const ap = pat?.ageProfile;
   const w = ap?.weight || PK_REF_WEIGHT;
   const r = Math.max(0.03, w / PK_REF_WEIGHT);
   let cl = Math.pow(r, 0.75);
+  let v = r;
   if (ap && ap.age < 2) {
-    const pma = ap.age * 52 + 40;               // weeks
-    const h = 3.4, pma50 = 47.7;
-    const mf = Math.pow(pma, h) / (Math.pow(pma50, h) + Math.pow(pma, h));
-    const adultMf = 1;                           // sigmoid saturates well above 2 y
-    cl *= Math.min(1, mf / adultMf);
+    const pma = ap.age * 52 + 40;               // weeks; term birth assumed
+    if (!drugId) {
+      cl *= Math.min(1, hillMat(pma, 47.7, 3.4));   // generic default, unchanged
+    } else {
+      const rf = PK_PARAMS[drugId]?.renalFrac ?? 0.3;
+      const hep = MATURATION[HEPATIC_PATHWAY[drugId] || "gfr"](pma, ap.age);
+      const mat = rf * MATURATION.gfr(pma) + (1 - rf) * hep;
+      cl *= drugId && HEPATIC_PATHWAY[drugId] === "cyp1a2" ? mat : Math.min(1, mat);
+    }
   }
-  return { v: r, cl };
+  if (ap && drugId && VOLUME_AGE_FACTOR[drugId]) v *= VOLUME_AGE_FACTOR[drugId](ap.age);
+  return { v, cl };
 }
 
 // ---------------------------------------------------------------------------
@@ -637,7 +681,7 @@ function advancePkCompartments(dr, dt, pat) {
   let rem = dt;
   while (rem > 0) {
     const sstep = Math.min(0.1, rem);
-    const wsc = weightPkScale(pat);
+    const wsc = weightPkScale(pat, dr.id);
     const fcl = wsc.cl / wsc.v;               // rate constants scale CL/V (intercompartmental Q follows the same allometry)
     const k12 = dr.pk.k12 * fcl, k21 = dr.pk.k21 * fcl;
     const kel = dr.pk.kel * fcl;   // CL scales (w/70)^0.75 x maturation, V scales w/70
@@ -685,7 +729,7 @@ function advancePkCompartments(dr, dt, pat) {
   // while building the efficacy harness: lidocaine failed to reduce VT
   // incidence at all, and the reason was onset, not potency.
   const ke0 = dr.pk.keo ?? 0.1;
-  dr.effectConc += (dr.central / (dr.pk.v1 * weightPkScale(pat).v) - dr.effectConc) * (1 - Math.exp(-ke0 * dt));
+  dr.effectConc += (dr.central / (dr.pk.v1 * weightPkScale(pat, dr.id).v) - dr.effectConc) * (1 - Math.exp(-ke0 * dt));
 }
 
 // Seeds a dose that is ALREADY circulating when a scenario starts — an
