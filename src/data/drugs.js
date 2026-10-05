@@ -881,9 +881,11 @@ export const DRUGS = {
 
   angiotensinII: {
     pkModel: "curve",
-    name: "Angiotensin II", route: "IV", lvl: 5,
+    name: "Angiotensin II (Giapreza)", route: "IV", lvl: 5,
     onset: 30, dur: 1200, max: 2,
     fx: {},
+    // Synthetic angiotensin II (Giapreza), an ICU vasopressor given as an infusion in real use; modeled here as a
+    // single dose until curve drugs can run on the pump. Separate from the body's own RAAS angiotensin II state.
     // AT1 vasoconstriction, a non-adrenergic channel (pk.js adds it to the vasopressin accumulator), so
     // catecholamine resistance does not blunt it. Last rung of the shock escalation ladder.
     receptors: { AT1: 0.8 },
