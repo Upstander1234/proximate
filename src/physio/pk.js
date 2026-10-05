@@ -604,6 +604,24 @@ export function weightPkScale(pat) {
   return { v: r, cl };
 }
 
+// ---------------------------------------------------------------------------
+// DOSE RESOLUTION AT ADMINISTRATION. A drug definition may declare
+//   dosePerKg: mg/kg for a child, minDose / dose: floor and adult cap (mg)
+// A patient under PEDIATRIC_WEIGHT_KG gets min(dosePerKg x weight, dose), floored
+// at minDose; everyone else (and any drug without dosePerKg) gets the flat adult
+// `dose`, so adult behavior is exactly unchanged. An explicit amount on the dose
+// record (the player's drawn amount) always wins over this. Exported so the UI
+// can show "0.1 mg/kg = 0.35 mg" in the confirmation.
+// ---------------------------------------------------------------------------
+export const PEDIATRIC_WEIGHT_KG = 40;
+export function resolveDoseMg(drugDef, weightKg) {
+  const adult = drugDef?.dose ?? 1;
+  if (!drugDef?.dosePerKg || !(weightKg > 0) || weightKg >= PEDIATRIC_WEIGHT_KG) return adult;
+  let d = drugDef.dosePerKg * weightKg;
+  if (drugDef.minDose != null) d = Math.max(d, drugDef.minDose);
+  return Math.min(d, adult);
+}
+
 // Advances one two-compartment instance's central/peripheral/effect-site
 // state by `dt` minutes. Factored out of the main per-tick loop below (which
 // now just calls this) so the SAME code can also fast-forward a freshly
@@ -1346,8 +1364,12 @@ export function updateDrugs(pat, s, dt) {
         const drugDef = DRUGS[d.id] || PROCS[d.id];
         if (drugDef) {
           const bioavailability = drugDef.bioavailability ?? 1;
-          const dose = d.amount ?? drugDef.dose ?? 1; // FIX: scenario‑provided dose
-          pat.drugInstances.push(new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null));
+          const refDose = resolveDoseMg(drugDef, pat.ageProfile?.weight);
+          const dose = d.amount ?? refDose;   // an explicit (drawn or scenario) amount wins over the weight-resolved dose
+          const inst = new DrugInstance(d.id, dose, d.at, bioavailability, d.route || null);
+          inst.refDose = refDose;             // the dose the patient should get; curve-drug amount scaling is relative to it
+          d.resolvedAmount = dose;            // stamped on the dose record so the log/UI can show the delivered amount
+          pat.drugInstances.push(inst);
         }
       }
     });
@@ -1821,8 +1843,9 @@ export function updateDrugs(pat, s, dt) {
         // cap of 3x keeps a gross over-draw bounded; the real ceiling is still
         // the receptor/SVR clamp downstream.
         let amountScale = 1;
-        if (drugDef.receptors && drugDef.dose > 0 && dr.givenDose > 0) {
-          amountScale = Math.min(3, dr.givenDose / drugDef.dose);
+        const refDoseForScale = dr.refDose ?? drugDef.dose;
+        if (drugDef.receptors && refDoseForScale > 0 && dr.givenDose > 0) {
+          amountScale = Math.min(3, dr.givenDose / refDoseForScale);
         }
         intensity = k * amountScale;
         toKeep.push(dr);

@@ -20,7 +20,7 @@
 //
 // Run:  node src/scripts/mechanismWiring.mjs
 import { physio, activePatient, outcomeReport } from "../physiology.js";
-import { seedPastDose, hillOcc, updateDrugs, infusionRateMgPerMin, PK_PARAMS, weightPkScale } from "../physio/pk.js";
+import { seedPastDose, hillOcc, updateDrugs, infusionRateMgPerMin, PK_PARAMS, weightPkScale, resolveDoseMg } from "../physio/pk.js";
 import { Patient } from "../physio/patient.js";
 import { updateVenousReturn, updateRhythm } from "../physio/cardiovascular.js";
 import { LIB as ACTIONS } from "../actions.js";
@@ -8775,6 +8775,26 @@ console.log("\n[WEIGHT- AND AGE-AWARE PK]");
   refOk ? pass++ : fail++;
   if (!refOk) failures.push(`74 kg adult should have unit PK scale, got ${JSON.stringify(ref)}`);
   console.log(`  ${refOk ? "PASS" : "FAIL"}  ${"74 kg adult has unit PK scale (no calibration drift)".padEnd(46)} v=${ref.v} cl=${ref.cl}`);
+  // DOSE RESOLUTION AT ADMINISTRATION (phase 2): a child gets min(mg/kg x weight,
+  // adult dose), floored at minDose; an adult or a drug without dosePerKg gets the
+  // flat adult dose; an explicit amount on the dose record always wins.
+  const DR = { dose: 1, dosePerKg: 0.01 }, DA = { dose: 1, dosePerKg: 0.02, minDose: 0.1 };
+  const r13 = resolveDoseMg(DR, 13), rAdult = resolveDoseMg(DR, 74), rBig = resolveDoseMg({ dose: 0.5, dosePerKg: 0.1 }, 30), rMin = resolveDoseMg(DA, 3), rFlat = resolveDoseMg({ dose: 5 }, 13);
+  const resOk = Math.abs(r13 - 0.13) < 1e-9 && rAdult === 1 && rBig === 0.5 && Math.abs(rMin - 0.1) < 1e-9 && rFlat === 5;
+  resOk ? pass++ : fail++;
+  if (!resOk) failures.push(`resolveDoseMg wrong: 13kg ${r13}, adult ${rAdult}, capped ${rBig}, floored ${rMin}, no dosePerKg ${rFlat}`);
+  console.log(`  ${resOk ? "PASS" : "FAIL"}  ${"resolveDoseMg: per-kg, cap, floor, adult, flat".padEnd(46)} 13kg=${r13} adult=${rAdult} capped=${rBig} floored=${rMin} flat=${rFlat}`);
+  const sk = { scen: "croupToddler", t: 0, doses: [], given: {}, activePatientId: null };
+  for (let T = STEP; T <= 40; T += STEP) { sk.t = T; if (T === 20) sk.doses.push({ id: "epiIV", at: T }); physio(sk); }
+  const sa = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
+  for (let T = STEP; T <= 40; T += STEP) { sa.t = T; if (T === 20) sa.doses.push({ id: "epiIV", at: T }); physio(sa); }
+  const sx = { scen: "croupToddler", t: 0, doses: [], given: {}, activePatientId: null };
+  for (let T = STEP; T <= 40; T += STEP) { sx.t = T; if (T === 20) sx.doses.push({ id: "epiIV", at: T, amount: 0.5 }); physio(sx); }
+  const kid = sk.doses[0].resolvedAmount, adultAmt = sa.doses[0].resolvedAmount, drawn = sx.doses[0].resolvedAmount;
+  const engOk = kid > 0.05 && kid < 0.3 && adultAmt === 1 && drawn === 0.5;
+  engOk ? pass++ : fail++;
+  if (!engOk) failures.push(`administration should resolve epiIV to ~0.01 mg/kg for a toddler, 1 mg for the adult, and honor an explicit amount, got ${kid}, ${adultAmt}, ${drawn}`);
+  console.log(`  ${engOk ? "PASS" : "FAIL"}  ${"administration: toddler per-kg, adult flat, drawn wins".padEnd(46)} toddler=${kid} adult=${adultAmt} drawn=${drawn}`);
   const neo = weightPkScale(mk(0.02, 3.5)), allo = Math.pow(3.5 / 74, 0.75);
   const neoOk = neo.cl < allo && neo.cl > 0;
   neoOk ? pass++ : fail++;

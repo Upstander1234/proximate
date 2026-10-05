@@ -7,6 +7,7 @@ export const DRUGS = {
     name: "Naloxone (IN)", route: "IN", lvl: 0,
     onset: 60, dur: 1800, max: 2,
     dose: 0.4,
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},
     note: "Intranasal unit‑dose — layperson and EMR scope. Publicly available; ventilate first, titrate to RR."
   },
@@ -15,6 +16,7 @@ export const DRUGS = {
     name: "Naloxone (IM)", route: "IM", lvl: 1,
     onset: 60, dur: 2400, max: 4,
     dose: 0.4,
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},
     note: "Intramuscular auto‑injector — EMT scope."
   },
@@ -23,6 +25,7 @@ export const DRUGS = {
     name: "Naloxone (IV)", route: "IV", lvl: 2,
     onset: 30, dur: 1200, max: 4,
     dose: 0.4,
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},
     note: "Intravenous bolus — AEMT/Paramedic scope. Faster onset, shorter duration."
   },
@@ -381,6 +384,7 @@ export const DRUGS = {
     name: "Fentanyl 50 mcg", route: "IV/IM/IN", lvl: 3,
     onset: 60, dur: 900, max: 5,
     dose: 0.05,                                 // 50 mcg = 0.05 mg
+    dosePerKg: 0.001,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     class: "opioid",
         // RESPIRATORY DEPRESSION IS A MECHANISM, NOT A RATE OFFSET.
     // These drugs previously declared BOTH `respiratoryDepression` (which
@@ -405,6 +409,7 @@ export const DRUGS = {
     name: "Morphine 4 mg", route: "IV/IM", lvl: 3,
     onset: 90, dur: 1800, max: 5,
     dose: 4,
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     class: "opioid",
         // RESPIRATORY DEPRESSION IS A MECHANISM, NOT A RATE OFFSET.
     // These drugs previously declared BOTH `respiratoryDepression` (which
@@ -463,6 +468,7 @@ export const DRUGS = {
     name: "Epinephrine 1 mg (0.1 mg/mL)", route: "IV/IO", lvl: 3,
     onset: 20, dur: 300, max: 3,
     dose: 1,
+    dosePerKg: 0.01,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},                                      // hemodynamics entirely via receptors
     receptors: { alpha: 0.9, beta1: 1.0, beta2: 0.3, beta2Vasodilation: 0.06 },
     note: "On the AEMT closed IV list — for ARREST. Benefit falls away after 3 doses."
@@ -476,6 +482,7 @@ export const DRUGS = {
     name: "Ketamine", route: "IV/IO", lvl: 4,
     onset: 45, dur: 900, max: 2,
     dose: 100,
+    dosePerKg: 1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     class: "dissociative",
     fx: { pain: -8, bronch: -0.3 },             // analgesic & bronchodilator, HR/BP via indirect sympathomimetic
     // KETAMINE'S PRESSOR EFFECT IS INDIRECT, AND THAT IS THE WHOLE POINT OF IT.
@@ -523,6 +530,7 @@ export const DRUGS = {
     name: "Amiodarone 300 mg", route: "IV/IO", lvl: 4,
     onset: 60, dur: 600, max: 2,
     dose: 300,
+    dosePerKg: 5,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},                                      // HR drop via class III & mild beta blockade, handled by receptor
     // AMIODARONE ALSO HAD NO ANTIARRHYTHMIC EFFECT. Worse, its only declared
     // actions were weak alpha and beta1 AGONISM, which would RAISE blood
@@ -654,6 +662,7 @@ export const DRUGS = {
     name: "Atropine 1 mg", route: "IV/IO", lvl: 4,
     onset: 30, dur: 1200, max: 3,
     dose: 1,
+    dosePerKg: 0.02, minDose: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     fx: {},                                      // HR increase via vagal block
     receptors: { vagalBlock: 0.8 },
     note: "USELESS in 2° type II or 3° block. Do not delay pacing for it."
@@ -885,6 +894,7 @@ export const DRUGS = {
     name: "Midazolam 5 mg", route: "IM/IN/IV", lvl: 4,
     onset: 90, dur: 1800, max: 4,
     dose: 5,
+    dosePerKg: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
     class: "benzodiazepine",
     // ANTICONVULSANT ACTION. Midazolam is the prehospital seizure drug and had
     // no anticonvulsant mechanism at all — it sedated and depressed respiration
