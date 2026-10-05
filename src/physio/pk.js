@@ -92,7 +92,9 @@ export const PK_PARAMS = {
   // koff and keeps the prior instantaneous behavior) and a genuine
   // multi-minute reversal time course, not asserted as a fitted
   // receptor-binding constant.
-  fentanyl:  { kel: 0.01, k12: 0.2, k21: 0.1, v1: 13,  ec50: 0.0012, renalFrac: 0.10, keo: 0.14, respEc50: 0.0023, respHillN: 1, koff: 0.25 },  // t1/2ke0 ~5 min// hepatic CYP3A4; <10% unchanged renal
+  // CLEARANCE CORRECTION: kel 0.01 gave CL 0.13 L/min; reported adult fentanyl CL is about 0.5-0.9 L/min
+  // (flow-limited hepatic). kel 0.054 x v1 13 = 0.7 L/min.
+  fentanyl:  { kel: 0.054, k12: 0.2, k21: 0.1, v1: 13,  ec50: 0.0012, renalFrac: 0.10, keo: 0.14, respEc50: 0.0023, respHillN: 1, koff: 0.25 },  // t1/2ke0 ~5 min// hepatic CYP3A4; <10% unchanged renal
   // MORPHINE — v1 and ec50 identified against published PK/PD. The audit
   // measured a peak effect-site concentration 15x the documented 20-80 ng/mL
   // analgesic range, because the central volume was ~7x too small; the EC50 was
@@ -188,7 +190,9 @@ export const PK_PARAMS = {
   ketamine:  { kel: 0.03, k12: 1.0, k21: 0.5, v1: 40,   ec50: 1.0, renalFrac: 0.05, keo: 0.7 },  // t1/2ke0 ~1 min — effect is essentially arm-brain circulation time // almost entirely hepatic; flow-limited extraction
   // ETOMIDATE — v1 identified so that the EFFECT-SITE peak lands in range, EC50 for hypnosis ~0.3 mg/L. Was v1 2 /
   // ec50 0.05, giving Cmax 1.6 mg/L against a published 0.2-0.6 and Imax 0.969.
-  etomidate: { kel: 0.05, k12: 2.0, k21: 0.5, v1: 8,    ec50: 0.3, renalFrac: 0.10, keo: 0.46 },  // t1/2ke0 ~1.5 min — induction agent// hepatic and plasma esterases
+  // CLEARANCE CORRECTION: kel 0.05 gave CL 0.4 L/min; reported etomidate CL is 15-20 mL/kg/min (about 1.05-1.4 L/min).
+  // kel 0.15 x v1 8 = 1.2 L/min, with ec50 0.3 to 0.25 so a 20 mg induction dose still reaches the unconscious threshold (sedationDepth peak 0.63, 528 s above 0.6, against 0.61 and 562 s before). The central volume (8 L, reported Vc about 4.45 L) is left for the weight-scaling pass.
+  etomidate: { kel: 0.15, k12: 2.0, k21: 0.5, v1: 8,    ec50: 0.25, renalFrac: 0.10, keo: 0.46 },  // t1/2ke0 ~1.5 min — induction agent// hepatic and plasma esterases
   // ROCURONIUM — central volume ~12 L, EC50 for neuromuscular block ~1.5 mg/L.
   // Was v1 0.3 L / ec50 0.05: Cmax came out at 81 mg/L, SIXTY-FOUR times the
   // published range, with Imax 0.999 — complete saturation, so a paralytic
