@@ -10668,7 +10668,7 @@ export default function App({onHome}={}){
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}
-    {g.accessMinigame&&g.accessMinigame.kind==="prep"&&<DrawUpMinigame open kind="prep" forceOrder={g.accessMinigame.forceOrder}
+    {g.accessMinigame&&g.accessMinigame.kind==="prep"&&<DrawUpMinigame open kind="prep" forceOrder={g.accessMinigame.forceOrder} forceAlt={g.accessMinigame.forceAlt}
       pat={g.patient} assist={g.procedureAssist}
       interrupted={(g.eventAlertQueue||[]).length>(g.accessMinigame.alertBaseline||0)}
       onResolve={resolveAccessMinigame}/>}

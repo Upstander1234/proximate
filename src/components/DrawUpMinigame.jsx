@@ -114,7 +114,10 @@ function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
   );
 }
 
-export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve, forceOrder }) {
+// Alternate real-world vial strengths (mg/mL), used for the wrong-concentration variant.
+const ALT_CONC = { morphine: [4, 2], midazolam: [1], ketamine: [10, 100], lidocaine: [10] };
+
+export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve, forceOrder, forceAlt }) {
   const [setup] = useState(() => {
     const pool = INJECTABLE();
     let four = pick(pool, 4);
@@ -131,8 +134,18 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
     // The ordered amount is this patient's own dose (a child gets mg/kg, capped at the adult dose).
     const amount = resolveDoseMg(DRUGS[order.id], pat?.ageProfile?.weight, order.id);
     const mL = order.id === "pushEpi" ? 10 : drawVolumeMl(order.id, amount);
-    const syringe = SYRINGES.find(s => s >= mL * 1.25) || 60;
-    return { vials: four, order, amount, mL, syringe };
+    // Some stocked drugs come in more than one strength. About 1 in 5 times the
+    // tray holds the ordered drug at a different concentration than the
+    // standard one, so the volume to pull changes and reading the label matters.
+    if (order.id !== "pushEpi" && ALT_CONC[order.id] && (forceOrder ? forceAlt : Math.random() < 0.2)) {
+      const alts = ALT_CONC[order.id];
+      const c = alts[Math.floor(Math.random() * alts.length)];
+      four = four.map(v => v.id === order.id ? { ...v, conc: c } : v);
+    }
+    const trayConc = (four.find(v => v.id === order.id) || order).conc;
+    const mLAdj = order.id === "pushEpi" ? mL : (trayConc && amount ? amount / trayConc : mL);
+    const syringe = SYRINGES.find(s => s >= mLAdj * 1.25) || 60;
+    return { vials: four, order, amount, mL: mLAdj, syringe };
   });
   const [vial, setVial] = useState(null);
   const [vol, setVol] = useState(0);
@@ -159,8 +172,9 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   // When mixing, the drug in the syringe is diluted to (epi drawn) / (total volume),
   // and one dose is pushVol of that mix. No saline added (total at or below the drawn
   // volume) means the mix IS the vial, the classic 10x push-dose error.
-  const mixConc = vial ? (vol * (DRUG_UNITS[vial]?.conc || 0)) / Math.max(vol, mixTotal, 1e-6) : 0;
-  const drawnAmount = !vial ? 0 : mixing ? pushVol * mixConc : vol * (DRUG_UNITS[vial]?.conc || 0);
+  const vc = (id) => (setup.vials.find(v => v.id === id)?.conc) ?? (DRUG_UNITS[id]?.conc || 0);
+  const mixConc = vial ? (vol * vc(vial)) / Math.max(vol, mixTotal, 1e-6) : 0;
+  const drawnAmount = !vial ? 0 : mixing ? pushVol * mixConc : vol * vc(vial);
   const vialOk = mixing ? vial === "epiIV" : vial === setup.order.id;
   // A drawn syringe carries an air bubble that scales with how far past the
   // ordered volume you overshoot the pull; flicking it clears it.
@@ -175,7 +189,7 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
   // patient THAT drug under the ordered drug's label (`label`), and the give path
   // delivers the actual contents.
   const actualId = mixing && vial === "epiIV" ? "pushEpi" : vial;
-  const useAnyway = () => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: actualId, label: setup.order.id, amount: mixing && vial !== "epiIV" ? vol * (DRUG_UNITS[vial]?.conc || 0) : drawnAmount, ordered: setup.amount });
+  const useAnyway = () => onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: actualId, label: setup.order.id, amount: mixing && vial !== "epiIV" ? vol * vc(vial) : drawnAmount, ordered: setup.amount });
   const finish = () => {
     if (flash === "success") { onResolve(PROCEDURE_OUTCOME.SUCCESS, { drugId: setup.order.id, amount: drawnAmount, ordered: setup.amount }); return; }
     onResolve(PROCEDURE_OUTCOME.FAILED, {
@@ -215,7 +229,7 @@ export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, o
               ))}
             </div>
             <Syringe vol={vol} max={setup.syringe} cap={vial ? capColorFor(vial) : "#5C6E78"} bubble={bubble} hasVial={!!vial} onFlick={onFlick} flicks={flicks} />
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Pull the plunger: {vol.toFixed(setup.syringe <= 3 ? 2 : 1)} mL{vial ? ` (${fmt(vol * DRUG_UNITS[vial].conc)} ${DRUG_UNITS[vial].unit})` : ""}</div>
+            <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2. Pull the plunger: {vol.toFixed(setup.syringe <= 3 ? 2 : 1)} mL{vial ? ` (${fmt(vol * vc(vial))} ${DRUG_UNITS[vial].unit})` : ""}</div>
             <input type="range" min={0} max={setup.syringe} step={setup.syringe / 200} value={vol} onChange={(e) => setVol(Number(e.target.value))} style={{ width: "100%", marginBottom: 10 }} />
             {mixing && (<>
               <div style={{ fontSize: 12, color: C.faint, marginBottom: 6 }}>2b. Add saline to a total of {mixTotal.toFixed(1)} mL{vial ? ` (${fmt(mixConc * 1000)} mcg/mL)` : ""}</div>
