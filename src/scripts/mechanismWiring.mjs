@@ -8835,6 +8835,35 @@ console.log("\n[NEWBORN EPINEPHRINE THROUGH THE PK LAYER]");
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${"routed 0.01 mg/kg epi rescues a critical newborn".padEnd(46)} no epi hr=${no.hr.toFixed(0)} epi hr=${yes.hr.toFixed(0)} dose=${yes.amt}`);
 }
 
+console.log("\n[CATECHOLAMINE RESISTANCE]");
+{
+  // Norepinephrine infusion (0.25 mcg/kg/min) in septic shock. Adrenergic resistance blunts the pressor
+  // response, vasopressin (a non-adrenergic channel) restores it, hydrocortisone partially re-sensitizes.
+  const run = ({ doses = [], res = 0, T = 1500 }) => {
+    const s = { scen: "septicShock", t: 0, doses: [], given: {}, activePatientId: null, infusions: [{ line: "a", id: "norepi", rate: 0.0185, from: 60, to: null }] };
+    for (let t = STEP; t <= T; t += STEP) {
+      s.t = t; if (t === 60) for (const d of doses) s.doses.push({ ...d, at: t });
+      if (t === STEP) { const p = activePatient(s); pinTraitsNeutral(p); p.alphaResistanceBase = res; p.alphaResistance = res; }
+      physio(s);
+    }
+    const p = activePatient(s); return { map: p.map, res: p.alphaResistance };
+  };
+  const base = run({}), resist = run({ res: 0.6 }), vaso = run({ res: 0.6, doses: [{ id: "vasopressin" }] });
+  const ok1 = resist.map < base.map - 6;
+  ok1 ? pass++ : fail++;
+  if (!ok1) failures.push(`catecholamine resistance should blunt the norepinephrine MAP response, base ${base.map}, resistant ${resist.map}`);
+  console.log(`  ${ok1 ? "PASS" : "FAIL"}  ${"resistance blunts the norepinephrine response".padEnd(46)} base MAP=${base.map.toFixed(0)} resistant=${resist.map.toFixed(0)}`);
+  const ok2 = vaso.map > resist.map + 10;
+  ok2 ? pass++ : fail++;
+  if (!ok2) failures.push(`vasopressin (non-adrenergic) should restore the response despite resistance, resistant ${resist.map}, with vasopressin ${vaso.map}`);
+  console.log(`  ${ok2 ? "PASS" : "FAIL"}  ${"vasopressin restores it (immune channel)".padEnd(46)} resistant=${resist.map.toFixed(0)} +vaso=${vaso.map.toFixed(0)}`);
+  const ctrl = run({ res: 0.6, T: 3000 }), hc = run({ res: 0.6, T: 3000, doses: [{ id: "hydrocortisone" }] });
+  const ok3 = hc.res < ctrl.res - 0.04 && hc.map > ctrl.map - 1;
+  ok3 ? pass++ : fail++;
+  if (!ok3) failures.push(`hydrocortisone should partially re-sensitize, control res ${ctrl.res}, hydrocortisone res ${hc.res}`);
+  console.log(`  ${ok3 ? "PASS" : "FAIL"}  ${"hydrocortisone partially re-sensitizes".padEnd(46)} control res=${ctrl.res.toFixed(2)} hydrocortisone res=${hc.res.toFixed(2)}`);
+}
+
 console.log("\n[ADENOSINE DOSE-DEPENDENT SVT CONVERSION]");
 {
   const conv = (amt) => { let c = 0; for (let i = 0; i < 40; i++) { const s = { scen: "svt", t: 0, doses: [], given: {}, activePatientId: null }; for (let t = STEP; t <= 60; t += STEP) { s.t = t; if (t === 20) s.doses.push({ id: "adenosine", at: t, amount: amt }); physio(s); } if (activePatient(s).rhythm !== "svt") c++; } return c; };

@@ -11,7 +11,7 @@
 // taxonomy.
 export const DRUG_CATEGORIES={
   "Cardiac / rhythm":["aspirin","nitroOwn","nitro","amiodarone","lidocaine","atropine","adenosine","diltiazem",
-    "metoprolol","calcium","bicarb","vasopressin","pushEpi","epiIV","norepi","phenylephrine","thrombolytic"],
+    "metoprolol","calcium","bicarb","vasopressin","pushEpi","epiIV","norepi","phenylephrine","hydrocortisone","thrombolytic"],
   "Airway / RSI / sedation":["etomidate","rocuronium","ketamine","midazolam","nitrous"],
   "Respiratory":["albuterol","ipratropium","nebEpi"],
   "Allergy / anaphylaxis":["epiAuto","epiIM","diphen","dexamethasone"],

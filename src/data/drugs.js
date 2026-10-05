@@ -879,6 +879,20 @@ export const DRUGS = {
     note: "Fifteen minutes to work. Prevents the SECOND wave. It has never rescued anybody from the first."
   },
 
+  hydrocortisone: {
+    dosePerKg: 2,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
+    pkModel: "curve",
+    name: "Hydrocortisone 100 mg", route: "IV", lvl: 5,
+    onset: 1800, dur: 9999, max: 2,
+    fx: {},
+    // Partial re-sensitization of adrenergic receptors in catecholamine-resistant shock (pk.js sets
+    // pat.steroidResensitization; cardiovascular.js lowers the alpha-resistance target by up to half).
+    // It is not a pressor and does nothing in a patient with no resistance. Slow onset (30 min here;
+    // clinically the benefit is hours, SSC suggests it once norepinephrine is 0.25 mcg/kg/min or more).
+    steroidResensitize: 1.0,
+    note: "Not a pressor. In refractory septic shock it restores some of the vessels' response to catecholamines, over a long time."
+  },
+
   diphen: {
     dosePerKg: 1,   // mg/kg for a child (< 40 kg), capped at the standard dose in drugUnits.js
     pkModel: "curve",

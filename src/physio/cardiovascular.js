@@ -289,7 +289,22 @@ export function updateAutonomic(pat, dt) {
   // patients retain SOME residual pressor responsiveness, not none.
   const cortisolPermissive = (pat.cortisol ?? 1) >= 0.15 ? 1
     : 0.4 + 0.6 * ((pat.cortisol ?? 1) / 0.15);
-  pat.alphaTone = clamp((pat.neuralSymp * 0.9 * (pat.vascularReactivity ?? 1) + catExcess * 0.35 + (pat._alphaDrug || 0) + (pat._v1Drug || 0) + (pat._cushingAlpha || 0)) * cortisolPermissive, 0, 3);
+  // CATECHOLAMINE RESISTANCE (brief section 24): a progressive loss of ADRENERGIC (alpha) responsiveness to
+  // exogenous pressors. Non-adrenergic channels (vasopressin V1, pat._v1Drug) are immune, which is why
+  // adding vasopressin restores pressor response when more norepinephrine no longer does.
+  // Contributors: (1) scenario-initial refractoriness (alphaResistanceBase); (2) sustained alpha-agonist
+  // exposure, receptor loss with a very slow time constant (t1/2 about 12 h, so small within one call);
+  // (3) acidemia and sepsis-related superoxide inactivation, a fast and reversible term. Hydrocortisone
+  // partially re-sensitizes (it lowers the target, it is not a pressor).
+  {
+    const acidemia = clamp((7.2 - (pat.ph ?? 7.4)) / 0.3, 0, 1);
+    const exposure = clamp((pat._alphaDrug || 0) / 0.5, 0, 1);
+    const target = clamp(((pat.alphaResistanceBase || 0) + 0.5 * exposure + 0.4 * acidemia) * (1 - 0.5 * (pat.steroidResensitization || 0)), 0, 0.9);
+    const tauMin = target > (pat.alphaResistance || 0) ? (exposure > 0.2 ? 720 : 15) : 30;
+    pat.alphaResistance = approach(pat.alphaResistance || 0, target, dt, tauMin);
+  }
+  const _alphaGainRes = 1 - 0.7 * (pat.alphaResistance || 0);
+  pat.alphaTone = clamp((pat.neuralSymp * 0.9 * (pat.vascularReactivity ?? 1) + catExcess * 0.35 + (pat._alphaDrug || 0) * _alphaGainRes + (pat._v1Drug || 0) + (pat._cushingAlpha || 0)) * cortisolPermissive, 0, 3);
   pat.beta1Tone = clamp(pat.neuralSymp * 0.7 + catExcess * 0.30 + (pat._beta1Drug || 0), -1, 3);
   pat.beta2Tone = clamp(pat.neuralSymp * 0.35 + catExcess * 0.25 + (pat._beta2Drug || 0), 0, 3);
 
@@ -948,7 +963,7 @@ export function updateCardiovascular(pat, dt) {
   // scaled by 0.45, norepinephrine 0.1 mcg/kg/min raised septic MAP only ~5 mmHg
   // against a clinical 8-11 (healthy +12 to 14).
   const _alphaT = clamp(pat.alphaTone, 0, 3);
-  const _alphaD = pat.riskFactors.sepsis ? Math.min(_alphaT, Math.max(0, (pat._alphaDrug || 0) + (pat._v1Drug || 0))) : 0;
+  const _alphaD = pat.riskFactors.sepsis ? Math.min(_alphaT, Math.max(0, (pat._alphaDrug || 0) * (1 - 0.7 * (pat.alphaResistance || 0)) + (pat._v1Drug || 0))) : 0;
   const _toneTerm = pat.riskFactors.sepsis
     ? 0.45 * (0.55 + (_alphaT - _alphaD) * 2.0) + SEPSIS_PRESSOR_GAIN * _alphaD * 2.0
     : (0.55 + _alphaT * 2.0);

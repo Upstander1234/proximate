@@ -37,6 +37,7 @@ export const DRUG_UNITS = {
   calcium:       { unit: "mg",  std: 1000, conc: 100 },     // calcium chloride 10%
   bicarb:        { unit: "mEq", std: 50,   conc: 1 },       // 8.4%
   vasopressin:   { unit: "U",   std: 40,   conc: 20 },
+  hydrocortisone:{ unit: "mg",  std: 100,  conc: 50 },
   dexamethasone: { unit: "mg",  std: 10,   conc: 10 },
   diphen:        { unit: "mg",  std: 50,   conc: 50 },
   midazolam:     { unit: "mg",  std: 5,    conc: 5 },

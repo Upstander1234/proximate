@@ -1248,6 +1248,7 @@ export function updateDrugs(pat, s, dt) {
     // Vagal maneuver (Valsalva/carotid sinus massage): a transient surge of
     // parasympathetic outflow, not a fixed rate subtraction.
     pat.vagalSurge = 0;
+    pat.steroidResensitization = 0;
     // Aortic occlusion (REBOA): fraction of the systemic bed excluded.
     pat.aorticOcclusion = 0;
     // External heat added to the body, in watts (see thermo.js).
@@ -2698,6 +2699,9 @@ export function updateDrugs(pat, s, dt) {
       if (dr.drugDef?.pacer && intensity > 0.05) {
         pat.pacerRate = Math.max(pat.pacerRate, dr.drugDef.pacer.rate || 70);
         pat.pacerOutput = Math.max(pat.pacerOutput, (dr.drugDef.pacer.mA || 70) * intensity);
+      }
+      if (dr.drugDef?.steroidResensitize) {
+        pat.steroidResensitization = Math.max(pat.steroidResensitization, dr.drugDef.steroidResensitize * intensity);
       }
       if (dr.drugDef?.vagalManeuver) {
         pat.vagalSurge = Math.max(pat.vagalSurge, dr.drugDef.vagalManeuver * intensity);
