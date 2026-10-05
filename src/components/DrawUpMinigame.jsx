@@ -114,14 +114,16 @@ function Syringe({ vol, max, cap, bubble, hasVial, onFlick, flicks }) {
   );
 }
 
-export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve }) {
+export default function DrawUpMinigame({ open, kind, pat, assist, interrupted, onResolve, forceOrder }) {
   const [setup] = useState(() => {
     const pool = INJECTABLE();
     let four = pick(pool, 4);
     let order = four[Math.floor(Math.random() * four.length)];
+    // forceOrder (test hook, set on the minigame state by browser tests) pins the ordered drug.
+    if (forceOrder && forceOrder !== "pushEpi") { const f = pool.find(v => v.id === forceOrder); if (f) { order = f; if (!four.some(v => v.id === f.id)) four = [...four.slice(0, 3), f]; } }
     // Sometimes the order is push-dose epinephrine, which must be mixed: the
     // tray then has to hold the 0.1 mg/mL epinephrine it is made from.
-    if (Math.random() < 0.15 && DRUG_UNITS.pushEpi && DRUGS.pushEpi) {
+    if ((forceOrder === "pushEpi" || (!forceOrder && Math.random() < 0.15)) && DRUG_UNITS.pushEpi && DRUGS.pushEpi) {
       const src = pool.find(v => v.id === "epiIV");
       if (src && !four.some(v => v.id === "epiIV")) four = [...four.slice(0, 3), src];
       order = { id: "pushEpi", name: DRUGS.pushEpi.name, conc: DRUG_UNITS.pushEpi.conc, unit: DRUG_UNITS.pushEpi.unit };

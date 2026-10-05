@@ -514,7 +514,11 @@ const NEWBORN_NEEDS_CPR = (ctx) => { const nb = newbornPat(ctx); return !!nb && 
 // (neonatalTransition's _neo.volFrac) stands in for the bedside pallor/weak-pulse picture;
 // one bolus, then reassess.
 const NEWBORN_NEEDS_VOLUME = (ctx) => { const nb = newbornPat(ctx); return !!nb && !!nb._neo?.ppv && nb.hr > 0 && nb.hr < 120 && (nb._neo?.volFrac ?? 1) < 0.85 && !nb._neo?.saline; };
-const NEWBORN_NEEDS_EPI = (ctx) => { const nb = newbornPat(ctx); return !!nb && nb.hr > 0 && nb.hr < 60 && !!nb._neo?.compressions && !nb._neo?.epi; };
+// The crew gives epi as a routed PK dose (no _neo.epi flag), so repeat dosing is gated on the
+// last newborn epi dose instead: NRP repeats every 3-5 minutes while HR stays under 60.
+const NEWBORN_NEEDS_EPI = (ctx) => { const nb = newbornPat(ctx); if (!nb || !(nb.hr > 0 && nb.hr < 60) || !nb._neo?.compressions || nb._neo?.epi) return false;
+  const last = (ctx.s.doses || []).filter(d => d.id === "epiIV" && d.patientId === nb._id).reduce((m, d) => Math.max(m, d.at), -Infinity);
+  return ctx.s.t - last >= 180; };
 // TP 1217/1217-P step 22: "SBP<90, OR HR>SBP, OR EBL>500mL" — the third
 // criterion (estimated blood loss) has no representable field (this
 // engine tracks current total blood volume, not a running loss estimate
