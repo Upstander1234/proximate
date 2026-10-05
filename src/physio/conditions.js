@@ -3193,15 +3193,19 @@ export const CONDITIONS = {
   // UPDATE 2026-10-05: the ceiling described above is lifted by pk.js's
   // overdoseTail (and the respEc50 read fix). MEASURED on this scenario,
   // untreated: drive suppression ~0.37, PaCO2 ~56, SpO2 ~92 for the whole call;
-  // naloxone at 120 s brings PaCO2 to 38 and SpO2 to 98. Consciousness still
-  // reads "awake", since opioids do not feed sedationDepth (see neuro.js);
-  // that remaining gap is separate.
+  // naloxone at 120 s brings PaCO2 to 38 and SpO2 to 98. With opioids now
+  // feeding sedationDepth directly, the seeded doses were raised 0.15 -> 0.2 mg
+  // to match the scripted "found unresponsive" presentation. MEASURED: unconscious
+  // on arrival (sedation 0.62, SpO2 ~90, PaCO2 ~60), lightening to drowsy over
+  // 15 minutes untreated as fentanyl redistributes; naloxone at 120 s wakes the
+  // patient (sedation 0.09, SpO2 98, PaCO2 38). Rate stays ~12, not 4-6: see
+  // the bradypnea note in CLAUDE.md's 2026-10-05 (c) entry.
   opioidOD: {
     initial: { hr: 52, sbp: 98, glu: 96, pain: 0, blood: 6, tv: 0.5 },
     progress(pat, dt, s) {
       if (!pat._opioidOdSeeded) {
         pat._opioidOdSeeded = true;
-        const doseAmt = 0.15;
+        const doseAmt = 0.2;
         const nDoses = 3;
         const intervalMin = 2;
         for (let i = nDoses; i >= 1; i--) {

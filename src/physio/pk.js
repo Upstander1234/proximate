@@ -1225,12 +1225,16 @@ export function updateDrugs(pat, s, dt) {
     // drugs cause direct CNS depression through GABA-A potentiation
     // (midazolam) or GABA-A/other mechanisms (etomidate), independent of
     // any secondary hypoxic effect. Deliberately scoped to the two true
-    // sedative-continuum drugs, not every CNS-active drug: fentanyl's own
-    // sedation already emerges indirectly and correctly via
-    // respDriveSuppression -> hypoxia -> the existing brainO2-based
-    // pathway (adding a second, direct opioid contribution here would
-    // double-count the same clinical phenomenon through two routes), and
-    // ketamine is deliberately excluded — dissociation is a real,
+    // sedative-continuum drugs, not every CNS-active drug. Opioids were
+    // originally excluded on the reasoning that their sedation emerges via
+    // respDriveSuppression -> hypoxia; MEASURED (2026-10-05) that never
+    // happened: the opioid-overdose scenario stayed "awake" at SpO2 92. CNS
+    // depression is a direct mu-receptor effect and one leg of the opioid
+    // toxidrome, so fentanyl and morphine now declare a small sedative
+    // coefficient (0.1). Through overdoseTail it stays negligible at
+    // therapeutic doses (fentanyl 50 mcg peak 0.08, morphine 4 mg 0.14) and
+    // reaches unconsciousness in overdose (fentanyl 1 mg 0.69), reversed by
+    // naloxone through the same Ki-shifted intensity. Ketamine is deliberately excluded — dissociation is a real,
     // qualitatively different state from sedation/unconsciousness (airway
     // reflexes and eye-opening are often preserved), not modeled here.
     // Recomputed fresh every tick from currently circulating drug, same as
