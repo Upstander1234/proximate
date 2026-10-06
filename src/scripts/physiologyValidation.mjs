@@ -52,7 +52,24 @@ function advance(pat, minutes, perTick) {
   }
   return pat;
 }
-function makePatient(over = {}) { return new Patient({ age: 35, sex: "male", weight: 70, ...over }, 0); }
+// PER-PATIENT TRAITS PINNED NEUTRAL. patient.js draws six traits
+// (baroreflexGain, metabolicRate, painSensitivity, vascularReactivity,
+// renalReserve, pulmonaryReserve) from a random bounded distribution at
+// construction, and metabolicRate/pulmonaryReserve move resting PaCO2 and the
+// ventilatory response to a depressant DIRECTLY. Every patient this suite
+// built was therefore a different patient, and any assertion comparing two of
+// them was comparing traits as much as mechanism: 2b's own 3-doses-vs-1-dose
+// stacking ratio builds a fresh patient per arm, and the same single morphine
+// dose measured 3.93 and 6.40 mmHg of PaCO2 rise on two runs of the identical
+// code. mechanismWiring.mjs hit this exact defect and fixed it with
+// pinTraitsNeutral(); that fix was never carried across to this suite. Pinned
+// here rather than seeded, so a band stays a statement about the mechanism.
+// Real per-patient variability is the point in gameplay, not in a fixture.
+const PINNED_TRAITS = {
+  baroreflexGain: 1, metabolicRate: 1, painSensitivity: 1,
+  vascularReactivity: 1, renalReserve: 1, pulmonaryReserve: 1,
+};
+function makePatient(over = {}) { return new Patient({ age: 35, sex: "male", weight: 70, ...PINNED_TRAITS, ...over }, 0); }
 // The weight declared here is the woman's CURRENT (term) weight, because that is
 // what the engine expects: applyPregnancyAdaptations subtracts its own 12 kg
 // gestational weight gain to recover the pre-pregnancy mass that blood volume is
@@ -67,7 +84,7 @@ function makePatient(over = {}) { return new Patient({ age: 35, sex: "male", wei
 // now refer to one woman. Measured effect on this block: total blood volume
 // 4.79 -> 5.87 L (target 5.6-7.0) and cardiac output 3.97 -> 4.59 L/min.
 function makePregnant(gestation = 39) {
-  const pat = new Patient({ age: 30, sex: "female", weight: 77, height: 165 }, 0);
+  const pat = new Patient({ age: 30, sex: "female", weight: 77, height: 165, ...PINNED_TRAITS }, 0);
   const c = CONDITIONS.healthyPregnancy;
   pat._gestationWeeks = gestation;
   pat._conditions = [c]; pat._condition = c;
