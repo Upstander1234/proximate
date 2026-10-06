@@ -28,3 +28,4 @@ tools/browser/screenshots/
 *.sw?
 .claude/worktrees/
 model-zip/
+src/scripts/.mwSections.tmp.*
