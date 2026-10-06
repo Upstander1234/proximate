@@ -599,13 +599,83 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-06 (d) — `physiologyValidation.mjs` never pinned per-patient traits, so its pharmacology bands were partly measuring the patient. Pinned; the exponent choice above then confirmed for a real reason, and two failures separated into pre-existing vs. mine.
+
+- **The defect, and it is the harness, not the engine.** `patient.js` draws six
+  traits at construction (`baroreflexGain`, `metabolicRate`,
+  `painSensitivity`, `vascularReactivity`, `renalReserve`,
+  `pulmonaryReserve`). `metabolicRate`/`pulmonaryReserve` move resting PaCO2
+  and the ventilatory response to a depressant DIRECTLY, and this suite's
+  `makePatient()` pinned none of them, so every patient it built was a
+  different patient. MEASURED: the same single 4 mg morphine dose, same code,
+  gave a peak PaCO2 rise of **6.40 mmHg** on one run and **3.93** on another.
+  2b's own "3 doses > 1 dose but SUB-linear" ratio builds a FRESH patient per
+  arm, so it was reading that spread as stacking behavior. `mechanismWiring.mjs`
+  hit this exact defect and fixed it with `pinTraitsNeutral()`; the fix was
+  never carried across. Both fixtures (`makePatient`, `makePregnant`) now pin
+  neutral — pinned, not seeded, so a band stays a statement about a mechanism.
+  Two identical invocations afterward are byte-identical, and the standalone
+  probe now agrees with the suite digit-for-digit (morphine1 5.76, ratio 1.97,
+  fentanyl 4.70), which is the cross-check that makes probe rows trustworthy.
+- **MY OWN MEASUREMENT ERROR, recorded because it is the lesson-8 shape
+  exactly.** The (c) sweep's hook sat INSIDE `overdoseTail`, so it also replaced
+  `SED_OD_EXP` (4) at the sedation call site: every row measured a model that
+  was never shipped. Scoping the hook to the respiratory call site reproduced
+  the suite's 2.95, which is how the trait defect above was found. Note the
+  honest ordering: the contamination turned out to matter LITTLE (scoped-but-
+  unpinned still gave ~2.96 at exp 16), and trait noise was the load-bearing
+  cause. Both were real defects in how I was measuring; I fixed the first and
+  it did not explain the result.
+- **The exponent, re-swept on the deterministic harness, one child process per
+  row.** 16 stands, and now for a stated reason rather than a coincidence:
+
+  | exp | morphine 1 dose | 3-dose ratio (band 1.15-2.2) | fentanyl 1 mg |
+  |---|---|---|---|
+  | 8  | 8.77 | **2.96 FAIL** | PaCO2 +68.9, rr 8.5, SpO2 6 |
+  | 12 | 6.65 | **2.34 FAIL** | +39.8, rr 9.3, SpO2 74 |
+  | 16 | 5.76 | **1.97 PASS** | +30.6, rr 9.8, SpO2 85 |
+  | 24 | 5.46 | **1.61 PASS** | +22.2, rr 10.4, SpO2 91 |
+
+  16 is the steepest-overdose value that still satisfies the stacking band; 24
+  softens the overdose toward a non-event, 8 and 12 fail stacking. The band was
+  again not widened.
+- **`[DRAWN OVERDOSE ESCALATES]` thresholds re-measured**, since the overdose
+  side encoded exp-8 numbers the exp-16 model does not meet: sup 0.444 (was
+  asserted > 0.45), SpO2 89-90 (< 88), rr 11.1 (< 11). Now > 0.40 / < 93 / < 12,
+  set at the measured threshold with a small margin, therapeutic side untouched
+  (sup 0.119, SpO2 98, rr 14.7) so the separation each assertion tests is
+  unchanged.
+- **Two failures separated by evidence, not by assertion.** 2c's `blockade
+  DECAYS (naloxone is shorter-acting)` (0.08 vs [0.15..1]) is **PRE-EXISTING**:
+  `--section=2c` on `62a88a2`, the commit before this session's first change,
+  fails identically with all five rows byte-identical. It was invisible because
+  the 2026-10-06 full-suite pass ran `mechanismWiring`/`scenarioSweep`, not
+  `physiologyValidation`. Worth its own look: blockade sits at 0.90 and only
+  decays to 0.82 over 140 minutes, because it is a RATIO of two concentrations
+  and the morphine is clearing alongside the naloxone. 2h's midazolam
+  moderate-seizure failure is the already-filed calibration-drift item,
+  unchanged by pinning.
+- **Verification.** Pinned `physiologyValidation`: 2b **11/0** (the ratio that
+  started this now passes at 1.97), 2c 4/1 (the pre-existing row), 2d **8/0**,
+  2h 12/1 (the filed row) — 35 passed, 2 failed, both pre-existing with
+  evidence. `mwSections` for the opioid, antagonist, dual-curve, differential-
+  tolerance, ketamine, miosis, artificial-airway, airway-fluid, upper-airway and
+  drawn-overdose sections: **30 passed, 1 failed**, the failure being the
+  documented croup compensatory-tachypnea near-miss (0.2896 vs >= 0.3), which
+  reads no field this work touches. All four `[DRAWN OVERDOSE ESCALATES]`
+  assertions pass. `eslint` clean on both touched scripts. NOT re-run: the full
+  `mechanismWiring.mjs` and `scenarioSweep.mjs` (no engine code changed in this
+  entry's work — both edits are to scripts — but trait pinning can move any
+  physiologyValidation band set against an unpinned patient, so the sections
+  outside 2b/2c/2d/2h are unconfirmed against it).
+
 ### 2026-10-06 (c) — Overdose-tail exponent recalibrated 8 -> 16 against a real regression it caused
 
 - **The regression, mine:** `physiologyValidation.mjs` 2b's "3 doses > 1 dose but SUB-linear" check (morphine, band 1.15-2.2, 1.33 when written) read **2.84** with `RESP_OD_EXP = 8`. That check guards against effects summing instead of saturating; saturation did hold (2.84 < 3.0) but the tail was far too steep where the band is calibrated. The 2026-10-05 (c) entry's claim that therapeutic doses "move little" was true for single doses only and did not hold for stacking.
-- **Swept all three live constraints together** (2b's own harness verbatim: 70 kg healthy, peak PaCO2 over 60 min), not the overdose alone: exp 8 ratio 2.84 FAIL / 12 2.41 FAIL / **16 1.98 PASS** / 24 1.47 PASS. Chose 16 over 24 because the 1 mg fentanyl overdose stays unambiguously severe (rr 9.9, SpO2 84, PaCO2 +31) where 24 softens it (rr 10.6, SpO2 90). Therapeutic at 16: morphine 5.46, fentanyl 50 mcg 5.17, both mid-band.
+- **Swept all three live constraints together** (2b's own harness, 70 kg healthy, peak PaCO2 over 60 min), not the overdose alone. **NUMBERS IN THIS BULLET SUPERSEDED — the sweep behind them was run on an unpinned fixture; see the 2026-10-06 (d) entry for the deterministic re-measurement, which confirms the same choice (16) for a verified reason.** As originally recorded: exp 8 ratio 2.84 FAIL / 12 2.41 FAIL / 16 1.98 PASS / 24 1.47 PASS. Chose 16 over 24 because the 1 mg fentanyl overdose stays unambiguously severe where 24 softens it.
 - **Noted in-code:** the single-dose rise is NOT monotonic in the exponent (5.46 at 16, 5.98 at 24) because rate and depth both move and the peak is found over a 60-min window with CO2 feedback live. Pick this by measurement, never by extrapolating the trend.
 - The test band was deliberately NOT widened: the band has a documented rationale, the coefficient is the invented quantity. `SED_OD_EXP` (sedation, 4) untouched.
-- Verification (2b/2c/2d/2h plus the opioid, airway, sedation and seizure mwSections) was running at commit time. The midazolam moderate-seizure failure in 2h is pre-existing and unchanged (100% of ticks, already filed in the queue).
+- Verification was running at commit time and then DISAGREED with this entry: the real 2b run reported the ratio at 2.95, not 1.98. That disagreement was real and is resolved in the 2026-10-06 (d) entry below. The midazolam moderate-seizure failure in 2h is pre-existing and unchanged (100% of ticks, already filed in the queue).
 
 ### 2026-10-06 (b) — Opioids slow the respiratory rate (bradypnea), other depressants shallow the breath
 
@@ -7954,6 +8024,8 @@ plausible but not fitted to trial data.
     - **Drips.** Pump state stores a rate in mL/h plus the drawn bag concentration; mcg/kg/min is derived from the patient's weight; vasopressin is in U/min. This needs the continuous-infusion input (brief section 20).
     - **Bookkeeping.** `s.given` and the `max` cap should track cumulative amount in real units, not dose count; the confirmation line and log should show the resolved amount ("0.1 mg/kg = 2.0 mg").
     - **Dependency (do not skip).** Dose errors only matter if the engine stops saturating: pressor gain and offset, per-drug-id Emax drugs and receptor-ceiling drugs all hide a 10x error today (brief sections 25 to 27), so the pressor/PK recalibration and the weight-aware dosing work must land before this minigame can teach anything about overdose or underdose. Front-end checks apply (`vite build`, `eslint`, save compatibility for `s.given` shape changes, a Playwright click-through of the draw-up flow); the physiology suites must be re-run when `amount` handling changes.
+
+60. **NEW, filed 2026-10-06 — `physiologyValidation.mjs` 2c's `blockade DECAYS (naloxone is shorter-acting)` has been failing for an unknown length of time, and it is NOT a regression from any recent work.** Measured 0.08 against a required [0.15..1]. Confirmed PRE-EXISTING by checking out `62a88a2` (before the 2026-10-05/06 overdose, draw-up and vagal work) and running `--section=2c` there: identical failure, all five rows byte-identical. It went unnoticed because recent full-suite passes ran `mechanismWiring.mjs`/`scenarioSweep.mjs`, not `physiologyValidation.mjs`. The shape of it: after 3 morphine doses and one naloxone_iv, `pat.opioidBlockade` peaks at 0.90 and is still 0.82 after a further 140 minutes. `opioidBlockade` is DERIVED each tick as `1 - intensity/unblocked`, i.e. a RATIO of occupancy at the antagonist-shifted EC50 to occupancy at the base EC50 (`pk.js`), so it does not fall as naloxone clears if the agonist is clearing alongside it — the ratio can stay high while BOTH concentrations drop. Three candidate readings, not yet separated: (a) the engine is right and the assertion is measuring the wrong quantity (the clinically meaningful thing, re-narcotization, has its own assertion and PASSES at 0.02); (b) naloxone's own `kel` is too slow relative to morphine's; (c) the ratio should be compared against a fixed reference rather than the live agonist concentration. Decide by instrumenting both concentrations across that 140 minutes before touching either the assertion or the kinetics — and note that whichever way it goes, the 2026-09-13 queue item about morphine/midazolam documented-calibration drift may share a root cause with it.
 
 ## 7. Hard-won lessons
 
