@@ -64,7 +64,20 @@ export const NALOXONE_KI = 0.0000262;
 // values: measured so each drug's documented therapeutic effect moves little
 // while a 10-20x dose reaches apnea-range hypoventilation and unconsciousness.
 export const RESP_SUPP_MAX = 0.95;     // the same clamp respDriveSuppression already had
-export const RESP_OD_EXP = 8;
+// RESP_OD_EXP 8 -> 16, chosen by sweeping all three live constraints at once
+// rather than the overdose alone (physiologyValidation 2b's own harness, 70 kg
+// healthy, peak PaCO2 over 60 min): at 8 the 3-dose morphine stacking ratio was
+// 2.84 against that section's 1.15-2.2 band (the guard against effects summing
+// instead of saturating -- it still saturated, 2.84 < 3.0, but the curve was too
+// steep where the band is calibrated). Measured: exp 8 ratio 2.84 FAIL, 12 2.41
+// FAIL, 16 1.98 PASS, 24 1.47 PASS. 16 over 24 because the 1 mg fentanyl
+// overdose stays unambiguously severe (rr 9.9, SpO2 84, PaCO2 +31) where 24
+// softens it (rr 10.6, SpO2 90). Single therapeutic doses land mid-band at 16
+// (morphine 5.46, fentanyl 50 mcg 5.17). The single-dose rise is not monotonic
+// in the exponent (5.46 at 16, 5.98 at 24) because rate and depth both move and
+// the peak is found over a 60-minute window with CO2 feedback live, so pick this
+// by measurement, not by extrapolating the trend.
+export const RESP_OD_EXP = 16;
 export const SED_OD_EXP = 4;
 export const overdoseTail = (coef, occ, max, exp) =>
   coef * occ + Math.max(0, max - coef) * Math.pow(Math.max(0, Math.min(1, occ)), exp);

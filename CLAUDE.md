@@ -599,6 +599,14 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-06 (c) — Overdose-tail exponent recalibrated 8 -> 16 against a real regression it caused
+
+- **The regression, mine:** `physiologyValidation.mjs` 2b's "3 doses > 1 dose but SUB-linear" check (morphine, band 1.15-2.2, 1.33 when written) read **2.84** with `RESP_OD_EXP = 8`. That check guards against effects summing instead of saturating; saturation did hold (2.84 < 3.0) but the tail was far too steep where the band is calibrated. The 2026-10-05 (c) entry's claim that therapeutic doses "move little" was true for single doses only and did not hold for stacking.
+- **Swept all three live constraints together** (2b's own harness verbatim: 70 kg healthy, peak PaCO2 over 60 min), not the overdose alone: exp 8 ratio 2.84 FAIL / 12 2.41 FAIL / **16 1.98 PASS** / 24 1.47 PASS. Chose 16 over 24 because the 1 mg fentanyl overdose stays unambiguously severe (rr 9.9, SpO2 84, PaCO2 +31) where 24 softens it (rr 10.6, SpO2 90). Therapeutic at 16: morphine 5.46, fentanyl 50 mcg 5.17, both mid-band.
+- **Noted in-code:** the single-dose rise is NOT monotonic in the exponent (5.46 at 16, 5.98 at 24) because rate and depth both move and the peak is found over a 60-min window with CO2 feedback live. Pick this by measurement, never by extrapolating the trend.
+- The test band was deliberately NOT widened: the band has a documented rationale, the coefficient is the invented quantity. `SED_OD_EXP` (sedation, 4) untouched.
+- Verification (2b/2c/2d/2h plus the opioid, airway, sedation and seizure mwSections) was running at commit time. The midazolam moderate-seizure failure in 2h is pre-existing and unchanged (100% of ticks, already filed in the queue).
+
 ### 2026-10-06 (b) — Opioids slow the respiratory rate (bradypnea), other depressants shallow the breath
 
 - **Problem:** one shared split (rate x(1-0.75s), depth x(1-0.5s)) applied to every respiratory depressant, so a 1 mg fentanyl overdose still breathed ~13/min while hypoxic. Opioids act on the preBotzinger rhythm generator and slow the rate disproportionately; benzodiazepines mostly reduce depth (Pattinson, Br J Anaesth 2008).
