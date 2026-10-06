@@ -599,6 +599,12 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-06 — Full suites on the 2026-10-05 (c)-(f) work (commit b4cf323)
+
+- `mechanismWiring.mjs`: the full run hit the 2-hour background limit after 147 of 160 sections (765 passed); the remaining 14 sections were run with `mwSections.mjs` (48 passed, 0 failed). Failures across all sections: the 6 already-documented near-misses only (croup paco2, PACs HR stdev, vo2Demand control match, `severeMetabolicAcidosis` secondary hyperkalemia k=5.97, untreated neurogenic shock sbp drift, tracheostomy vt margin). The BVM trio did not fail this run.
+- `scenarioSweep.mjs`: **188 scenarios, 23,095,050 checks, 940 failed** = 188 x 5, every one the pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s defect (935 at 187 scenarios before; one scenario was added since).
+- On this machine the full `mechanismWiring.mjs` takes over 2 hours; run it in two halves, or run the tail with `mwSections.mjs`.
+
 ### 2026-10-05 (f) — Hypertension-side vagal limb reads its own reference (resting vagal saturation fixed)
 
 - **Found by the full suite:** `[VAGAL MANEUVER]` failed (parasympathetic 0.943 -> 0.950, no headroom). Cause: the f2c5e17 hypertension-side vagal gain (2.0) read `baroSetpoint`, which starts at the constructor MAP (93 for most patients) while the engine's settled MAP is higher (abdPain ~102, svt ~110). That gap read as an acute pressor rise for the whole call: resting parasympathetic 0.85 (abdPain), 0.92 (svt), 0.95 clamp (hypertensive urgency, HR 72 -> 66).
