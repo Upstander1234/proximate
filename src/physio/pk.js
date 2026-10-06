@@ -1212,6 +1212,7 @@ export function updateDrugs(pat, s, dt) {
     // already declared but which nothing in the engine read — opioid and
     // sedative respiratory failure was previously faked with a fixed rr offset.
     pat.respDriveSuppression = 0;
+    pat.opioidRespSupp = 0;   // the opioid share of respDriveSuppression (rate-weighted in respiratory.js)
     // Reset for this tick's re-accumulation in the per-drug-instance loop
     // below (the nmdaSuppression read above already consumed the PRIOR
     // tick's value — same lag idiom as sedationDepth just below).
@@ -2530,6 +2531,7 @@ export function updateDrugs(pat, s, dt) {
         let supp = overdoseTail(drugDef.respiratoryDepression, respIntensity, RESP_SUPP_MAX, RESP_OD_EXP);
         if (drugDef.class === "opioid" && !dr.pk) supp *= (1 - pat.opioidBlockade);
         pat.respDriveSuppression = Math.min(0.95, pat.respDriveSuppression + supp);
+        if (drugDef.class === "opioid") pat.opioidRespSupp = Math.min(0.95, pat.opioidRespSupp + supp);
       }
       if (drugDef.class === "opioid") {
         pat.opioidMiosis = Math.min(1, pat.opioidMiosis + intensity * (dr.pk ? 1 : (1 - pat.opioidBlockade)));

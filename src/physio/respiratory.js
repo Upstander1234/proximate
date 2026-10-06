@@ -144,7 +144,20 @@ export function updateVentilation(pat, dt) {
     rr += (pat.sympathetic - 0.3) * 5 * driveGain;
     // Suppressed drive lowers the resting rate itself toward apnea, and shallows
     // each breath — opioids reduce both frequency AND tidal volume.
-    rr *= (1 - 0.75 * driveSupp);
+    // OPIOIDS SLOW THE RATE; OTHER DEPRESSANTS SHALLOW THE BREATH. Opioids act
+    // on mu receptors in the preBotzinger complex, the inspiratory rhythm
+    // generator, so they slow breathing disproportionately with tidal volume
+    // relatively preserved; benzodiazepines and sedatives mostly reduce depth
+    // (Pattinson, Br J Anaesth 2008). One shared split (rate x(1-0.75s), depth
+    // x(1-0.5s)) left a large fentanyl overdose breathing at 13/min while
+    // hypoxic. The opioid share (pk.js opioidRespSupp) now takes rate
+    // 1.1/depth 0.15, chosen so the product matches the old split at small
+    // suppression (minute ventilation 1-1.25s either way), so therapeutic
+    // PaCO2 calibrations hold and only large doses diverge. Chronic CO2
+    // blunting and sedatives keep the old split.
+    const opioidSupp = Math.max(0, Math.min(driveSupp, pat.opioidRespSupp || 0));
+    const otherSupp = driveSupp - opioidSupp;
+    rr *= Math.max(0.05, 1 - 0.75 * otherSupp - 1.1 * opioidSupp);
     if (pat.drugPain > 0) rr += pat.drugPain * 0.1;
 
     // Paralysis: vt forced to 0, and display rr = 0
@@ -595,7 +608,7 @@ export function updateVentilation(pat, dt) {
     // patient actually generates.
     // Neuromuscular blockade removes the muscle's ability to generate pressure
     // at all, independently of drive — a paralysed patient is still trying.
-    const pMuscle = -effortDemand * (1 - 0.5 * driveSupp)
+    const pMuscle = -effortDemand * (1 - 0.5 * otherSupp - 0.15 * opioidSupp)
                     * (1 - 0.65 * pat.respMuscleFatigue)
                     * (1 - Math.max(0, Math.min(1, pat.neuromuscularBlock || 0)));
 

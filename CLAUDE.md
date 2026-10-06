@@ -599,6 +599,13 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-06 (b) — Opioids slow the respiratory rate (bradypnea), other depressants shallow the breath
+
+- **Problem:** one shared split (rate x(1-0.75s), depth x(1-0.5s)) applied to every respiratory depressant, so a 1 mg fentanyl overdose still breathed ~13/min while hypoxic. Opioids act on the preBotzinger rhythm generator and slow the rate disproportionately; benzodiazepines mostly reduce depth (Pattinson, Br J Anaesth 2008).
+- **Fix:** `pk.js` tracks the opioid share of suppression (`pat.opioidRespSupp`, reset each tick with `respDriveSuppression`); `respiratory.js` gives it rate 1.1 / depth 0.15 (chosen so minute ventilation matches the old split at small suppression, 1-1.25s), while chronic CO2 blunting and sedatives keep the old split.
+- **Measured:** therapeutic unchanged (fentanyl 50 mcg and morphine 4 mg PaCO2 +1.4 in the abdPain probe, +1.3 before). Fentanyl 1 mg rr 16 -> 9.4, SpO2 47, PaCO2 +53; morphine 40 mg rr 9.0, SpO2 16; midazolam 50 mg rr 14.4, SpO2 96 (depth-dominant); `od` scenario rr 10, SpO2 85. physiologyValidation 2b (before this change, with the overdose tail): morphine 4 mg PaCO2 rise 6.93 (band 4-10; the documented 3.83 failure is gone), fentanyl 50 mcg 5.25.
+- New `[DRAWN OVERDOSE ESCALATES]` assertion: opioid overdose bradypneic, benzodiazepine overdose not. Verification (physiologyValidation 2b-2d/2h on the new code, opioid/airway mwSections) was still running at commit time.
+
 ### 2026-10-06 — Full suites on the 2026-10-05 (c)-(f) work (commit b4cf323)
 
 - `mechanismWiring.mjs`: the full run hit the 2-hour background limit after 147 of 160 sections (765 passed); the remaining 14 sections were run with `mwSections.mjs` (48 passed, 0 failed). Failures across all sections: the 6 already-documented near-misses only (croup paco2, PACs HR stdev, vo2Demand control match, `severeMetabolicAcidosis` secondary hyperkalemia k=5.97, untreated neurogenic shock sbp drift, tracheostomy vt margin). The BVM trio did not fail this run.

@@ -9036,13 +9036,13 @@ console.log("\n[DRAWN OVERDOSE ESCALATES]");
   // high-occupancy term that carries the effect toward apnea/unconsciousness.
   const worst = (id, amount) => {
     const s = { scen: "abdPain", t: 0, doses: [], given: {}, activePatientId: null };
-    let sup = 0, spo2 = 100, sed = 0, uncon = false;
+    let sup = 0, spo2 = 100, sed = 0, uncon = false, rr = 99;
     for (let t = STEP; t <= 780; t += STEP) {
       s.t = t; if (t === 180) s.doses.push({ id, at: t, amount, route: "IV" }); physio(s);
       const p = activePatient(s); if (t === STEP) pinTraitsNeutral(p);
-      if (t > 180) { sup = Math.max(sup, p.respDriveSuppression || 0); spo2 = Math.min(spo2, p.sao2 ?? 100); sed = Math.max(sed, p.sedationDepth || 0); uncon ||= p.consciousness === "unconscious" || p.consciousness === "coma"; }
+      if (t > 180) { sup = Math.max(sup, p.respDriveSuppression || 0); spo2 = Math.min(spo2, p.sao2 ?? 100); sed = Math.max(sed, p.sedationDepth || 0); uncon ||= p.consciousness === "unconscious" || p.consciousness === "coma"; rr = Math.min(rr, p.rr); }
     }
-    return { sup, spo2, sed, uncon };
+    return { sup, spo2, sed, uncon, rr };
   };
   const fT = worst("fentanyl", 0.05), fOD = worst("fentanyl", 1);
   const ok1 = fT.sup > 0.08 && fT.sup < 0.16 && fT.spo2 > 95 && fOD.sup > 0.45 && fOD.spo2 < 88;
@@ -9058,6 +9058,13 @@ console.log("\n[DRAWN OVERDOSE ESCALATES]");
   ok2 ? pass++ : fail++;
   if (!ok2) failures.push(`midazolam 5 mg should not render unconscious and 50 mg should, got sed ${mT.sed.toFixed(2)} (${mT.uncon}) vs ${mOD.sed.toFixed(2)} (${mOD.uncon})`);
   console.log(`  ${ok2 ? "PASS" : "FAIL"}  ${"midazolam 5 mg drowsy at most, 50 mg unconscious".padEnd(46)} sed ${mT.sed.toFixed(2)} -> ${mOD.sed.toFixed(2)}`);
+  // Opioids slow the RATE (preBotzinger); a benzodiazepine overdose mostly
+  // shallows the breath. Two-sided: the opioid overdose must be bradypneic and
+  // the benzodiazepine overdose must not be, so a shared rate term fails it.
+  const ok4 = fOD.rr < 11 && fT.rr > 13 && mOD.rr > 13;
+  ok4 ? pass++ : fail++;
+  if (!ok4) failures.push(`opioid overdose should slow the rate and a benzodiazepine overdose should not, got rr fentanyl 0.05 ${fT.rr.toFixed(1)}, 1 mg ${fOD.rr.toFixed(1)}, midazolam 50 mg ${mOD.rr.toFixed(1)}`);
+  console.log(`  ${ok4 ? "PASS" : "FAIL"}  ${"opioid overdose bradypneic, benzo overdose not".padEnd(46)} rr ${fT.rr.toFixed(1)} -> ${fOD.rr.toFixed(1)}, midazolam 50 mg ${mOD.rr.toFixed(1)}`);
 }
 
 console.log("\n" + "=".repeat(74));
