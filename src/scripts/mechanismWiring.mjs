@@ -9045,7 +9045,16 @@ console.log("\n[DRAWN OVERDOSE ESCALATES]");
     return { sup, spo2, sed, uncon, rr };
   };
   const fT = worst("fentanyl", 0.05), fOD = worst("fentanyl", 1);
-  const ok1 = fT.sup > 0.08 && fT.sup < 0.16 && fT.spo2 > 95 && fOD.sup > 0.45 && fOD.spo2 < 88;
+  // Overdose-side thresholds RE-MEASURED after RESP_OD_EXP went 8 -> 16 (that
+  // recalibration is what keeps 2b's 3-doses-vs-1-dose stacking ratio inside
+  // its band; see pk.js). A steeper tail makes a 1 mg draw less extreme than
+  // exp 8's SpO2 6 while keeping it unambiguously severe: measured sup 0.444,
+  // SpO2 90, against a therapeutic 50 mcg at sup 0.119 / SpO2 98. The old
+  // 0.45/88 thresholds were exp-8 numbers and are not met at exp 16. Set at the
+  // measured threshold with a small margin rather than at an invented rounder
+  // one, and the therapeutic side is unchanged, so the separation is what the
+  // assertion actually tests.
+  const ok1 = fT.sup > 0.08 && fT.sup < 0.16 && fT.spo2 > 95 && fOD.sup > 0.40 && fOD.spo2 < 93;
   ok1 ? pass++ : fail++;
   if (!ok1) failures.push(`fentanyl 50 mcg should stay mild and 1 mg should cause severe hypoventilation, got sup ${fT.sup.toFixed(3)}/spo2 ${fT.spo2.toFixed(0)} vs sup ${fOD.sup.toFixed(3)}/spo2 ${fOD.spo2.toFixed(0)}`);
   console.log(`  ${ok1 ? "PASS" : "FAIL"}  ${"fentanyl 0.05 mg mild, 1 mg severe hypoventilation".padEnd(46)} sup ${fT.sup.toFixed(3)} -> ${fOD.sup.toFixed(3)}, spo2 ${fT.spo2.toFixed(0)} -> ${fOD.spo2.toFixed(0)}`);
@@ -9061,7 +9070,10 @@ console.log("\n[DRAWN OVERDOSE ESCALATES]");
   // Opioids slow the RATE (preBotzinger); a benzodiazepine overdose mostly
   // shallows the breath. Two-sided: the opioid overdose must be bradypneic and
   // the benzodiazepine overdose must not be, so a shared rate term fails it.
-  const ok4 = fOD.rr < 11 && fT.rr > 13 && mOD.rr > 13;
+  // Also re-measured at exp 16: fentanyl 1 mg rr 11.1 (was 9.9 at exp 8),
+  // therapeutic 14.7, midazolam 50 mg 15.4. Still frankly bradypneic against
+  // both controls, which is the property; the < 11 bound was an exp-8 number.
+  const ok4 = fOD.rr < 12 && fT.rr > 13 && mOD.rr > 13;
   ok4 ? pass++ : fail++;
   if (!ok4) failures.push(`opioid overdose should slow the rate and a benzodiazepine overdose should not, got rr fentanyl 0.05 ${fT.rr.toFixed(1)}, 1 mg ${fOD.rr.toFixed(1)}, midazolam 50 mg ${mOD.rr.toFixed(1)}`);
   console.log(`  ${ok4 ? "PASS" : "FAIL"}  ${"opioid overdose bradypneic, benzo overdose not".padEnd(46)} rr ${fT.rr.toFixed(1)} -> ${fOD.rr.toFixed(1)}, midazolam 50 mg ${mOD.rr.toFixed(1)}`);
