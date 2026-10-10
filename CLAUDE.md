@@ -123,7 +123,32 @@ observable at the far end of the chain, not the field you just wrote.
 
 ---
 
-## 2. Current state — Opioid/sedative PK cluster closed out: items 63 (morphine keo) and 66 (ketamine tachyphylaxis), as numbered when picked up, both INVESTIGATED with no code change, write-up corrected after review
+## 2. Current state — Overdose-tail exponent confirmed at 16 on a now-deterministic `physiologyValidation` harness; both of that suite's remaining failures separated into pre-existing with evidence
+
+**CURRENT VERIFICATION BASELINE (HEAD = the overdose-escalation /
+opioid-bradypnea / draw-up / vagal-reference work plus this session's
+trait-pinning fix; see section 3's 2026-10-06 (d) entry for the full
+writeup, including two measurement errors of my own that the numbers
+below corrected):**
+
+| suite | result | notes |
+|---|---|---|
+| `mechanismWiring.mjs` | **800 passed, 6 failed** | run in two parts (the container restarted 87 sections in; the remaining 72 were run through `mwSections.mjs`, the documented approach). All 6 failures are already-documented pre-existing near-miss/flake classes: the Tzivoni magnesium/torsades 7/10, the PACs HR-variance stdev, the vo2Demand control match, `severeMetabolicAcidosis` secondary hyperkalemia k=5.968, untreated-neurogenic-shock sbp drift 0.8, and the `accidentalHypothermia` rewarming-vs-bradycardia 5/10. Confirmed by content: NONE mentions an overdose/fentanyl/midazolam/opioid/respiratory/sedation/vagal/pericardial field. All 4 `[DRAWN OVERDOSE ESCALATES]` assertions pass. |
+| `scenarioSweep.mjs` | **188 scenarios, 23,095,050 checks, 940 failed** | byte-identical to the documented baseline (940 = 188 x 5). Confirmed by grep that only the five pre-existing `rvEdv`/`rvEsv`/`rvSv`/`rvEf`/`pvrWood`-undefined-at-t=2s field names appear anywhere in the failure list. |
+| `physiologyValidation.mjs` 2b/2c/2d/2h | **35 passed, 2 failed** | 2b **11/0** (including the 3-doses-vs-1-dose stacking ratio at 1.97, band 1.15-2.2 — the failure that drove this session), 2c 4/1, 2d **8/0**, 2h 12/1. Both failures are pre-existing with evidence, not assertion: 2c's `blockade DECAYS` fails identically on `62a88a2` (before any of this work), and 2h's midazolam moderate-seizure row is the already-filed calibration-drift item. Sections outside 2b/2c/2d/2h are NOT re-run against the trait pinning and are unconfirmed. |
+| `npx eslint src/scripts/physiologyValidation.mjs src/scripts/mechanismWiring.mjs` | clean | zero findings |
+
+**The harness fix is the real deliverable.** `physiologyValidation.mjs`
+never pinned the six per-patient traits, so the same single 4 mg morphine
+dose measured 6.40 mmHg of PaCO2 rise on one run and 3.93 on another, and
+2b's stacking ratio was comparing two independently-traited patients.
+Both fixtures now pin neutral; two identical invocations afterward are
+byte-identical. Treat any `physiologyValidation` band set before this as
+possibly calibrated against trait noise.
+
+---
+
+## 2b. Prior baseline — Opioid/sedative PK cluster closed out: items 63 (morphine keo) and 66 (ketamine tachyphylaxis), as numbered when picked up, both INVESTIGATED with no code change, write-up corrected after review
 
 **This session's own work was investigation-only — no functional code
 changed, comment-only.** A literature search (see section 3's newest
@@ -664,10 +689,18 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
   documented croup compensatory-tachypnea near-miss (0.2896 vs >= 0.3), which
   reads no field this work touches. All four `[DRAWN OVERDOSE ESCALATES]`
   assertions pass. `eslint` clean on both touched scripts. NOT re-run: the full
-  `mechanismWiring.mjs` and `scenarioSweep.mjs` (no engine code changed in this
-  entry's work — both edits are to scripts — but trait pinning can move any
-  physiologyValidation band set against an unpinned patient, so the sections
-  outside 2b/2c/2d/2h are unconfirmed against it).
+  `mechanismWiring.mjs` and `scenarioSweep.mjs` at the time this entry was
+  first written. **Both have since been run at HEAD and are in section 2's
+  table**: `scenarioSweep.mjs` 188 scenarios / 23,095,050 checks / 940 failed,
+  byte-identical to the documented baseline with only the five pre-existing
+  t=2s RV-field names anywhere in the failure list; `mechanismWiring.mjs`
+  800 passed / 6 failed, every failure an already-documented near-miss class
+  and none of them mentioning a field this work touches. That run needed two
+  parts: the container restarted 87 sections in, and the remaining 72 were
+  computed from the source's own header list and run through `mwSections.mjs`
+  rather than restarting two hours from scratch. Still unconfirmed: the
+  physiologyValidation sections OUTSIDE 2b/2c/2d/2h, since trait pinning can
+  move any band that was set against an unpinned patient.
 
 ### 2026-10-06 (c) — Overdose-tail exponent recalibrated 8 -> 16 against a real regression it caused
 
