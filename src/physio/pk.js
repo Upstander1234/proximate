@@ -236,7 +236,7 @@ export const PK_PARAMS = {
   // ec50 0.05, giving Cmax 1.6 mg/L against a published 0.2-0.6 and Imax 0.969.
   // CLEARANCE CORRECTION: kel 0.05 gave CL 0.4 L/min; reported etomidate CL is 15-20 mL/kg/min (about 1.05-1.4 L/min).
   // kel 0.15 x v1 8 = 1.2 L/min, with ec50 0.3 to 0.25 so a 20 mg induction dose still reaches the unconscious threshold (sedationDepth peak 0.63, 528 s above 0.6, against 0.61 and 562 s before). The central volume (8 L, reported Vc about 4.45 L) is left for the weight-scaling pass.
-  etomidate: { kel: 0.15, k12: 2.0, k21: 0.5, v1: 8,    ec50: 0.25, renalFrac: 0.10, keo: 0.46 },  // t1/2ke0 ~1.5 min — induction agent// hepatic and plasma esterases
+  etomidate: { kel: 0.15, k12: 2.0, k21: 0.5, v1: 4.45, ec50: 0.45, renalFrac: 0.10, keo: 0.46 },  // t1/2ke0 ~1.5 min — induction agent. v1 4.45 L is the published central volume (Kaneda; brief s15), was 8 L; ec50 raised 0.25 -> 0.45 so the dose-response is unchanged (probe 20 mg: sedation peak 0.622, 452 s above 0.6 vs 456 s before) and now sits near Kaneda's 0.526 mg/L.// hepatic and plasma esterases
   // ROCURONIUM — central volume ~12 L, EC50 for neuromuscular block ~1.5 mg/L.
   // Was v1 0.3 L / ec50 0.05: Cmax came out at 81 mg/L, SIXTY-FOUR times the
   // published range, with Imax 0.999 — complete saturation, so a paralytic
