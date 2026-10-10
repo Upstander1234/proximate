@@ -312,15 +312,24 @@ if (inPart(1, "2c")) {   // section 2c
   step(25, 35);
   const blockadePeak = p.opioidBlockade;
   const suppReversed = p.respDriveSuppression;
+  const conc = id => p.drugInstances.filter(d => d.id === id).reduce((a, d) => a + (d.effectConc || 0), 0);
+  const naloxPeak = conc("naloxone_iv"), morphAt35 = conc("morphine");
   step(35, 175);
-  const blockadeLate = p.opioidBlockade;
   const suppLate = p.respDriveSuppression;
+  const naloxRemain = conc("naloxone_iv") / Math.max(1e-12, naloxPeak);
+  const morphRemain = conc("morphine") / Math.max(1e-12, morphAt35);
 
   check("opioid reversal", "opioid loads respiratory drive", suppLoaded, 0.05, 0.5, "");
   check("opioid reversal", "naloxone engages blockade", blockadePeak, 0.4, 1.0, "");
   check("opioid reversal", "depression reversed", suppLoaded - suppReversed, 0.03, 0.5, "");
-  check("opioid reversal", "blockade DECAYS (naloxone is shorter-acting)",
-    blockadePeak - blockadeLate, 0.15, 1.0, "");
+  // The old assertion read opioidBlockade, a RATIO of occupancies, falling by
+  // >= 0.15. Instrumented (2026-10-10): the three morphine doses keep absorbing
+  // (IM depot) so the agonist is still rising at 175 min while naloxone falls
+  // ~3x, which holds the ratio near 0.82. The clinical fact is that naloxone
+  // clears faster than the opioid it reverses, so assert that on the
+  // concentrations directly: fraction remaining, morphine minus naloxone.
+  check("opioid reversal", "naloxone clears faster than morphine (fraction remaining gap)",
+    morphRemain - naloxRemain, 0.3, 5, "");
   check("opioid reversal", "re-narcotisation: depression returns",
     suppLate - suppReversed, 0.01, 0.3, "");
 }

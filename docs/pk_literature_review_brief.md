@@ -961,3 +961,22 @@ Angiotensin II (done): new curve drug `angiotensinII` (AT1 coefficient 0.8) feed
 
 Decision (escalation gating): no protocol rule was added for the vasopressin, angiotensin II and hydrocortisone steps. The national guideline this protocol library follows names no step for them (see the note at the top of the shock rules in `national.js`), so adding them would put a source-less step into a sourced file. The escalation ladder is therefore a player decision, which is what the refractory septic shock scenario teaches; its debrief scores it. Open work that remains: curve-drug drips (vasopressin in U/min, phenylephrine), wrong-vial and dilution failure modes, a hypovolemic-newborn saline producer, Valsalva technique quality, the etomidate and fentanyl central volumes, and the rocuronium age-band table.
 Angiotensin II drug entry renamed to 'Angiotensin II (Giapreza)' to distinguish it from the endogenous RAAS state; still a single-dose form until curve drugs can be infused.
+
+## 32. Status update (2026-10-10) and corrections to the open list
+
+Corrections to section 31's "Open" list, checked against the tree (CLAUDE.md section 3, 2026-10-05 entries): these are already DONE and should not be re-planned: wrong-concentration vial variant, dilution and push-dose epinephrine mixing, wrong-vial use-anyway (`s.medErrors`), the real-amount `max` cap (checked on the pre-minigame warning screen and in the give path, with a "Give it anyway" override), curve-drug drips (vasopressin in U/min, phenylephrine), the hypovolemic-newborn saline producer (`nbSaline`, TP 1216-P step 15 rule), Valsalva technique quality (`ValsalvaMinigame`), and the pediatric dose-sanity flag (a dose over 1.5x the weight-based dose). The free draw-up (any vial, any amount, matched by molecule) replaced the ordered mode for the player.
+
+Done this session:
+- **Etomidate central volume** re-anchored: `v1` 8 to 4.45 L (Kaneda, section 15), `ec50` 0.25 to 0.45 mg/L so the dose-response is unchanged. Probe, 20 mg induction at 74 kg: sedation peak 0.622 both ways, 452 s above 0.6 (456 s before). The new `ec50` is also nearer Kaneda's 0.526 mg/L. `physiologyValidation` 2b 11/0 (etomidate 20 mg PaCO2 rise 8.21, band 4 to 12); weight-aware PK, drawn-overdose and sedation sections 11/11.
+- **Fentanyl central volume** NOT changed: the brief has no bolus-appropriate Vc (section 11.3's ICU 14 to 25 L/kg figure is an infusion artifact). Needs a primary-paper three-compartment fit before `v1` 13 L is touched.
+- **Overdose-tail exponent** `RESP_OD_EXP` confirmed at 16 on a deterministic harness; `physiologyValidation.mjs` now pins the six per-patient traits (`PINNED_TRAITS`), which had been making the 3-dose stacking ratio a comparison of two random patients.
+- **Naloxone reversal check (2c)**: the old `blockade DECAYS` assertion read `opioidBlockade`, a ratio of occupancies. Instrumented: naloxone effect-site concentration falls about 3x from 30 to 175 min (terminal half-life about 90 min, the long end of the documented 30 to 90) while three IM-absorbed morphine doses keep the agonist concentration rising to 60 to 90 min, which holds the ratio near 0.82. The engine is consistent; the assertion measured the wrong quantity. It now compares fraction remaining (morphine minus naloxone, measured 0.58, band 0.3 to 5). 2c 5/5.
+
+Still open (verified against the tree):
+- Rocuronium numeric age-band table (label not yet retrieved; volume-only maturation is implemented without it).
+- Fentanyl `v1` anchor (above).
+- Offset lag after a pressor drip stops (reflex derivative term; lowering its gain also changes hemorrhage compensation).
+- Pediatric rules in `laCounty.js` and `sanDiegoCounty.js`, and the baseline monitoring port from `national.js`.
+- Morphine and midazolam documented-calibration drift (the 2h midazolam moderate-seizure row still fails; morphine now passes in 2b at 5.76).
+- Saline flush is modeled for adenosine only; infusion delivery lag; a fentanyl/ketamine-style three-compartment fit if the redistribution phase matters in a call.
+- Verification owed locally: full `mechanismWiring.mjs`, `scenarioSweep.mjs`, `curveDrugAudit.mjs`, and the physiologyValidation sections outside 2b/2c/2d/2h (never re-run against trait pinning).
