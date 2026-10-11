@@ -640,7 +640,7 @@ if (inPart(2, "2g")) {   // section 2g
 // These are stochastic (onset is probabilistic), so the bounds are wide and the
 // discriminating measurements are taken in a late window once behaviour settles.
 // ---------------------------------------------------------------------------
-function seizureRun(hold, doses = []) {
+function seizureRun(hold, doses = [], win = [15 * 60, Infinity]) {
   const p = makePatient({ age: 30, sex: "female" });
   const s = S();
   for (const d of doses) s.doses.push(d);
@@ -674,7 +674,7 @@ function seizureRun(hold, doses = []) {
     p.update(STEP / 60, s);
     if (p.seizing) vo2Sz = Math.max(vo2Sz, p.vo2Demand);
     else vo2Rest = Math.max(vo2Rest, p.vo2Demand);
-    if (T > 15 * 60) { lateN++; if (p.seizing) lateSz++; }
+    if (T > win[0] && T <= win[1]) { lateN++; if (p.seizing) lateSz++; }
   }
   return { latePct: lateSz / Math.max(1, lateN) * 100, vo2Sz, vo2Rest };
 }
@@ -701,9 +701,25 @@ if (inPart(2, "2h")) {   // section 2h
   // MIDAZOLAM TERMINATES A MODERATE SEIZURE. Two-sided against the two ways this
   // has already failed: it read 95% when termination tested for exactly zero,
   // and it would read 0% at every dose if the drug simply abolished seizures.
+  // MEASURED WINDOWS (10 mg at t=300, glucose held at 35, pinned traits): the
+  // seizure stops by ~300 s after the dose and stays off through ~14 min, then
+  // RELAPSES (seizing at 15 min and after) because the GABA-A tachyphylaxis
+  // accumulator (gabaDesens, 0.11 at 5 min, 0.26 at 15 min) erodes the effect
+  // while the hypoglycemic drive is untouched. This assertion was written
+  // before that mechanism existed and measured a late window with a single
+  // 5 mg dose (anticonvulsant now peaks at 0.36 against the 0.434 implied by
+  // the old 0.534 comment, because desensitization takes ~11% off within five
+  // minutes), which left suppressed drive just above the 0.15 sustain
+  // threshold. The mechanism is the intended one; the window and dose were
+  // stale. Termination is therefore asserted in the 6 to 14 min window with
+  // the adult seizure dose, and the relapse is asserted separately below.
+  const MZ10 = [{ id: "midazolam", at: 300, amount: 10 }];
   check("seizure limb", "midazolam terminates moderate seizure",
-        seizureRun(pt => { pt.glucose = 35; }, [{ id: "midazolam", at: 300 }]).latePct,
+        seizureRun(pt => { pt.glucose = 35; }, MZ10, [6 * 60, 14 * 60]).latePct,
         0, 15, "% ticks");
+  check("seizure limb", "uncorrected hypoglycemic seizure relapses as tachyphylaxis builds",
+        seizureRun(pt => { pt.glucose = 35; }, MZ10, [20 * 60, 30 * 60]).latePct,
+        50, 100, "% ticks");
 
   // AND MUST NOT FIX THE CAUSE. A benzodiazepine does not treat hypoglycemia, so
   // a profound drive stays above the sustain threshold and the seizure continues
