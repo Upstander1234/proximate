@@ -624,6 +624,13 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 
 ## 3. What changed in the last session
 
+### 2026-10-11 — pk and calibration items: midazolam 2h row, fentanyl v1, norepinephrine clearance; rocuronium table blocked
+
+- **Midazolam seizure-termination row**: not a drug drift. `gabaDesens` (added after the "measured intensity 0.534" comment) takes about 11% off in 5 min and 39% by 30 min from one 5 mg dose, so suppressed drive at glucose 35 stays above the 0.15 sustain threshold. Coefficient 1.0 tried and rejected. `physiologyValidation.mjs` 2h now measures termination in the 6 to 14 min window with the adult 10 mg dose and adds a relapse assertion (20 to 30 min, 50 to 100%). 2h 14/0. The queue item on midazolam/morphine calibration drift is closed (morphine passes in 2b at 5.76).
+- **Fentanyl v1 13 L kept**: inside published 10.1 to 14.4 L; CL 0.70 L/min inside 0.70 to 0.96.
+- **Norepinephrine** `kel` 0.35 to 0.5, `ec50` 0.015 to 0.0105: steady-state MAP gain unchanged (100.1 vs 99.7), offset half-time 3.5 to about 2.7 min. Wiring sections 22/0; full suites and `pkAudit` not re-run.
+- Rocuronium numeric age-band table could not be retrieved (no network to the label); flush-beyond-adenosine and infusion delivery lag closed as judgment calls (see the brief, Update 2).
+
 ### 2026-10-10 — Etomidate central volume re-anchored; the 2c naloxone assertion measured the wrong quantity and was replaced. Planning brief section 32 corrects its own stale open list.
 
 - **Etomidate** (`pk.js`): `v1` 8 to 4.45 L (published central volume, brief section 15) with `ec50` 0.25 to 0.45 mg/L, so concentration and occupancy scale together and the dose-response is unchanged. MEASURED (74 kg, pinned traits, 20 mg at 120 s): sedation peak 0.622 both ways, 452 s above 0.6 against 456 s; leaving `ec50` at 0.25 with the smaller volume gave 0.748 and 1480 s (rejected, it would have turned induction into prolonged coma). `physiologyValidation` 2b 11/0, weight-aware PK, drawn-overdose and sedation sections 11/11. Fentanyl `v1` was NOT touched: no bolus-appropriate Vc has been retrieved.
