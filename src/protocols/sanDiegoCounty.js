@@ -254,6 +254,25 @@ const SEPSIS_CRITERIA = (ctx) => {
   return n >= 2;
 };
 
+// ── Baseline monitoring helpers (ported from national.js). The intervals and
+// reassessment drug list are this project's own reading of "frequent" /
+// "before and after medication", not figures quoted from this county's text.
+const VITALS_EVERY_CRITICAL = 300;
+const VITALS_EVERY_STABLE = 900;
+const lastVitalsAt = (ctx) => ctx.s.vitals?.HR?.at ?? -Infinity;
+const CRITICAL_PT = (ctx) => SHOCK(ctx) || pulseless(ctx) || hypoxic(ctx) || altered(ctx) || apnoeic(ctx);
+const REASSESS_DRUGS = new Set([
+  "naloxone_iv", "epiIM", "albuterol", "nitro", "fentanyl", "atropine",
+  "adenosine", "saline", "d10", "glucagon", "oralGlucose", "midazolam",
+  "magnesium", "ondansetron", "diphen", "pushEpi", "calcium", "bicarb", "txa",
+]);
+const DRUG_SINCE_VITALS = (ctx) => {
+  const last = lastVitalsAt(ctx);
+  return (ctx.s.doses || []).some((d) => REASSESS_DRUGS.has(d.id) && (d.at ?? 0) > last);
+};
+const TQ_PLACED = (ctx) => Object.keys(ctx.s.done || {}).some((k) => k.startsWith("tq@"));
+const LOW_GLUCOSE_TREATED = (ctx) => ["d10", "oralGlucose", "glucagon"].some((id) => gaveDose(ctx, id));
+
 export default {
   id: "san_diego_county", name: "San Diego County Protocols",
   rules: [
@@ -273,6 +292,18 @@ export default {
     { id: "monitor", when: notMonitored, task: "monitor", note: "get them on the monitor" },
     { id: "leads", when: noLeads, task: "leads", note: "leads on, twelve-lead" },
     { id: "vitals", when: noVitals, task: "vitals", note: "full set of vitals" },
+
+    // ── Baseline monitoring (ported from national.js; generic ALS practice,
+    //    not tied to a numbered policy in this county's text) ──
+    { id: "pulseOx", when: (ctx) => !ctx.s.devices?.pulseox, task: "attachPulseOx", note: "continuous pulse oximetry" },
+    { id: "bpCuff", when: (ctx) => !ctx.s.devices?.bpcuff, task: "attachBpCuff", note: "cuff on, baseline blood pressure" },
+    { id: "unstablePads", when: (ctx) => SHOCK(ctx) && (BRADYCARDIC(ctx) || ctx.v.hr > 150) && !ctx.s.done?.pads, task: "applyPads", note: "unstable rhythm, pads on before it worsens" },
+    { id: "vitalsCritical", when: (ctx) => !noVitals(ctx) && CRITICAL_PT(ctx) && ctx.s.t - lastVitalsAt(ctx) >= VITALS_EVERY_CRITICAL, task: "vitals", note: "critical patient, repeat vitals" },
+    { id: "vitalsStable", when: (ctx) => !noVitals(ctx) && ctx.s.t - lastVitalsAt(ctx) >= VITALS_EVERY_STABLE, task: "vitals", note: "stable, routine repeat vitals" },
+    { id: "vitalsAfterDrug", when: (ctx) => !noVitals(ctx) && DRUG_SINCE_VITALS(ctx), task: "vitals", note: "reassess after medication" },
+    { id: "glucoseSeizure", when: (ctx) => ACTIVE_SEIZURE(ctx) && !ctx.s.done?.gluc, task: "glucoseCheck", note: "seizing, rule out hypoglycemia" },
+    { id: "glucoseRecheck", when: (ctx) => LOW_GLUCOSE_TREATED(ctx) && altered(ctx) && ctx.s.t - (ctx.s.vitals?.Glu?.at ?? -Infinity) >= 300, task: "glucoseCheck", note: "still altered after sugar, recheck glucose" },
+    { id: "tourniquet", when: (ctx) => ACTIVE_HEMORRHAGE(ctx) && !TQ_PLACED(ctx), task: "tq", note: "life-threatening bleeding, tourniquet/pressure" },
     // A narrow, concrete IV trigger (the hypoglycemia D10 line needs a real
     // line) rather than a blanket "any patient gets IV" guess — the same
     // discipline LA's own file states for its equivalent rule.

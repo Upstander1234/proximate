@@ -980,3 +980,8 @@ Still open (verified against the tree):
 - Morphine and midazolam documented-calibration drift (the 2h midazolam moderate-seizure row still fails; morphine now passes in 2b at 5.76).
 - Saline flush is modeled for adenosine only; infusion delivery lag; a fentanyl/ketamine-style three-compartment fit if the redistribution phase matters in a call.
 - Verification owed locally: full `mechanismWiring.mjs`, `scenarioSweep.mjs`, `curveDrugAudit.mjs`, and the physiologyValidation sections outside 2b/2c/2d/2h (never re-run against trait pinning).
+
+### Update (2026-10-11)
+- `sanDiegoCounty.js`: shock now uses an age-based SBP floor from P-117 (60/70/75/80/85/90). San Diego P-115A per-kg doses were compared with `drugs.js`: all match except glucagon (engine 0.03 mg/kg, SD 0.05) and midazolam (engine one 0.1 mg/kg value, SD 0.1 IV and 0.2 IN/IM); left unchanged because drug doses are not set per county.
+- Baseline monitoring port DONE for `laCounty.js` and `sanDiegoCounty.js`: pulse ox, BP cuff, unstable-rhythm pads, serial vitals (critical q5 min, stable q15 min), reassessment after medication, seizure and post-treatment glucose checks, tourniquet. Verified by lint and a mock-context evaluation only; not played in a live call. Rules are generic ALS practice with no policy numbers, because the LA and remaining SD raw protocol text is not in the repo.
+- Still open: LA County pediatric rules (no source text available), LA/SD `ivCritical` equivalent, `cspine` and pupil/skin/cap-refill assessment tasks.
