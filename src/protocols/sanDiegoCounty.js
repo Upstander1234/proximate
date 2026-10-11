@@ -90,7 +90,21 @@ import {
 } from "./engine.js";
 
 // ── Shared predicates ──────────────────────────────────────────────────
-const SHOCK = (ctx) => ctx.v.sbp > 0 && ctx.v.sbp < 90;
+// Hypotension floor by age, from P-117 (ALS Pediatric Drug Chart 2025) "Normal
+// vital signs" SBP column: >60 (to 6 mo), >70 (6 mo-3 y), >75 (4-5 y), >80
+// (6-8 y), >85 (8-10 y), >90 (10 y and up, and adults). Age is read from the
+// active roster patient; unknown age falls back to the adult 90.
+function sbpFloor(ctx) {
+  const age = activePat(ctx)?.ageProfile?.age;
+  if (age == null) return 90;
+  if (age < 0.5) return 60;
+  if (age < 4) return 70;
+  if (age < 6) return 75;
+  if (age < 8) return 80;
+  if (age < 10) return 85;
+  return 90;
+}
+const SHOCK = (ctx) => ctx.v.sbp > 0 && ctx.v.sbp < sbpFloor(ctx);
 const HAS_IV = (ctx) => (ctx.s.ivSites || []).length > 0;
 const doseCount = (ctx, id) => (ctx.s.doses || []).filter((d) => d.id === id).length;
 const gaveDose = (ctx, id) => doseCount(ctx, id) > 0;
