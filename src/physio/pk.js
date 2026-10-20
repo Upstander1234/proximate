@@ -260,7 +260,7 @@ export const PK_PARAMS = {
   // t1/2 ~2 min), so k12 is near zero. The old kel 0.1 cleared ~3.5x too slowly, which made offset after
   // stopping a drip PK-limited and far slower than the 1-2 min seen clinically. ec50 0.015 (was 0.008) puts healthy MAP gain near +14 mmHg at 10 mcg/min, matching the volunteer slope (~10 mmHg per 0.1 ug/kg/min, 74 kg); septic gain is left to a separate axis. Pending
   // re-identification against the healthy volunteer MAP slope (see docs/pk_literature_review_brief.md).
-  norepi:    { kel: 0.5, k12: 0.02, k21: 0.3, v1: 8.8,   ec50: 0.0105, renalFrac: 0.05, keo: 0.7 },  // immediate // CL 4.4 L/min (reported 2.4-6); ec50 scaled by 0.35/0.5 to hold steady-state occupancy; offset t1/2 3.5 -> ~2.5 min (was PK-limited, brief s27)
+  norepi:    { kel: 0.5, k12: 0.02, k21: 0.3, v1: 8.8,   ec50: 0.0105, renalFrac: 0.05, keo: 0.7 },  // immediate // CL 4.4 L/min (reported 2.4-6); ec50 scaled by 0.35/0.5 to hold steady-state occupancy; offset MAP half-time 312 s at kel 0.35, 256 s at 0.5, 224 s at 0.65 (0.65 pushed the 1 mg/min overdose check under its threshold for a 32 s gain); the remaining lag is the reflex, not PK
   // NALOXONE — parameters identified against published PK/PD, replacing the
   // technical-debt note that stood here.
   //
@@ -2030,7 +2030,6 @@ export function updateDrugs(pat, s, dt) {
           if (hasReceptorModel && (prop === "hr" || prop === "sbp")) return;
 
           let delta = val * intensity * (dr.fluidScale ?? 1);
-
           // Opioid blockade: reduce effects of opioid drugs
           // PK opioids already have the antagonist folded into their intensity
           // via the competitive EC50 shift above; multiplying again would count
@@ -2248,7 +2247,15 @@ export function updateDrugs(pat, s, dt) {
             const prevGlu = dr._gluCurve ?? 0;
             const riseGlu = Math.max(0, kGlu - prevGlu);
             dr._gluCurve = Math.max(prevGlu, kGlu);
-            pat.glucose = Math.max(0, pat.glucose + val * riseGlu);
+            // A weight-based pediatric fluid bolus (D10 5 mL/kg) delivers grams per kg: glucose distributes in a volume that
+            // scales with body size (~0.2 L/kg), so 0.5 g/kg in a 14 kg child is about 3x the adult 12.5 g rise by volume alone
+            // (combined factor capped at 2x: children take up glucose faster than the 0.2 L/kg volume alone implies). Plain dose-scale (fluidScale) alone would shrink the child's rise with the smaller bag.
+            let gluScale = dr.fluidScale ?? 1;
+            if (drugDef.pkModel === "fluid" && dr.fluidScale != null) {
+              const w = pat.ageProfile?.weight;
+              if (w > 0 && w < PEDIATRIC_WEIGHT_KG) gluScale = Math.min(2, dr.fluidScale * PK_REF_WEIGHT / w);   // grams per kg relative to the adult bag
+            }
+            pat.glucose = Math.max(0, pat.glucose + val * riseGlu * gluScale);
           }
           else if (prop === "ca") {
             // IONISED CALCIUM IS A POOL, NOT A RATCHET. This used to be
