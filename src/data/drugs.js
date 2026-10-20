@@ -304,7 +304,7 @@ export const DRUGS = {
 
   saline: {
     pkModel: "fluid",
-    name: "Normal Saline 500 mL", route: "IV/IO", lvl: 3, volumeL: 0.5,
+    name: "Normal Saline 500 mL", route: "IV/IO", lvl: 3, volumeL: 0.5, mlPerKg: 20,
     onset: 60, dur: 5400, max: 8,
     // ph: -350 WAS SIZED FOR A RATCHET THAT DELIVERED IT EVERY TICK, NOT
     // ONCE. Found while investigating a genuinely unrelated task (queue
@@ -367,7 +367,7 @@ export const DRUGS = {
 
   d10: {
     pkModel: "fluid",
-    name: "Dextrose 10% 125 mL", route: "IV/IO", lvl: 3,
+    name: "Dextrose 10% 125 mL", route: "IV/IO", lvl: 3, volumeL: 0.125, mlPerKg: 5,
     onset: 60, dur: 3600, max: 2,
     fx: { glu: 70 },
     note: "National Scope: dextrose is on the AEMT closed IV list."
@@ -1404,7 +1404,7 @@ export const DRUGS = {
 
   plasmalyte: {
     pkModel: "fluid",
-    name: "Plasma-Lyte 500 mL", route: "IV/IO", lvl: 5,
+    name: "Plasma-Lyte 500 mL", route: "IV/IO", lvl: 5, volumeL: 0.5, mlPerKg: 20,
     onset: 60, dur: 5400, max: 8,
     // Rescaled alongside saline's own ph fix (see that entry's comment for
     // the full ratchet trace) to preserve the SAME relative relationship

@@ -1501,6 +1501,15 @@ export function updateDrugs(pat, s, dt) {
           // A weight-based fluid bolus (e.g. 10 mL/kg for a newborn) carries its real volume; every fx of the
           // fluid (volume, dilution, chloride load, cooling) scales with it relative to the bag's nominal volume.
           if (drugDef.pkModel === "fluid" && d.volumeL > 0 && drugDef.volumeL > 0) inst.fluidScale = d.volumeL / drugDef.volumeL;
+          // A child's bolus without an explicit volume resolves from mL/kg, capped at the bag (SD P-115A: saline 20 mL/kg max 500 mL; D10 0.5 g/kg = 5 mL/kg).
+          else if (drugDef.pkModel === "fluid" && !(d.volumeL > 0) && drugDef.mlPerKg && drugDef.volumeL > 0) {
+            const w = pat.ageProfile?.weight;
+            if (w > 0 && w < PEDIATRIC_WEIGHT_KG) {
+              const vL = Math.min(drugDef.mlPerKg * w / 1000, drugDef.volumeL);
+              inst.fluidScale = vL / drugDef.volumeL;
+              d.resolvedVolumeMl = Math.round(vL * 1000);
+            }
+          }
           d.resolvedAmount = dose;            // stamped on the dose record so the log/UI can show the delivered amount
           pat.drugInstances.push(inst);
         }
