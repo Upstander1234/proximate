@@ -701,7 +701,11 @@ export const DRUGS = {
     name: "Atropine 1 mg", route: "IV/IO", lvl: 4,
     onset: 30, dur: 1200, max: 3,
     dose: 1,
-    dosePerKg: 0.02, minDose: 0.1,   // mg/kg for a child (< 40 kg), capped at the adult dose above
+    // mg/kg for a child (< 40 kg), capped at the adult dose above. The historical 0.1 mg MINIMUM dose was
+    // removed: recent pediatric data do not support it (brief section 16), and it meant a small neonate
+    // received a relatively larger dose than an older child for no documented reason. The floor MECHANISM in
+    // resolveDoseMg is unchanged and still covered by its own assertion (which uses a synthetic drug).
+    dosePerKg: 0.02,
     fx: {},                                      // HR increase via vagal block
     receptors: { vagalBlock: 0.8 },
     note: "USELESS in 2° type II or 3° block. Do not delay pacing for it."

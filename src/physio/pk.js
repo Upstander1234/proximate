@@ -690,6 +690,12 @@ const MATURATION = {
   // reported ontogeny (neonate about 10 to 19 percent of adult, about 50 percent by 2 months,
   // near adult by 6 y; Shi 2011, Boberg 2017); not a published sigmoid.
   ces1:    (pma, ageY) => lerpPts(ageY, [[0, 0.15], [0.06, 0.2], [0.17, 0.5], [0.5, 0.6], [1, 0.7], [2, 0.85], [6, 1]]),
+  // UGT glucuronidation (naloxone): ENGINE-FITTED, not a published sigmoid (brief section 11 found none).
+  // The single retrieved anchor is naloxone's own neonatal half-life, about 3.1 h against about 64 min in
+  // adults (brief 19a.2); with volume per kg roughly constant that is about 0.34 of adult clearance at birth.
+  // UGT activity is generally reported to reach adult levels within the first year, so the curve runs from
+  // 0.34 at birth to 1 by about 1 year, piecewise-linear like the CES1 case above and flagged the same way.
+  ugt:     (pma, ageY) => lerpPts(ageY, [[0, 0.34], [0.08, 0.45], [0.25, 0.65], [0.5, 0.8], [1, 1]]),
   size:    () => 1,
 };
 // Hepatic pathway per drug. Fentanyl, amiodarone and ketamine are deliberate "size" cases:
@@ -699,7 +705,10 @@ const HEPATIC_PATHWAY = {
   midazolam: "midazolam", diltiazem: "cyp3a4", lidocaine: "cyp1a2", lidocaineBlock: "cyp1a2",
   etomidate: "ces1", fentanyl: "size", amiodarone: "size", amiodarone2: "size", ketamine: "size",
   metoprolol: "size", morphine: "size", rocuronium: "size",
-  naloxone_iv: "size", naloxone_im: "size", naloxone_in: "size",
+  // Naloxone is UGT-cleared and HAS a neonatal anchor, so unlike morphine (deliberate "size": its hepatic
+  // extraction is concentration-dependent, brief section 12, so a maturation term on clearance alone would
+  // misrepresent it) it carries the fitted UGT curve above.
+  naloxone_iv: "ugt", naloxone_im: "ugt", naloxone_in: "ugt",
 };
 // Rocuronium: the neonatal prolongation is a VOLUME effect (Vd 0.42 L/kg at birth falling to
 // 0.18 by 2 to 17 y; clearance per kg is flat), so volume, not clearance, carries it.
