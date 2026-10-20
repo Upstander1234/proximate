@@ -360,7 +360,16 @@ export const PK_PARAMS = {
   // were correct for the unsaturated case all along; the kinetics were inflating
   // them downstream. This is the converse of the usual lesson — a correct
   // mechanism made three benchmarks better at once.
-  amiodarone:{ kel: 0.005, k12: 2.0, k21: 0.01, v1: 10,  ec50: 1.75, renalFrac: 0.00, keo: 0.25 },// negligible renal excretion — dose is NOT adjusted in renal failure
+  // AMIODARONE RE-ANCHORED (brief section 10.1, Lehnert population PK): v1 10 -> 167 L central and peripheral
+  // about 3930 L via k21 (ratio 23.5), CL 0.05 -> 0.105 L/min (6.32 L/h at 70 kg, kel 0.00063 -- t1/2 is weeks,
+  // which is correct for this drug). Concentration therefore falls about 16.7x for a given dose, so ec50 is
+  // divided by the SAME 16.7 (1.75 -> 0.105 mg/L) and receptor occupancy is unchanged: the acute AV-nodal effect
+  // this engine was calibrated against is preserved exactly while the kinetics become realistic. This is the
+  // naloxone/etomidate precedent, used deliberately because no acute effect-site EC50 or ke0 for amiodarone has
+  // been retrieved (brief section 16) -- rescaling keeps a calibrated number calibrated instead of inventing one.
+  // Per brief 16 the acute IV effect stays AV-nodal/beta-Ca blockade only; QT prolongation takes days and is not
+  // modeled on the sim timescale.
+  amiodarone:{ kel: 0.00063, k12: 2.0, k21: 0.085, v1: 167, ec50: 0.105, renalFrac: 0.00, keo: 0.25 },// negligible renal excretion — dose is NOT adjusted in renal failure
   // LA County TP 1210's real repeat dose (150mg, drugs.js's `amiodarone2`)
   // — same drug, same kinetics as the entry immediately above. A SECOND
   // DrugInstance with its own compartments (not a top-up of the first —
@@ -372,7 +381,7 @@ export const PK_PARAMS = {
   // engine probe (`[pk] drug "amiodarone2" declares twoCompartment but has
   // no PK_PARAMS entry` warning) before this was trusted, not assumed
   // fine because the rule-firing logic alone tested clean.
-  amiodarone2:{ kel: 0.005, k12: 2.0, k21: 0.01, v1: 10, ec50: 1.75, renalFrac: 0.00, keo: 0.25 },
+  amiodarone2:{ kel: 0.00063, k12: 2.0, k21: 0.085, v1: 167, ec50: 0.105, renalFrac: 0.00, keo: 0.25 },
   // LIDOCAINE RE-ANCHORED (brief sections 10 and 16): v1 3 -> 11 L (Finholt V1 0.16 L/kg), CL 0.03 -> 0.7 L/min
   // (9.8 mL/kg/min, kel 0.064), peripheral about 37 L (k12/k21 3.3, total about 0.65 L/kg, Vd-area 0.71). The old
   // 3 L volume put one 100 mg bolus at 8.6 mg/L effect-site (above the 1.5-6 therapeutic band) and a standard ACLS
