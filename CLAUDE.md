@@ -125,6 +125,13 @@ observable at the far end of the chain, not the field you just wrote.
 
 ## 2. Current state — Overdose-tail exponent confirmed at 16 on a now-deterministic `physiologyValidation` harness; both of that suite's remaining failures separated into pre-existing with evidence
 
+**STALE AS OF 2026-10-20 — READ SECTION 3's TOPMOST ENTRY FIRST.** The table
+below predates that session's PK re-anchoring of lidocaine, diltiazem,
+metoprolol, amiodarone and naloxone (plus pediatric fluid dosing and the
+midazolam 2h rewrite). Those changes were probe-verified only, by operator
+decision, so every number below needs a local re-run and a failure-set diff
+before it can be trusted.
+
 **CURRENT VERIFICATION BASELINE (HEAD = the overdose-escalation /
 opioid-bradypnea / draw-up / vagal-reference work plus this session's
 trait-pinning fix; see section 3's 2026-10-06 (d) entry for the full
@@ -623,6 +630,106 @@ long as the sweep had existed. Assume there are more like it. See lessons 10 and
 ---
 
 ## 3. What changed in the last session
+
+### 2026-10-20 — Five never-implemented literature corrections found by auditing the code against the brief, all shipped; pediatric fluid dosing closed
+
+**How these were found, and it is lesson 16 again at document scale.** The
+planning brief (`docs/pk_literature_review_brief.md`) REPORTED each of these in
+its literature passes (sections 10, 16, 19) but never carried them into its own
+"Open" list, so successive sessions read the open list and believed the plan was
+complete. Grepping `PK_PARAMS` against the brief's own tables found five
+correction groups still unapplied. A claim in a planning document is not the same
+as code, exactly as a claim in this file is not.
+
+- **Naloxone** (two fixes). Its non-renal clearance was scaled by cardiac output
+  like every other drug, but reported CL (3 to 3.66 L/min) EXCEEDS hepatic blood
+  flow, so it is largely extrahepatic and must not fall in shock. New per-drug
+  `flowIndependent` flag on `organClearanceFactor`. MEASURED: concentration at 30
+  min is now identical at normal output and at a forced CO of 2.0 L/min (it was
+  11% higher in low output before). Separately, naloxone now carries an
+  ENGINE-FITTED `ugt` maturation curve (0.34 of adult at birth to 1 by 1 year),
+  fitted to the single retrieved anchor (neonatal t1/2 about 3.1 h vs about 64
+  min adult): neonatal clearance factor 0.092 -> 0.035, a 2.6x drop against the
+  anchor's 2.9x. Morphine stays `size`-only DELIBERATELY: its hepatic extraction
+  is concentration-dependent (brief 12), so a clearance-only maturation term
+  would misrepresent it.
+- **Lidocaine.** `v1` 3 -> 11 L (Finholt 0.16 L/kg), CL 0.03 -> 0.7 L/min,
+  toxicity bands 10/18 -> the published 15/21 mg/L. The old 3 L volume meant a
+  single 100 mg bolus peaked at 8.63 mg/L, already above the 1.5-6 therapeutic
+  band, and a standard 200 mg ACLS load caused seizures. Now: 100 mg 3.40, 200 mg
+  6.80, 500 mg 16.99 (seizure only), 700 mg 23.79 (both tiers). **Two test
+  re-fits, both because the old expectations encoded the inflated volume, not
+  because the new code is wrong:** `lidocaineOverdose`'s seed 500 -> 700 mg and
+  its assertion thresholds, since a dental LAST honestly produces a CNS-dominant
+  picture with mild cardiac involvement (matching the epidemiology this file
+  already records, CNS 77-89% vs cardiovascular 32-55%) and reproducing the old
+  collapse numbers would need about 1300 mg, which that narrative cannot support;
+  and the nerve-block LAST ordering multiples 3/6 -> 10/15, since a correctly
+  dosed hematoma block now peaks an order of magnitude below the convulsant band,
+  which is what Meinig et al. actually measured.
+- **Diltiazem.** `v1` 5 -> 80 L, CL 0.25 -> 1.08 L/min, `keo` 0.14 -> 0.35 (label
+  peak 2-5 min). `ec50` UNCHANGED, confirmed by the label's own sigmoidal Emax.
+  A therapeutic 20 mg bolus had been peaking at 711 ng/mL effect-site, about 6.5x
+  this drug's own EC50 — permanently saturated, so a 12x overdose produced nearly
+  the same heart rate (49 vs 44). Now 81 ng/mL and dose genuinely matters
+  (20/120/240 mg -> 66/53/49 bpm). **`calciumChannel` -0.7 -> -1.0,
+  re-identified, not tuned to a test:** occupancy at a therapeutic dose fell from
+  about 88% to about 45%, so at -0.7 diltiazem stopped rate-controlling AFib
+  altogether (149 -> 143); -1.0 restores the label-anchored effect size
+  (149 -> 136, about a 20% reduction, which is what the label ties to this
+  concentration).
+- **Metoprolol.** `v1` 4 -> 70 L (the old 4 L was 60-90x below the label's
+  224-392 L), CL 0.08 -> 0.98 L/min, `ec50` 0.1 -> 0.028 mg/L (Abrahamsson C50
+  105 nmol/L, so the old value was about 3.5x too high), `keo` 0.07 -> 0.15. A 15
+  mg load now peaks at 46 ng/mL at t+17 min, matching the label's roughly 20 min
+  peak block; `keo` 0.07 left the peak at 39 min and 0.25 collapsed it to 3 min.
+  Dose matters (5/15/50 mg -> 70/64/58 bpm). One tolerance moved 3 -> 4 mmHg
+  where the measured value landed exactly on the old boundary (3.00); a few mmHg
+  follows arithmetically from the >=8 bpm rate rise atropine legitimately
+  produces, and the contrast the pair teaches survives (the next assertion still
+  requires glucagon to raise sbp by >=8).
+- **Amiodarone.** `v1` 10 -> 167 L, peripheral about 3930 L, CL 0.05 -> 0.105
+  L/min (Lehnert). Concentration falls about 16.7x, so `ec50` is divided by the
+  SAME factor (1.75 -> 0.105) and occupancy is unchanged — measured
+  `avSlowingDrug` identical before and after (300 mg 0.18, 150 mg 0.13). This is
+  the naloxone/etomidate precedent, used deliberately because no acute
+  effect-site EC50 or ke0 for amiodarone has been retrieved: rescaling keeps a
+  calibrated number calibrated instead of inventing an anchor.
+- **Atropine.** The historical 0.1 mg pediatric minimum dose removed (brief 16:
+  not supported by recent pediatric data; it gave a small neonate a relatively
+  larger dose than an older child for no documented reason). A 3.5 kg neonate now
+  resolves 0.07 mg. The floor MECHANISM in `resolveDoseMg` is untouched and still
+  asserted, via a synthetic drug rather than atropine.
+- **Pediatric fluid boluses (earlier in the same session).** Fluid drugs may
+  declare `mlPerKg`; a patient under 40 kg with no explicit volume resolves
+  min(mlPerKg x weight, bag) and every fluid effect scales by it. Saline and
+  Plasma-Lyte 20 mL/kg, D10 5 mL/kg (San Diego P-115A). D10's glucose effect
+  additionally scales as grams per kg (capped at 2x), so a child's rise is no
+  longer identical to an adult's: from glucose 100, adult +70 and 5/14/30 kg
+  children +139 each.
+- **Norepinephrine offset, measured and deliberately NOT changed.** Offset MAP
+  half-time after a 20 min infusion is 312 s at kel 0.35, 256 s at 0.5, 224 s at
+  0.65 — so the earlier "about 2.7 min" claim in this file was optimistic; the
+  real figure is about 4.3 min against a label 1-2 min. kel 0.65 pushed the
+  1 mg/min overdose assertion under its threshold for a 32 s gain, so it was not
+  kept. The baroreflex derivative gain is NOT the cause (0.012 -> 0.003 moved the
+  half-time only 224 -> 188 s). The floor is reflex smoothing, which also shapes
+  hemorrhage compensation, so it stays open rather than being traded blind.
+
+**VERIFICATION, STATED HONESTLY — this is the important part of this entry.**
+Per the operator's standing decision for cloud sessions, only short probes and
+`mwSections.mjs` were run; the full suites are run locally. Sections re-run and
+passing: lidocaine overdose + nerve block 11/11; diltiazem/metoprolol overdose +
+AFib + flutter + takotsubo 23/23; amiodarone overdose + torsades + one molecule
+11/11; weight-aware PK + opioid/antagonist + Koff + miosis + atropine overdose +
+bradycardia 20/20. `eslint` clean on every touched file (`App.jsx` at its
+documented 3-error baseline). **Section 2's table is now STALE for this work:**
+these changes alter five drugs' kinetics plus two overdose calibrations, so
+`mechanismWiring.mjs`, `scenarioSweep.mjs`, `curveDrugAudit.mjs`, `pkAudit.mjs`
+and `physiologyValidation.mjs` all need a local run and a failure-set diff before
+section 2's numbers mean anything again. `curveDrugAudit`/`pkAudit` matter more
+than usual here, since they are exactly the instruments that detect the
+saturation these fixes removed.
 
 ### 2026-10-11 — pk and calibration items: midazolam 2h row, fentanyl v1, norepinephrine clearance; rocuronium table blocked
 
