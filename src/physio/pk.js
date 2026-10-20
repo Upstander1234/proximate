@@ -404,7 +404,13 @@ export const PK_PARAMS = {
   // 81 ng/mL after a 20 mg bolus, the concentration the label ties to a 20% rate reduction. ec50 is
   // UNCHANGED at 0.1 mg/L: the label's sigmoidal Emax (EC50 110 +/- 84 ng/mL, Emax 52%) confirms it.
   diltiazem: { kel: 0.0135, k12: 0.5, k21: 0.147, v1: 80, ec50: 0.1, renalFrac: 0.05, keo: 0.35 },  // t1/2ke0 ~5 min // extensive first-pass hepatic metabolism
-  metoprolol:{ kel: 0.02, k12: 0.6, k21: 0.2, v1: 4,     ec50: 0.1, renalFrac: 0.05, keo: 0.07 },  // t1/2ke0 ~10 min// CYP2D6; <5% unchanged renal
+  // METOPROLOL RE-ANCHORED (brief sections 10.4 and 16): v1 4 -> 70 L and peripheral about 230 L via k21 (label
+  // Vd 3.2-5.6 L/kg, about 224-392 L -- the old 4 L was about 60-90x too small), CL 0.08 -> 0.98 L/min (kel 0.014,
+  // t1/2 about 3.5 h). ec50 0.1 -> 0.028 mg/L: Abrahamsson's pooled Emax for beta-1 blockade gives C50 105 nmol/L,
+  // about 28 ng/mL, so the old value was about 3.5x too high. keo stays 0.07 for the label's delayed peak block
+  // (about 20 min after a 10-min infusion): keo 0.07 -> 0.15 puts the effect-site peak at about 17 min (measured),
+  // where 0.07 left it at 39 min and 0.25 collapsed it to 3 min. A 15 mg load peaks near 46 ng/mL, about 1.6x C50.
+  metoprolol:{ kel: 0.014, k12: 0.6, k21: 0.18, v1: 70, ec50: 0.028, renalFrac: 0.05, keo: 0.15 },  // t1/2ke0 ~10 min// CYP2D6; <5% unchanged renal
 };
 
 // ---------------------------------------------------------------------------
