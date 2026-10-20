@@ -771,7 +771,11 @@ export const DRUGS = {
     onset: 120, dur: 1800, max: 2,
     dose: 20,
     fx: {},                                      // HR and SBP lowered via receptor model (Ca channel block)
-    receptors: { calciumChannel: -0.7 },         // interpreted as negative chronotrope/inotrope/vasodilator
+    receptors: { calciumChannel: -1.0 },         // interpreted as negative chronotrope/inotrope/vasodilator
+    // -0.7 -> -1.0, re-identified against the label after pk.js corrected this drug's central volume: occupancy at a
+    // therapeutic 20 mg bolus fell from about 88% (a 711 ng/mL effect-site peak, permanently saturated) to about 45%
+    // (81 ng/mL), so the old coefficient no longer rate-controlled AFib at all (149 -> 143). 1.0 restores the
+    // label-anchored effect size (about a 20% rate reduction at this concentration; measured 149 -> 136).
     hold: (v) => v.sbp < 100 && "Hypotensive. Diltiazem is a negative inotrope. This will make it worse.",
     note: "Rate control in rapid AF."
   },

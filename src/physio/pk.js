@@ -396,7 +396,14 @@ export const PK_PARAMS = {
   // ATROPINE — v1 25 L (~0.35 L/kg), EC50 0.005 mg/L for vagolysis. Was v1 0.3 /
   // ec50 0.1, giving a peak concentration 137x the published range.
   atropine:  { kel: 0.05, k12: 0.2, k21: 0.1, v1: 25,    ec50: 0.005, renalFrac: 0.50, keo: 0.5 },// ~50% excreted unchanged in urine
-  diltiazem: { kel: 0.05, k12: 0.5, k21: 0.1, v1: 5,     ec50: 0.1, renalFrac: 0.05, keo: 0.14 },  // t1/2ke0 ~5 min // extensive first-pass hepatic metabolism
+  // DILTIAZEM RE-ANCHORED (brief sections 10.3 and 16): v1 5 -> 80 L, CL 0.25 -> 1.08 L/min (65 L/h, kel 0.0135),
+  // peripheral about 270 L via k21 (label Vd 305-391 L total). A 20 mg IV bolus now starts near 250 ng/mL, the real
+  // post-bolus clinical range, instead of 711 ng/mL -- about 6.5x this drug's own 110 ng/mL EC50, i.e. permanently
+  // saturated, so a therapeutic dose and a 12x overdose produced almost the same heart rate (49 vs 44). keo 0.14 ->
+  // 0.35 (t1/2ke0 about 2 min) to match the label's 2-5 min peak hemodynamic effect: effect-site now peaks near
+  // 81 ng/mL after a 20 mg bolus, the concentration the label ties to a 20% rate reduction. ec50 is
+  // UNCHANGED at 0.1 mg/L: the label's sigmoidal Emax (EC50 110 +/- 84 ng/mL, Emax 52%) confirms it.
+  diltiazem: { kel: 0.0135, k12: 0.5, k21: 0.147, v1: 80, ec50: 0.1, renalFrac: 0.05, keo: 0.35 },  // t1/2ke0 ~5 min // extensive first-pass hepatic metabolism
   metoprolol:{ kel: 0.02, k12: 0.6, k21: 0.2, v1: 4,     ec50: 0.1, renalFrac: 0.05, keo: 0.07 },  // t1/2ke0 ~10 min// CYP2D6; <5% unchanged renal
 };
 
