@@ -3564,7 +3564,12 @@ export const CONDITIONS = {
     progress(pat) {
       if (!pat._lidoOdSeeded) {
         pat._lidoOdSeeded = true;
-        pat.drugInstances.push(seedPastDose(pat, "lidocaine", 500, 1));
+        // 700 mg, not 500: with lidocaine's corrected central volume (pk.js, v1 11 L) a 500 mg
+        // intravascular bolus peaks near 17 mg/L, which crosses the 15 mg/L convulsant band but
+        // stays under the 21 mg/L cardiotoxic one. A real LAST event of this kind is the whole
+        // field-block dose delivered intravascularly (about 70 mL of 1%), which is what produces
+        // the simultaneous seizure-plus-cardiotoxicity picture this condition exists to teach.
+        pat.drugInstances.push(seedPastDose(pat, "lidocaine", 700, 1));
       }
     },
   },

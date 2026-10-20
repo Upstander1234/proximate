@@ -4022,7 +4022,15 @@ console.log("\n[LIDOCAINE OVERDOSE — queue item 40, fifth drug]");
   // 1.0 ceiling AND real cardiotoxicity (drugInotropy well below 1,
   // avSlowingDrug well above 0) together, not sequentially.
   const early = probe({ scen: "lidocaineOverdose", settle: 30, run: 90 });
-  const presentOk = early.after.seizureDrive > 0.8 && early.after.drugInotropy < 0.6 && early.after.avSlowingDrug > 0.3;
+  // RE-FIT alongside lidocaine's corrected central volume (pk.js v1 3 -> 11 L) and the literature-anchored
+  // 15/21 mg/L toxicity bands. The old thresholds (seizure > 0.8, inotropy < 0.6, avSlowing > 0.3) were a
+  // property of the previous model, where a 500 mg bolus reached 43 mg/L effect-site; with honest kinetics the
+  // same dose reaches 17. This scenario is a dental LAST (several nerve blocks, one going intravascular), which
+  // realistically delivers a few hundred mg, so what it produces is a CNS-DOMINANT picture with mild but real
+  // cardiac involvement -- which is also what the epidemiology says (CNS 77-89%, cardiovascular 32-55%).
+  // Reproducing the old severe-collapse numbers would need about 1300 mg, which this narrative does not support.
+  // Two-sided: the cardiac term must be genuinely non-zero, so this cannot pass with no cardiotoxicity at all.
+  const presentOk = early.after.seizureDrive > 0.6 && early.after.drugInotropy < 0.97 && early.after.avSlowingDrug > 0.03;
   presentOk ? pass++ : fail++;
   if (!presentOk) failures.push(`lidocaineOverdose should present with real seizure drive + cardiotoxicity near the nadir, got seizureDrive=${early.after.seizureDrive} drugInotropy=${early.after.drugInotropy} avSlowingDrug=${early.after.avSlowingDrug}`);
   console.log(`  ${presentOk ? "PASS" : "FAIL"}  ${"lidocaineOverdose -> real seizure drive + cardiotoxicity".padEnd(46)} seizureDrive=${early.after.seizureDrive.toFixed(2)} drugInotropy=${early.after.drugInotropy.toFixed(2)} avSlowingDrug=${early.after.avSlowingDrug.toFixed(2)} sbp=${early.after.sbp.toFixed(0)}`);
@@ -8688,12 +8696,18 @@ console.log("\n[LOCAL ANESTHETIC NERVE BLOCK — hematoma block, queue item 62's
   // overdose (6 stacked doses, 720mg) crosses BOTH -- neurologic signs
   // reachable well before cardiovascular collapse, matching the AHA's own
   // reported 77-89% CNS vs 32-55% cardiovascular incidence in real LAST.
+  // Multiples re-fit (10 and 15, was 3 and 6) alongside lidocaine's corrected central volume and the
+  // literature-anchored 15/21 mg/L thresholds. Both counts are deliberately far beyond this drug's own
+  // max of 2 -- as the old 3/6 pair already was -- because the point is the ORDER the two tiers are
+  // crossed in, not a reachable dosing error. The required multiple rose because the kinetics are now
+  // honest: a correctly dosed hematoma block (1-2 doses) peaks near 1.7-3.5 mg/L effect-site, an order of magnitude
+  // below the convulsant band, which is exactly what Meinig et al. measured for the real technique.
   const pModerateOD = mkBlk({});
-  for (let i = 0; i < 3; i++) doseBlk(pModerateOD, 20 - i);
+  for (let i = 0; i < 10; i++) doseBlk(pModerateOD, 20 - i * 0.5);
   tick(pModerateOD, 0.1, 5);
   const seizureOnlyOk = pModerateOD.seizureDrive > 0 && pModerateOD.avSlowingDrug === 0;
   const pSevereOD = mkBlk({});
-  for (let i = 0; i < 6; i++) doseBlk(pSevereOD, 20 - i);
+  for (let i = 0; i < 15; i++) doseBlk(pSevereOD, 20 - i * 0.5);
   tick(pSevereOD, 0.1, 5);
   const bothCrossOk = pSevereOD.seizureDrive > 0 && pSevereOD.avSlowingDrug > 0;
   const lastOrderOk = seizureOnlyOk && bothCrossOk;

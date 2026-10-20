@@ -373,13 +373,17 @@ export const PK_PARAMS = {
   // no PK_PARAMS entry` warning) before this was trusted, not assumed
   // fine because the rule-firing logic alone tested clean.
   amiodarone2:{ kel: 0.005, k12: 2.0, k21: 0.01, v1: 10, ec50: 1.75, renalFrac: 0.00, keo: 0.25 },
+  // LIDOCAINE RE-ANCHORED (brief sections 10 and 16): v1 3 -> 11 L (Finholt V1 0.16 L/kg), CL 0.03 -> 0.7 L/min
+  // (9.8 mL/kg/min, kel 0.064), peripheral about 37 L (k12/k21 3.3, total about 0.65 L/kg, Vd-area 0.71). The old
+  // 3 L volume put one 100 mg bolus at 8.6 mg/L effect-site (above the 1.5-6 therapeutic band) and a standard ACLS
+  // 200 mg total into seizures; toxicity thresholds in drugs.js were re-anchored with it. Earlier note:
   // LIDOCAINE — v1 identified so that the EFFECT-SITE peak lands in range, EC50 ~2.5 mg/L. The published therapeutic
   // window is 1.5-5 mg/L with toxicity above 5, so this is the drug where
   // concentration realism matters most: the whole clinical point of lidocaine is
   // that the therapeutic and toxic ranges nearly touch. Was v1 1.5 / ec50 0.1,
   // giving Cmax 5.9 mg/L and Imax 0.983 — permanently saturated, therefore
   // permanently unable to express either under-dosing or toxicity.
-  lidocaine: { kel: 0.01, k12: 1.0, k21: 0.1, v1: 3,     ec50: 2.5, renalFrac: 0.03, keo: 0.55 },// keo: effect within 1-2 min, as an IV antiarrhythmic bolus must be// FLOW-LIMITED hepatic extraction — toxicity in low cardiac output states
+  lidocaine: { kel: 0.064, k12: 0.5, k21: 0.15, v1: 11,   ec50: 2.5, renalFrac: 0.03, keo: 0.55 },// keo: effect within 1-2 min, as an IV antiarrhythmic bolus must be// FLOW-LIMITED hepatic extraction — toxicity in low cardiac output states
   // LIDOCAINE BLOCK (queue item 62's remainder, hematoma block) — same
   // molecule, so the same central-compartment/elimination/EC50 values as
   // systemic `lidocaine` above, reused verbatim rather than re-derived
@@ -388,7 +392,7 @@ export const PK_PARAMS = {
   // Only the ROUTE differs (drugs.js's `route:"IM"`, a real perfusion-
   // dependent depot absorption), which changes how concentration gets INTO
   // this same central compartment, not what happens once it's there.
-  lidocaineBlock: { kel: 0.01, k12: 1.0, k21: 0.1, v1: 3, ec50: 2.5, renalFrac: 0.03, keo: 0.55 },
+  lidocaineBlock: { kel: 0.064, k12: 0.5, k21: 0.15, v1: 11, ec50: 2.5, renalFrac: 0.03, keo: 0.55 },
   // ATROPINE — v1 25 L (~0.35 L/kg), EC50 0.005 mg/L for vagolysis. Was v1 0.3 /
   // ec50 0.1, giving a peak concentration 137x the published range.
   atropine:  { kel: 0.05, k12: 0.2, k21: 0.1, v1: 25,    ec50: 0.005, renalFrac: 0.50, keo: 0.5 },// ~50% excreted unchanged in urine

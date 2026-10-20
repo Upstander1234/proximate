@@ -633,7 +633,11 @@ export const DRUGS = {
     // reduced in low cardiac output states (where, as of batch 51, this engine
     // already slows its clearance). Modelling the antiarrhythmic action without
     // the toxic one would teach that more is always better.
-    toxicity: { seizureThreshold: 10, cardiacThreshold: 18 },                           // local anesthetic / antiarrhythmic, no receptor model needed
+    // RE-ANCHORED to the published plasma bands (brief section 16) alongside the v1/CL correction in pk.js:
+    // therapeutic 1.5-6 mg/L, adverse above 6, CNS symptoms/convulsions about 15, first cardiotoxicity above 21.
+    // The old 10/18 pair was fit on top of a central volume about 4x too small, which inflated every
+    // concentration; with honest kinetics the thresholds sit where the literature puts them.
+    toxicity: { seizureThreshold: 15, cardiacThreshold: 21 },                           // local anesthetic / antiarrhythmic, no receptor model needed
     note: "Cumulative toxicity above ~3 mg/kg — seizures, cardiac depression."
   },
 
@@ -688,7 +692,7 @@ export const DRUGS = {
     onset: 25, dur: 600, max: 2,
     dose: 120,   // mg, ~1.7 mg/kg for a 70kg adult -- inside the WMS 2024 1.5-2 mg/kg hematoma-block ceiling
     fx: { pain: -1 },
-    toxicity: { seizureThreshold: 10, cardiacThreshold: 18 },
+    toxicity: { seizureThreshold: 15, cardiacThreshold: 21 },   // same molecule, same re-anchored bands as systemic lidocaine above
     note: "Intra-hematoma infiltration for fracture reduction, plain lidocaine only. Absorption is complete and reliable but ordinarily modest -- LAST here comes from over-dosing or an inadvertent intravascular injection, not normal single-dose technique."
   },
 
