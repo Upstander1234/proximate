@@ -309,10 +309,11 @@ export const PK_PARAMS = {
   // concentration ratios, ec50 (0.002) and NALOXONE_KI (0.0005) are both divided by
   // 400/21 so a standard 0.4-2 mg dose reverses exactly as before; only the kinetics
   // and the weight-scaling basis become realistic. CL is extrahepatic-heavy, so
-  // renalFrac stays low and hepatic-flow scaling is not the main driver.
-  naloxone_in: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },
-  naloxone_im: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },
-  naloxone_iv: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5 },  // reversal is visible within 1-2 min// hepatic glucuronidation
+  // renalFrac stays low. `flowIndependent` keeps the non-renal part from falling with cardiac output, since CL above hepatic
+  // blood flow means mostly extrahepatic metabolism (brief 19a.2); hepatocyte injury still scales it.
+  naloxone_in: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5, flowIndependent: true },
+  naloxone_im: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5, flowIndependent: true },
+  naloxone_iv: { kel: 0.00825, k12: 0.04, k21: 0.04, v1: 400, ec50: 0.000105, renalFrac: 0.15, keo: 0.5, flowIndependent: true },  // reversal is visible within 1-2 min// hepatic glucuronidation
   // epiIM's keo is lower than every other drug in this table (0.1 vs the
   // usual 0.5-0.7-ish range) — identified by measurement, not left at the
   // shared default. The two-stage depot (drugs.js, queue item 4) already
@@ -417,7 +418,7 @@ export const PK_PARAMS = {
 //
 // Returns a multiplier on kel. Floored well above zero so that a drug can still
 // leave a patient in profound shock (very slowly), rather than latching forever.
-function organClearanceFactor(pat, renalFrac) {
+function organClearanceFactor(pat, renalFrac, flowIndependent = false) {
   const rf = Math.max(0, Math.min(1, renalFrac ?? 0.3));
   // renal.js exposes this as a named 0-1 fraction; see the note there for why
   // it is not simply gfr / baseGfr.
@@ -428,7 +429,9 @@ function organClearanceFactor(pat, renalFrac) {
   const restCo = pat._restCo || 5.0;
   const flow = Math.max(0.15, Math.min(1, (pat.co ?? restCo) / restCo));
   const hepatocyte = Math.max(0.1, 1 - (pat.liverInjury || 0) * 0.7);
-  const hepatic = Math.max(0.05, flow * hepatocyte);
+  // A drug whose clearance exceeds hepatic blood flow (naloxone, about 3.3 L/min) is cleared largely outside the
+  // liver, so its non-renal clearance must not fall with cardiac output (brief section 19a.2).
+  const hepatic = Math.max(0.05, (flowIndependent ? 1 : flow) * hepatocyte);
   return rf * renal + (1 - rf) * hepatic;
 }
 
@@ -724,7 +727,7 @@ export function resolveDoseMg(drugDef, weightKg, id) {
 // pure extraction: the main loop's own numbers are unchanged by it.
 function advancePkCompartments(dr, dt, pat) {
   const drugDef = dr.drugDef;
-  const organClearance = organClearanceFactor(pat, dr.pk.renalFrac);
+  const organClearance = organClearanceFactor(pat, dr.pk.renalFrac, dr.pk.flowIndependent);
   pat._organClearance = organClearance;   // exposed for the wiring suite
   let rem = dt;
   while (rem > 0) {
